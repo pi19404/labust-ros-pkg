@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurations>
+  <!-- Vehicle simulation parameters --> 
+  <VehicleModel id="falcon">
+    <sampling-time>10</sampling-time>
+    <mass>185</mass>
+    <gravity>10</gravity>
+    <inertia-matrix>diag([3](30,30,50))</inertia-matrix>
+    <rg>[3](0,0,0)</rg>
+    <rb>[3](0,0,0)</rb>
+    <rho>1025</rho>
+    <lift-force>1850</lift-force>
+    <added-mass>diag([6](80,80,80,15,30,30))</added-mass>
+    <linear-damping>diag([6](100,100,100,400,300,300))</linear-damping>
+    <quadratic-damping>diag([6](0,0,0,0,0,0))</quadratic-damping>
+    <eta0>[6](0,0,0,0,0,0)</eta0>
+    <nu0>[6](0,0,0,0,0,0)</nu0>
+    <coupled>0</coupled>
+  </VehicleModel> 
+  
+  <!-- Specify the desired plugin to load in the UUV control -->
+  <plugin name="vrsim-plug" id="falcon"/>
+  
+  <!-- iUUVModem configuration -->
+  <UUVModem id="default">
+	 <param name="PortName" value="/dev/pts/9"/>
+	 <param name="BaudRate" value="4800"/>
+	 <param name="FlowControl" value="none"/>
+	 <param name="Parity" value="none"/>
+	 <param name="StopBits" value="1"/>
+ 	 <param name="DataBits" value="8"/>
+  </UUVModem>
+  
+  <textparam>This is a test case</textparam>
+</configurations>

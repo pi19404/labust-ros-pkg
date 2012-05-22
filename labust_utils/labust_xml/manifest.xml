@@ -1,0 +1,23 @@
+<package>
+ <description brief="XML and Gyros tools and utilities">
+   This library contains tools that ease XML usage. It also contains the 
+   XML subset Gyros used for comunication by some labust software. This
+   library needs the LibXML2 C library.
+  </description>
+  <author>Đula Nađ and Tomislav Lugarić</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_xml</url> -->
+
+	<depend package="labust_tools" />
+
+	<!-- Depends on boost and libxml2-dev -->
+	<rosdep name="boost" />
+	<rosdep name="xml2" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" lfalgs="-L${prefix}/lib -llabust_xml" />
+	</export>
+</package>
+
+

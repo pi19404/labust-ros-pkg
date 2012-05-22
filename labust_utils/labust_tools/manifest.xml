@@ -1,0 +1,23 @@
+<package>
+  <description brief="Collection of various tool fragments.">
+		This header-only library contains different tools and definitions to
+		aid programing. It consists of general tools, math tools, plugin
+		definition, configuration tools, etc.. When third-party alternatives
+		are found they should be prefered. Deprecated the local functions and
+		methods when alternatives are found.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_tools</url> -->
+
+	<!-- Depends heavily on Boost -->
+	<rosdep name="boost" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" />
+	</export>
+
+</package>
+
+
