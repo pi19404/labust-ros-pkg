@@ -17,20 +17,9 @@ do
 	cd ${dir}
 	#Clean it.
 	make clean
-	#Delete the bin directories
-	if [ -d bin ] 
-	then
-		rm -r bin
-	fi
-	#Delete the lib directories
-	if [ -d lib ] 
-	then
-		rm -r lib
-	fi
-	#Delete the build directories
-	if [ -d build ] 
-	then
-		rm -r build
-	fi
+	#Delete the build,bin,lib directories
+	rm -rf bin lib build
+	#Delete eclipse and cmake files
+	rm -rf .cproject .project cmake_install.cmake .pydevproject
 done
 exit 0
