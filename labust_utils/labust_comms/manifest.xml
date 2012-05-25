@@ -1,0 +1,20 @@
+<package>
+	<description brief="Communication related utilities.">
+		The library contains communication related utilities such as
+		device configuration and protocol definitions.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_cooms</url> -->
+
+	<!-- uses Boost asio and shared_ptr -->
+	<rosdep name="boost" />
+
+	<depend package="labust_tools" />
+	<depend package="labust_xml" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" />
+	</export>
+</package>

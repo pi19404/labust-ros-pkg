@@ -1,0 +1,10 @@
+<stack>
+	<description brief="The MOOS applications developed at LABUST">
+		The stack contains MOOS related applications developed at LABUST.
+	</description>
+  <author>Maintained by Đula Nađ</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_moos</url> -->
+  <depend stack="ros" />
+</stack>

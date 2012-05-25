@@ -1,0 +1,11 @@
+<stack>
+	<description brief="Simulation tools and applications.">
+		The simulation stack contains different packages that simulate
+		sensors and vehicles.</description>
+  <author>Maintained by Đula Nađ</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_simulation</url> -->
+  <depend stack="ros" />
+
+</stack>

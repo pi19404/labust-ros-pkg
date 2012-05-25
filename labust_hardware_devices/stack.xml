@@ -1,0 +1,12 @@
+<stack>
+	<description brief="Hardware device drivers.">
+		The stack contains device drivers for sensors and vehicles used at LABUST.
+		ROS nodes for the devices are also implemented here.
+	</description>
+  <author>Maintained by Đula Nađ</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_hardware_devices</url> -->
+
+	<depend stack="ros" />
+</stack>

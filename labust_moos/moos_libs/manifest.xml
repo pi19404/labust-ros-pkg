@@ -1,0 +1,16 @@
+<package>
+  <description brief="MOOS communication and support libraries.">
+   The package contains MOOS plugins and support libraries.
+  </description>
+  <author>Tomislav Lugarić</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <!-- <url>http://ros.org/wiki/moos_libs</url> -->
+
+  <export>
+   <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -llabust_moos" />
+  </export>
+
+  <depend package="labust_comms" />
+	<depend package="moos_external" />
+</package>

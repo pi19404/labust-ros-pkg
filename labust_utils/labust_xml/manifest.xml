@@ -16,7 +16,7 @@
 	<rosdep name="xml2" />
 
 	<export>
-		<cpp cflags="-I${prefix}/include" lfalgs="-L${prefix}/lib -llabust_xml" />
+		<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -llabust_xml" />
 	</export>
 </package>
 

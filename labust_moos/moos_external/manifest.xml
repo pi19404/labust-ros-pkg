@@ -1,0 +1,13 @@
+<package>
+	<description brief="Package refering to external MOOS installation.">
+		This package is used as a dummy export package for the MOOS instalation.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_moos</url> -->
+
+	<export>
+		<cpp cflags="-I${MOOS_HOME}/moos/Core" lflags="-L${MOOS_HOME}/build/MOOS/MOOSBin -lMOOS -lMOOSGen -lMOOSUtility" />
+	</export>
+</package>

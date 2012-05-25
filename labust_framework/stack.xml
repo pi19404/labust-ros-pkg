@@ -1,0 +1,12 @@
+<stack>
+	<description brief="Collection of control applications.">
+		The stack contains ROS nodes and libraries for vehicle navigation and control. 
+		Generic applications that utilize the LABUST communication and abstraction layer
+		should be located in this stack.
+	</description>
+  <author>Maintained by Đula Nađ</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_framework</url> -->
+  <depend stack="ros" />
+</stack>

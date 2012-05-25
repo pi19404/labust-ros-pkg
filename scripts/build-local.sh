@@ -22,7 +22,7 @@ export LIB_ABS_DIR=${LIB_ABS_DIR}
 #List here the project in build order. We can automatically enumerate 
 #all the projects but dependecies are not handled. Listing them in order
 #will reduce how many time we need to run this script.
-PROJECT_LIST="labust_tools labust_xml"
+PROJECT_LIST="labust_tools labust_xml labust_drivers labust_comms labust_navcon labust_uvsim videoray bvt_sdk labust_tools moos_libs"
 
 for project in ${PROJECT_LIST}
 do
@@ -36,11 +36,11 @@ do
 
 	#Call CMake and compile with make.
 	cmake -DCLEAN_BUILD=ON ${SRC_ABS_DIR}
-	make ${1}
+	make ${*}
 
 	#Try to collect the *.deb archives.
 	if [ -e ${TARGET_ABS_DIR}/*.deb ] 
 	then
-		mv ${TARGET_ABS_DIR}/*.deb ${PACKAGE_ABS_DIR}
+		cp ${TARGET_ABS_DIR}/*.deb ${PACKAGE_ABS_DIR}
 	fi
 done

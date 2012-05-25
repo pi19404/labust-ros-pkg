@@ -1,0 +1,23 @@
+<package>
+	<description brief="Control and navigation library.">
+		This library contains controllers and navigation classes.
+		The PID controller toolkit is used for most control purposes. 
+		The navigation library is built around the Kalman Filter and
+		similar derivatives.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_navcon</url> -->
+
+	<!-- Navigation uses Boost uBlas -->
+	<rosdep name="boost" />
+
+	<depend package="labust_tools" />
+	<depend package="labust_drivers" />
+	<depend package="labust_xml" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -llabust_navcon" />
+	</export>
+</package>

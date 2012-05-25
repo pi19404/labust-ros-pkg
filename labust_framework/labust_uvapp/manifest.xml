@@ -1,0 +1,22 @@
+<package>
+	<description brief="UV applications.">
+		The package contains the UV applications for running plugable vehicle driver. 
+		It contains the related ROS nodes for vehicle control, identification and 
+		navigation.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_uvapp</url> -->
+
+	<!-- Depends heavily on Boost -->
+	<rosdep name="boost" />
+
+	<depend package="labust_tools" />
+	<depend package="labust_xml" />
+	<depend package="labust_navcon" />
+	<depend package="labust_drivers" />
+
+</package>
+
+

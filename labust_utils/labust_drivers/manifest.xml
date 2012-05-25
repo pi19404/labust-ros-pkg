@@ -1,0 +1,21 @@
+<package>
+	<description brief="Abstraction layer drivers.">
+		The header-only library contains different abstraction 
+		level interfaces. These interfaces are used for abstracting
+		vehicles, sensor, control and navigation algorithms.
+  </description>
+  <author>Đula Nađ</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_drivers</url> -->
+
+	<!-- Depends on Boost shared_ptr -->
+	<rosdep name="boost" />
+
+	<depend package="labust_tools" />
+	<depend package="labust_xml" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" />
+	</export>
+</package>
