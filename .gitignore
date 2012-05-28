@@ -1,0 +1,10 @@
+#ignore Eclipse project files
+.project
+.cproject
+.pydevproject
+#ignore CMake install
+cmake_install.cmake
+#ignore build dirs.
+build/
+lib/
+bin/
