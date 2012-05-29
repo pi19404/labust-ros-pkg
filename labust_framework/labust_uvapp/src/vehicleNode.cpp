@@ -31,68 +31,22 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef MMSERIALIZE_HPP_
-#define MMSERIALIZE_HPP_
-#include <boost/shared_ptr.hpp>
+#include <labust/vehicles/VehicleApp.hpp>
+#include <ros/ros.h>
 
-#include <string>
-#include <deque>
-
-namespace labust
+int main(int argc, char* argv[])
+try
 {
-	namespace comms
-	{
-		/**
-		 * This is the interface for message serialization.
-		 */
-		class MMSerialize
-		{
-		public:
-			/**
-			 * Message typedef.
-			 */
-			typedef std::deque<std::string> msgqueue;
-			/**
-			 * Generic virtual destructor.
-			 */
-			virtual ~MMSerialize(){};
-			/**
-			 * This method takes the received modem message in string format and converts it into a
-			 * user readable XML string.
-			 *
-			 * \param mmsg Encoded modem message
-			 * \param xmlstr Address of the decoded xml_string
-			 *
-			 * \return True if the message was readable and False otherwise.
-			 */
-			virtual bool decode(const msgqueue& mmsg, std::string* const xmlstr) = 0;
-			/**
-			 * This method takes a user readable XML string and converts it into a modem message string.
-			 *
-			 * \param xmlstr Address of the desired xml_string
-			 * \param mmsg Encoded modem message queue.
-			 *
-			 * \return True if the encoding was successful, false otherwise.
-			 */
-			virtual bool encode(const std::string& xmlstr, msgqueue* const mmsg) = 0;
-			/**
-			 * This method returns the number of serial packets that are needed to assemble
-			 * the whole message.
-			 * Default packet length is assumed one.
-			 */
-			virtual size_t packetNum(){return 1;};
-			/**
-			 * This method specifies if a binary or formated protocol is required.
-			 * Defaults to a formated protocol type.
-			 */
-			virtual bool isBinary(){return false;};
-			/**
-			 * This method is used by binary plugins to specify what read length is required next.
-			 */
-			virtual size_t nextReadLength(){return 0;}
-		};
-	}
+	ros::init(argc, argv, "vehicleNode");
+
+	labust::vehicles::VehicleApp vehicle;
+	ros::spin();
+
+	return 0;
+}
+catch (std::exception& e)
+{
+	std::cerr<<e.what()<<std::endl;
 }
 
-/* MMSERIALIZE_HPP_ */
-#endif
+

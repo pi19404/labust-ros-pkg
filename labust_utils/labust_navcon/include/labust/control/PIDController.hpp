@@ -112,7 +112,6 @@ namespace labust
 		class PIDController : public Structure
 		{
 		public:
-			typedef Structure Structure;
 			/**
 			 * Main constructor. Users can specify default gains of the controller.
 			 *

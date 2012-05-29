@@ -9,13 +9,12 @@
   <review status="unreviewed" notes=""/>
 	<!-- <url>http://ros.org/wiki/labust_uvapp</url> -->
 
-	<!-- Depends heavily on Boost -->
-	<rosdep name="boost" />
-
+	<depend package="roscpp" />
 	<depend package="labust_tools" />
 	<depend package="labust_xml" />
 	<depend package="labust_navcon" />
 	<depend package="labust_drivers" />
+	<depend package="std_msgs" />
 
 </package>
 

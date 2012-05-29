@@ -29,7 +29,7 @@ set(SRC src/VehicleModel6DOF.cpp src/NoiseModel.cpp)
 
 SET(PR_NAME labust_model)
 rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
-#rosbuild_link_boost(${PROJECT_NAME})
+rosbuild_link_boost(${PR_NAME} random)
 
 #The uvsim target definition
 set(PR_NAME2 uvsim-plug)

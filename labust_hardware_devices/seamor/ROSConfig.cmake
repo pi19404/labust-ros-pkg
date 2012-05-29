@@ -21,9 +21,22 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
-set(PR_NAME vehicleNode)
-set(SRC src/vehicleNode.cpp src/VehicleApp.cpp)
-set(HPP include/labust/vehicles/VehicleApp.hpp)
-rosbuild_add_executable(${PR_NAME} ${SRC} ${HPP})
+rosbuild_add_boost_directories()
 
-rosbuild_add_executable(identificationNode src/identificationNode.cpp)
+set(PR_NAME seamor-plug)
+set(SRC src/SeamorDriver.cpp
+	src/SeamorCommands.cpp)
+set(HPP include/labust/vehicles/SeamorDriver.h
+	include/labust/vehicles/SeamorCommands.h)
+
+rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
+rosbuild_link_boost(${PR_NAME} system thread)
+
+set(PR_NAME seamor2-plug)
+set(SRC src/Seamor.cpp
+	src/SeamorComms.cpp)
+set(HPP include/labust/vehicles/Seamor.hpp
+	include/labust/vehicles/SeamorComms.hpp)
+
+rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
+rosbuild_link_boost(${PR_NAME} system thread)

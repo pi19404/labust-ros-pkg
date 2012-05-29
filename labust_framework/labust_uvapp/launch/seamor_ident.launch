@@ -1,0 +1,9 @@
+ <launch>
+  <node pkg="vehicles" name="uvapp" type="vehicleNode">
+   <env name="LD_LIBRARY_PATH" value="$(find seamor)/lib" />
+   <param name="PluginName" value="seamor2-plug"/>
+   <param name="PluginConfig" value="$(find seamor)/config/seamor.xml"/>
+   <param name="PluginId" value=""/>
+  </node>
+  <node pkg="control" name="ident" type="identificationNode" />
+ </launch>

@@ -15,6 +15,6 @@
 	<depend package="labust_xml" />
 
 	<export>
-		<cpp cflags="-I${prefix}/include" />
+		<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -llabust_comms" />
 	</export>
 </package>

@@ -36,7 +36,7 @@ install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 #Add library target
 set(PACKAGE_NAME libvideoray-dev)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "VideoRay PRO vehicle driver plug-in.")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "liblabust-tools-dev (>=0.59), liblabust-xml-dev (>=0.59), libboost-dev (>=1.46), libboost-system-dev (>=1.46)")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "liblabust-comms-dev (>=0.59), liblabust-tools-dev (>=0.59), liblabust-xml-dev (>=0.59), libboost-dev (>=1.46), libboost-system-dev (>=1.46)")
 include($ENV{CMAKE_CONFIG_DIR}/CPackConfig.cmake)
 include(CPack)
 

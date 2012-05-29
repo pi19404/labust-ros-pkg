@@ -31,68 +31,49 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef MMSERIALIZE_HPP_
-#define MMSERIALIZE_HPP_
-#include <boost/shared_ptr.hpp>
+#include <labust/vehicles/SeamorDriver.h>
+#include <labust/vehicles/Seamor.hpp>
+#include <labust/tools/TimingTools.hpp>
+#include <labust/xml/XMLReader.hpp>
 
-#include <string>
-#include <deque>
+#include <iostream>
 
-namespace labust
+int main(int argc, char* argv[])
+try
 {
-	namespace comms
+	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
+	reader->useNode(reader->value<_xmlNode*>("//configurations"));
+	//labust::vehicles::SeamorDriver seamor(reader,"");
+	labust::vehicles::Seamor seamor(reader,"");
+
+	int i=0;
+	labust::tools::wait_until_ms delay(100);
+
+	while (true)
 	{
-		/**
-		 * This is the interface for message serialization.
-		 */
-		class MMSerialize
-		{
-		public:
-			/**
-			 * Message typedef.
-			 */
-			typedef std::deque<std::string> msgqueue;
-			/**
-			 * Generic virtual destructor.
-			 */
-			virtual ~MMSerialize(){};
-			/**
-			 * This method takes the received modem message in string format and converts it into a
-			 * user readable XML string.
-			 *
-			 * \param mmsg Encoded modem message
-			 * \param xmlstr Address of the decoded xml_string
-			 *
-			 * \return True if the message was readable and False otherwise.
-			 */
-			virtual bool decode(const msgqueue& mmsg, std::string* const xmlstr) = 0;
-			/**
-			 * This method takes a user readable XML string and converts it into a modem message string.
-			 *
-			 * \param xmlstr Address of the desired xml_string
-			 * \param mmsg Encoded modem message queue.
-			 *
-			 * \return True if the encoding was successful, false otherwise.
-			 */
-			virtual bool encode(const std::string& xmlstr, msgqueue* const mmsg) = 0;
-			/**
-			 * This method returns the number of serial packets that are needed to assemble
-			 * the whole message.
-			 * Default packet length is assumed one.
-			 */
-			virtual size_t packetNum(){return 1;};
-			/**
-			 * This method specifies if a binary or formated protocol is required.
-			 * Defaults to a formated protocol type.
-			 */
-			virtual bool isBinary(){return false;};
-			/**
-			 * This method is used by binary plugins to specify what read length is required next.
-			 */
-			virtual size_t nextReadLength(){return 0;}
-		};
+		double lastTime = labust::tools::unix_time();
+		++i;
+
+		labust::vehicles::tauMap tau;
+		tau[labust::vehicles::tau::X]= 20;
+		seamor.setTAU(tau);
+		labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
+		seamor.getState(state);
+		labust::vehicles::strMapPtr data(new labust::vehicles::strMap());
+		//seamor.getData(data);
+
+		std::cout<<"Heading:"<<(*state)[labust::vehicles::state::yaw]*180/M_PI<<std::endl;
+
+		delay();
+		std::cout<<"Loop time:"<<labust::tools::unix_time() - lastTime<<std::endl;
 	}
+	std::cout<<"Normal exit."<<std::endl;
+	return 0;
+}
+catch (std::exception& e)
+{
+	std::cout<<e.what()<<std::endl;
 }
 
-/* MMSERIALIZE_HPP_ */
-#endif
+
+

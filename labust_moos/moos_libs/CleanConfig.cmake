@@ -13,13 +13,17 @@ set(EXECUTABLE_OUTPUT_PATH $ENV{BIN_ABS_DIR})
 #Set compiler flags.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC")
 
+#Depends on Boost >= 1.46 headers
+set(Boost_USE_MULTITHREADED ON)
+find_package(Boost 1.46.0 COMPONENTS system REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
 #External includes and link
 include_directories($ENV{EXTERNAL_INCLUDE_DIRS})
 link_directories($ENV{EXTERNAL_LIB_DIRS})
 #Internal includes
 include_directories(include/)
 #Add the external moos location
-if (not defined ENV{MOOS_HOME})
+if ("$ENV{MOOS_HOME}" STREQUAL "")
 	message(FATAL_ERROR "MOOS_HOME enviromental variable missing.")
 endif ()
 include_directories($ENV{MOOS_HOME}/moos/Core)
@@ -31,7 +35,7 @@ set(PR_NAME labust_moos)
 file(GLOB SRC src/*.cpp src/*.c)
 file(GLOB HPP include/labust/moos/*.hpp include/labust/moos/*.h)
 add_library(${PR_NAME} ${SRC} ${HPP})
-target_link_libraries(${PR_NAME} ${MOOS_LIBRARIES})
+target_link_libraries(${PR_NAME} ${MOOS_LIBRARIES} ${Boost_SYSTEM_LIBRARY})
 
 install(DIRECTORY include/labust DESTINATION include)
 install(TARGETS ${PR_NAME} DESTINATION lib)

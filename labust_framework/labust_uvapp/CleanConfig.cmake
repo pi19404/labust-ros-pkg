@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project(labust_xml)
+project(labust_uvapp)
 
 #Change major version after tagging
 set(MAJOR_VERSION 0)

@@ -1,0 +1,20 @@
+<package>
+	<description brief="Seamor device drivers.">
+		The package contains the Seamor ROV device drivers and
+		communication protocols.
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/seamor</url> -->
+
+	<depend package="labust_drivers" />
+	<depend package="labust_comms" />
+
+	<export>
+		<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lseamor-plug -lseamor2-plug" />
+	</export>
+
+</package>
+
+

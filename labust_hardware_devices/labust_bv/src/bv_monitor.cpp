@@ -31,68 +31,73 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef MMSERIALIZE_HPP_
-#define MMSERIALIZE_HPP_
-#include <boost/shared_ptr.hpp>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/image_encodings.h>
+#include <labust_bv/SetRange.h>
+#include <cv_bridge/cv_bridge.h>
 
-#include <string>
-#include <deque>
 
-namespace labust
+#include <opencv2/highgui/highgui.hpp>
+#include <ros/ros.h>
+#include <exception>
+
+ros::Time last;
+
+void callback(const sensor_msgs::ImageConstPtr& image)
 {
-	namespace comms
+	ROS_INFO("Received image: %d x %d x 4 = %d",image->width, image->height,image->data.size());
+	ROS_INFO("Elapsed time: %f",(ros::Time::now() - last).toSec());
+	last = ros::Time::now();
+
+	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image, sensor_msgs::image_encodings::MONO16);
+
+	cv::imshow("Sonar",cv_ptr->image*200);
+	cv::waitKey(10);
+
+
+	/*ros::NodeHandle nh;
+	ros::ServiceClient client = nh.serviceClient<labust_bv::SetRange>("SetRange");
+	labust_bv::SetRange service;
+
+	service.request.stop = 15;
+	service.request.start = 5;
+
+	if (client.call(service))
 	{
-		/**
-		 * This is the interface for message serialization.
-		 */
-		class MMSerialize
-		{
-		public:
-			/**
-			 * Message typedef.
-			 */
-			typedef std::deque<std::string> msgqueue;
-			/**
-			 * Generic virtual destructor.
-			 */
-			virtual ~MMSerialize(){};
-			/**
-			 * This method takes the received modem message in string format and converts it into a
-			 * user readable XML string.
-			 *
-			 * \param mmsg Encoded modem message
-			 * \param xmlstr Address of the decoded xml_string
-			 *
-			 * \return True if the message was readable and False otherwise.
-			 */
-			virtual bool decode(const msgqueue& mmsg, std::string* const xmlstr) = 0;
-			/**
-			 * This method takes a user readable XML string and converts it into a modem message string.
-			 *
-			 * \param xmlstr Address of the desired xml_string
-			 * \param mmsg Encoded modem message queue.
-			 *
-			 * \return True if the encoding was successful, false otherwise.
-			 */
-			virtual bool encode(const std::string& xmlstr, msgqueue* const mmsg) = 0;
-			/**
-			 * This method returns the number of serial packets that are needed to assemble
-			 * the whole message.
-			 * Default packet length is assumed one.
-			 */
-			virtual size_t packetNum(){return 1;};
-			/**
-			 * This method specifies if a binary or formated protocol is required.
-			 * Defaults to a formated protocol type.
-			 */
-			virtual bool isBinary(){return false;};
-			/**
-			 * This method is used by binary plugins to specify what read length is required next.
-			 */
-			virtual size_t nextReadLength(){return 0;}
-		};
+		ROS_INFO("Service ok.");
 	}
+	else
+	{
+		ROS_INFO("Service failed.");
+	}
+	*/
 }
 
-/* MMSERIALIZE_HPP_ */
-#endif
+int main(int argc, char* argv[])
+try
+{
+	//Setup ROS
+	ros::init(argc,argv,"bv_monitor");
+	ros::NodeHandle nhandle;
+
+	//Configure this node
+	std::string topicName("bv_image");
+	int bufferSize(5),rate(10);
+	ros::NodeHandle phandle("~");
+	phandle.param("TopicName",topicName,topicName);
+	phandle.param("BufferSize",bufferSize,bufferSize);
+	phandle.param("Rate",rate,rate);
+
+	//Create topic subscription
+	ros::Subscriber imageTopic = nhandle.subscribe(topicName,bufferSize,callback);
+
+	ros::spin();
+	return 0;
+}
+catch (std::exception& e)
+{
+	std::cerr<<e.what()<<std::endl;
+}
+
+
+

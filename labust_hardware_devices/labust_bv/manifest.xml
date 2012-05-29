@@ -1,0 +1,18 @@
+<package>
+	<description brief="The package containing BlueView apps.">
+		The package contains libraries and applications used for
+		blueview sonar logging, acquistion and display.
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/blueview</url> -->
+
+	<!-- depends on boost threads -->
+	<rosdep name="boost" />
+
+	<depend package="bvt_sdk" />
+	<depend package="sensor_msgs" />
+	<depend package="cv_bridge" />
+
+</package>
