@@ -20,6 +20,8 @@ do
 	#Delete the build,bin,lib directories
 	rm -rf bin lib build
 	#Delete eclipse and cmake files
-	rm -rf .cproject .project cmake_install.cmake .pydevproject
+	if [ "${1}" = "all" ]; then
+	  rm -rf .cproject .project cmake_install.cmake .pydevproject
+	fi
 done
 exit 0

@@ -33,6 +33,8 @@
 *********************************************************************/
 #ifndef MMSERIALIZE_HPP_
 #define MMSERIALIZE_HPP_
+#include <labust/comms/commsfwd.hpp>
+
 #include <boost/shared_ptr.hpp>
 
 #include <string>

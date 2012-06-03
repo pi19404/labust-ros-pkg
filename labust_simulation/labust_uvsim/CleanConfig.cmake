@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC")
 
 #Depends on Boost >= 1.46 headers
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.46.0 COMPONENTS system thread REQUIRED)
+find_package(Boost 1.46.0 COMPONENTS system thread random REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 #External includes and link
 include_directories($ENV{EXTERNAL_INCLUDE_DIRS})
@@ -29,7 +29,7 @@ set(HPP include/labust/simulation/NoiseModel.hpp
 	include/labust/simulation/VehicleModel6DOF.hpp)
 
 add_library(${PR_NAME} ${SRC} ${HPP})
-target_link_libraries(${PR_NAME} labust_xml)
+target_link_libraries(${PR_NAME} labust_xml ${Boost_RANDOM_LIBRARY})
 
 #The uvsim-plug target
 set(PR_NAME2 uvsim-plug)

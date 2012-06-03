@@ -14,3 +14,5 @@ bin/
 #ignore generated files
 srv_gen/
 msg_gen/
+#Backup files
+*~

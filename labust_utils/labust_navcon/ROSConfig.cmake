@@ -53,4 +53,4 @@ rosbuild_add_library(${LFNAV_NAME} ${SRC} ${HPP})
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #Test code
 rosbuild_add_executable(control_test src/test/control_test.cpp)
-target_link_libraries(control_test ${LFC_NAME} ${HDC_NAME} ${IDENT_NAME})
+target_link_libraries(control_test ${PR_NAME})

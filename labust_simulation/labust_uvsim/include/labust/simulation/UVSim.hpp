@@ -72,15 +72,15 @@ namespace labust
 			/**
 			 * Implementation of labust::vehicles::Driver::setGuidance
 			 */
-      void setGuidance(const labust::vehicles::guidanceMapRef guidance);
+			void setGuidance(const labust::vehicles::guidanceMapRef guidance);
 			/**
 			 * Implementation of labust::vehicles::Driver::setCommand
 			 */
-      void setCommand(const labust::apps::stringRef commands);
+			void setCommand(const labust::apps::stringRef commands);
 			/**
 			 * Implementation of labust::vehicles::Driver::getData
 			 */
-      void getData(labust::apps::stringPtr data);
+			void getData(labust::apps::stringPtr data);
 
 		private:
 			/**

@@ -39,5 +39,8 @@ int main(int argc, char* argv[])
 	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
 	reader->useNode(reader->value<_xmlNode*>("//configurations"));
 	labust::vehicles::UVApp uvapp(reader,"");
+
+	std::cout<<"Exiting."<<std::endl;
+
 	return 0;
 }
