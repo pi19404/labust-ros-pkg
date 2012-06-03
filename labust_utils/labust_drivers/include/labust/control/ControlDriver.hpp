@@ -31,36 +31,39 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
-#include <labust/plugins/Factory.hpp>
-#include <labust/plugins/DLLoad.hpp>
-#include <labust/xml/xmlfwd.hpp>
-
-#include <boost/shared_ptr.hpp>
-
-#include <string>
+#ifndef CONTROLLERINTERFACE_HPP_
+#define CONTROLLERINTERFACE_HPP_
+#include <labust/apps/AppInterface.hpp>
+#include <labust/vehicles/vehiclesfwd.hpp>
+#include <labust/control/controlfwd.hpp>
 
 namespace labust
 {
-	namespace navigation
+	namespace control
 	{
-    /**
-     * Vehicle forward declaration
-     */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
-    /**
-     * Plugin factory declarations
-     */
-    typedef labust::plugins::TmplPluginFactory<
-      Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
+		/**
+		 * The generic controller interface.
+		 */
+		class Driver : public virtual labust::apps::App
+		{
+		public:
+			/**
+			 * Generic virtual destructor.
+			 */
+			virtual ~Driver(){};
+			/**
+			 * The method calculate the control based on the current and desired states.
+			 * Returns the tau vector values.
+			 *
+			 * \param stateRef The desired state reference.
+			 * \param state The current system state.
+			 * \param tau The address of the desired TAU vector.
+			 */
+			virtual void getTAU(const labust::vehicles::stateMapRef stateRef,
+					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau) = 0;
+		};
+	};
+};
 
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
-	}
-}
-/* NAVFWD_HPP_ */
+/* CONTROLLERINTERFACE_HPP_ */
 #endif

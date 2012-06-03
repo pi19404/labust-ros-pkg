@@ -149,12 +149,12 @@ void VRPro::setGuidance(const labust::vehicles::guidanceMapRef guidance)
 	throw std::runtime_error("VRPro::setGuidance not implemented.");
 }
 
-void VRPro::setCommand(const labust::vehicles::stringRef commands)
+void VRPro::setCommand(const labust::apps::stringRef commands)
 {
 	//throw std::runtime_error("VRPro::setCommand not implemented.");
 }
 
-void VRPro::getData(const labust::vehicles::stringPtr data)
+void VRPro::getData(const labust::apps::stringPtr data)
 {
 	throw std::runtime_error("VRPro::getData not implemented.");
 }

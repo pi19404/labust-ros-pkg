@@ -31,36 +31,25 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
-#include <labust/plugins/Factory.hpp>
-#include <labust/plugins/DLLoad.hpp>
-#include <labust/xml/xmlfwd.hpp>
-
+#ifndef APPSFWD_HPP_
+#define APPSFWD_HPP_
 #include <boost/shared_ptr.hpp>
-
 #include <string>
 
 namespace labust
 {
-	namespace navigation
+	namespace apps
 	{
+    typedef std::string string;
+    typedef string stringRef;
+    typedef boost::shared_ptr<string> stringPtr;
     /**
      * Vehicle forward declaration
      */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
-    /**
-     * Plugin factory declarations
-     */
-    typedef labust::plugins::TmplPluginFactory<
-      Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
-
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
+    class App;
+    typedef boost::shared_ptr<App> DriverPtr;
 	}
 }
-/* NAVFWD_HPP_ */
+
+/* APPSFWD_HPP_ */
 #endif

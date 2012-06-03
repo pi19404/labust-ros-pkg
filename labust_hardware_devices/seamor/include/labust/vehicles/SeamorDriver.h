@@ -127,7 +127,7 @@ namespace labust
 			 */
 			void setCommand(const labust::vehicles::strMapRef data);
 
-			void setCommand(const labust::vehicles::stringRef data){};
+			void setCommand(const labust::apps::stringRef data){};
 
 			/**
 			 * \see LABUST::VEHICLES::Driver::getState
@@ -191,7 +191,7 @@ namespace labust
 			 *	CameraWBCommand:
 			 *	CameraZoomCommand:
 			 */
-			void getData(const labust::vehicles::stringPtr data){};
+			void getData(const labust::apps::stringPtr data){};
 			void getData(labust::vehicles::strMapPtr data);
 
 		private:

@@ -31,36 +31,13 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
-#include <labust/plugins/Factory.hpp>
-#include <labust/plugins/DLLoad.hpp>
-#include <labust/xml/xmlfwd.hpp>
+#include <labust/vehicles/UVApp.hpp>
+#include <labust/xml/XMLReader.hpp>
 
-#include <boost/shared_ptr.hpp>
-
-#include <string>
-
-namespace labust
+int main(int argc, char* argv[])
 {
-	namespace navigation
-	{
-    /**
-     * Vehicle forward declaration
-     */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
-    /**
-     * Plugin factory declarations
-     */
-    typedef labust::plugins::TmplPluginFactory<
-      Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
-
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
-	}
+	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
+	reader->useNode(reader->value<_xmlNode*>("//configurations"));
+	labust::vehicles::UVApp uvapp(reader,"");
+	return 0;
 }
-/* NAVFWD_HPP_ */
-#endif

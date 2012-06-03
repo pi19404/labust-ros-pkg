@@ -59,7 +59,7 @@ namespace labust
 			 * \param reader Pointer to the XMLReader object cointaining the configuration data.
 			 * \param id Identification class.
 			 */
-			UVSim(const labust::xml::ReaderPtr reader, const std::string& id);
+			UVSim(const labust::xml::ReaderPtr reader, const std::string& id = "");
 
 			/**
 			 * Implementation of labust::vehicles::Driver::setTAU.
@@ -76,11 +76,11 @@ namespace labust
 			/**
 			 * Implementation of labust::vehicles::Driver::setCommand
 			 */
-      void setCommand(const labust::vehicles::stringRef commands);
+      void setCommand(const labust::apps::stringRef commands);
 			/**
 			 * Implementation of labust::vehicles::Driver::getData
 			 */
-      void getData(labust::vehicles::stringPtr data);
+      void getData(labust::apps::stringPtr data);
 
 		private:
 			/**

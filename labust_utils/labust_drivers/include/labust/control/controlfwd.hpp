@@ -31,36 +31,52 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
+#ifndef CONTROLLERFWD_HPP_
+#define CONTROLLERFWD_HPP_
 #include <labust/plugins/Factory.hpp>
 #include <labust/plugins/DLLoad.hpp>
 #include <labust/xml/xmlfwd.hpp>
 
 #include <boost/shared_ptr.hpp>
 
-#include <string>
-
 namespace labust
 {
-	namespace navigation
+	namespace control
 	{
-    /**
-     * Vehicle forward declaration
-     */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
+		class Driver;
+		typedef Driver& DriverRef;
+		typedef boost::shared_ptr<Driver> DriverPtr;
     /**
      * Plugin factory declarations
      */
     typedef labust::plugins::TmplPluginFactory<
       Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
+      const labust::xml::ReaderPtr> ControlFactory;
+    typedef ControlFactory::AbstractFactory* ControlFactoryPtr;
 
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
+    typedef labust::plugins::DLLoad<ControlFactory> ControlPlugin;
+    typedef boost::shared_ptr<ControlPlugin> ControlPluginPtr;
+
+		/**
+		 * General controller tuning parameters. Useful for vehicle controller tuning.
+		 */
+		struct TuningParameters
+		{
+			/**
+			 * Generic uncoupled model parameters.
+			 */
+			double alpha,beta,betaa;
+			/**
+			 * Binomial model function frequency.
+			 */
+			double w;
+			/**
+			 * Symmetric output saturation.
+			 */
+			double max;
+		};
 	}
 }
-/* NAVFWD_HPP_ */
+
+/* CONTROLLERFWD_HPP_ */
 #endif

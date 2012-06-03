@@ -76,6 +76,44 @@ namespace labust
 
 			reader->useNode(cnode);
 		};
+		/**
+		 * Override to enable testing before parametar reading.
+		 *
+		 * \param reader Pointer to the used XML reader.
+		 * \param value The address of the std::map object.
+		 * \param param Name of the key-value pair object.
+		 * \param keyName Name of the key parameter.
+		 * \param valueName Name of the value parameter.
+		 *
+		 * \tparam Type of the std::map. Allows polymorphism.
+		 */
+		template <class ReturnType>
+		bool param2map(labust::xml::ReaderPtr reader,
+				const std::string& nodeName,
+				ReturnType* value,
+				const std::string& param = "param",
+				const std::string& keyName = "@key",
+				const std::string& valueName = "@value")
+		try
+		{
+			typedef typename ReturnType::key_type key_type;
+			typedef typename ReturnType::mapped_type mapped_type;
+			_xmlNode* cnode = reader->currentNode();
+			reader->useNode(reader->value<_xmlNode*>(nodeName));
+
+			NodeCollectionPtr nodes = reader->value<NodeCollectionPtr >(param);
+
+			BOOST_FOREACH(_xmlNode* pt, *nodes)
+			{
+				reader->useNode(pt);
+				value->insert( std::make_pair(
+						reader->value<key_type >(keyName),
+						reader->value<mapped_type >(valueName)));
+			}
+
+			reader->useNode(cnode);
+		}
+		catch (std::exception& e){return false;};
 	}
 }
 

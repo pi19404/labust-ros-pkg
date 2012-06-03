@@ -65,7 +65,7 @@ namespace labust
 			 * \param reader Pointer to the XMLReader object containing the parameters.
 			 * \param id Identification class.
 			 */
-			LFNav(const labust::xml::ReaderPtr reader, const std::string& id);
+			LFNav(const labust::xml::ReaderPtr reader, const std::string& id = "");
 
 			/**
 			 *	The method performs the prediction step based on the given force input vector.
@@ -86,13 +86,13 @@ namespace labust
        *
        * \param data User specific map.
        */
-      void setCommand(const labust::vehicles::dataMapRef commands);
+      void setCommand(const labust::apps::stringRef cmd);
       /**
        * This method is used to return random data.
        *
        * \param data Peripheral data values will be returned
        */
-      void getData(labust::vehicles::dataMapPtr data){};
+      void getData(labust::apps::stringPtr data){};
 
 		private:
       /**

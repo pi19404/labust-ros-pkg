@@ -33,6 +33,7 @@
 *********************************************************************/
 #include <labust/navigation/LFNav.hpp>
 #include <labust/xml/XMLReader.hpp>
+#include <labust/plugins/PlugableDefs.hpp>
 
 using namespace labust::navigation;
 
@@ -181,8 +182,9 @@ void LFNav::recalculate(const labust::vehicles::stateMapRef measurement)
 	}
 }
 
-void LFNav::setCommand(const labust::vehicles::dataMapRef commands)
+void LFNav::setCommand(const labust::apps::stringRef commands)
 {
+	/*
 	labust::vehicles::dataMap::const_iterator end=commands.end();
 
 	if ((commands.find("TargetDepth")!= end) && (commands.find("xUUV")!= end) &&
@@ -196,9 +198,18 @@ void LFNav::setCommand(const labust::vehicles::dataMapRef commands)
 		T1(2) = nav.getState()(Nav::z);
 		nav.setLine(T1,T2);
 	}
+	*/
 }
 
-
+#ifndef BUILD_WITHOUT_PLUGIN_HOOK
+LABUST_EXTERN
+{
+	LABUST_EXPORT NavigationFactoryPtr createFactory()
+  {
+		return NavigationFactoryPtr(new NavigationFactory::Impl<LFNav>());
+  }
+};
+#endif
 
 
 

@@ -92,14 +92,14 @@ void UVSim::setGuidance(const labust::vehicles::guidanceMapRef guidance)
   throw std::invalid_argument("Memeber function has no implementation. labust::vehicle::setGuidance.");
 }
 
-void UVSim::setCommand(const labust::vehicles::stringRef commands)
+void UVSim::setCommand(const labust::apps::stringRef commands)
 {
 	labust::xml::Reader cmd(commands);
 	cmd.try_value("current",&this->current);
 	model->setCurrent(current);
 }
 
-void UVSim::getData(labust::vehicles::stringPtr data)
+void UVSim::getData(labust::apps::stringPtr data)
 {
   throw std::invalid_argument("Memeber function has no implementation. labust::vehicle::getData");
 }

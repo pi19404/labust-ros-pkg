@@ -64,6 +64,8 @@ namespace labust
      * your class. Alternatively, specify the labust::xml::Reader& operator>>(labust::xml::Reader&, ...).
      *
      * \todo Check for const-correctness.
+     * \todo Switch try_* functions to boolean.
+     * \todo Add method hasNode() to test if a node exists (it can be empty).
      */
     class Reader
     {
@@ -306,6 +308,10 @@ namespace labust
        * Pointer to the root node of the XPath context.
        */
       xmlNodePtr root_node;
+      /**
+       * The read expression for operator>>.
+       */
+      std::string opExpression;
     };
 
     /**

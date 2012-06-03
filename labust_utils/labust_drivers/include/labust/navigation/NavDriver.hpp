@@ -35,6 +35,7 @@
 #define NAVDRIVER_HPP_
 #include <labust/navigation/navfwd.hpp>
 #include <labust/vehicles/vehiclesfwd.hpp>
+#include <labust/apps/AppInterface.hpp>
 
 namespace labust
 {
@@ -43,7 +44,7 @@ namespace labust
 		/**
 		 * The generic navigation interface to be used for abstracting navigation algorithms.
 		 */
-		class Driver
+		class Driver : public virtual labust::apps::App
 		{
 		public:
 			/**
@@ -52,28 +53,19 @@ namespace labust
 			virtual ~Driver(){};
 
 			/**
-			 *	The method performs the prediction step based on the given force input vector.
+			 * The method performs the prediction step based on the given force input vector.
 			 *
-			 *	\param tau The input forces and torques vector.
+			 * \param tau The input forces and torques vector.
 			 */
 			virtual void prediction(const labust::vehicles::tauMapRef tau) = 0;
 			/**
 			 * The method performs the correction step of the filter based on supplied state measurement
 			 * vector.
+			 *
+			 * \param measurement The measured states.
+			 * \param stateHat The estimated state return.
 			 */
-			virtual void correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapPtr stateHat) = 0;
-      /**
-       * The method can be used to command additional configuration options.
-       *
-       * \param data User specific map.
-       */
-      virtual void setCommand(const labust::vehicles::dataMapRef commands) = 0;
-      /**
-       * This method is used to return random data.
-       *
-       * \param data Peripheral data values will be returned
-       */
-      virtual void getData(labust::vehicles::dataMapPtr data) = 0;
+			virtual void correction(const labust::vehicles::stateMapRef measurement, const labust::vehicles::stateMapPtr stateHat) = 0;
 		};
 	}
 }

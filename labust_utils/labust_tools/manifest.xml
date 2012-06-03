@@ -6,7 +6,7 @@
 		are found they should be prefered. Deprecated the local functions and
 		methods when alternatives are found.
   </description>
-  <author>Đula Nađ</author>
+  <author>Dula Nad</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
 	<!-- <url>http://ros.org/wiki/labust_tools</url> -->

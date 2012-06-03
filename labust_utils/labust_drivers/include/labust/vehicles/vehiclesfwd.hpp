@@ -37,7 +37,6 @@
 #include <labust/plugins/DLLoad.hpp>
 #include <labust/xml/xmlfwd.hpp>
 
-#include <boost/array.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <map>
@@ -66,6 +65,7 @@ namespace labust
      */
 		typedef std::map<int, double> tauMap;
 		typedef tauMap& tauMapRef;
+		typedef boost::shared_ptr<tauMap> tauMapPtr;
 
     /**
      * These are shortcuts to the state map parameters. Usually
@@ -114,9 +114,6 @@ namespace labust
     typedef std::map<std::string, std::string> strMap;
     typedef strMap& strMapRef;
     typedef boost::shared_ptr<strMap> strMapPtr;
-    typedef std::string string;
-    typedef string stringRef;
-    typedef boost::shared_ptr<string> stringPtr;
     /**
      * Vehicle forward declaration
      */
@@ -127,8 +124,7 @@ namespace labust
      */
     typedef labust::plugins::TmplPluginFactory<
       Driver,
-      const labust::xml::ReaderPtr,
-      const std::string&> VehicleFactory;
+      const labust::xml::ReaderPtr> VehicleFactory;
     typedef VehicleFactory::AbstractFactory* VehicleFactoryPtr;
 
     typedef labust::plugins::DLLoad<VehicleFactory> VehiclePlugin;

@@ -26,4 +26,14 @@ set(SRC src/vehicleNode.cpp src/VehicleApp.cpp)
 set(HPP include/labust/vehicles/VehicleApp.hpp)
 rosbuild_add_executable(${PR_NAME} ${SRC} ${HPP})
 
+SET(PR_NAME uvapp)
+SET(SRC src/UVApp.cpp)
+SET(HPP include/labust/vehicles/UVApp.hpp)
+rosbuild_add_boost_directories()	
+rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
+rosbuild_link_boost(${PR_NAME} thread)
+
+rosbuild_add_executable(uvapp_test src/uvapp_test.cpp)
+target_link_libraries(uvapp_test ${PR_NAME})
+
 rosbuild_add_executable(identificationNode src/identificationNode.cpp)

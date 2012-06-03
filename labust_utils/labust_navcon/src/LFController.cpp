@@ -36,20 +36,47 @@
 #include <labust/xml/xmltools.hpp>
 
 #include <cmath>
+#include <map>
 
 using namespace labust::control;
 
-LFController::LFController(const labust::xml::ReaderPtr reader, const std::string& id):
+LFController::LFController(const labust::xml::ReaderPtr reader):
 		useFL(false),
 		tunned(false),
 		beta_rr(0),
 		aAngle(M_PI/4)
 {
-	this->configure(reader,id);
+	this->configure(reader);
 }
 
+void LFController::setCommand(const labust::apps::stringRef cmd)
+try
+{
+	/*
+	labust::xml::ReaderPtr reader(new labust::xml::Reader(cmd));
+
+	reader->useNode();
+
+	if (reader.try_expression("tune"))
+	{
+		std::map<std::string, double> map;
+		if (labust::xml::param2map(reader,"tune[@name='horizontal']","param","@name"))
+		{
+			this->tuneDH();
+		};
+	}
+	*/
+}
+catch (std::exception& e)
+{
+	std::cerr<<e.what()<<std::endl;
+	std::cerr<<"Rejected command:"<<cmd<<std::endl;
+}
+
+void LFController::getData(const labust::apps::stringPtr data){};
+
 void LFController::getTAU(const labust::vehicles::stateMapRef stateRef,
-		const labust::vehicles::stateMapRef state, labust::vehicles::tauMap* tau)
+		const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau)
 {
 	using namespace labust::vehicles::tau;
 	using namespace labust::vehicles::state;
@@ -74,13 +101,10 @@ void LFController::getTAU(const labust::vehicles::stateMapRef stateRef,
 	(*tau)[Z] = dv_controller.step(stateRef[dV],state[dV]);
 };
 
-void LFController::configure(const labust::xml::ReaderPtr& reader, const std::string& id)
+void LFController::configure(const labust::xml::ReaderPtr& reader)
 {
-	 _xmlNode* org_node = reader->currentNode();
-	 reader->useNode(reader->value<_xmlNode*>("Controller" + (id.empty()?"":("[@id='" + id + "']"))));
 	 labust::xml::param2map(reader,&paramMap,"param","@name");
 	 this->tunned = this->tuneController(paramMap);
-	 reader->useNode(org_node);
 }
 
 bool LFController::tuneController(const labust::vehicles::dataMapRef data)
@@ -173,6 +197,12 @@ void LFController::adjustDH(double surge)
 	this->dh_controller.setPLimits(limit);
 }
 
-
-
-
+#ifndef BUILD_WITHOUT_PLUGIN_HOOK
+LABUST_EXTERN
+{
+	LABUST_EXPORT ControlFactoryPtr createFactory()
+  {
+		return ControlFactoryPtr(new ControlFactory::Impl<LFController>());
+  }
+};
+#endif

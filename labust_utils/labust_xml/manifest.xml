@@ -4,7 +4,7 @@
    XML subset Gyros used for comunication by some labust software. This
    library needs the LibXML2 C library.
   </description>
-  <author>Đula Nađ and Tomislav Lugarić</author>
+  <author>Dula Nad and Tomislav Lugaric</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
 	<!-- <url>http://ros.org/wiki/labust_xml</url> -->
@@ -17,6 +17,7 @@
 
 	<export>
 		<cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -llabust_xml" />
+		<rosdoc config="rosdoc.yaml" />
 	</export>
 </package>
 

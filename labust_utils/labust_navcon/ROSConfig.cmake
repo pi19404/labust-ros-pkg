@@ -22,16 +22,35 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 rosbuild_add_boost_directories()
 
-set(PROJECT_NAME labust_navcon)
+set(PR_NAME labust_navcon)
 file(GLOB SRC src/*.cpp src/*.c)
-file(GLOB HPP include/labust/navigation/*.hpp include/labust/navigation/*.h
-	include/labust/control/*.hpp include/labust/control/*.h)
+file(GLOB HPP include/labust/control/*.hpp 
+	include/labust/control/*.h
+	include/labust/navigation/*.hpp
+	include/Labust/navigation/*.h)
+rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
+#Build without plugin hooks.
+set_target_properties(${PR_NAME} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_WITHOUT_PLUGIN_HOOK")
 
-rosbuild_add_library(${PROJECT_NAME} ${SRC} ${HPP})
+
+set(LFC_NAME lfcontrol-plug)
+set(SRC src/LFController.cpp)
+set(HPP include/labust/control/LFController.hpp)
+rosbuild_add_library(${LFC_NAME} ${SRC} ${HPP})
+
+set(HDC_NAME hdcontrol-plug)
+set(SRC src/HDController.cpp)
+set(HPP include/labust/control/HDController.hpp)
+rosbuild_add_library(${HDC_NAME} ${SRC} ${HPP})
+
+set(LFNAV_NAME lfnavigation-plug)
+set(SRC src/LFNav.cpp src/LFModel.cpp)
+set(HPP include/labust/navigation/LFNav.hpp include/labust/navigation/LFModel.hpp)
+rosbuild_add_library(${LFNAV_NAME} ${SRC} ${HPP})
 
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #Test code
 rosbuild_add_executable(control_test src/test/control_test.cpp)
-target_link_libraries(control_test ${PROJECT_NAME})
+target_link_libraries(control_test ${LFC_NAME} ${HDC_NAME} ${IDENT_NAME})

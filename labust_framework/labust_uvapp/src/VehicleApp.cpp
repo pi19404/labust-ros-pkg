@@ -78,7 +78,7 @@ void VehicleApp::loadPlugin(const std::string& pluginName, const std::string& pl
 	labust::xml::ReaderPtr reader(new labust::xml::Reader(pluginConfig,true));
 	reader->useNode(reader->value<_xmlNode*>("//configurations"));
 	//Instantiate the driver.
-	uuv.reset((*plugin)(reader,pluginId));
+	uuv.reset((*plugin)(reader));
 }
 
 void VehicleApp::subscribe(const std::string& tauName, const std::string& cmdName)

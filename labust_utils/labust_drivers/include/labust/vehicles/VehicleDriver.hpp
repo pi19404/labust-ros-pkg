@@ -33,8 +33,8 @@
 *********************************************************************/
 #ifndef VEHICLEDRIVER_HPP_
 #define VEHICLEDRIVER_HPP_
-
 #include <labust/vehicles/vehiclesfwd.hpp>
+#include <labust/apps/AppInterface.hpp>
 
 namespace labust
 {
@@ -45,7 +45,7 @@ namespace labust
      * the driver will use or implement guidance algorithms inside. Also, for advanced usage of vehicles,
      * i.e. full implementation, you should implement this interface.
      */
-    class Driver
+    class Driver : public virtual labust::apps::App
     {
     public:
       /**
@@ -83,24 +83,6 @@ namespace labust
        * \param guidance Desired set points and similar guidance values.
        */
       virtual void setGuidance(const labust::vehicles::guidanceMapRef guidance) = 0;
-      /**
-       * Most vehicles support additional equipement that can be controlled.
-       * Camera pan/tilt, lights and similar. We add this method to be used for
-       * transmitting such commands. This way we separate guidance and control
-       * from peripheral devices.
-       *
-       * \param command String encoded command data.
-       */
-      virtual void setCommand(const labust::vehicles::stringRef command) = 0;
-      /**
-       * This method can be used in conjuction with the setOptional method.
-       * Its main purpose is to return data from peripheral devices. Note that
-       * sonar devices, video images and similar are advised to be acquired
-       * separately rather than through a vehicle driver.
-       *
-       * \param data String encoded return data.
-       */
-      virtual void getData(const labust::vehicles::stringPtr data) = 0;
     };
   };
 };

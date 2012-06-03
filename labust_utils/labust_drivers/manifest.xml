@@ -4,7 +4,7 @@
 		level interfaces. These interfaces are used for abstracting
 		vehicles, sensor, control and navigation algorithms.
   </description>
-  <author>Đula Nađ</author>
+  <author>Dula Nad</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
 	<!-- <url>http://ros.org/wiki/labust_drivers</url> -->

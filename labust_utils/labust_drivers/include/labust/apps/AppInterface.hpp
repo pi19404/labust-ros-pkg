@@ -31,36 +31,41 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
-#include <labust/plugins/Factory.hpp>
-#include <labust/plugins/DLLoad.hpp>
-#include <labust/xml/xmlfwd.hpp>
-
-#include <boost/shared_ptr.hpp>
-
-#include <string>
+#ifndef APPINTERFACE_HPP_
+#define APPINTERFACE_HPP_
+#include <labust/apps/appsfwd.hpp>
 
 namespace labust
 {
-	namespace navigation
-	{
+  namespace apps
+  {
     /**
-     * Vehicle forward declaration
+     * This class specifies a generic application interface that allows command and data
+     * exchange via string messages, preferably XML encoded string data.
      */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
-    /**
-     * Plugin factory declarations
-     */
-    typedef labust::plugins::TmplPluginFactory<
-      Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
-
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
-	}
-}
-/* NAVFWD_HPP_ */
+    class App
+    {
+    public:
+      /**
+       * Virtual destructor.
+       */
+      virtual ~App(){};
+      /**
+       * Use this method to pass generated XML commands to different applications
+       * and drivers.
+       *
+       * \param command String encoded command data.
+       */
+      virtual void setCommand(const labust::apps::stringRef cmd) = 0;
+      /**
+       * Use this method to pull encoded string data from different applications and
+       * drivers.
+       *
+       * \param data String encoded return data.
+       */
+      virtual void getData(const labust::apps::stringPtr data) = 0;
+    };
+  };
+};
+/* APPINTERFACE_HPP_ */
 #endif

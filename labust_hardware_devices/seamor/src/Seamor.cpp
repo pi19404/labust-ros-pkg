@@ -130,9 +130,9 @@ void Seamor::setGuidance(const labust::vehicles::guidanceMapRef guidance)
 {
 	throw std::runtime_error("Seamor::setGuidance not implemented.");
 }
-void Seamor::setCommand(const labust::vehicles::stringRef commands){};
+void Seamor::setCommand(const labust::apps::stringRef commands){};
 
-void Seamor::getData(const labust::vehicles::stringPtr data){};
+void Seamor::getData(const labust::apps::stringPtr data){};
 
 void Seamor::handleOutput(const boost::system::error_code& error, const size_t transferred){}
 

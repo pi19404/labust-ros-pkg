@@ -91,11 +91,11 @@ namespace labust
 			/**
 			 * \overload labust:::vehicles::Driver::setCommand
 			 */
-			LABUST_EXPORT void setCommand(const labust::vehicles::stringRef commands);
+			LABUST_EXPORT void setCommand(const labust::apps::stringRef commands);
 			/**
 			 * \overload labust::vehicles::Driver::getData
 			 */
-			LABUST_EXPORT void getData(const labust::vehicles::stringPtr data);
+			LABUST_EXPORT void getData(const labust::apps::stringPtr data);
 
 		private:
 			/**

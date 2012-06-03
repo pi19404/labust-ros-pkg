@@ -1,9 +1,9 @@
  <launch>
-  <node pkg="vehicles" name="uvapp" type="vehicleNode">
+  <node pkg="labust_uvapp" name="uvapp" type="vehicleNode">
    <env name="LD_LIBRARY_PATH" value="$(find labust_uvsim)/lib" />
    <param name="PluginName" value="uvsim-plug"/>
    <param name="PluginConfig" value="$(find labust_uvsim)/config/model.xml"/>
    <param name="PluginId" value=""/>
   </node>
-  <node pkg="control" name="ident" type="identificationNode" />
+  <node pkg="labust_uvapp" name="ident" type="identificationNode" />
  </launch>

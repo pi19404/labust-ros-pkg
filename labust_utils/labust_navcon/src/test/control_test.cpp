@@ -40,10 +40,10 @@ try
 {
 	labust::xml::ReaderPtr reader(new labust::xml::Reader("config/controllers.xml",true));
 	reader->useNode(reader->value<_xmlNode*>("//configurations"));
-	labust::control::LFController lf(reader,"LineFollowing");
+	labust::control::LFController lf(reader);
 
-	labust::control::SOIdentification ident;
-	ident.configure(reader);
+	//labust::control::SOIdentification ident;
+	//ident.configure(reader);
 
 	std::cout<<"Exiting."<<std::endl;
 	return 0;

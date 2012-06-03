@@ -5,7 +5,7 @@
 		The navigation library is built around the Kalman Filter and
 		similar derivatives.
   </description>
-  <author>Đula Nađ</author>
+  <author>Dula Nad</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
 	<!-- <url>http://ros.org/wiki/labust_navcon</url> -->

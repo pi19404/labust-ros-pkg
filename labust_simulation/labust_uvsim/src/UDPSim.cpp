@@ -53,7 +53,7 @@ UDPSim::UDPSim(const labust::xml::ReaderPtr reader, const std::string& id):
 	plugin.reset(
 			new labust::vehicles::VehiclePlugin(reader->value<std::string>("plugin/@name"),
 					labust::vehicles::FactoryCreatorName::value));
-	uuv.reset(labust::plugins::createConfiguredInstance(reader, *plugin));
+	uuv.reset((*plugin)(reader));
 
 	labust::communication::udp_configure(*reader,socket_,remote);
 

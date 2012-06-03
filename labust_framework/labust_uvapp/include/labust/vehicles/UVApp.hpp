@@ -31,56 +31,74 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
-#ifndef CONTROLFWD_HPP_
-#define CONTROLFWD_HPP_
+#ifndef UVAPP_HPP_
+#define UVAPP_HPP_
+#include <labust/apps/AppInterface.hpp>
+#include <labust/xml/xmlfwd.hpp>
+#include <labust/vehicles/vehiclesfwd.hpp>
+#include <labust/navigation/navfwd.hpp>
+#include <labust/control/controlfwd.hpp>
+#include <labust/plugins/PluginLoader.hpp>
 
 namespace labust
 {
-	namespace control
+	namespace vehicles
 	{
 		/**
-		 * General controller tuning parameters. Useful for vehicle controller tuning.
-		 */
-		struct TuningParameters
-		{
-			/**
-			 * Generic uncoupled model parameters.
-			 */
-			double alpha,beta,betaa;
-			/**
-			 * Binomial model function frequency.
-			 */
-			double w;
-			/**
-			 * Symmetric output saturation.
-			 */
-			double max;
-		};
-
-		/**
-		 * Generic controller tuning.
+		 * The class integrates control, navigation and the UUV plugin into a modular
+		 * infrastructure.
 		 *
-		 * \param param Tuning parameters for the controller.
-		 * \param pid Address of the PID controller to tune.
-		 *
-		 * \tparam PID Allow the function for different controllers.
+		 * For now we use multiple inheritance to combine pieces of code.
 		 */
-		void tuneController(const TuningParameters& param, IPD* pid)
+		class UVApp : public virtual labust::apps::App
 		{
-		  double a3 = 1/(param.w*param.w*param.w), a2 = 3/(param.w*param.w), a1 = 3/(param.w);
+			typedef labust::plugins::Loader<
+					labust::vehicles::VehiclePluginPtr,
+					labust::vehicles::DriverPtr > VehicleLoader;
+			typedef labust::plugins::Loader<
+					labust::navigation::NavigationPluginPtr,
+					labust::navigation::DriverPtr > NavigationLoader;
+			typedef labust::plugins::Loader<
+					labust::control::ControlPluginPtr,
+					labust::control::DriverPtr > ControlLoader;
+		public:
+			/**
+			 * Main constructor. Configures the system using the XML configuration file.
+			 *
+			 * \param reader Pointer to the loaded XML configuration file.
+			 * \param id Identification class.
+			 */
+			UVApp(const labust::xml::ReaderPtr reader, const std::string& id);
+			/**
+			 * Generic virtual destructor.
+			 */
+			virtual ~UVApp(){};
 
-		  double K_Ipsi = param.alpha/a3;
-		  double K_Ppsi = param.alpha*a1/a3;
-		  double K_Dpsi = (param.alpha*a2/a3 - param.beta);
+      /**
+       * \override labust::apps::App::setCommand.
+       */
+      void setCommand(const labust::apps::stringRef cmd){};
+      /**
+       * \override labust::apps::App::getDate.
+       */
+      void getData(const labust::apps::stringPtr data){};
 
-		  //pid->setGains(a1*param.alpha/a3,param.alpha*a3,a2/a3*param.alpha - param.beta,0);
-		  pid->setGains(K_Ppsi,K_Ipsi,K_Dpsi,K_Dpsi/10);
-
-		  labust::math::Limit<double> limit(-param.max,param.max);
-		  pid->setLimits(limit);
-		}
+		protected:
+      /**
+       * The three controller options: Heading+Depth, LineFollowing, Manual.
+       */
+      ControlLoader hdCon, lfCon, manCon, ident;
+      /**
+       * The navigation.
+       */
+      NavigationLoader nav;
+      /**
+       * The vehicle.
+       */
+      VehicleLoader uuv;
+  	};
 	}
 }
 
-/* CONTROLFWD_HPP_ */
+/* UVAPP_HPP_ */
 #endif

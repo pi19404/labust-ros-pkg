@@ -31,36 +31,29 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef NAVFWD_HPP_
-#define NAVFWD_HPP_
-#include <labust/plugins/Factory.hpp>
-#include <labust/plugins/DLLoad.hpp>
-#include <labust/xml/xmlfwd.hpp>
+#include <labust/vehicles/UVApp.hpp>
+#include <labust/xml/XMLReader.hpp>
+#include <labust/vehicles/VehicleDriver.hpp>
+#include <labust/navigation/NavDriver.hpp>
+#include <labust/control/ControlDriver.hpp>
 
-#include <boost/shared_ptr.hpp>
+using labust::vehicles::UVApp;
 
-#include <string>
-
-namespace labust
+UVApp::UVApp(const labust::xml::ReaderPtr reader, const std::string& id)
 {
-	namespace navigation
-	{
-    /**
-     * Vehicle forward declaration
-     */
-    class Driver;
-    typedef boost::shared_ptr<Driver> DriverPtr;
-    /**
-     * Plugin factory declarations
-     */
-    typedef labust::plugins::TmplPluginFactory<
-      Driver,
-      const labust::xml::ReaderPtr> NavigationFactory;
-    typedef NavigationFactory::AbstractFactory* NavigationFactoryPtr;
+	_xmlNode* org_node = reader->currentNode();
+	reader->useNode(reader->value<_xmlNode*>("UVApp" + (id.empty()?"":("[@id='" + id + "']"))));
 
-    typedef labust::plugins::DLLoad<NavigationFactory> NavigationPlugin;
-    typedef boost::shared_ptr<NavigationPlugin> NavigationPluginPtr;
-	}
+	hdCon.loadPlugin("hdcontrol-plug",reader);
+	lfCon.loadPlugin("lfcontrol-plug",reader);
+	//manCon.loadPlugin("mancontrol-plug",reader);
+	//ident.loadPlugin("ident-plug",reader);
+
+	nav.loadPlugin("lfnavigation-plug",reader);
+
+	uuv.loadPlugin("uvsim-plug","Vehicle",reader);
+
+	reader->useNode(org_node);
 }
-/* NAVFWD_HPP_ */
-#endif
+
+

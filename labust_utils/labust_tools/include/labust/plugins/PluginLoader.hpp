@@ -33,13 +33,69 @@
 *********************************************************************/
 #ifndef PLUGINLOADER_HPP_
 #define PLUGINLOADER_HPP_
-
-#include <labust/xml/XMLReader.hpp>
+#include <labust/xml/xmlfwd.hpp>
 
 namespace labust
 {
   namespace plugins
   {
+		/**
+		 * This class loads and configures the vehicle plugins.
+		 *
+		 * \todo Consider moving this into the drivers themself so that they hold a
+		 * plugin reference.
+		 * \todo Consider moving this into the TmplFactory for easiers adaptation.
+		 */
+  	template <class PluginPtr, class DriverPtr>
+		class Loader
+		{
+		public:
+			/**
+			 * The method loads a vehicle driver and configures it with the given XML data.
+			 *
+			 * \param pluginName Name of the plugin to be loaded.
+			 * \param reader The XML data for vehicle configuration.
+			 */
+			inline typename DriverPtr::element_type& loadPlugin(const std::string& pluginName, const std::string& factory, const labust::xml::ReaderPtr reader)
+			{
+				static const std::string FactoryName("create" + factory + "Factory");
+				driver.reset();
+				plugin.reset(new typename PluginPtr::element_type(pluginName,FactoryName));
+				driver.reset((*plugin)(reader));
+
+				return *driver;
+			}
+
+			/**
+			 * The method loads a vehicle driver and configures it with the given XML data.
+			 *
+			 * \param pluginName Name of the plugin to be loaded.
+			 * \param reader The XML data for vehicle configuration.
+			 */
+			inline typename DriverPtr::element_type& loadPlugin(const std::string& pluginName, const labust::xml::ReaderPtr reader)
+			{
+				return this->loadPlugin(pluginName,"",reader);
+			}
+
+			/**
+			 * The vehicle reference.
+			 */
+			inline typename DriverPtr::element_type& operator()()
+			{
+				return *driver;
+			}
+
+		private:
+			/**
+			 * The plugin implementation pointer.
+			 */
+			PluginPtr plugin;
+			/**
+			 * The vehicle implementation pointer.
+			 */
+			DriverPtr driver;
+		};
+
     /**
      * This function performs plugin loading based on a supplied XML configuration file.
      *
@@ -54,7 +110,7 @@ namespace labust
      *       and empty string will be passed to the plugin configuration.
      *
      */
-    template <class DLLoader>
+    /*template <class DLLoader>
     inline typename DLLoader::TypePtr createConfiguredInstance(const labust::xml::ReaderPtr reader, const DLLoader& dll)
     {
       std::string config_file(reader->try_expression("plugin/@config_file") ? (reader->value<std::string>("plugin/@config_file")) : "");
@@ -68,7 +124,7 @@ namespace labust
       {
         return typename DLLoader::TypePtr(dll(labust::xml::ReaderPtr(new labust::xml::Reader(config_file,true)),id));
       }
-    };
+    };*/
   }
 }
 

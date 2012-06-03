@@ -33,6 +33,7 @@
  *********************************************************************/
 #ifndef UUVAPP_HPP_
 #define UUVAPP_HPP_
+#include <labust/apps/AppInterface.hpp>
 #include <labust/xml/xmlfwd.hpp>
 #include <labust/vehicles/vehiclesfwd.hpp>
 #include <labust/control/PIDController.hpp>
@@ -63,7 +64,7 @@ namespace labust
 		 * \todo Cut apart the UUVApp
 		 * \todo Add sonar depth specification
 		 */
-		class UUVApp
+		class UUVApp : labust::apps::App
 		{
 			typedef labust::navigation::KFCore<labust::navigation::LFModel> LFNav;
 			typedef boost::shared_ptr<LFNav> LFNavPtr;
@@ -83,6 +84,28 @@ namespace labust
 			 * \param id Identification class.
 			 */
 			UUVApp(const labust::xml::ReaderPtr reader, const std::string& id);
+
+      /**
+       * \override labust::apps::App::setCommand.
+       */
+      void setCommand(const labust::apps::stringRef cmd);
+      /**
+       * \override labust::apps::App::getDate.
+       */
+      void getData(const labust::apps::stringPtr data);
+
+
+		protected:
+
+
+
+
+
+
+
+
+
+
 
 			/**
 			 * Tune the depth controller based on model parameters.
@@ -142,38 +165,6 @@ namespace labust
 
 
 		private:
-			/**
-			 * Generic controller tuning.
-			 *
-			 * \param param Tuning parameters for the controller.
-			 * \param pid Address of the PID controller to tune.
-			 *
-			 * \tparam PID Allow the function for different controllers.
-			 */
-			template <class PID>
-			void tuneController(const TuningParameters& param, PID* pid)
-			{
-				double a3 = 1/(param.w*param.w*param.w), a2 = 3/(param.w*param.w), a1 = 3/(param.w);
-
-				double K_Ipsi = param.alpha/a3;
-				double K_Ppsi = param.alpha*a1/a3;
-				double K_Dpsi = (param.alpha*a2/a3 - param.beta);
-
-				/*K_Ipsi = 1.55139;
-			  K_Ppsi = 6.64881;
-			  K_Dpsi = 8.0083;*/
-
-				//pid->setGains(a1*param.alpha/a3,param.alpha*a3,a2/a3*param.alpha - param.beta,0);
-				pid->setGains(K_Ppsi,K_Ipsi,K_Dpsi,K_Dpsi/10);
-
-				std::cout<<"Param:"<<param.alpha<<","<<param.beta<<","<<param.w<<std::endl;
-				std::cout<<"K_Ppsi:"<<K_Ppsi<<",K_Ipsi:"<<K_Ipsi<<",K_Dpsi:"<<K_Dpsi<<std::endl;
-
-				labust::math::Limit<double> limit(-param.max,param.max);
-				pid->setLimits(limit);
-
-				//pid->setGains(10,0,0,0);
-			}
 			/**
 			 * Calculate the TAU vector based on the current mode.
 			 */

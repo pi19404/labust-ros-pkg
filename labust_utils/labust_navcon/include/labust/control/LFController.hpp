@@ -33,9 +33,12 @@
 *********************************************************************/
 #ifndef LFCONTROLLER_HPP_
 #define LFCONTROLLER_HPP_
-#include <labust/vehicles/vehiclesfwd.hpp>
+#include <labust/control/ControlDriver.hpp>
 #include <labust/xml/xmlfwd.hpp>
 #include <labust/control/PIDController.hpp>
+#include <labust/plugins/PlugableDefs.hpp>
+
+#include <boost/array.hpp>
 
 namespace labust
 {
@@ -46,33 +49,35 @@ namespace labust
 		 * Mišković, Nikola; Nađ, Đula; Vukić, Zoran: "3D Line Following for Unmanned Underwater Vehicles",
 		 * Brodogradnja, 61 (2010) , 2; 121-129.
 		 *
-		 * \todo Consider making a template based controller generator. Just specify a pair of desired
-		 * force/torque and state.
 		 * \todo Consider keeping a Parameter map once loaded from the XML if needed.
 		 * \todo Initialization of the PD derivator ? or yaw-rate reference limit.
+		 * \todo Run-time parameter retuning.
 		 * \todo Surge speed in parameter recalculation.
 		 */
-		class LFController
+		class LFController : public virtual Driver
 		{
 		public:
 			/**
 			 * Main constructor. Take a XML reader pointer and configures the controller.
 			 *
 			 * \param reader Pointer to the XMLReader object containing the parameters.
-			 * \param id Identification class.
 			 */
-			LFController(const labust::xml::ReaderPtr reader, const std::string& id);
+			LFController(const labust::xml::ReaderPtr reader);
+
+      /**
+       * \override labust::apps::App::setCommand.
+       */
+      LABUST_EXPORT void setCommand(const labust::apps::stringRef cmd);
+      /**
+       * \override labust::apps::App::getDate.
+       */
+      LABUST_EXPORT void getData(const labust::apps::stringPtr data);
 
 			/**
-			 * The method calculate the control based on the current state. Returns the
-			 * yaw torque and heave forces.
-			 *
-			 * \param stateRef The desired state reference.
-			 * \param state The current system state.
-			 * \param tau The address of the desired TAU vector.
+			 * \override labust::control::Driver::getTAU
 			 */
-			void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, labust::vehicles::tauMap* tau);
+      LABUST_EXPORT void getTAU(const labust::vehicles::stateMapRef stateRef,
+					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau);
 			/**
 			 * The method tunes the parameters of the controller based on the desired
 			 * binomial transfer function and model parameters.
@@ -120,9 +125,8 @@ namespace labust
 			 * Configures the controller based on the XML file.
 			 *
 			 * \param reader Pointer to the XMLReader object containing the parameters.
-			 * \param id Identification class.
 			 */
-			void configure(const labust::xml::ReaderPtr& reader, const std::string& id);
+			void configure(const labust::xml::ReaderPtr& reader);
 			/**
 			 * Performs real-time adjustment of the line-following controller.
 			 *

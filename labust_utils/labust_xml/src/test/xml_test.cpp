@@ -31,6 +31,7 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
+#include <labust/xml/DefineXMLStruct.hpp>
 #include <labust/xml/XMLException.hpp>
 #include <labust/xml/XMLReader.hpp>
 #include <labust/xml/XMLWriter.hpp>
@@ -127,10 +128,242 @@ catch (labust::xml::XMLException& e)
 	return false;
 };
 
+PP_LABUST_MAKE_XML_STRUCTURE(
+		(demo), employee,
+		(std::string, name)
+		(int, age));
+
+PP_LABUST_MAKE_XML_STRUCTURE(
+		(demo), office,
+		(int, room)
+		(demo::employee, ivo)
+		(demo::employee, jozo))
+
+struct XMLStruct{};
+
+namespace demo
+{
+	namespace update
+	{
+		class employee : XMLStruct
+		{
+			typedef boost::shared_ptr<std::string> StringPtr;
+		public:
+
+			typedef enum {nameUpdate, ageUpdate, kidsUpdate} keys;
+
+			employee():
+				name(),
+				age(){};
+
+			StringPtr write(const std::string& id  = "", bool sendType = false)
+			{
+				labust::xml::Writer writer;
+
+				writer.startElement("employee");
+			  if (!id.empty()) writer.addAttribute("id",id);
+			  if (sendType) writer.addAttribute("type","employee");
+
+			  //ADD PARAMETER
+			  writer.startElement("param");
+			   writer.addAttribute("name","name");
+			   writer.addAttribute("value",this->name);
+			   if (sendType) writer.addAttribute("type","std::string");
+			  writer.endElement();
+			  writer.startElement("param");
+			   writer.addAttribute("name","age");
+			   writer.addAttribute("value",this->age);
+			   if (sendType) writer.addAttribute("type","int");
+			  writer.endElement();
+
+				writer.endDocument();
+				return writer.toStringPt();
+			}
+
+			StringPtr writeUpdate(const std::string& id  = "", bool sendType = false)
+			{
+				labust::xml::Writer writer;
+
+				writer.startElement("employee");
+			  if (!id.empty()) writer.addAttribute("id",id);
+			  if (sendType) writer.addAttribute("type","employee");
+
+			  //ADD PARAMETER
+			  if (updateMap[nameUpdate])
+			  {
+			  	if (boost::is_base_of<XMLStruct, std::string>::value)
+			  	{
+			  		writer.startElement("param");
+			  	   writer.addAttribute("name","name");
+			       writer.addAttribute("value",this->name);
+			       if (sendType) writer.addAttribute("type","std::string");
+  			    writer.endElement();
+		   	    updateMap[nameUpdate] = false;
+			  	}
+			  	else
+			  	{
+			  	}
+			  }
+
+			  if (updateMap[ageUpdate])
+			  {
+			    writer.startElement("param");
+			     writer.addAttribute("name","age");
+			     writer.addAttribute("value",this->age);
+			     if (sendType) writer.addAttribute("type","int");
+			    writer.endElement();
+			    updateMap[ageUpdate] = false;
+			  }
+
+				writer.endDocument();
+				return writer.toStringPt();
+			}
+
+			void read(const std::string& str, const std::string& id = "")
+			{
+				labust::xml::Reader reader(str);
+				this->read(reader,id);
+			}
+
+			void read(labust::xml::Reader& reader, const std::string& id = "")
+			{
+				_xmlNode* org_node = reader.currentNode();
+				std::string head("/employee");
+				if (reader.try_expression("employee")) head = "employee";
+				reader.useNode(reader.value<_xmlNode*>(id.empty()?head:head + "[@id='" + id + "']"));
+
+				reader.try_value("param[@name='age']/@value",&this->age);
+
+				reader.useNode(org_node);
+			}
+
+			//Testers
+			inline bool wasUpdated(keys key)
+			{
+				return updateMap[key];
+			}
+
+			//Accessors
+			inline const std::string& Name(){updateMap[nameUpdate] = false;return name;};
+			inline void Name(const std::string& name){this->name = name;updateMap[nameUpdate] = true;};
+			inline const int& Age(){updateMap[ageUpdate] = false;return age;};
+			inline void Age(int age){this->age = age;updateMap[ageUpdate] = true;};
+
+		private:
+
+			std::string name;
+			int age;
+
+			//Update map
+			std::map<keys, bool> updateMap;
+		};
+
+		labust::xml::Reader& operator>>(labust::xml::Reader& reader, employee& emp)
+		{
+			std::cout<<"Select this."<<std::endl;
+			return reader;
+		}
+
+		class office : XMLStruct
+		{
+		public:
+			typedef enum {countUpdate, ivoUpdate, mirkoUpdate} keys;
+
+			office():
+				count(2),
+				Mirko(),
+				Ivo(){};
+
+			void read(const std::string& str, const std::string& id = "")
+			{
+				labust::xml::Reader reader(str);
+				this->read(reader,id);
+			}
+
+			void read(labust::xml::Reader& reader, const std::string& id = "")
+			{
+				_xmlNode* org_node = reader.currentNode();
+				std::string head("/office");
+				if (reader.try_expression("office")) head = "office";
+				reader.useNode(reader.value<_xmlNode*>(id.empty()?head:head + "[@id='" + id + "']"));
+
+				reader.try_value("param[@name='count']/@value",&this->count);
+				//reader>>Mirko;
+
+				reader.useNode(org_node);
+			}
+
+			//Testers
+			inline bool wasUpdated(keys key)
+			{
+				return updateMap[key];
+			}
+
+		private:
+			int count;
+			employee Mirko,Ivo;
+
+			//Update map
+			std::map<keys, bool> updateMap;
+		};
+	}
+}
+
+
 int main(int argc, char* argv[])
 try
 {
 	bool flag(true);
+	double time = labust::tools::unix_time();
+	for (int i=0; i<10000; ++i)
+	{
+		demo::employee ivo, jozo;
+		ivo.name = "ivo";
+		ivo.age = 10;
+
+		//std::cout<<*ivo.write()<<std::endl;
+		jozo.read(*ivo.write());
+		//std::cout<<*jozo.write()<<std::endl;
+		jozo.name = "Jozo";
+		jozo.age = 22;
+
+		demo::office lab1;
+		lab1.ivo = ivo;
+		lab1.jozo = jozo;
+		lab1.room = 213;
+
+		//std::cout<<*lab1.write()<<std::endl;
+
+		demo::office lab2;
+		labust::xml::Reader reader(*lab1.write());
+		lab2.read(reader);
+
+		//std::cout<<*lab2.ivo.write()<<std::endl;
+	}
+
+	std::cout<<"Timesum:"<<(labust::tools::unix_time() - time)/10000.<<std::endl;
+
+	/*
+	demo::update::employee test;
+
+	test.Name("Ivo");
+	//test.Age(10);
+
+	labust::xml::Reader reader("<stuff><param /></stuff>");
+	reader>>test;
+
+	boost::shared_ptr<std::string> writer(test.writeUpdate("Ivo",false));
+	std::cout<<*writer<<std::endl;
+
+	demo::update::employee test2;
+
+	test2.read(*writer);
+
+	boost::shared_ptr<std::string> writer2(test2.write());
+
+	std::cout<<*writer2<<std::endl;
+
+	/*
 
 	if ((flag = test_xml_reader(argc, argv)))
 	{
@@ -141,7 +374,7 @@ try
 	{
 		std::cout<<"XML writer ... OK"<<std::endl;
 	};
-	if (flag) std::cout<<"liblabust_xml passed test."<<std::endl;
+	if (flag) std::cout<<"liblabust_xml passed test."<<std::endl;*/
 
 	return 0;
 }
