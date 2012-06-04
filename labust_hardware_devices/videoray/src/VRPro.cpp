@@ -135,13 +135,13 @@ void VRPro::setTAU(const labust::vehicles::tauMapRef tau)
 }
 
 
-void VRPro::getState(labust::vehicles::stateMapPtr state)
+void VRPro::getState(labust::vehicles::stateMapRef state)
 {
 	//Recalculate depth from pressure ?.
 	using namespace labust::vehicles::state;
-	(*state) = (*this->states);
-	(*state)[z] = ((*states)[depthPressure]*xDepth + yDepth)/1.46;
-	(*state)[yaw] = unwrap((*states)[yaw]);
+	state = (*this->states);
+	state[z] = ((*states)[depthPressure]*xDepth + yDepth)/1.46;
+	state[yaw] = unwrap((*states)[yaw]);
 }
 
 void VRPro::setGuidance(const labust::vehicles::guidanceMapRef guidance)

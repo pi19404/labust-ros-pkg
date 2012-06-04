@@ -65,19 +65,18 @@ void HDController::configure(const labust::xml::ReaderPtr reader)
 
 void HDController::getTAU(const labust::vehicles::stateMapRef stateRef,
 					const labust::vehicles::stateMapRef state,
-					const labust::vehicles::tauMapPtr tau)
+					const labust::vehicles::tauMapRef tau)
 try
 {
 	using namespace labust::vehicles::tau;
 	using namespace labust::vehicles::state;
-	(*tau)[N] = heading.step(stateRef.at(yaw),state.at(yaw));
-	(*tau)[Z] = depth.step(stateRef.at(z),state.at(z));
+	tau[N] = heading.step(stateRef.at(yaw),state.at(yaw));
+	tau[Z] = depth.step(stateRef.at(z),state.at(z));
 }
 catch (std::exception& e)
 {
 	using namespace labust::vehicles::tau;
-	(*tau)[N] = 0;
-	(*tau)[Z] = 0;
+	tau[N] = tau[Z] = 0;
 }
 
 #ifndef BUILD_WITHOUT_PLUGIN_HOOK

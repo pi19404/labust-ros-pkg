@@ -74,7 +74,7 @@ void LFNav::prediction(const labust::vehicles::tauMapRef tau)
 	if (iteration > delayMeas) tauM.pop_front();
 }
 
-void LFNav::correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapPtr stateHat)
+void LFNav::correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapRef stateHat)
 {
 	using namespace labust::vehicles;
 	labust::vehicles::stateMap::iterator end = measurement.end();
@@ -101,12 +101,12 @@ void LFNav::correction(const labust::vehicles::stateMapRef measurement, labust::
 
 	Nav::vectorref estimate=nav.getState();
 
-	(*stateHat)[state::yaw] = estimate(Nav::psi);
-	(*stateHat)[state::r] = estimate(Nav::r);
-	(*stateHat)[state::z] = estimate(Nav::z);
-	(*stateHat)[state::dH] = estimate(Nav::dH);
-	(*stateHat)[state::dV] = estimate(Nav::dV);
-	(*stateHat)[state::u] = estimate(Nav::u);
+	stateHat[state::yaw] = estimate(Nav::psi);
+	stateHat[state::r] = estimate(Nav::r);
+	stateHat[state::z] = estimate(Nav::z);
+	stateHat[state::dH] = estimate(Nav::dH);
+	stateHat[state::dV] = estimate(Nav::dV);
+	stateHat[state::u] = estimate(Nav::u);
 
 	if (basic || newMeasurement)
 	{
@@ -184,21 +184,18 @@ void LFNav::recalculate(const labust::vehicles::stateMapRef measurement)
 
 void LFNav::setCommand(const labust::apps::stringRef commands)
 {
-	/*
-	labust::vehicles::dataMap::const_iterator end=commands.end();
+	//Provisional
+	labust::xml::Reader reader(commands);
 
-	if ((commands.find("TargetDepth")!= end) && (commands.find("xUUV")!= end) &&
-		commands.find("yUUV")!= end)
-	{
-		Nav::vector T2(labust::navigation::LFModel::zeros(3)),T1(3);
-		T2(2) = commands["TargetDepth"];
+	reader.useNode(reader.value<_xmlNode*>("/setLine"));
+	Nav::vector T2(labust::navigation::LFModel::zeros(3)),T1(3);
 
-		T1(0) = commands["xUUV"];
-		T1(1) = commands["yUUV"];
-		T1(2) = nav.getState()(Nav::z);
-		nav.setLine(T1,T2);
-	}
-	*/
+	T2(2) = reader.value<double>("TargetDepth");
+
+	T1(0) = reader.value<double>("xUUV");
+	T1(1) = reader.value<double>("yUUV");
+	T1(2) = nav.getState()(Nav::z);
+	nav.setLine(T1,T2);
 }
 
 #ifndef BUILD_WITHOUT_PLUGIN_HOOK

@@ -60,7 +60,7 @@ namespace labust
 			 * \param tau The address of the desired TAU vector.
 			 */
 			virtual void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau) = 0;
+					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapRef tau) = 0;
 		};
 	};
 };

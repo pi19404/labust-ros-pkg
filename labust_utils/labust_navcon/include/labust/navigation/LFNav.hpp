@@ -80,7 +80,7 @@ namespace labust
 			 * \param measurement The measurement data.
 			 * \param stateHat The estimated state values.
 			 */
-			void correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapPtr stateHat);
+			void correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapRef stateHat);
       /**
        * The method can be used to command additional configuration options.
        *

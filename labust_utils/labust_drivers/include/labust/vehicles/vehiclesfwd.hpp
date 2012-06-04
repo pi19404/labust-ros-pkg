@@ -66,6 +66,13 @@ namespace labust
 		typedef std::map<int, double> tauMap;
 		typedef tauMap& tauMapRef;
 		typedef boost::shared_ptr<tauMap> tauMapPtr;
+		/**
+		 * The function zeros all tau values.
+		 */
+		inline void zero(tauMap& tau)
+		{
+			for (size_t i=tau::X; i<=tau::N; ++i) tau[i]=0;
+		}
 
     /**
      * These are shortcuts to the state map parameters. Usually

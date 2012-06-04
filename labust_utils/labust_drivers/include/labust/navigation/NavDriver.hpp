@@ -65,7 +65,7 @@ namespace labust
 			 * \param measurement The measured states.
 			 * \param stateHat The estimated state return.
 			 */
-			virtual void correction(const labust::vehicles::stateMapRef measurement, const labust::vehicles::stateMapPtr stateHat) = 0;
+			virtual void correction(const labust::vehicles::stateMapRef measurement, labust::vehicles::stateMapRef stateHat) = 0;
 		};
 	}
 }

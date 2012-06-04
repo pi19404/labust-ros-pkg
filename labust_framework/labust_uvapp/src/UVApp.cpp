@@ -54,6 +54,54 @@ UVApp::UVApp(const labust::xml::ReaderPtr reader, const std::string& id)
 	uuv.loadPlugin("uvsim-plug","Vehicle",reader);
 
 	reader->useNode(org_node);
+
+	//Initalize elements.
+	labust::vehicles::zero(tau);
 }
 
+void UVApp::calculateTau()
+{
+	switch (mode)
+	{
+	case idle:
+		//Stop operation
+		this->stop();
+		break;
+	case identification:
+		//Initialize the identification
+		break;
+	case manual: break;
+	case headingDepth:
+		//Do heading depth control.
+		hdCon().getTAU(stateRef, stateHat,tau);
+		break;
+	case lineFollowing:
+		//Do line following control.
+		//tau[X] = surgeForce;
+		lfCon().getTAU(stateRef,stateHat,tau);
+		break;
+	default:
+		//Stop operation
+		this->stop();
+		break;
+	}
+}
+
+void UVApp::stop()
+{
+	mode = idle;
+	labust::vehicles::zero(tau);
+}
+
+void UVApp::step(labust::vehicles::stateMapRef measurements)
+{
+	uuv().getState(measurements);
+
+	nav().prediction(tauk_1);
+	nav().correction(measurements,stateHat);
+
+	calculateTau();
+	uuv().setTAU(tau);
+	tauk_1 = tau;
+}
 

@@ -39,6 +39,25 @@ namespace labust
 	namespace control
 	{
 		/**
+		 * General controller tuning parameters. Useful for controller tuning.
+		 */
+		struct TuningParameters
+		{
+			/**
+			 * Generic uncoupled model parameters.
+			 */
+			double alpha,beta,betaa;
+			/**
+			 * Binomial model function frequency.
+			 */
+			double w;
+			/**
+			 * Symmetric output saturation.
+			 */
+			double max;
+		};
+
+		/**
 		 * Generic controller tuning.
 		 *
 		 * \param param Tuning parameters for the controller.

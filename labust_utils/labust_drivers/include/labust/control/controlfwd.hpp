@@ -56,25 +56,6 @@ namespace labust
 
     typedef labust::plugins::DLLoad<ControlFactory> ControlPlugin;
     typedef boost::shared_ptr<ControlPlugin> ControlPluginPtr;
-
-		/**
-		 * General controller tuning parameters. Useful for vehicle controller tuning.
-		 */
-		struct TuningParameters
-		{
-			/**
-			 * Generic uncoupled model parameters.
-			 */
-			double alpha,beta,betaa;
-			/**
-			 * Binomial model function frequency.
-			 */
-			double w;
-			/**
-			 * Symmetric output saturation.
-			 */
-			double max;
-		};
 	}
 }
 

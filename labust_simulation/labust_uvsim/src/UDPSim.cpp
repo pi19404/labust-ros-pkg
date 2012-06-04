@@ -122,10 +122,10 @@ void UDPSim::handle_receive(const boost::system::error_code& e, size_t length)
 					stop();
 				}
 
-				labust::vehicles::stateMapPtr states(new labust::vehicles::stateMap);
+				labust::vehicles::stateMap states;
 				uuv->getState(states);
 
-				labust::xml::GyrosWriter writer(states->begin(),states->end());
+				labust::xml::GyrosWriter writer(states.begin(),states.end());
 				socket_.send_to(boost::asio::buffer(writer.GyrosXML()), remote);
 			}
 			catch (labust::xml::XMLException& e)

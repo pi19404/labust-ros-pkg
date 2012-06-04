@@ -48,7 +48,7 @@ namespace labust
 		 * The class integrates control, navigation and the UUV plugin into a modular
 		 * infrastructure.
 		 *
-		 * For now we use multiple inheritance to combine pieces of code.
+		 * \todo
 		 */
 		class UVApp : public virtual labust::apps::App
 		{
@@ -62,6 +62,14 @@ namespace labust
 					labust::control::ControlPluginPtr,
 					labust::control::DriverPtr > ControlLoader;
 		public:
+			/**
+			 * The operational modes.
+			 */
+			typedef enum {idle, manual, headingDepth, lineFollowing, identification} UVMode;
+			/**
+			 * The UV application pointer.
+			 */
+			typedef boost::shared_ptr<UVApp> Ptr;
 			/**
 			 * Main constructor. Configures the system using the XML configuration file.
 			 *
@@ -83,7 +91,28 @@ namespace labust
        */
       void getData(const labust::apps::stringPtr data){};
 
+      /**
+       * Stop all operation and go to idle mode.
+       */
+      void stop();
+
+      /**
+       * Performs one cycle of acquisition, navigation and control.
+       *
+       * \param measurements The acquired external measurements.
+       */
+      virtual void step(labust::vehicles::stateMapRef measurements);
+
+      /**
+       * Sets the desired mode of operation.
+       */
+      inline void setUVMode(UVMode mode){this->mode = mode;};
+
 		protected:
+			/**
+			 * Calculate the next tau vector.
+			 */
+			void calculateTau();
       /**
        * The three controller options: Heading+Depth, LineFollowing, Manual.
        */
@@ -96,6 +125,18 @@ namespace labust
        * The vehicle.
        */
       VehicleLoader uuv;
+      /**
+       * The reference, measured and estimated states.
+       */
+      labust::vehicles::stateMap stateRef, stateHat, stateMeas;
+      /**
+       * The current and last tau vector.
+       */
+      labust::vehicles::tauMap tau, tauk_1;
+      /**
+       * The UV operational mode.
+       */
+      UVMode mode;
   	};
 	}
 }

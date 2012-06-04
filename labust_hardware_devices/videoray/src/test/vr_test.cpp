@@ -50,14 +50,14 @@ int main(int argc, char* argv[])
 		labust::vehicles::tauMap tau;
 		tau[labust::vehicles::tau::X] = 0;
 		vr.setTAU(tau);
-		labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
+		labust::vehicles::stateMap state;
 		vr.getState(state);
 
-		std::cout<<"Heading:"<<(*state)[labust::vehicles::state::heading]<<std::endl;
-		std::cout<<"Pitch:"<<(*state)[labust::vehicles::state::pitch]<<std::endl;
-		std::cout<<"Roll:"<<(*state)[labust::vehicles::state::roll]<<std::endl;
-		std::cout<<"z:"<<(*state)[labust::vehicles::state::z]<<std::endl;
-		std::cout<<"Pressure:"<<(*state)[labust::vehicles::state::depthPressure]<<std::endl;
+		std::cout<<"Heading:"<<state[labust::vehicles::state::heading]<<std::endl;
+		std::cout<<"Pitch:"<<state[labust::vehicles::state::pitch]<<std::endl;
+		std::cout<<"Roll:"<<state[labust::vehicles::state::roll]<<std::endl;
+		std::cout<<"z:"<<state[labust::vehicles::state::z]<<std::endl;
+		std::cout<<"Pressure:"<<state[labust::vehicles::state::depthPressure]<<std::endl;
 
 		std::cout.precision(6);
 		std::cout<<"Time:"<<std::fixed<<labust::tools::unix_time()<<std::endl;

@@ -76,7 +76,8 @@ catch (std::exception& e)
 void LFController::getData(const labust::apps::stringPtr data){};
 
 void LFController::getTAU(const labust::vehicles::stateMapRef stateRef,
-		const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau)
+		const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapRef tau)
+try
 {
 	using namespace labust::vehicles::tau;
 	using namespace labust::vehicles::state;
@@ -96,10 +97,16 @@ void LFController::getTAU(const labust::vehicles::stateMapRef stateRef,
 
 	std::cout<<"Dh controller out:"<<dhout<<","<<stateRef[dH]<<","<<state[dH]<<std::endl;
 
-	(*tau)[N] = r_controller.step(dhout,state[r]);
+	tau[N] = r_controller.step(dhout,state[r]);
 			//(useFL)?beta_rr*state[r]*static_cast<double (*)(double)>(std::fabs)(state[r]):0);
-	(*tau)[Z] = dv_controller.step(stateRef[dV],state[dV]);
-};
+	tau[Z] = dv_controller.step(stateRef[dV],state[dV]);
+}
+catch (std::exception& e)
+{
+	std::cerr<<e.what()<<std::endl;
+	using namespace labust::vehicles::tau;
+	tau[N] = tau[Z] = 0;
+}
 
 void LFController::configure(const labust::xml::ReaderPtr& reader)
 {

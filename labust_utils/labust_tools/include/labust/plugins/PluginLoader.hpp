@@ -35,6 +35,8 @@
 #define PLUGINLOADER_HPP_
 #include <labust/xml/xmlfwd.hpp>
 
+#include <string>
+
 namespace labust
 {
   namespace plugins

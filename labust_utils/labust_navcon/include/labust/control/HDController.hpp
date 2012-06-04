@@ -38,6 +38,7 @@
 #include <labust/plugins/PlugableDefs.hpp>
 #include <labust/vehicles/vehiclesfwd.hpp>
 #include <labust/control/PIDController.hpp>
+#include <labust/control/controltune.hpp>
 
 namespace labust
 {
@@ -69,7 +70,7 @@ namespace labust
 			 * \override labust::control::Driver::getTAU
 			 */
 			LABUST_EXPORT void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau);
+					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapRef tau);
 
 		private:
 			/**

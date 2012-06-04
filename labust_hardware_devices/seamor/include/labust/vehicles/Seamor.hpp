@@ -83,7 +83,7 @@ namespace labust
 			/**
 			 * \overload labust::vehicles::Driver::getState
 			 */
-			LABUST_EXPORT void getState(labust::vehicles::stateMapPtr states);
+			LABUST_EXPORT void getState(labust::vehicles::stateMapRef states);
 			/**
 			 *	\overload labust::vehicles::Driver::setGuidance
 			 */

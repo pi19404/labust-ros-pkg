@@ -283,20 +283,20 @@ void SeamorDriver::setCommand(const labust::vehicles::strMapRef data)
 	}
 }
 
-void SeamorDriver::getState(labust::vehicles::stateMapPtr states)
+void SeamorDriver::getState(labust::vehicles::stateMapRef states)
 {
 	boost::mutex::scoped_lock lockRovCommand(rovCommand.mutex);
 	using namespace labust::vehicles;
-	(*states)[state::X_e] = rovCommand.tauC[tau::X];
-	(*states)[state::Y_e] = rovCommand.tauC[tau::Y];
-	(*states)[state::Z_e] = rovCommand.tauC[tau::Z];
-	(*states)[state::N_e] = rovCommand.tauC[tau::N];
+	states[state::X_e] = rovCommand.tauC[tau::X];
+	states[state::Y_e] = rovCommand.tauC[tau::Y];
+	states[state::Z_e] = rovCommand.tauC[tau::Z];
+	states[state::N_e] = rovCommand.tauC[tau::N];
 
 	boost::mutex::scoped_lock lock(rovState.mutex);
-	(*states)[state::yaw] = labust::math::wrapDeg(rovState.heading) * M_PI / 180;
-	(*states)[state::z] = rovState.depth;
-	(*states)[state::roll] = rovState.roll * M_PI / 180;
-	(*states)[state::pitch] = rovState.pitch * M_PI / 180;
+	states[state::yaw] = labust::math::wrapDeg(rovState.heading) * M_PI / 180;
+	states[state::z] = rovState.depth;
+	states[state::roll] = rovState.roll * M_PI / 180;
+	states[state::pitch] = rovState.pitch * M_PI / 180;
 }
 
 void SeamorDriver::getData(labust::vehicles::strMapPtr data2)

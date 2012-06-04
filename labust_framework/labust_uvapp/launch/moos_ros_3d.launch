@@ -1,0 +1,6 @@
+ <launch>
+  <node pkg="UWSim"	name="UWSim" type="UWSim" />
+  <node pkg="labust_uvapp" name="UVApp2UWsim" type="UVApp2UWsim">
+   <param name="InputState" value="/MOOS/uuv_meas" />
+  </node>
+ </launch>

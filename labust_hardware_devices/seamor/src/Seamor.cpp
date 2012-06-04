@@ -112,18 +112,18 @@ void Seamor::setTAU(const labust::vehicles::tauMapRef tau)
 	//boost::asio::async_write(port,boost::asio::buffer(outputBuffer),boost::bind(&Seamor::handleOutput,this,_1,_2));
 };
 
-void Seamor::getState(labust::vehicles::stateMapPtr states)
+void Seamor::getState(labust::vehicles::stateMapRef states)
 {
 	boost::mutex::scoped_lock lock(dataMux);
 	using namespace labust::vehicles;
-	(*states)[state::X_e] = rovCommand.tau[tau::X];
-	(*states)[state::Y_e] = rovCommand.tau[tau::Y];
-	(*states)[state::Z_e] = rovCommand.tau[tau::Z];
-	(*states)[state::N_e] = rovCommand.tau[tau::N];
-	(*states)[state::yaw] = labust::math::wrapDeg(rovStatus.heading) * M_PI / 180;
-	(*states)[state::z] = rovStatus.depth;
-	(*states)[state::roll] = rovStatus.roll * M_PI / 180;
-	(*states)[state::pitch] = rovStatus.pitch * M_PI / 180;
+	states[state::X_e] = rovCommand.tau[tau::X];
+	states[state::Y_e] = rovCommand.tau[tau::Y];
+	states[state::Z_e] = rovCommand.tau[tau::Z];
+	states[state::N_e] = rovCommand.tau[tau::N];
+	states[state::yaw] = labust::math::wrapDeg(rovStatus.heading) * M_PI / 180;
+	states[state::z] = rovStatus.depth;
+	states[state::roll] = rovStatus.roll * M_PI / 180;
+	states[state::pitch] = rovStatus.pitch * M_PI / 180;
 };
 
 void Seamor::setGuidance(const labust::vehicles::guidanceMapRef guidance)

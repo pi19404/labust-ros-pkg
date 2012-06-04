@@ -113,7 +113,7 @@ void VehicleApp::onTau(const std_msgs::String::ConstPtr& tau)
 	std::cerr<<"Tau set."<<std::endl;
 
 	labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
-	uuv->getState(state);
+	uuv->getState(*state);
 	std::cerr<<"State:"<<(*state)[labust::vehicles::state::yaw]<<std::endl;
 	//(*state)[labust::vehicles::state::x] = time;
 	labust::xml::GyrosWriter writer(state->begin(),state->end());

@@ -68,7 +68,7 @@ namespace labust
 			/**
 			 * Implementation of labust::vehicles::Driver::getState
 			 */
-			void getState(labust::vehicles::stateMapPtr state);
+			void getState(labust::vehicles::stateMapRef state);
 			/**
 			 * Implementation of labust::vehicles::Driver::setGuidance
 			 */

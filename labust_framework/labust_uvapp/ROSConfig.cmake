@@ -37,3 +37,6 @@ rosbuild_add_executable(uvapp_test src/uvapp_test.cpp)
 target_link_libraries(uvapp_test ${PR_NAME})
 
 rosbuild_add_executable(identificationNode src/identificationNode.cpp)
+
+rosbuild_add_executable(UVApp2UWsim src/UVApp2UWsim.cpp)
+target_link_libraries(UVApp2UWsim osg)

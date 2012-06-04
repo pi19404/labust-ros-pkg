@@ -47,12 +47,7 @@
 				(0,0,0,0,0,1))" />  
 	<!-- filter options -->
 	<param name="initial-state" value="[10](0,0,0,0,0,0,0,0,0,0)" />
-  	<param name="sampling-time" value="0.1" /> 
-  
-  
-  
-  
-  
+  	<param name="sampling-time" value="0.1" />  
   
    <!-- Timeout value -->
    <watchdog timeout="10000" loop="1000" />

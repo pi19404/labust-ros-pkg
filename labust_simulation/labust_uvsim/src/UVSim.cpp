@@ -72,18 +72,18 @@ void UVSim::setTAU(const labust::vehicles::tauMapRef tau)
   model->step(model_tau);
 }
 
-void UVSim::getState(labust::vehicles::stateMapPtr state)
+void UVSim::getState(labust::vehicles::stateMapRef state)
 {
 	int j = 0;
 	for(int i = labust::vehicles::state::u; i<= labust::vehicles::state::r; ++i)
 	{
-		(*state)[labust::vehicles::state::states(i)] = model->Nu()(VehicleModel6DOF::u + j++);
+		state[labust::vehicles::state::states(i)] = model->Nu()(VehicleModel6DOF::u + j++);
 	}
 
 	j= 0;
 	for(int i = labust::vehicles::state::x; i<= labust::vehicles::state::yaw; ++i)
 	{
-		(*state)[labust::vehicles::state::states(i)] = model->Eta()(VehicleModel6DOF::x + j++);
+		state[labust::vehicles::state::states(i)] = model->Eta()(VehicleModel6DOF::x + j++);
 	}
 }
 

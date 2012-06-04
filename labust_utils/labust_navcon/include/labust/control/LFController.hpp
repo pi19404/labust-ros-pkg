@@ -77,7 +77,7 @@ namespace labust
 			 * \override labust::control::Driver::getTAU
 			 */
       LABUST_EXPORT void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapPtr tau);
+					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapRef tau);
 			/**
 			 * The method tunes the parameters of the controller based on the desired
 			 * binomial transfer function and model parameters.

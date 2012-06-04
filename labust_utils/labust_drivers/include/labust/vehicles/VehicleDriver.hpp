@@ -73,7 +73,7 @@ namespace labust
        *
        * \param states Different vehicle states.
        */
-      virtual void getState(labust::vehicles::stateMapPtr state) = 0;
+      virtual void getState(labust::vehicles::stateMapRef state) = 0;
       /**
        * Some vehicles support guidance set points, ie. desired speed and heading, depth, waypoint, etc.
        * You can transmit these set-points through this method.
