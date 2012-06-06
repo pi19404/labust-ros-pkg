@@ -1,0 +1,19 @@
+<package>
+  <description brief="Dynamic reconfigure monitor.">
+  	This package contains the dynamic reconfigure gui prototype.
+  	The GUI uses the LABUST framework for acquistion, control and
+  	navigation of undewater vehicles.
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <!-- <url>http://ros.org/wiki/labust_dynrec</url> -->
+  
+  <rosdep name="qt" />
+  
+  <depend package="labust_xml" />
+  <depend package="moos_external" />
+	
+</package>
+
+
