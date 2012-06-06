@@ -34,29 +34,22 @@
 #ifndef CONTROLFWD_HPP_
 #define CONTROLFWD_HPP_
 
+/**
+ * General controller tuning parameters. Useful for controller tuning.
+ */
+#include <labust/xml/adapt_class.hpp>
+PP_LABUST_MAKE_STRUCT_WITH_XML(
+		(labust)(control),TuningParameters,
+		(double, alpha)
+		(double, beta)
+		(double, betaa)
+		(double, w)
+		(double, max))
+
 namespace labust
 {
 	namespace control
 	{
-		/**
-		 * General controller tuning parameters. Useful for controller tuning.
-		 */
-		struct TuningParameters
-		{
-			/**
-			 * Generic uncoupled model parameters.
-			 */
-			double alpha,beta,betaa;
-			/**
-			 * Binomial model function frequency.
-			 */
-			double w;
-			/**
-			 * Symmetric output saturation.
-			 */
-			double max;
-		};
-
 		/**
 		 * Generic controller tuning.
 		 *
@@ -81,6 +74,5 @@ namespace labust
 		}
 	}
 }
-
 /* CONTROLFWD_HPP_ */
 #endif

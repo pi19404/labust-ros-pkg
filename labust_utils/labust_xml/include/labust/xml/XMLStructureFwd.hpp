@@ -84,6 +84,7 @@ namespace labust
 {
 	namespace xml
 	{
+		///Deprecated
 		class ParamReader
 		{
 		public:
@@ -118,6 +119,7 @@ namespace labust
 			std::string paramType;
 		};
 
+		//Deprecated
 		class ParamWriter
 		{
 		public:

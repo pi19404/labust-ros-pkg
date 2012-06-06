@@ -31,49 +31,21 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/vehicles/SeamorDriver.h>
-#include <labust/vehicles/Seamor.hpp>
-#include <labust/tools/TimingTools.hpp>
-#include <labust/xml/XMLReader.hpp>
+#ifndef ADAPT_CLASS_UNDEF_HPP_
+#define ADAPT_CLASS_UNDEF_HPP_
 
-#include <iostream>
+#undef PP_LABUST_SELECT_WRITE_TO_XML
+#undef PP_LABUST_SELECT_READ_TO_XML
 
-int main(int argc, char* argv[])
-try
-{
-	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
-	reader->useNode(reader->value<_xmlNode*>("//configurations"));
-	//labust::vehicles::SeamorDriver seamor(reader,"");
-	labust::vehicles::Seamor seamor(reader,"");
+#undef PP_LABUST_MAKE_CLASS_XML_OPERATORS
 
-	int i=0;
-	labust::tools::wait_until_ms delay(100);
+#undef PP_LABUST_IN_CLASS_ADAPT_TO_XML
+#undef PP_LABUST_IN_CLASS_ADD_FRIENDS
+#undef PP_LABUST_MAKE_STRUCT_WITH_XML
 
-	while (true)
-	{
-		double lastTime = labust::tools::unix_time();
-		++i;
+#undef BOOST_MPL_HAS_XXX_TRAIT_DEF
+#undef ADAPT_CLASS_HPP_
 
-		labust::vehicles::tauMap tau;
-		tau[labust::vehicles::tau::X]= 20;
-		seamor.setTAU(tau);
-		labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
-		seamor.getState(*state);
-		labust::vehicles::strMapPtr data(new labust::vehicles::strMap());
-		//seamor.getData(data);
-
-		std::cout<<"Heading:"<<(*state)[labust::vehicles::state::yaw]*180/M_PI<<std::endl;
-
-		delay();
-		std::cout<<"Loop time:"<<labust::tools::unix_time() - lastTime<<std::endl;
-	}
-	std::cout<<"Normal exit."<<std::endl;
-	return 0;
-}
-catch (std::exception& e)
-{
-	std::cout<<e.what()<<std::endl;
-}
-
-
-
+#include <labust/preprocessor/class_adaptor_undef.hpp>
+/* ADAPT_CLASS_UNDEF_HPP_ */
+#endif

@@ -44,7 +44,7 @@
 	preader.setParamName(PP_LABUST_MAKE_STRING_LVL2(BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE))); \
 	preader>>&this->BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE); \
 
-#define PP_LABUST_MAKE_XML_STRUCTURE(NAMESPACE_SEQ, NAME, ATTRIBUTES) \
+#define PP_LABUST_DEFINE_XML_STRUCTURE(NAMESPACE_SEQ, NAME, ATTRIBUTES) \
 		PP_LABUST_NAMESPACE_DEFINITIONS_BEGIN((0)NAMESPACE_SEQ) \
 		\
 		class NAME \
@@ -78,6 +78,12 @@
 				catch (std::exception& e){} \
 				\
 				if (!head) headStr = #NAME; \
+				try \
+				{ \
+					head = reader.value<_xmlNode*>(headStr); \
+				} \
+				catch (std::exception& e){} \
+				if (!head) headStr = "//"#NAME; \
 				reader.useNode(reader.value<_xmlNode*>(id.empty()?headStr:headStr + "[@id='" + id + "']")); \
 				labust::xml::ParamReader preader(reader); \
 				PP_LABUST_MACRO_ON_ATTRIBUTES(PP_LABUST_READ_NAMED_ELEM_FROM_XML,ATTRIBUTES) \

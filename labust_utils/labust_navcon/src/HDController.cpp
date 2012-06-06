@@ -79,6 +79,17 @@ catch (std::exception& e)
 	tau[N] = tau[Z] = 0;
 }
 
+void HDController::setCommand(const labust::apps::stringRef cmd)
+{
+	this->unwrapFromXml(cmd);
+	std::cout<<"New alpha:"<<headingParams.alpha<<std::endl;
+}
+
+void HDController::getData(const labust::apps::stringPtr data)
+{
+	(*data) = *this->wrapInXml();
+}
+
 #ifndef BUILD_WITHOUT_PLUGIN_HOOK
 LABUST_EXTERN
 {

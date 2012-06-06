@@ -48,9 +48,8 @@ UVSim::UVSim(const labust::xml::ReaderPtr reader, const std::string& id):
 		model(new VehicleModel6DOF(reader,id)),
 		currentForce(zero_v(3)),
 		current(zero_v(3))
-
 {
-	reader->try_value("current-force",&currentForce);
+	//reader->try_value("current-force",&currentForce);
 	std::cout<<*this->model<<std::endl;
 };
 
@@ -94,14 +93,17 @@ void UVSim::setGuidance(const labust::vehicles::guidanceMapRef guidance)
 
 void UVSim::setCommand(const labust::apps::stringRef commands)
 {
-	labust::xml::Reader cmd(commands);
-	cmd.try_value("current",&this->current);
+	this->unwrapFromXml(commands);
+
+	//Handle updates.
 	model->setCurrent(current);
 }
 
 void UVSim::getData(labust::apps::stringPtr data)
 {
-  throw std::invalid_argument("Memeber function has no implementation. labust::vehicle::getData");
+  //throw std::invalid_argument("Memeber function has no implementation. labust::vehicle::getData");
+	(*data) = *this->wrapInXml();
+	//std::cout<<"Called getData:"<<*data<<std::endl;
 }
 
 LABUST_EXTERN

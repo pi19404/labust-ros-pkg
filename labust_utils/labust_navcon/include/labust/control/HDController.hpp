@@ -60,17 +60,19 @@ namespace labust
 			/**
 			 * \override labust::apps::App::setCommand.
 			 */
-			LABUST_EXPORT void setCommand(const labust::apps::stringRef cmd){};
+			LABUST_EXPORT void setCommand(const labust::apps::stringRef cmd);
 			/**
 			 * \override labust::apps::App::getDate.
 			 */
-			LABUST_EXPORT void getData(const labust::apps::stringPtr data){};
+			LABUST_EXPORT void getData(const labust::apps::stringPtr data);
 
 			/**
 			 * \override labust::control::Driver::getTAU
 			 */
 			LABUST_EXPORT void getTAU(const labust::vehicles::stateMapRef stateRef,
 					const labust::vehicles::stateMapRef state, const labust::vehicles::tauMapRef tau);
+
+			PP_LABUST_IN_CLASS_ADAPT_TO_XML(HDController)
 
 		private:
 			/**
@@ -89,6 +91,12 @@ namespace labust
 			 */
 			labust::control::TuningParameters headingParams, depthParams;
 		};
+
+		PP_LABUST_MAKE_CLASS_XML_OPERATORS(,HDController,
+				(TuningParameters, headingParams)
+				(TuningParameters, depthParams))
+
+	  #include<labust/xml/adapt_class_undef.hpp>
 	}
 }
 

@@ -33,6 +33,7 @@
 *********************************************************************/
 #include <labust/vehicles/UVApp.hpp>
 #include <labust/xml/XMLReader.hpp>
+#include <labust/xml/XMLWriter.hpp>
 #include <labust/vehicles/VehicleDriver.hpp>
 #include <labust/navigation/NavDriver.hpp>
 #include <labust/control/ControlDriver.hpp>
@@ -93,7 +94,7 @@ void UVApp::stop()
 	labust::vehicles::zero(tau);
 }
 
-void UVApp::step(labust::vehicles::stateMapRef measurements)
+const labust::vehicles::stateMapRef UVApp::step(labust::vehicles::stateMapRef measurements)
 {
 	uuv().getState(measurements);
 
@@ -103,5 +104,31 @@ void UVApp::step(labust::vehicles::stateMapRef measurements)
 	calculateTau();
 	uuv().setTAU(tau);
 	tauk_1 = tau;
+
+	return stateHat;
 }
 
+void UVApp::setCommand(const labust::apps::stringRef cmd)
+{
+	labust::xml::Reader reader(cmd);
+	reader.useNode(reader.value<_xmlNode*>("/uvapp"));
+
+	uuv().setCommand(cmd);
+	hdCon().setCommand(cmd);
+}
+
+void UVApp::getData(labust::apps::stringPtr data)
+{
+	labust::xml::Writer writer;
+	writer.startElement("uvapp");
+	labust::apps::stringPtr str(new labust::apps::string());
+	uuv().getData(str);
+	writer.addXML(*str);
+	hdCon().getData(str);
+	writer.addXML(*str);
+	writer.endDocument();
+
+	(*data) = writer.toString();
+
+	//std::cout<<"Get data:"<<*data<<std::endl;
+}

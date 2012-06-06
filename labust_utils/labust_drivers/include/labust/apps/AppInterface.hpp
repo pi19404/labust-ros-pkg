@@ -63,7 +63,7 @@ namespace labust
        *
        * \param data String encoded return data.
        */
-      virtual void getData(const labust::apps::stringPtr data) = 0;
+      virtual void getData(labust::apps::stringPtr data) = 0;
     };
   };
 };

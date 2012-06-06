@@ -80,16 +80,16 @@ namespace labust
 			/**
 			 * Generic virtual destructor.
 			 */
-			virtual ~UVApp(){};
+			~UVApp(){};
 
       /**
        * \override labust::apps::App::setCommand.
        */
-      void setCommand(const labust::apps::stringRef cmd){};
+      void setCommand(const labust::apps::stringRef cmd);
       /**
        * \override labust::apps::App::getDate.
        */
-      void getData(const labust::apps::stringPtr data){};
+      void getData(labust::apps::stringPtr data);
 
       /**
        * Stop all operation and go to idle mode.
@@ -100,13 +100,26 @@ namespace labust
        * Performs one cycle of acquisition, navigation and control.
        *
        * \param measurements The acquired external measurements.
+       *
+       * \return The measurements variable is updated with vehicle measurements. And
+       * the estimated vehicle state is returned.
        */
-      virtual void step(labust::vehicles::stateMapRef measurements);
+      virtual const labust::vehicles::stateMapRef
+      step(labust::vehicles::stateMapRef measurements);
 
       /**
        * Sets the desired mode of operation.
        */
       inline void setUVMode(UVMode mode){this->mode = mode;};
+      /**
+       * Gets the desired mode of operation.
+       */
+      inline UVMode getUVMode(){return this->mode;};
+
+      /**
+       * The commanded tau returned. For logging purposes.
+       */
+      inline const labust::vehicles::tauMap& getTau(){return this->tau;};
 
 		protected:
 			/**

@@ -31,49 +31,52 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/vehicles/SeamorDriver.h>
-#include <labust/vehicles/Seamor.hpp>
-#include <labust/tools/TimingTools.hpp>
-#include <labust/xml/XMLReader.hpp>
+#ifndef CLASS_ADAPTOR_HPP_
+#define CLASS_ADAPTOR_HPP_
+#include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/dec.hpp>
+#include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
+#include <boost/preprocessor/control/if.hpp>
 
-#include <iostream>
+#define PP_LABUST_NAMESPACE_BEGIN(R,DATA,ELEM) \
+	namespace ELEM{
 
-int main(int argc, char* argv[])
-try
-{
-	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
-	reader->useNode(reader->value<_xmlNode*>("//configurations"));
-	//labust::vehicles::SeamorDriver seamor(reader,"");
-	labust::vehicles::Seamor seamor(reader,"");
+#define PP_LABUST_NAMESPACE_END(Z,I,DATA) }
 
-	int i=0;
-	labust::tools::wait_until_ms delay(100);
+#define PP_LABUST_MAKE_STRING_LVL1(string) #string
+#define PP_LABUST_MAKE_STRING_LVL2(string) PP_LABUST_MAKE_STRING_LVL1(string)
 
-	while (true)
-	{
-		double lastTime = labust::tools::unix_time();
-		++i;
+#define PP_LABUST_FILLER_0(X, Y) \
+	((X, Y)) PP_LABUST_FILLER_1
+#define PP_LABUST_FILLER_1(X, Y) \
+	((X, Y)) PP_LABUST_FILLER_0
+#define PP_LABUST_FILLER_0_END
+#define PP_LABUST_FILLER_1_END
 
-		labust::vehicles::tauMap tau;
-		tau[labust::vehicles::tau::X]= 20;
-		seamor.setTAU(tau);
-		labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
-		seamor.getState(*state);
-		labust::vehicles::strMapPtr data(new labust::vehicles::strMap());
-		//seamor.getData(data);
+#define PP_LABUST_ATTRIBUTE_EXPAND(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE)   \
+  BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,0,ATTRIBUTE) \
+	BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE);
 
-		std::cout<<"Heading:"<<(*state)[labust::vehicles::state::yaw]*180/M_PI<<std::endl;
+#define PP_LABUST_NAMESPACE_DEFINITIONS_BEGIN(NAMESPACE_SEQ) \
+	BOOST_PP_IF(																			 	\
+		BOOST_PP_DEC(BOOST_PP_SEQ_SIZE(NAMESPACE_SEQ)),		\
+    BOOST_PP_SEQ_FOR_EACH_R,													\
+    BOOST_PP_TUPLE_EAT(4))(														\
+    	1, PP_LABUST_NAMESPACE_BEGIN,													\
+      _, BOOST_PP_SEQ_TAIL(NAMESPACE_SEQ))
 
-		delay();
-		std::cout<<"Loop time:"<<labust::tools::unix_time() - lastTime<<std::endl;
-	}
-	std::cout<<"Normal exit."<<std::endl;
-	return 0;
-}
-catch (std::exception& e)
-{
-	std::cout<<e.what()<<std::endl;
-}
+#define PP_LABUST_NAMESPACE_DEFINITIONS_END(NAMESPACE_SEQ)									\
+	BOOST_PP_REPEAT_1(         												\
+		BOOST_PP_DEC(BOOST_PP_SEQ_SIZE(NAMESPACE_SEQ)),	\
+    PP_LABUST_NAMESPACE_END, _)
 
+#define PP_LABUST_MACRO_ON_ATTRIBUTES(MACRO,ATTRIBUTES) \
+	BOOST_PP_SEQ_FOR_EACH_R(1, MACRO, \
+		2, BOOST_PP_CAT(PP_LABUST_FILLER_0 ATTRIBUTES, _END))
 
-
+/* CLASS_ADAPTOR_HPP_ */
+#endif

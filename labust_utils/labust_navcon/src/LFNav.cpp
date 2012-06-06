@@ -119,7 +119,7 @@ void LFNav::correction(const labust::vehicles::stateMapRef measurement, labust::
 
 		if (++iteration > delayMeas) measM.pop_front();
 
-		std::cout<<"State:"<<iteration<<std::endl;
+		//std::cout<<"State:"<<iteration<<std::endl;
 	}
 }
 

@@ -242,6 +242,58 @@ namespace labust
 
 				this->encodeB64(pbegin,size);
 			}
+			/**
+			 * The operator can be used to write parameters in conjunction with setParamName and
+			 * setTypeName functions. The data can be called as:
+			 * 	writer.setParamName("name").setParamType("")<<object;
+			 * The object value will be written as: <param name="name" value="objectValue" [type="type"] />
+			 * The type specifier is optional and will not be added for empty types.
+			 * If no paramName is specified the only the plain value will be written. This can be also
+			 * achieved with: writer.plainValue()<<object
+			 *
+			 * \param value The value to be written.
+			 *
+			 * \tparam Value The template parameter to enable polymorphism.
+			 * \return The writer object for chaining.
+			 */
+			template <class Value>
+			Writer& operator<<(const Value& value)
+			{
+				if (this->nextParamName.empty())
+				{
+					this->addValue(value);
+				}
+				else
+				{
+					this->startElement("param");
+					 this->addAttribute("name", this->nextParamName);
+				   this->addAttribute("value",value);
+				   if (!this->nextParamType.empty()) this->addAttribute("type",this->nextParamType);
+				  this->endElement();
+				}
+
+				return *this;
+			}
+			/**
+			 * Specifies the next parameter name to be used with the left shift operator.
+			 *
+			 * \param name The next parameter name.
+			 * \return The writer object for chaining.
+			 */
+			inline Writer& setParamName(const std::string& name){this->nextParamName = name; return *this;}
+			/**
+			 * Specifies the next parameter type to be used with the left shift operator.
+			 *
+			 * \param type The next parameter type.
+			 * \return The writer object for chaining.
+			 */
+			inline Writer& setParamType(const std::string& name){this->nextParamType = name; return *this;}
+			/**
+			 * Cleans the next parameter name and type.
+			 *
+			 * \return The writer object for chaining.
+			 */
+			inline Writer& plainValue(){this->nextParamName=this->nextParamType=""; return *this;};
 
 			/**
 			 * The method flushes the buffer into a XML string and returns the reference to it.
@@ -314,6 +366,10 @@ namespace labust
 			 * The container for the XML encoded data.
 			 */
 			boost::shared_ptr<std::string> xml_final;
+			/**
+			 * The next parameter and type name.
+			 */
+			std::string nextParamName, nextParamType;
 
 			/**
 			 * Output operator for convenience.

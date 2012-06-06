@@ -196,6 +196,48 @@ namespace labust
       	return this->cvalue<ReturnType>(xpath_expression, decision_type());
       }
 
+			/**
+			 * The operator can be used to read parameters in conjunction with setParamName and
+			 * setTypeName functions. The data can be called as:
+			 * 	writer.setParamName("name").setParamType("")>>object;
+			 * The reader assumes the parameters are written as: <param name="name" value="objectValue" [type="type"] />
+			 * The type specifier is optional and will not be used for empty types.
+			 * If no paramName is specified the only the plain value will be written. This can be also
+			 * achieved with: writer.plainValue()<<object
+			 *
+			 * \param value The value to be written.
+			 *
+			 * \tparam Value The template parameter to enable polymorphism.
+			 * \return The writer object for chaining.
+			 */
+			template <class Value>
+			const Reader& operator>>(Value& value) const
+			{
+				if (nextParamType.empty())
+				{
+					this->value("param[@name='"+this->nextParamName+"']/@value",&value);
+				}
+				else
+				{
+					this->value("param[@name='"+this->nextParamName+"' and @type='"+this->nextParamType+"']/@value",&value);
+				}
+				return *this;
+			}
+			/**
+			 * Specifies the next parameter name to be used with the left shift operator.
+			 *
+			 * \param name The next parameter name.
+			 * \return The writer object for chaining.
+			 */
+			inline Reader& setParamName(const std::string& name){this->nextParamName = name; return *this;}
+			/**
+			 * Specifies the next parameter type to be used with the left shift operator.
+			 *
+			 * \param type The next parameter type.
+			 * \return The writer object for chaining.
+			 */
+			inline Reader& setParamType(const std::string& name){this->nextParamType = name; return *this;}
+
     private:
       /**
        * The method perform XML document instantiation. If the instantiation fails it throws a
@@ -307,11 +349,12 @@ namespace labust
       /**
        * Pointer to the root node of the XPath context.
        */
-      xmlNodePtr root_node;
-      /**
-       * The read expression for operator>>.
-       */
-      std::string opExpression;
+      mutable xmlNodePtr root_node;
+			/**
+			 * The next parameter and type name.
+			 */
+			std::string nextParamName, nextParamType;
+
     };
 
     /**

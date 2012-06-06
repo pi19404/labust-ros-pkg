@@ -36,8 +36,10 @@
 
 #include <labust/xml/xmlfwd.hpp>
 #include <labust/xml/XMLReader.hpp>
+#include <labust/xml/XMLWriter.hpp>
 
 #include <boost/foreach.hpp>
+#include <boost/mpl/bool.hpp>
 
 namespace labust
 {
@@ -70,14 +72,14 @@ namespace labust
 			{
 				reader->useNode(pt);
 				value->insert( std::make_pair(
-						reader->value<key_type >(keyName),
-						reader->value<mapped_type >(valueName)));
+						reader->value< key_type >(keyName),
+						reader->value< mapped_type >(valueName)));
 			}
 
 			reader->useNode(cnode);
 		};
 		/**
-		 * Override to enable testing before parametar reading.
+		 * Override to enable testing before parameter reading.
 		 *
 		 * \param reader Pointer to the used XML reader.
 		 * \param value The address of the std::map object.
@@ -107,13 +109,74 @@ namespace labust
 			{
 				reader->useNode(pt);
 				value->insert( std::make_pair(
-						reader->value<key_type >(keyName),
-						reader->value<mapped_type >(valueName)));
+						reader->value< key_type >(keyName),
+						reader->value< mapped_type >(valueName)));
 			}
 
 			reader->useNode(cnode);
 		}
 		catch (std::exception& e){return false;};
+
+		/**
+		 * The struct wraps the object into the XML writer. With a specified packaging.
+		 *
+		 * \param writer The XML writer which to use.
+		 * \param object The object that can will be added to the XML.
+		 * \param type The XML header is determined from the type.
+		 * \param id The identification name of the wrapping node.
+		 *
+		 * \tparam Value The value of the type.
+		 */
+		template <class Value>
+		labust::xml::Writer& wrapInXml(labust::xml::Writer& writer, const Value& object,
+			const std::string& id, const std::string& type,	boost::mpl::true_ eval= boost::mpl::true_())
+		{
+			writer.startElement(type);
+			if (!id.empty()) writer.addAttribute("id",id);
+			writer<<object;
+			writer.endElement();
+			return writer;
+		};
+		/**
+		 * Specialization for types that do not have a XMLWriter operator<< defined.
+		 */
+		template <class Value>
+		inline labust::xml::Writer& wrapInXml(labust::xml::Writer& writer, const Value& object,
+				const std::string& id, const std::string& type,	boost::mpl::false_)
+		{
+			writer.setParamName(id).setParamType(type)<<object;
+			return writer;
+		}
+		/**
+		 * The function unwraps the object from the specified XML packaging.
+		 *
+		 * \param writer The XML writer which to use.
+		 * \param object The object that can will be added to the XML.
+		 * \param header The header name of the wrapping node.
+		 * \param id The identification name of the wrapping node.
+		 *
+		 * \tparam Value The value of the type.
+		 */
+		template <class Value>
+		labust::xml::Reader& unwrapFromXml(labust::xml::Reader& reader, Value& object,
+				const std::string& id, const std::string& type, boost::mpl::true_ eval=boost::mpl::true_())
+		{
+			_xmlNode* org_node = reader.currentNode();
+			reader.useNode(reader.value<_xmlNode*>(id.empty()?type:type+"[@id='"+id+"']"));
+			reader>>object;
+			reader.useNode(org_node);
+			return reader;
+		};
+		/**
+		 * Specialization for types that do not have a XMLReader operator>> defined.
+		 */
+		template <class Value>
+		inline labust::xml::Reader& unwrapFromXml(labust::xml::Reader& reader, Value& object,
+				const std::string& name, const std::string& type, boost::mpl::false_)
+		{
+			reader.value("param[@name='"+name+"']/@value",&object);
+			return reader;
+		};
 	}
 }
 

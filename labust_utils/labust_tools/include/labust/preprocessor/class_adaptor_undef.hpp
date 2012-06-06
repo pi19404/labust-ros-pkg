@@ -31,49 +31,36 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/vehicles/SeamorDriver.h>
-#include <labust/vehicles/Seamor.hpp>
-#include <labust/tools/TimingTools.hpp>
-#include <labust/xml/XMLReader.hpp>
+#ifndef CLASS_ADAPTOR_UNDEF_HPP_
+#define CLASS_ADAPTOR_UNDEF_HPP_
 
-#include <iostream>
+#undef PP_LABUST_NAMESPACE_BEGIN
+#undef PP_LABUST_NAMESPACE_END
 
-int main(int argc, char* argv[])
-try
-{
-	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
-	reader->useNode(reader->value<_xmlNode*>("//configurations"));
-	//labust::vehicles::SeamorDriver seamor(reader,"");
-	labust::vehicles::Seamor seamor(reader,"");
+#undef PP_LABUST_MAKE_STRING_LVL1
+#undef PP_LABUST_MAKE_STRING_LVL2
 
-	int i=0;
-	labust::tools::wait_until_ms delay(100);
+#undef PP_LABUST_FILLER_0
+#undef PP_LABUST_FILLER_1
+#undef PP_LABUST_FILLER_0_END
+#undef PP_LABUST_FILLER_1_END
 
-	while (true)
-	{
-		double lastTime = labust::tools::unix_time();
-		++i;
+#undef PP_LABUST_ATTRIBUTE_EXPAND
+#undef BOOST_PP_TUPLE_ELEM
 
-		labust::vehicles::tauMap tau;
-		tau[labust::vehicles::tau::X]= 20;
-		seamor.setTAU(tau);
-		labust::vehicles::stateMapPtr state(new labust::vehicles::stateMap());
-		seamor.getState(*state);
-		labust::vehicles::strMapPtr data(new labust::vehicles::strMap());
-		//seamor.getData(data);
+#undef PP_LABUST_NAMESPACE_DEFINITIONS_BEGIN
+#undef BOOST_PP_IF
+#undef BOOST_PP_DEC
+#undef BOOST_PP_SEQ_SIZE
+#undef BOOST_PP_SEQ_FOR_EACH_R
+#undef BOOST_PP_TUPLE_EAT
+#undef BOOST_PP_SEQ_TAIL
 
-		std::cout<<"Heading:"<<(*state)[labust::vehicles::state::yaw]*180/M_PI<<std::endl;
+#undef BOOST_PP_REPEAT_1
+#undef BOOST_PP_SEQ_SIZE
 
-		delay();
-		std::cout<<"Loop time:"<<labust::tools::unix_time() - lastTime<<std::endl;
-	}
-	std::cout<<"Normal exit."<<std::endl;
-	return 0;
-}
-catch (std::exception& e)
-{
-	std::cout<<e.what()<<std::endl;
-}
-
-
-
+#undef PP_LABUST_MACRO_ON_ATTRIBUTES
+#undef BOOST_PP_CAT
+#undef CLASS_ADAPTOR_HPP_
+/* CLASS_ADAPTOR_UNDEF_HPP_ */
+#endif

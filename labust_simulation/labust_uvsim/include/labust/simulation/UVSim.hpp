@@ -37,6 +37,7 @@
 #include <labust/xml/xmlfwd.hpp>
 #include <labust/simulation/matrixfwd.hpp>
 #include <labust/vehicles/VehicleDriver.hpp>
+#include <labust/xml/adapt_class.hpp>
 
 #include <string>
 
@@ -52,6 +53,7 @@ namespace labust
 		{
 			enum {N=0, E=1, D=2};
 			enum {current_x=0, current_y=1, current_z=2};
+
 		public:
 			/**
 			 * Main constructor. Takes a XML reader pointer and configures the models.
@@ -82,16 +84,25 @@ namespace labust
 			 */
 			void getData(labust::apps::stringPtr data);
 
+			PP_LABUST_IN_CLASS_ADAPT_TO_XML(UVSim)
+
 		private:
 			/**
 			 * Dynamics and kinematics model.
 			 */
 			boost::shared_ptr<VehicleModel6DOF> model;
 			/**
+			 * Configuration parameters.
+			 */
+			/**
 			 * Current vector.
 			 */
 			vector3 currentForce, current;
 		};
+
+		PP_LABUST_MAKE_CLASS_XML_OPERATORS(,UVSim,
+				(vector3,currentForce)
+				(vector3,current))
 	}
 }
 /* UVSIM_HPP_ */
