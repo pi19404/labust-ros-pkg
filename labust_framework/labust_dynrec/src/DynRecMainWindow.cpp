@@ -31,53 +31,74 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <QApplication>
 #include <labust/gui/DynRecMainWindow.hpp>
-#include <labust/moos/DynRecMoosApp.hpp>
-#include <labust/gui/XMLMessageExchange.hpp>
+#include <ui_DynRecMainWindow.h>
 
 #include <boost/bind.hpp>
-#include <boost/thread.hpp>
 
-int main(int argc, char* argv[])
-try
+#include <QDebug>
+#include <QPlainTextEdit>
+
+using namespace labust::gui;
+
+DynRecMainWindow::DynRecMainWindow():
+		gui(new Ui::DynRecMainWindow())
 {
-  const char* sMissionFile = "configure.moos";
-  const char* sMOOSName = "pDynRec";
-
-  switch(argc)
-  {
-    case 3:
-      sMOOSName = argv[2];
-      break;
-    case 2:
-      sMissionFile = argv[1];
-      break;
-    default:break;
-  }
-
-  QApplication app(argc, argv);
-
-  labust::moos::DynRecMoosApp moosapp;
-  labust::gui::DynRecMainWindow mainwindow;
-  mainwindow.show();
-  labust::gui::XMLMessageExchange::connect(&mainwindow,&moosapp);
-
-  boost::thread t(boost::bind(&labust::moos::DynRecMoosApp::Run,&moosapp,sMOOSName,sMissionFile));
-  app.exec();
-
-  moosapp.RequestQuit();
-  t.join();
-
-  return 0;
+	this->configure();
 }
-catch (std::exception& e)
+
+DynRecMainWindow::DynRecMainWindow(const labust::xml::ReaderPtr reader, const std::string id):
+		gui(new Ui::DynRecMainWindow())
 {
-	std::cerr<<e.what()<<std::endl;
+	this->configure(reader,id);
+};
+
+DynRecMainWindow::~DynRecMainWindow(){};
+
+void DynRecMainWindow::configure()
+{
+	gui->setupUi(this);
+	qDebug()<<"Configured.";
 }
-catch (...)
+
+void DynRecMainWindow::configure(const labust::xml::ReaderPtr reader, const std::string id)
 {
-	std::cerr<<"Unknown error."<<std::endl;
+	this->configure();
+}
+
+DynRecMainWindow::GUICommands::CPtr DynRecMainWindow::getGUICommands()
+{
+	GUICommands::Ptr commands(new GUICommands());
+	//We can do that since the call is thread safe.
+	commands->addNewMessageCallback(boost::bind(&DynRecMainWindow::onNewMessage,this,_1,_2));
+
+	return commands;
+}
+
+void DynRecMainWindow::on_newVariableName_returnPressed()
+{
+	this->mediator->registerVariable(gui->newVariableName->text().toUtf8().constData());
+	gui->VariableTabs->insertTab(0,makeNewTab(), gui->newVariableName->text());
+	gui->newVariableName->clear();
+}
+
+QWidget* DynRecMainWindow::makeNewTab()
+{
+	QGridLayout* layout(new QGridLayout());
+	QPlainTextEdit* text(new QPlainTextEdit());
+	layout->addWidget(text);
+
+	QWidget* newTab(new QWidget());
+	newTab->setLayout(layout);
+
+	return newTab;
+}
+
+bool DynRecMainWindow::onNewMessage(const std::string& name, const std::string& data)
+{
+	boost::mutex::scoped_lock lock(newMessageSync);
+	qDebug()<<("New message " + name + ": " + data).c_str();
+	return true;
 }
 
 

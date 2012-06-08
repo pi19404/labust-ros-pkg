@@ -36,13 +36,19 @@ include_directories(include/)
 include_directories(build/)
 
 #common commands for building c++ executables and libraries
-set(PR_NAME dynrec)
-set(SRC src/dynRecMain.cpp src/DynRecMoosApp.cpp)
-qt4_wrap_ui(QT_FORMS_HPP ui/dynRecMainWindow.ui)
-
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-rosbuild_add_executable(${PR_NAME} ${QT_FORMS_HPP} ${SRC} )
+set(PR_NAME dynrec_gui)
+set(SRC src/DynRecMainWindow.cpp)
+set(HPP include/labust/gui/DynRecMainWindow.hpp)
+qt4_wrap_ui(UI_HPP ui/DynRecMainWindow.ui)
+qt4_wrap_cpp(MOC_HPP include/labust/gui/DynRecMainWindow.hpp)
+rosbuild_add_library(${PR_NAME} ${SRC} ${HPP} ${UI_HPP} ${MOC_HPP})
 target_link_libraries(${PR_NAME} ${QT_LIBRARIES})
+
+set(PR_NAME2 dynrec_app)
+set(SRC src/dynRecMain.cpp src/DynRecMoosApp.cpp)
+set(HPP include/labust/moos/DynRecMoosApp.hpp)
+rosbuild_add_executable(${PR_NAME2} ${SRC} ${HPP})
+target_link_libraries(${PR_NAME2} ${PR_NAME})
+rosbuild_link_boost(${PR_NAME2} thread)
+
+
