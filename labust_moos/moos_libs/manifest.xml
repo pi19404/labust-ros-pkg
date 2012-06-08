@@ -12,5 +12,6 @@
   </export>
 
   <depend package="labust_comms" />
+	<depend package="labust_xml" />
 	<depend package="moos_external" />
 </package>

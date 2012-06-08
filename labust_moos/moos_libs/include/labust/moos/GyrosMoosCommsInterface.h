@@ -44,6 +44,7 @@
 
 #include <labust/comms/GyrosCommsInterface.hpp>
 #include <labust/moos/MoosConfig.hpp>
+#include <labust/xml/xmlfwd.hpp>
 
 #include <MOOSLIB/MOOSApp.h>
 
@@ -57,7 +58,7 @@ namespace labust
     namespace comms
     {
 
-        class GyrosMoosCommsInterface : public GyrosCommsInterface, CMOOSApp, boost::noncopyable
+        class GyrosMoosCommsInterface : public GyrosCommsInterface, CMOOSApp
         {
         public:
             ///
@@ -91,7 +92,7 @@ namespace labust
              * \param wait true if function should block until the data is sent, false to return immediately
              * \return COMERRORS::ComError in case of error, 0 if everything is ok
              */
-            commerrors::CommError Send(const labust::xml::GyrosWriter &data, bool wait = false);
+            commerrors::CommError Send(const labust::xml::GyrosWriterPtr data, const std::string &messageID = "", bool wait = false);
 
             /**
              * PASSIVE or ACTIVE usage
@@ -104,7 +105,7 @@ namespace labust
              * \param wait true if function should block until the data is sent, false to return immediately
              * \return COMERRORS::ComError in case of error, 0 if everything is ok
              */
-            commerrors::CommError Send(const std::vector<labust::xml::GyrosWriter> &data, bool wait = false);
+            commerrors::CommError Send(const std::vector<labust::xml::GyrosWriterPtr> &data, const std::string &messageID = "", bool wait = false);
 
             /**
              * PASSIVE
@@ -118,7 +119,7 @@ namespace labust
              * \param wait true if the call should block until data is available, false to return error code (noData)
              * \return COMERRORS::ComError in case of error, 0 if everything is ok
              */
-            commerrors::CommError Receive(std::vector<labust::xml::GyrosReader> &data, bool wait = false);
+            commerrors::CommError Receive(std::vector<receivedGyrosMessage> &data, bool wait = false);
 
             /**
              * Returns pointer to MOOS client
@@ -153,8 +154,8 @@ namespace labust
             
         private:
             MoosConfig config;
-            std::vector<labust::xml::GyrosWriter> messagesToSend;
-            std::vector<labust::xml::GyrosReader> messagesReceived;
+            std::vector<gyrosMessageToSend> messagesToSend;
+            std::vector<receivedGyrosMessage> messagesReceived;
 
             boost::thread commsThread;
             boost::condition_variable dataSentSignal, dataReceivedSignal;

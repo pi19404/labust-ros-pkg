@@ -118,10 +118,11 @@ xml::Reader reader = readerin;
             std::cout << "Moos Comms Interface stopped" << std::endl;
         }
 
-        commerrors::CommError GyrosMoosCommsInterface::Send(const labust::xml::GyrosWriter &data, bool wait)
+        commerrors::CommError GyrosMoosCommsInterface::Send(const labust::xml::GyrosWriterPtr data, const std::string &messageID, bool wait)
         {
             boost::mutex::scoped_lock lock(locker);
-            messagesToSend.push_back(data);
+            gyrosMessageToSend message(data,messageID);
+            messagesToSend.push_back(message);
             if (wait)
             { //wait for comms thread to confirm data is sent
                 dataSentSignal.wait(lock);
@@ -129,12 +130,13 @@ xml::Reader reader = readerin;
             return commerrors::noError;
         }
 
-        commerrors::CommError GyrosMoosCommsInterface::Send(const std::vector<labust::xml::GyrosWriter> &data, bool wait)
+        commerrors::CommError GyrosMoosCommsInterface::Send(const std::vector<labust::xml::GyrosWriterPtr> &data, const std::string &messageID, bool wait)
         {
             boost::mutex::scoped_lock lock(locker);
-            for (std::vector<labust::xml::GyrosWriter>::const_iterator gyros = data.begin(); gyros != data.end(); gyros++)
-            {
-                messagesToSend.push_back(*gyros);
+            for (std::vector<labust::xml::GyrosWriterPtr>::const_iterator gyros = data.begin(); gyros != data.end(); gyros++)
+            {	
+					gyrosMessageToSend message(*gyros,messageID);
+               messagesToSend.push_back(message);
             }
             if (wait)
             { //wait for comms thread to confirm data is sent
@@ -143,7 +145,7 @@ xml::Reader reader = readerin;
             return commerrors::noError;
         }
 
-        commerrors::CommError GyrosMoosCommsInterface::Receive(std::vector<labust::xml::GyrosReader>& gyrosObjects, bool wait)
+        commerrors::CommError GyrosMoosCommsInterface::Receive(std::vector<receivedGyrosMessage>& data, bool wait)
         {
             commerrors::CommError retVal = commerrors::noError;
             if (callbackObject == NULL)
@@ -156,7 +158,7 @@ xml::Reader reader = readerin;
 
                 if (!messagesReceived.empty())
                 {
-                    gyrosObjects.insert(gyrosObjects.end(), messagesReceived.begin(), messagesReceived.end());
+                    data.insert(data.end(), messagesReceived.begin(), messagesReceived.end());
                     messagesReceived.clear();
                 }
                 else if (!wait)
@@ -192,20 +194,22 @@ xml::Reader reader = readerin;
         bool GyrosMoosCommsInterface::OnNewMail(MOOSMSG_LIST& NewMail)
         {
           using namespace labust::xml;
-            std::vector<GyrosReader> incomingMessages;
+            std::vector<receivedGyrosMessage> incomingMessages;
             boost::mutex::scoped_lock lock(locker);
             for (MOOSMSG_LIST::iterator mailIterator = NewMail.begin(); mailIterator != NewMail.end(); mailIterator++)
             {
                 CMOOSMsg &message = *mailIterator;
-                std::string messageString = message.GetString();
                 try
                 {
-                    GyrosReader reader(message.GetString());
-                    incomingMessages.push_back(reader);
+                    	GyrosReaderPtr reader(new GyrosReader(message.GetString()));
+							receivedGyrosMessage gyrosMessage(reader,message.GetKey());
+                    	incomingMessages.push_back(gyrosMessage);
                 }
                 catch (GyrosError error)
                 {
-                    incomingMessages.push_back(GyrosReader(error.what()));
+							GyrosReaderPtr reader(new GyrosReader(error.what()));
+                    	receivedGyrosMessage gyrosMessage(reader,message.GetKey());
+                    	incomingMessages.push_back(gyrosMessage);
                 }
                 catch (XMLException e)
                 {
@@ -213,6 +217,7 @@ xml::Reader reader = readerin;
                 }
 
             }
+				lock.unlock();
             if (callbackObject != NULL)
             {
                 callbackObject->AcceptData(incomingMessages);
@@ -232,17 +237,21 @@ xml::Reader reader = readerin;
         {
             boost::mutex::scoped_lock lock(locker);
             std::string outputMessageName;
-            for (std::vector<labust::xml::GyrosWriter>::iterator gyros = messagesToSend.begin(); gyros != messagesToSend.end(); gyros++)
+            for (std::vector<gyrosMessageToSend>::iterator message = messagesToSend.begin(); message != messagesToSend.end(); message++)
             {
-                outputMessageName = (*gyros).GetLabel();
-                if (outputMessageName.empty())
+                outputMessageName = message->id.empty() ? message->gyros->GetLabel() : message->id;
+                if (!message->id.empty())
                 {
-                    m_Comms.Notify(config.processName + "_OUT", (*gyros).GyrosXML(), MOOSTime());
+                    m_Comms.Notify(message->id, message->gyros->GyrosXML(), MOOSTime());
                 }
-                else
+                else if(!message->gyros->GetLabel().empty())
                 {
-                    m_Comms.Notify(outputMessageName, (*gyros).GyrosXML(), MOOSTime());
+                    m_Comms.Notify(message->gyros->GetLabel(), message->gyros->GyrosXML(), MOOSTime());
                 }
+					 else
+					 {
+						  m_Comms.Notify(config.processName + "_OUT", message->gyros->GyrosXML(), MOOSTime());
+					 }
             }
             messagesToSend.clear();
 

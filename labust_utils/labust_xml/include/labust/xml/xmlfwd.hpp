@@ -36,7 +36,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
-#include <string>
 
 struct _xmlDoc;
 struct _xmlXPathContext;
@@ -61,6 +60,9 @@ namespace labust
     typedef boost::shared_ptr<Reader> ReaderPtr;
     typedef boost::shared_ptr<Writer> WriterPtr;
 
+	 typedef boost::shared_ptr<GyrosReader> GyrosReaderPtr;
+	 typedef boost::shared_ptr<GyrosWriter> GyrosWriterPtr;
+
     typedef boost::shared_ptr<_xmlDoc> xmlDocPtr;
     typedef boost::shared_ptr<_xmlXPathContext> xmlXPathContextPtr;
     typedef boost::shared_ptr<_xmlXPathObject> xmlXPathObjectPtr;
@@ -70,8 +72,6 @@ namespace labust
     typedef boost::shared_ptr<_xmlBuffer> xmlBufferPtr;
 
     typedef boost::shared_ptr<std::vector<xmlNodePtr> > NodeCollectionPtr;
-
-    typedef boost::shared_ptr<std::string> StringPtr;
   }
 }
 /* XMLFWD_HPP_ */
