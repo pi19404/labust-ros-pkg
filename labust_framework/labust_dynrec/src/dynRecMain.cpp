@@ -42,17 +42,15 @@
 int main(int argc, char* argv[])
 try
 {
-  const char* sMissionFile = "configure.moos";
+  const char* sMissionFile = "config/configure.moos";
   const char* sMOOSName = "pDynRec";
 
   switch(argc)
   {
     case 3:
       sMOOSName = argv[2];
-      break;
     case 2:
       sMissionFile = argv[1];
-      break;
     default:break;
   }
 

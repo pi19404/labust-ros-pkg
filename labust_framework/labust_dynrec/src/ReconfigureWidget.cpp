@@ -31,39 +31,63 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef CONTROLLERINTERFACE_HPP_
-#define CONTROLLERINTERFACE_HPP_
-#include <labust/apps/AppInterface.hpp>
-#include <labust/vehicles/vehiclesfwd.hpp>
-#include <labust/control/controlfwd.hpp>
+#include <labust/gui/ReconfigureWidget.hpp>
+#include <QPushButton>
+#include <QLabel>
+#include <QDebug>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
-namespace labust
+using namespace labust::gui;
+
+ReconfigureWidget::ReconfigureWidget(QWidget* parent):
+		QWidget(parent){this->configure();};
+
+ReconfigureWidget::~ReconfigureWidget(){}
+
+void ReconfigureWidget::update(const std::string& msg)
 {
-	namespace control
+	if (!check->isChecked())
 	{
-		/**
-		 * The generic controller interface.
-		 */
-		class Driver : public virtual labust::apps::App
+		std::string mmsg(msg);
+		size_t cur = mmsg.find(">");
+		while (cur != std::string::npos)
 		{
-		public:
-			/**
-			 * Generic virtual destructor.
-			 */
-			virtual ~Driver(){};
-			/**
-			 * The method calculate the control based on the current and desired states.
-			 * Returns the tau vector values.
-			 *
-			 * \param stateRef The desired state reference.
-			 * \param state The current system state.
-			 * \param tau The address of the desired TAU vector.
-			 */
-			virtual void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, labust::vehicles::tauMapRef tau) = 0;
-		};
-	};
-};
+			if (mmsg.at(++cur) != '\n') mmsg.insert(cur,"\n");
+			cur = mmsg.find(">",cur);
+		}
 
-/* CONTROLLERINTERFACE_HPP_ */
-#endif
+		text->setPlainText(mmsg.c_str());
+	}
+}
+
+void ReconfigureWidget::on_SendCommand_clicked()
+{
+	emit sendCommandRequest(cmdName->text(), text->toPlainText());
+}
+
+void ReconfigureWidget::configure()
+{
+	QPushButton* button(new QPushButton);
+	button->setText(tr("Send command"));
+	connect(button,SIGNAL(clicked()),this,SLOT(on_SendCommand_clicked()));
+	QLabel* label(new QLabel(tr("Command Name:")));
+	cmdName = new QLineEdit("cmd");
+	check = new QCheckBox();
+	check->setText(tr("Disable receive"));
+
+	QHBoxLayout* hlayout(new QHBoxLayout);
+	hlayout->addWidget(label);
+	hlayout->addWidget(cmdName);
+	hlayout->addWidget(button);
+	hlayout->addWidget(check);
+
+	text = new QPlainTextEdit();
+	text->setPlainText(tr("Waiting for update..."));
+	QVBoxLayout* layout(new QVBoxLayout());
+	layout->addWidget(text);
+	layout->addLayout(hlayout);
+
+	this->setLayout(layout);
+}
+

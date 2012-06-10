@@ -54,6 +54,11 @@ UVApp::UVApp(const labust::xml::ReaderPtr reader, const std::string& id)
 
 	uuv.loadPlugin("uvsim-plug","Vehicle",reader);
 
+	applist.push_back(&hdCon());
+	applist.push_back(&lfCon());
+	applist.push_back(&nav());
+	applist.push_back(&uuv());
+
 	reader->useNode(org_node);
 
 	//Initalize elements.
@@ -78,7 +83,6 @@ void UVApp::calculateTau()
 		break;
 	case lineFollowing:
 		//Do line following control.
-		//tau[X] = surgeForce;
 		lfCon().getTAU(stateRef,stateHat,tau);
 		break;
 	default:
@@ -113,22 +117,27 @@ void UVApp::setCommand(const labust::apps::stringRef cmd)
 	labust::xml::Reader reader(cmd);
 	reader.useNode(reader.value<_xmlNode*>("/uvapp"));
 
-	uuv().setCommand(cmd);
-	hdCon().setCommand(cmd);
+	for(size_t i=0; i< applist.size(); ++i)
+	{
+		try
+		{
+			applist[i]->setCommand(cmd);
+		}
+		catch (std::exception& e){};
+	}
 }
 
 void UVApp::getData(labust::apps::stringPtr data)
 {
 	labust::xml::Writer writer;
 	writer.startElement("uvapp");
-	labust::apps::stringPtr str(new labust::apps::string());
-	uuv().getData(str);
-	writer.addXML(*str);
-	hdCon().getData(str);
-	writer.addXML(*str);
+
+	for(size_t i=0; i<applist.size(); ++i)
+	{
+		labust::apps::stringPtr str(new labust::apps::string());
+		applist[i]->getData(str);
+		writer.addXML(*str);
+	}
 	writer.endDocument();
-
 	(*data) = writer.toString();
-
-	//std::cout<<"Get data:"<<*data<<std::endl;
 }

@@ -38,6 +38,7 @@
 #include <labust/navigation/KFCore.hpp>
 #include <labust/navigation/LFModel.hpp>
 #include <labust/xml/xmlfwd.hpp>
+#include <labust/xml/adapt_class.hpp>
 
 #include <deque>
 
@@ -92,9 +93,10 @@ namespace labust
        *
        * \param data Peripheral data values will be returned
        */
-      void getData(labust::apps::stringPtr data){};
+      void getData(labust::apps::stringPtr data);
 
 		private:
+      PP_LABUST_IN_CLASS_ADAPT_TO_XML(LFNav)
       /**
        * Configures the driver using an XML file.
        *
@@ -110,7 +112,6 @@ namespace labust
 			 * Reset surge estimate. Added to avoid estimating the surge speed.
 			 */
 			void resetSurge(double u);
-
 
 			/**
 			 * The EKF filter.
@@ -136,7 +137,13 @@ namespace labust
 			 * Number of iterations delayed and iteration update frequency.
 			 */
 			size_t delayMeas, receiveFreq;
+			/**
+			 * The line start and end points.
+			 */
+			Nav::vector T1,T2;
 		};
+
+		PP_LABUST_DEFINE_CLASS_XML_OPERATORS(,LFNav)
 	}
 }
 
