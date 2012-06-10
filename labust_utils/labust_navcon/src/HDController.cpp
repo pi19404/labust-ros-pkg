@@ -70,19 +70,23 @@ try
 {
 	using namespace labust::vehicles::tau;
 	using namespace labust::vehicles::state;
+	if (stateRef.find(X_e) != stateRef.end()) tau[X] = stateRef.at(X_e);
 	tau[N] = heading.step(stateRef.at(yaw),state.at(yaw));
 	tau[Z] = depth.step(stateRef.at(z),state.at(z));
 }
 catch (std::exception& e)
 {
 	using namespace labust::vehicles::tau;
-	tau[N] = tau[Z] = 0;
+	tau[X] = tau[N] = tau[Z] = 0;
 }
 
 void HDController::setCommand(const labust::apps::stringRef cmd)
 {
 	this->unwrapFromXml(cmd);
-	std::cout<<"New alpha:"<<headingParams.alpha<<std::endl;
+	///Re-tune controllers.
+	///\todo Add reconfiguration on update only.
+	labust::control::tuneController(headingParams, &heading);
+	labust::control::tuneController(depthParams, &depth);
 }
 
 void HDController::getData(const labust::apps::stringPtr data)

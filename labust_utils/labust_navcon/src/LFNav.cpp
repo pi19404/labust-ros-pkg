@@ -42,7 +42,9 @@ LFNav::LFNav(const labust::xml::ReaderPtr reader, const std::string& id):
 	  covM(nav.getStateCovariance()),
 		iteration(0),
 		delayMeas(42),
-		receiveFreq(21)
+		receiveFreq(21),
+		T1(Nav::zeros(3)),
+		T2(Nav::zeros(3))
 {
 	this->configure(reader,id);
 }
@@ -184,19 +186,25 @@ void LFNav::recalculate(const labust::vehicles::stateMapRef measurement)
 
 void LFNav::setCommand(const labust::apps::stringRef commands)
 {
-	//Provisional
-	labust::xml::Reader reader(commands);
+	try
+	{
+		this->unwrapFromXml(commands);
+		//Provisional
+		nav.setLine(T1,T2);
+	}
+	catch (std::exception& e){};
 
-	reader.useNode(reader.value<_xmlNode*>("/setLine"));
-	Nav::vector T2(labust::navigation::LFModel::zeros(3)),T1(3);
-
-	T2(2) = reader.value<double>("TargetDepth");
-
-	T1(0) = reader.value<double>("xUUV");
-	T1(1) = reader.value<double>("yUUV");
-	T1(2) = nav.getState()(Nav::z);
-	nav.setLine(T1,T2);
+	std::cerr<<"LFNav:Line recalucated."<<std::endl;
 }
+
+void LFNav::getData(labust::apps::stringPtr data)
+{
+	(*data) = *this->wrapInXml();
+};
+
+PP_LABUST_MAKE_CLASS_XML_OPERATORS((labust)(navigation),LFNav,
+		(LFModel::vector, T1)
+		(LFModel::vector, T2))
 
 #ifndef BUILD_WITHOUT_PLUGIN_HOOK
 LABUST_EXTERN

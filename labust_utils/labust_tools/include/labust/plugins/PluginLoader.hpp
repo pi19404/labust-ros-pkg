@@ -84,6 +84,7 @@ namespace labust
 			 */
 			inline typename DriverPtr::element_type& operator()()
 			{
+				assert((driver != 0) && "Loader: trying to access uinitalized plugin driver.");
 				return *driver;
 			}
 

@@ -31,39 +31,52 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef CONTROLLERINTERFACE_HPP_
-#define CONTROLLERINTERFACE_HPP_
-#include <labust/apps/AppInterface.hpp>
-#include <labust/vehicles/vehiclesfwd.hpp>
-#include <labust/control/controlfwd.hpp>
+#include <QApplication>
+#include <labust/gui/DynRecMainWindow.hpp>
+#include <labust/moos/DynRecMoosApp.hpp>
+#include <labust/gui/XMLMessageExchange.hpp>
 
-namespace labust
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+
+int main(int argc, char* argv[])
+try
 {
-	namespace control
-	{
-		/**
-		 * The generic controller interface.
-		 */
-		class Driver : public virtual labust::apps::App
-		{
-		public:
-			/**
-			 * Generic virtual destructor.
-			 */
-			virtual ~Driver(){};
-			/**
-			 * The method calculate the control based on the current and desired states.
-			 * Returns the tau vector values.
-			 *
-			 * \param stateRef The desired state reference.
-			 * \param state The current system state.
-			 * \param tau The address of the desired TAU vector.
-			 */
-			virtual void getTAU(const labust::vehicles::stateMapRef stateRef,
-					const labust::vehicles::stateMapRef state, labust::vehicles::tauMapRef tau) = 0;
-		};
-	};
-};
+  const char* sMissionFile = "config/configure.moos";
+  const char* sMOOSName = "pDynRec";
 
-/* CONTROLLERINTERFACE_HPP_ */
-#endif
+  switch(argc)
+  {
+    case 3:
+      sMOOSName = argv[2];
+    case 2:
+      sMissionFile = argv[1];
+    default:break;
+  }
+
+  QApplication app(argc, argv);
+
+  labust::moos::DynRecMoosApp moosapp;
+  labust::gui::DynRecMainWindow mainwindow;
+  mainwindow.show();
+  labust::gui::XMLMessageExchange::connect(&mainwindow,&moosapp);
+
+  boost::thread t(boost::bind(&labust::moos::DynRecMoosApp::Run,&moosapp,sMOOSName,sMissionFile));
+  app.exec();
+
+  moosapp.RequestQuit();
+  t.join();
+
+  return 0;
+}
+catch (std::exception& e)
+{
+	std::cerr<<e.what()<<std::endl;
+}
+catch (...)
+{
+	std::cerr<<"Unknown error."<<std::endl;
+}
+
+
+

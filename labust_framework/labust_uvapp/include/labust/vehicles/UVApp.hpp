@@ -48,7 +48,7 @@ namespace labust
 		 * The class integrates control, navigation and the UUV plugin into a modular
 		 * infrastructure.
 		 *
-		 * \todo
+		 * \todo Check the boost shared pointer usage. Something is missing.
 		 */
 		class UVApp : public virtual labust::apps::App
 		{
@@ -121,6 +121,19 @@ namespace labust
        */
       inline const labust::vehicles::tauMap& getTau(){return this->tau;};
 
+      /**
+       * The method set the external forces for the manual modes.
+       *
+       * \param tau The external desired forces and moments.
+       */
+      inline void setExternalTau(const labust::vehicles::tauMap& tau){this->tau = tau;};
+      /**
+       * The method to set the external references.
+       *
+       * \param stateRef The desired references.
+       */
+      inline void setExternalRef(const labust::vehicles::stateMap& stateRef){this->stateRef = stateRef;};
+
 		protected:
 			/**
 			 * Calculate the next tau vector.
@@ -129,7 +142,7 @@ namespace labust
       /**
        * The three controller options: Heading+Depth, LineFollowing, Manual.
        */
-      ControlLoader hdCon, lfCon, manCon, ident;
+      ControlLoader hdCon, lfCon, ident;
       /**
        * The navigation.
        */
@@ -150,6 +163,10 @@ namespace labust
        * The UV operational mode.
        */
       UVMode mode;
+      /**
+       * The helper application list.
+       */
+      std::vector<labust::apps::App*> applist;
   	};
 	}
 }

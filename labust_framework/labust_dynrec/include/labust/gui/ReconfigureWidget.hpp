@@ -31,78 +31,83 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef UVSIM_HPP_
-#define UVSIM_HPP_
+#ifndef RECONFIGUREWIDGET_HPP_
+#define RECONFIGUREWIDGET_HPP_
 
-#include <labust/xml/xmlfwd.hpp>
-#include <labust/simulation/matrixfwd.hpp>
-#include <labust/vehicles/VehicleDriver.hpp>
-#include <labust/xml/adapt_class.hpp>
+#include <QWidget>
+#include <QLineEdit>
+#include <QPlainTextEdit>
+#include <QCheckBox>
 
 #include <string>
 
 namespace labust
 {
-	namespace simulation
+	namespace gui
 	{
-		class VehicleModel6DOF;
 		/**
-		 * This class implements a VideoRay simulator. It supports XML configuration of the dynamic, noise and environment model.
+		 * This class implements a dynamically reconfigured widget based on the supplied
+		 * update XML.
 		 *
-		 * \todo Add state outputs configuration.
+		 * \todo Add parameter divison in text boxes.
 		 */
-		class UVSim : public virtual labust::vehicles::Driver
+		class ReconfigureWidget : public QWidget
 		{
-			enum {N=0, E=1, D=2};
-			enum {current_x=0, current_y=1, current_z=2};
-
+			Q_OBJECT
 		public:
 			/**
-			 * Main constructor. Takes a XML reader pointer and configures the models.
+			 * Main constructor. Takes a parent widget.
 			 *
-			 * \param reader Pointer to the XMLReader object cointaining the configuration data.
-			 * \param id Identification class.
+			 * \param parent The desired parent of the widget.
 			 */
-			UVSim(const labust::xml::ReaderPtr reader, const std::string& id = "");
+			ReconfigureWidget(QWidget* parent = 0);
+			/**
+			 * Generic destructor.
+			 */
+			~ReconfigureWidget();
 
 			/**
-			 * Implementation of labust::vehicles::Driver::setTAU.
+			 * The method updates the widget contents.
+			 *
+			 * \param msg The update messages passed to the widget.
 			 */
-			void setTAU(const labust::vehicles::tauMapRef tau);
-			/**
-			 * Implementation of labust::vehicles::Driver::getState
-			 */
-			void getState(labust::vehicles::stateMapRef state);
-			/**
-			 * Implementation of labust::vehicles::Driver::setGuidance
-			 */
-			void setGuidance(const labust::vehicles::guidanceMapRef guidance);
-			/**
-			 * Implementation of labust::vehicles::Driver::setCommand
-			 */
-			void setCommand(const labust::apps::stringRef commands);
-			/**
-			 * Implementation of labust::vehicles::Driver::getData
-			 */
-			void getData(labust::apps::stringPtr data);
+			void update(const std::string& msg);
 
-			PP_LABUST_IN_CLASS_ADAPT_TO_XML(UVSim)
+		signals:
+			/**
+			 * The Qt signal is emitted on message send commands.
+			 */
+			void sendCommandRequest(const QString& name, const QString& cmd);
+
+		private slots:
+			/**
+			 * Handles the send command.
+			 */
+			void on_SendCommand_clicked();
 
 		private:
 			/**
-			 * Dynamics and kinematics model.
+			 * Configure the default widget layout.
 			 */
-			boost::shared_ptr<VehicleModel6DOF> model;
-			/**
-			 * Current vector.
-			 */
-			vector3 currentForce, current;
-		};
+			void configure();
 
-		PP_LABUST_MAKE_CLASS_XML_OPERATORS(,UVSim,
-				(vector3,currentForce)
-				(vector3,current))
+			/**
+			 * The update field.
+			 */
+			QPlainTextEdit* text;
+			/**
+			 * The return command name.
+			 */
+			QLineEdit* cmdName;
+			/**
+			 * Disable receive check.
+			 */
+			QCheckBox* check;
+		};
 	}
 }
-/* UVSIM_HPP_ */
+
+
+
+/* RECONFIGUREWIDGET_HPP_ */
 #endif

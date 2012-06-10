@@ -67,6 +67,13 @@ BOOST_MPL_HAS_XXX_TRAIT_DEF(use_xml_operator)
 	}\
 	PP_LABUST_NAMESPACE_DEFINITIONS_END((0)NAMESPACE_SEQ)
 
+#define PP_LABUST_DEFINE_CLASS_XML_OPERATORS(NAMESPACE_SEQ, NAME) \
+	PP_LABUST_NAMESPACE_DEFINITIONS_BEGIN((0)NAMESPACE_SEQ)\
+	\
+	labust::xml::Writer& operator<<(labust::xml::Writer& writer, const NAME& object);\
+	labust::xml::Reader& operator>>(labust::xml::Reader& reader, NAME& object);\
+	PP_LABUST_NAMESPACE_DEFINITIONS_END((0)NAMESPACE_SEQ)
+
 #define PP_LABUST_IN_CLASS_ADD_FRIENDS(NAME)\
 	friend labust::xml::Writer& operator<<(labust::xml::Writer& writer, const NAME& object);\
 	friend labust::xml::Reader& operator>>(labust::xml::Reader& reader, NAME& object);\
