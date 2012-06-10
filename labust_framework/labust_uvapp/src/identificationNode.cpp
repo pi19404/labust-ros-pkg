@@ -174,8 +174,8 @@ try
   		TuningParameters tparam;
 
   		tparam.w = 0.4;
-  		tparam.alpha = param[ident.alpha];128;
-  		tparam.beta = param[ident.kx];41.8;
+  		tparam.alpha = param[ident.alpha];//128;
+  		tparam.beta = param[ident.kx];//41.8;
   		tparam.betaa = param[ident.kxx];
   		tparam.max = 80;
 

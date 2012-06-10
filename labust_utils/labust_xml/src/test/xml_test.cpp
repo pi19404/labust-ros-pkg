@@ -31,11 +31,11 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/xml/DefineXMLStruct.hpp>
 #include <labust/xml/XMLException.hpp>
 #include <labust/xml/XMLReader.hpp>
 #include <labust/xml/XMLWriter.hpp>
 #include <labust/tools/TimingTools.hpp>
+#include <labust/xml/xmlfwd.hpp>
 
 #include <boost/type_traits.hpp>
 
