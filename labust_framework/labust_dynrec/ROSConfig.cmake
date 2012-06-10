@@ -37,10 +37,11 @@ include_directories(build/)
 
 #common commands for building c++ executables and libraries
 set(PR_NAME dynrec_gui)
-set(SRC src/DynRecMainWindow.cpp)
+set(SRC src/DynRecMainWindow.cpp src/ReconfigureWidget.cpp)
 set(HPP include/labust/gui/DynRecMainWindow.hpp)
 qt4_wrap_ui(UI_HPP ui/DynRecMainWindow.ui)
-qt4_wrap_cpp(MOC_HPP include/labust/gui/DynRecMainWindow.hpp)
+qt4_wrap_cpp(MOC_HPP include/labust/gui/DynRecMainWindow.hpp
+	include/labust/gui/ReconfigureWidget.hpp)
 rosbuild_add_library(${PR_NAME} ${SRC} ${HPP} ${UI_HPP} ${MOC_HPP})
 target_link_libraries(${PR_NAME} ${QT_LIBRARIES})
 

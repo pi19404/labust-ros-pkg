@@ -63,6 +63,10 @@ namespace labust
 				{
 					this->onRegister = callback;
 				}
+				inline void addUnRegisterVariableCallback(const RegisterCallback& callback)
+				{
+					this->onUnRegister = callback;
+				}
 				inline void addSendCommandCallback(const MessageCallback& callback)
 				{
 					this->onSendCommand = callback;
@@ -72,6 +76,10 @@ namespace labust
 				{
 					return this->onRegister(name);
 				}
+				inline bool unRegisterVariable(const std::string& name) const
+				{
+					return this->onUnRegister(name);
+				}
 
 				inline bool sendCommand(const std::string& name, const std::string& data) const
 				{
@@ -80,7 +88,7 @@ namespace labust
 
 			private:
 				MessageCallback onSendCommand;
-				RegisterCallback onRegister;
+				RegisterCallback onRegister,onUnRegister;
 			};
 
 			class GUICommands

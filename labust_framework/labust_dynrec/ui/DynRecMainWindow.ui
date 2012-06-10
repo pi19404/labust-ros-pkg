@@ -44,6 +44,9 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
       <widget class="QWidget" name="AddVariable">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -52,7 +55,7 @@
         </sizepolicy>
        </property>
        <attribute name="title">
-        <string>+</string>
+        <string/>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>

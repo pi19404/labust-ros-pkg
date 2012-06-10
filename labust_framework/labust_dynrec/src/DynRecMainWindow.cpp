@@ -32,6 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 #include <labust/gui/DynRecMainWindow.hpp>
+#include <labust/gui/ReconfigureWidget.hpp>
 #include <ui_DynRecMainWindow.h>
 
 #include <boost/bind.hpp>
@@ -58,6 +59,10 @@ DynRecMainWindow::~DynRecMainWindow(){};
 void DynRecMainWindow::configure()
 {
 	gui->setupUi(this);
+	qRegisterMetaType<std::string>("std::string");
+	connect(
+			this, SIGNAL(newMessage(const std::string&, const std::string&)),
+			this, SLOT(on_NewMessage(const std::string&, const std::string&)));
 	qDebug()<<"Configured.";
 }
 
@@ -78,27 +83,54 @@ DynRecMainWindow::GUICommands::CPtr DynRecMainWindow::getGUICommands()
 void DynRecMainWindow::on_newVariableName_returnPressed()
 {
 	this->mediator->registerVariable(gui->newVariableName->text().toUtf8().constData());
-	gui->VariableTabs->insertTab(0,makeNewTab(), gui->newVariableName->text());
+	gui->VariableTabs->insertTab(0,makeNewTab(gui->newVariableName->text()), gui->newVariableName->text());
+	gui->VariableTabs->setCurrentIndex(0);
+	nameList.push_front(gui->newVariableName->text().toUtf8().constData());
 	gui->newVariableName->clear();
 }
 
-QWidget* DynRecMainWindow::makeNewTab()
+void DynRecMainWindow::on_VariableTabs_tabCloseRequested(int index)
 {
-	QGridLayout* layout(new QGridLayout());
-	QPlainTextEdit* text(new QPlainTextEdit());
-	layout->addWidget(text);
+	if ((gui->VariableTabs->count()-1) != index)
+	{
+		std::string name(nameList.at(index));
+		qDebug()<<("Remove tab:" + name).c_str();
+		gui->VariableTabs->removeTab(index);
+		delete messageMap[name];
+		messageMap.erase(name);
+		//Unregister variable from comms.
+		mediator->unRegisterVariable(name);
+		nameList.erase(nameList.begin() + index);
+	}
+}
 
-	QWidget* newTab(new QWidget());
-	newTab->setLayout(layout);
+void DynRecMainWindow::onSendCommandRequested(const QString& name, const QString& command)
+{
+	mediator->sendCommand(name.toUtf8().constData(), command.toUtf8().constData());
+}
 
+ReconfigureWidget* DynRecMainWindow::makeNewTab(const QString& name)
+{
+	ReconfigureWidget* newTab(new ReconfigureWidget());
+
+	connect(
+			newTab, SIGNAL(sendCommandRequest(const QString&, const QString&)),
+			this, SLOT(onSendCommandRequested(const QString&, const QString&)));
+
+	boost::mutex::scoped_lock lock(newMessageSync);
+	messageMap[name.toUtf8().constData()] = newTab;
 	return newTab;
 }
 
 bool DynRecMainWindow::onNewMessage(const std::string& name, const std::string& data)
 {
-	boost::mutex::scoped_lock lock(newMessageSync);
-	qDebug()<<("New message " + name + ": " + data).c_str();
+	emit newMessage(name,data);
 	return true;
+}
+
+void DynRecMainWindow::on_NewMessage(const std::string& name, const std::string& data)
+{
+	messageMap[name]->update(data);
 }
 
 

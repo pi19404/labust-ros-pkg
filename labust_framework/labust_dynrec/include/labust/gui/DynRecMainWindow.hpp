@@ -42,6 +42,7 @@
 
 #include <map>
 #include <string>
+#include <deque>
 
 namespace Ui
 {
@@ -53,19 +54,18 @@ namespace labust
 {
 	namespace gui
 	{
+		class ReconfigureWidget;
 		/**
 		 * The class implements the main windows of the dynamic reconfigure application
 		 * for the LABUST navcon framework.
 		 *
-		 * \todo Add tab termination with double-click
-		 * \todo Add command sending
-		 * \todo Add focus to new tab
+		 * \todo Add tab detaching.
 		 */
 		class DynRecMainWindow : public QMainWindow
 		{
 			Q_OBJECT
 
-			typedef std::map<std::string, QWidget*> VariableMap;
+			typedef std::map<std::string, ReconfigureWidget*> VariableMap;
 			typedef labust::gui::XMLMessageExchange::CommsCommands CommsCommands;
 			typedef labust::gui::XMLMessageExchange::GUICommands GUICommands;
 		public:
@@ -96,11 +96,29 @@ namespace labust
 				this->mediator = mediator;
 			}
 
+		signals:
+			void newMessage(const std::string& name, const std::string& data);
+
 		private slots:
 			/**
 			 * The command handler.
 			 */
 			void on_newVariableName_returnPressed();
+			/**
+			 * The command handler.
+			 */
+			void on_VariableTabs_tabCloseRequested(int index);
+			/**
+			 * The method handles send command requests.
+			 *
+			 * \param name The name of the command.
+			 * \param command The command contents.
+			 */
+			void onSendCommandRequested(const QString& name, const QString& command);
+			/**
+			 * The new message slot.
+			 */
+			void on_NewMessage(const std::string& name, const std::string& data);
 
 		private:
 			/**
@@ -119,12 +137,13 @@ namespace labust
 			 * \param data The message data.
 			 */
 			bool onNewMessage(const std::string& name, const std::string& data);
+
 			/**
 			 * The method handles GUI adjusments when a new variable is added.
 			 *
 			 * \param The name of the new variable.
 			 */
-			QWidget* makeNewTab();
+			ReconfigureWidget* makeNewTab(const QString& name);
 
 			/**
 			 * The GUI initial configuration.
@@ -139,6 +158,10 @@ namespace labust
 			 * The message list.
 			 */
 			VariableMap messageMap;
+			/**
+			 * The tab list.
+			 */
+			std::deque<std::string> nameList;
 			/**
 			 * The onNewMessage mutex.
 			 */

@@ -110,6 +110,13 @@ bool DynRecMoosApp::registerVariable(const std::string& name)
 	return m_Comms.Register(name,0);
 }
 
+bool DynRecMoosApp::unRegisterVariable(const std::string& name)
+{
+	boost::mutex::scoped_lock lock(registerVariableSync);
+	this->m_MOOSVars.erase(name);
+	return m_Comms.UnRegister(name);
+}
+
 DynRecMoosApp::CommsCommands::CPtr DynRecMoosApp::getCommsCommands()
 {
 	CommsCommands::Ptr commands(new CommsCommands());
@@ -120,6 +127,8 @@ DynRecMoosApp::CommsCommands::CPtr DynRecMoosApp::getCommsCommands()
 			static_cast< bool (CMOOSCommClient::*)
 			(const std::string&, const std::string&, double)>(&CMOOSCommClient::Notify),
 			&m_Comms,_1,_2,0));
+
+	commands->addUnRegisterVariableCallback(boost::bind(&DynRecMoosApp::unRegisterVariable, this, _1));
 
 	return commands;
 }

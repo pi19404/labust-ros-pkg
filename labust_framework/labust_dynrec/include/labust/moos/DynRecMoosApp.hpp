@@ -120,6 +120,10 @@ namespace labust
 			 * The variable registration callback.
 			 */
 			bool registerVariable(const std::string& name);
+			/**
+			 * The variable unregistration callback.
+			 */
+			bool unRegisterVariable(const std::string& name);
 
 			/**
 			 * The mediator object for the communication layer connection.
