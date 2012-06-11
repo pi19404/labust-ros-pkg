@@ -36,6 +36,7 @@
 #include <labust/xml/XMLWriter.hpp>
 #include <labust/tools/TimingTools.hpp>
 #include <labust/xml/xmlfwd.hpp>
+#include <labust/xml/adapt_class.hpp>
 
 #include <boost/type_traits.hpp>
 
@@ -131,9 +132,72 @@ catch (labust::xml::XMLException& e)
 	return false;
 };
 
+struct test
+{
+	PP_LABUST_IN_CLASS_ADAPT_TO_XML_WITH_UPDATES(test,
+			(int, stuff)
+			(int, stuff2)
+			(std::string, stuff3))
+
+	int stuff,stuff2;
+	std::string stuff3;
+};
+
+PP_LABUST_MAKE_CLASS_XML_OPERATORS_WITH_UPDATE(,test,
+		(int, stuff)
+		(int, stuff2)
+		(std::string, stuff3))
+
+struct testC
+{
+	PP_LABUST_IN_CLASS_ADAPT_TO_XML_WITH_UPDATES(testC,
+			(int, st)
+			(test, a)
+			(test, b))
+
+	int st;
+	test a,b;
+};
+
+PP_LABUST_MAKE_CLASS_XML_OPERATORS_WITH_UPDATE(,testC,
+		(int, st)
+		(test, a)
+		(test, b))
+
 int main(int argc, char* argv[])
 try
 {
+	testC t;
+
+	std::string xmltest("<testC><param name=\"st\" value=\"1\" /></testC>");
+
+	t.a.stuff = 10;
+	t.a.stuff2 = 12;
+	t.b.stuff = 13;
+	t.b.stuff2 = 14;
+	t.a.stuff3 = "Stuff3_a";
+	t.b.stuff3 = "Stuff3_b";
+
+	t.unwrapFromXml(xmltest);
+
+	t.clearUpdate();
+	t.a.clearUpdate();
+
+	t.a.stuff = 11;
+	t.updateFlags[t.aFlag] = 1;
+	t.a.updateFlags[t.a.stuffFlag] = 1;
+
+	std::cout<<*t.wrapInXml()<<std::endl;
+
+	if (t.hasUpdated(t.stFlag))
+		std::cout<<"Updated st."<<std::endl;
+
+	if (t.hasUpdated(t.aFlag))
+		std::cout<<"Updated a."<<std::endl;
+
+	std::cout<<"Exit."<<std::endl;
+
+	exit(0);
 	bool flag(true);
 
 	if ((flag = test_xml_reader(argc, argv)))

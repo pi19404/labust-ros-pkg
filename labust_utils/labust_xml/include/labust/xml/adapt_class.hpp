@@ -39,6 +39,8 @@
 #include <boost/mpl/has_xxx.hpp>
 BOOST_MPL_HAS_XXX_TRAIT_DEF(use_xml_operator)
 
+#include <vector>
+
 #define PP_LABUST_SELECT_WRITE_TO_XML(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE) \
 	labust::xml::wrapInXml(writer, object.BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE),\
 	PP_LABUST_MAKE_STRING_LVL2(BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE)),\
@@ -105,6 +107,65 @@ BOOST_MPL_HAS_XXX_TRAIT_DEF(use_xml_operator)
 			};\
 		PP_LABUST_NAMESPACE_DEFINITIONS_END((0)NAMESPACE_SEQ)\
 		PP_LABUST_MAKE_CLASS_XML_OPERATORS(NAMESPACE_SEQ, NAME, ATTRIBUTES)
+
+#define PP_LABUST_ATTRIBUTE_TO_UPDATE_ENUM(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE)\
+		BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE),Flag),
+
+#define PP_LABUST_IN_CLASS_ADD_UPDATE_ENUMERATIONS(ATTRIBUTES)\
+	typedef enum {PP_LABUST_MACRO_ON_ATTRIBUTES(PP_LABUST_ATTRIBUTE_TO_UPDATE_ENUM,ATTRIBUTES)updateFlagsLen} UpdateEnum;\
+
+#define PP_LABUST_ATTRIBUTE_MAKE_UPDATE_ACCESSOR(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE)\
+	const BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,0,ATTRIBUTE)& \
+
+#define PP_LABUST_IN_CLASS_ADD_UPDATE_ACCESSORS(ATTRIBUTES)\
+	PP_LABUST_MACRO_ON_ATTRIBUTES(PP_LABUST_ATTRIBUTE_MAKE_UPDATE_ACCESSOR,ATTRIBUTES)
+
+#define PP_LABUST_IN_CLASS_ADAPT_TO_XML_WITH_UPDATES(NAME, ATTRIBUTES)\
+	PP_LABUST_IN_CLASS_ADD_FRIENDS(NAME)\
+	struct use_xml_operator;\
+	PP_LABUST_IN_CLASS_ADD_UPDATE_ENUMERATIONS(ATTRIBUTES)\
+	std::vector<bool> updateFlags;\
+	inline void clearUpdate(){updateFlags.resize(updateFlagsLen); updateFlags.clear();};\
+	inline bool hasUpdated(UpdateEnum num){return updateFlags[num];};\
+	inline labust::xml::StringPtr wrapInXml(const std::string& id = "")\
+	{\
+		labust::xml::Writer writer;\
+		labust::xml::wrapInXml(writer,*this,id,#NAME);\
+		writer.endDocument();\
+		return writer.toStringPt();\
+	}\
+	\
+	inline void unwrapFromXml(const std::string& data, const std::string& id = "")\
+	{\
+		this->clearUpdate();\
+		labust::xml::Reader reader(data);\
+		bool isAbsolute(reader.try_expression("/"#NAME));\
+		labust::xml::unwrapFromXml(reader,*this,id,(isAbsolute?"/"#NAME:"//"#NAME));\
+	}
+
+#define PP_LABUST_SELECT_READ_TO_XML_WITH_UPDATE(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE) \
+	object.updateFlags[object.BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE),Flag)] = \
+	PP_LABUST_SELECT_READ_TO_XML(R,ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE);
+#define PP_LABUST_SELECT_WRITE_TO_XML_WITH_UPDATE(R, ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE) \
+	if (object.updateFlags[object.BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(ATTRIBUTE_TUPEL_SIZE,1,ATTRIBUTE),Flag)]) \
+	PP_LABUST_SELECT_WRITE_TO_XML(R,ATTRIBUTE_TUPEL_SIZE, ATTRIBUTE);
+
+#define PP_LABUST_MAKE_CLASS_XML_OPERATORS_WITH_UPDATE(NAMESPACE_SEQ, NAME, ATTRIBUTES) \
+	PP_LABUST_NAMESPACE_DEFINITIONS_BEGIN((0)NAMESPACE_SEQ)\
+	\
+	labust::xml::Writer& operator<<(labust::xml::Writer& writer, const NAME& object)\
+	{\
+	  PP_LABUST_MACRO_ON_ATTRIBUTES(PP_LABUST_SELECT_WRITE_TO_XML_WITH_UPDATE,ATTRIBUTES)\
+		return writer;\
+	}\
+	\
+	labust::xml::Reader& operator>>(labust::xml::Reader& reader, NAME& object)\
+	{\
+		object.clearUpdate();\
+		PP_LABUST_MACRO_ON_ATTRIBUTES(PP_LABUST_SELECT_READ_TO_XML_WITH_UPDATE,ATTRIBUTES)\
+		return reader;\
+	}\
+	PP_LABUST_NAMESPACE_DEFINITIONS_END((0)NAMESPACE_SEQ)
 
 /* ADAPT_CLASS_HPP_ */
 #endif

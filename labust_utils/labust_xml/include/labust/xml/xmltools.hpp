@@ -158,24 +158,28 @@ namespace labust
 		 * \tparam Value The value of the type.
 		 */
 		template <class Value>
-		labust::xml::Reader& unwrapFromXml(labust::xml::Reader& reader, Value& object,
+		bool unwrapFromXml(labust::xml::Reader& reader, Value& object,
 				const std::string& id, const std::string& type, boost::mpl::true_ eval=boost::mpl::true_())
 		{
-			_xmlNode* org_node = reader.currentNode();
-			reader.useNode(reader.value<_xmlNode*>(id.empty()?type:type+"[@id='"+id+"']"));
-			reader>>object;
-			reader.useNode(org_node);
-			return reader;
+			_xmlNode* org_node(reader.currentNode());
+			_xmlNode* node(0);
+			if (reader.value(id.empty()?type:type+"[@id='"+id+"']", &node))
+			{
+				reader.useNode(node);
+				reader>>object;
+				reader.useNode(org_node);
+				return true;
+			}
+			return false;
 		};
 		/**
 		 * Specialization for types that do not have a XMLReader operator>> defined.
 		 */
 		template <class Value>
-		inline labust::xml::Reader& unwrapFromXml(labust::xml::Reader& reader, Value& object,
+		inline bool unwrapFromXml(labust::xml::Reader& reader, Value& object,
 				const std::string& name, const std::string& type, boost::mpl::false_)
 		{
-			reader.value("param[@name='"+name+"']/@value",&object);
-			return reader;
+			return reader.value("param[@name='"+name+"']/@value",&object);
 		};
 	}
 }

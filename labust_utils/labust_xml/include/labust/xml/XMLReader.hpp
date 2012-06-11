@@ -266,7 +266,7 @@ namespace labust
        *
        * \param xpath_expression The XPath expression.
        */
-      NodeCollectionPtr evaluate2nodeset(const char* xpath_expression) const;
+      bool evaluate2nodeset(const char* xpath_expression, NodeCollectionPtr& nodeCollection) const;
       /**
        * The method returns the content of the given node. Throws a XMLException if unsuccessful.
        *
@@ -404,8 +404,14 @@ namespace labust
     template <>
     inline bool Reader::value<_xmlNode*>(const std::string& xpath_expression, _xmlNode** const data) const
     {
-    	*data = this->evaluate2nodeset(xpath_expression.c_str())->at(0);
-    	return true;
+    	NodeCollectionPtr collection;
+    	this->evaluate2nodeset(xpath_expression.c_str(), collection);
+    	if (collection != 0)
+    	{
+    		*data = collection->at(0);
+    		return true;
+    	}
+    	return false;
     }
     /**
      * Specialization for returning XML node pointers. Useful for retrieving a desired node group
@@ -419,7 +425,16 @@ namespace labust
     template <>
     inline _xmlNode* Reader::value<_xmlNode*>(const std::string& xpath_expression) const
 		{
-    	return this->evaluate2nodeset(xpath_expression.c_str())->at(0);
+    	NodeCollectionPtr collection;
+    	this->evaluate2nodeset(xpath_expression.c_str(), collection);
+    	if (collection != 0)
+    	{
+    		return collection->at(0);
+    	}
+    	else
+    	{
+    		throw XMLException(lastErrorMessage);
+    	}
 		}
 
     /**
@@ -463,7 +478,16 @@ namespace labust
     template <>
     inline NodeCollectionPtr Reader::value<NodeCollectionPtr>(const std::string& xpath_expression) const
     {
-    	return this->evaluate2nodeset(xpath_expression.c_str());
+    	NodeCollectionPtr collection;
+    	this->evaluate2nodeset(xpath_expression.c_str(),collection);
+    	if (collection != 0)
+    	{
+    		return collection;
+    	}
+    	else
+    	{
+    		throw XMLException(lastErrorMessage);
+    	}
     }
   }
 }

@@ -111,33 +111,6 @@ const char* Reader::evaluate(const char* xpath_expression) const
 	{
 		throw XMLException(lastErrorMessage);
 	}
-	/*
-  xmlXPathObjectPtr xpath_object(
-  		xmlXPathEvalExpression(BAD_CAST xpath_expression, this->xpath_context.get()),
-  		std::ptr_fun(xmlXPathFreeObject));
-
-  //If the XPath evaluation failed throw.
-  if (!xpath_object) throw XMLException(std::string("XPATH expression: '") +
-  		xpath_expression + std::string("' failed evaluation."));
-
-  //Using switch for better readability
-  switch (xpath_object->type)
-  {
-  case XPATH_NODESET:
-    if (xpath_object->nodesetval && (xpath_object->nodesetval->nodeNr > 0))
-    {
-    	return reinterpret_cast<const char*>(content(xpath_object->nodesetval->nodeTab[0]));
-    }
-    else
-    {
-      throw XMLException(std::string("XPATH node set is empty or undefined. When evaluating:'") +
-      		xpath_expression + std::string("'"));
-    }
-  case XPATH_STRING: return reinterpret_cast<const char*>(xpath_object->stringval);
-  default: throw XMLException(std::string("Unknown XPATH expression type. When evaluating:'") +
-  		xpath_expression + std::string("'. We cover only the XPATH_NODESET and XPATH_STRING types."));
-  }
-  */
 }
 
 bool Reader::evaluate(const char* xpath_expression, const char** content) const
@@ -173,15 +146,18 @@ bool Reader::evaluate(const char* xpath_expression, const char** content) const
   }
 }
 
-NodeCollectionPtr Reader::evaluate2nodeset(const char* xpath_expression) const
+bool Reader::evaluate2nodeset(const char* xpath_expression, NodeCollectionPtr& nodeCollection) const
 {
   xmlXPathObjectPtr xpath_object(
   		xmlXPathEvalExpression(BAD_CAST xpath_expression, this->xpath_context.get()),
   		std::ptr_fun(xmlXPathFreeObject));
 
   //If the XPath evaluation failed throw.
-  if (!xpath_object) throw XMLException(std::string("XPATH expression: '") +
-  		xpath_expression + std::string("' failed evaluation."));
+  if (!xpath_object)
+  {
+  	lastErrorMessage = (std::string("XPATH expression: '") + xpath_expression + std::string("' failed evaluation."));
+  	return false;
+  }
 
   if (xpath_object->type == XPATH_NODESET)
   {
@@ -189,18 +165,20 @@ NodeCollectionPtr Reader::evaluate2nodeset(const char* xpath_expression) const
     {
   		_xmlNode** begin = &xpath_object->nodesetval->nodeTab[0];
       _xmlNode** end = &xpath_object->nodesetval->nodeTab[xpath_object->nodesetval->nodeNr];
-      return NodeCollectionPtr(new std::vector<_xmlNode*>(begin,end));
+      nodeCollection.reset(new std::vector<_xmlNode*>(begin,end));
+      return true;
     }
     else
     {
-    	throw XMLException(std::string("XPATH node set is empty or undefined. When evaluating:'") +
-    			xpath_expression + std::string("'"));
+    	lastErrorMessage = std::string("XPATH node set is empty or undefined. When evaluating:'") +
+    			xpath_expression + std::string("'");
+    	return false;
     }
   }
   else
   {
-   throw XMLException(std::string("XPATH expression: '") +
-  		 xpath_expression + std::string("' did not evaluate to a node set."));
+   lastErrorMessage = std::string("XPATH expression: '") + xpath_expression + std::string("' did not evaluate to a node set.");
+   return false;
   }
 }
 
@@ -215,26 +193,6 @@ const char* Reader::content(const _xmlNode* const xml_node) const
 	{
 		throw XMLException(lastErrorMessage);
 	}
-
-	/*
-	//Using switch for better readability
-	switch (xml_node->type)
-	{
-	case XML_ELEMENT_NODE:
-    if (xml_node->children && (xml_node->children[0].type == XML_TEXT_NODE))
-    {
-      //Try to return a child content text
-      return xml_node->children[0].content;
-    }
-    else
-    {
-      throw XMLException("Can not return content of node that has no text.");
-    }
-	case XML_ATTRIBUTE_NODE: return xml_node->children[0].content;
-	case XML_TEXT_NODE: return xml_node->content;
-	default: throw XMLException("Can not return content to unhandled type.");
-	}
-	*/
 }
 
 bool Reader::content(const _xmlNode* const xml_node, const char** content) const
