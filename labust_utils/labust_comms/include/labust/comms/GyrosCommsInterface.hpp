@@ -36,7 +36,8 @@
 #include <labust/xml/GyrosReader.hpp>
 #include <labust/xml/GyrosWriter.hpp>
 #include <labust/xml/GyrosMatrix.hpp>
-#include <boost/smart_ptr.hpp>
+#include <labust/xml/xmlfwd.hpp>
+#include <boost/utility.hpp>
 
 #include <string>
 
@@ -63,12 +64,40 @@ namespace labust
 			};
 		}
 
+		/*
+		 * Struct used by Receive and AcceptData functions to store gyros readers along with message ID's of messages
+		 * they came from (moos_variable for moos comms, source_ip for ip interface, etc...)
+		 */
+		struct receivedGyrosMessage
+		{
+			labust::xml::GyrosReaderPtr gyros;
+			std::string id;
+			receivedGyrosMessage(labust::xml::GyrosReaderPtr gyros,std::string id):
+			gyros(gyros),
+			id(id)
+			{}
+		};
+
+		/*
+		 * Struct used internally to store gyros writers along with message ID's of messages
+		 * they should be sent in(moos_variable for moos comms, source_ip for ip interface, etc...)
+		 */
+		struct gyrosMessageToSend
+		{
+			labust::xml::GyrosWriterPtr gyros;
+			std::string id;
+			gyrosMessageToSend(labust::xml::GyrosWriterPtr gyros,std::string id):
+			gyros(gyros),
+			id(id)
+			{}
+		};
+
 		/**
 		 * \class CommEntity
 		 * \brief This class represents an object which is passed to a commsInterface for performing callbacks.
 		 * If a class will rely on callbacks from CommsInterface, it must inherit from CommEntity class.
 		 */
-		class CommEntity
+		class CommEntity : boost::noncopyable
 		{
 		public:
 			/**
@@ -80,10 +109,10 @@ namespace labust
 			 * Can be used to parse data, or as a switchboard to pass received data to
 			 * the correct member functions.
 			 *
-			 * \param inputData data received from comms interface, GYROSReader object vector
+			 * \param inputData data received from comms interface, vector of GyrosReaders bundled with message id's, \see receivedGyrosMessage
 			 * \returns error code, 0 if OK
 			 */
-			virtual int AcceptData(std::vector<labust::xml::GyrosReader> &data) = 0;
+			virtual int AcceptData(std::vector<receivedGyrosMessage> &data) = 0;
 		private:
 
 		};
@@ -95,7 +124,7 @@ namespace labust
 		 * The interface uses the GYROS data format (xml based).
 		 * The CommsInterface must ensure that any communication protocol can be used in two ways:
 		 * PASSIVE: data is sent and received by calling member functions
-		 * ACTIVE: data is sent by calling CommsInterface member functions, and received data is passed from CommsInterface through a callback (see CommEntity)
+		 * ACTIVE: data is sent by calling CommsInterface member functions, and received data is passed from CommsInterface through a callback (\see CommEntity)
 		 */
 		class GyrosCommsInterface
 		{
@@ -119,10 +148,11 @@ namespace labust
 			 * Must be implemented
 			 *
 			 * \param data vector of gyroswriters with data to send
+			 * \param messageID identifier of outgoing message
 			 * \param wait true if function should block until the data is sent, false to return immediately
 			 * \return COMERRORS::ComError in case of error, 0 if everything is ok
 			 */
-			virtual commerrors::CommError Send(const labust::xml::GyrosWriter &data, bool wait = false) = 0;
+			virtual commerrors::CommError Send(const labust::xml::GyrosWriterPtr data, const std::string &messageID = "", bool wait = false) = 0;
 
 			/**
 			 * PASSIVE or ACTIVE usage
@@ -131,23 +161,24 @@ namespace labust
 			 * Must be implemented
 			 *
 			 * \param data vector of gyroswriters with data to send
+			 * \param messageID identifier of outgoing message
 			 * \param wait true if function should block until the data is sent, false to return immediately
 			 * \return COMERRORS::ComError in case of error, 0 if everything is ok
 			 */
-			virtual commerrors::CommError Send(const std::vector<labust::xml::GyrosWriter> &data, bool wait = false) = 0;
+			virtual commerrors::CommError Send(const std::vector<labust::xml::GyrosWriterPtr> &data, const std::string &messageID = "", bool wait = false) = 0;
 
 			/**
 			 * PASSIVE
 			 * This methods allows to receive data from the comms buffer.
-			 * Stores all received data in the GYROS vector as multiple objects
+			 * Stores all received data in the GYROS vector as multiple objects bundled with message ID's
 			 * If lock is set, the call blocks until data is available for receiving, otherwise exits with an empty vector
 			 * Must be implemented
 			 *
-			 * \param data vector of gyrosreaders with received data
+			 * \param data vector of GyrosReaders bundled with message id's, \see receivedGyrosMessage
 			 * \param wait true if the call should block until data is available, false to return error code
 			 * \return COMERRORS::ComError in case of error, 0 if everything is ok
 			 */
-			virtual commerrors::CommError Receive(std::vector<labust::xml::GyrosReader> &data, bool wait = false) = 0;
+			virtual commerrors::CommError Receive(std::vector<receivedGyrosMessage> &data, bool wait = false) = 0;
 
 			/**
 			 * This methods allows to access the hidden comms device. This allows
@@ -198,11 +229,6 @@ namespace labust
 
 			bool connected;
 		private:
-			/*
-			 * Noncopyable
-			 */
-			GyrosCommsInterface(const GyrosCommsInterface& orig);
-			GyrosCommsInterface & operator =(const GyrosCommsInterface &);
 		};
 	};
 };

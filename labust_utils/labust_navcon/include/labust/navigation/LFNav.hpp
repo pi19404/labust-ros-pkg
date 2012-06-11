@@ -50,8 +50,9 @@ namespace labust
 		 * The class implements the LineFollowing navigation.
 		 *
 		 * \todo Add configuration for the delay.
-		 * \todo Specify commands for line recalculation.
 		 * \todo Specify commands for filter model reconfiguration.
+		 * \todo Expose delay as configuration option.
+		 * \todo Expose filter model configuration.
 		 */
 		class LFNav : public virtual Driver
 		{

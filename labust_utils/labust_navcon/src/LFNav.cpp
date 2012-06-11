@@ -88,6 +88,7 @@ void LFNav::correction(const labust::vehicles::stateMapRef measurement, labust::
 	{
 		//recalculate the filter
 		this->recalculate(measurement);
+		std::cout<<"LFNAV: new measurement."<<std::endl;
 	}
 	else if (basic)
 	{

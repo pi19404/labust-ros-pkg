@@ -81,12 +81,17 @@ catch (std::exception& e)
 }
 
 void HDController::setCommand(const labust::apps::stringRef cmd)
+try
 {
 	this->unwrapFromXml(cmd);
 	///Re-tune controllers.
 	///\todo Add reconfiguration on update only.
 	labust::control::tuneController(headingParams, &heading);
 	labust::control::tuneController(depthParams, &depth);
+}
+catch (std::exception& e)
+{
+	std::cerr<<"HDController: "<<e.what()<<std::endl;
 }
 
 void HDController::getData(const labust::apps::stringPtr data)

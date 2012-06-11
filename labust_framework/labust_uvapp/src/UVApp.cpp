@@ -100,14 +100,57 @@ void UVApp::stop()
 
 const labust::vehicles::stateMapRef UVApp::step(labust::vehicles::stateMapRef measurements)
 {
-	uuv().getState(measurements);
+	//For now a separate handle for simulation.
+	///\todo Change the simulation to give only UUV sensor states, and to separately publish direct simulation measurements in a getData encoding.
+	///When that is done this will not be needed in simulation.
+	bool isSimulation = true;
+	bool newMeasurement = ((measurements.find(state::x) != measurements.end()) && (measurements.find(state::y) != measurements.end()));
+	double xuuv(0),yuuv(0),xbackup(0),ybackup(0);
+	if (isSimulation && newMeasurement)
+	{
+		using namespace labust::vehicles;
 
+		if (newMeasurement)
+		{
+			//Recover external modem measurements.
+			xuuv = measurements[state::x];
+			yuuv = measurements[state::y];
+		}
+	}
+
+	uuv().getState(measurements);
 	nav().prediction(tauk_1);
+
+	if (isSimulation)
+	{
+		//Remove measurements so that the filter does not correct
+		//in each step.
+		xbackup = measurements[state::x];
+		ybackup = measurements[state::y];
+		measurements.erase(state::x);
+		measurements.erase(state::y);
+
+		if (newMeasurement)
+		{
+			//Add the measurements when new ones arrived.
+			measurements[state::x] = xuuv;
+			measurements[state::y] = yuuv;
+		}
+	}
+
+	//Make a correction with edited measurements.
 	nav().correction(measurements,stateHat);
 
 	calculateTau();
 	uuv().setTAU(tau);
 	tauk_1 = tau;
+
+	//Return original measurements
+	if (isSimulation)
+	{
+		measurements[state::x] = xbackup;
+		measurements[state::y] = ybackup;
+	}
 
 	return stateHat;
 }

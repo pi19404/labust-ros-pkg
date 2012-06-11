@@ -89,17 +89,18 @@ try
 		init = false;
 	}*/
 
-	this->adjustDH(state[u]);
+	this->adjustDH(state.at(u));
 
 	//state[dH] = 1;
 
 	double dhout = dh_controller.step(stateRef.at(dH),state.at(dH));
 
-	std::cout<<"Dh controller out:"<<dhout<<","<<stateRef[dH]<<","<<state[dH]<<std::endl;
+	std::cout<<"Dh controller out:"<<dhout<<","<<stateRef.at(dH)<<","<<state.at(dH)<<std::endl;
 
-	tau[N] = r_controller.step(dhout,state[r]);
+	tau[N] = r_controller.step(dhout,state.at(r));
 			//(useFL)?beta_rr*state[r]*static_cast<double (*)(double)>(std::fabs)(state[r]):0);
-	tau[Z] = dv_controller.step(stateRef[dV],state[dV]);
+	tau[Z] = dv_controller.step(stateRef.at(dV),state.at(dV));
+	tau[X] = stateRef.at(X_e);
 }
 catch (std::exception& e)
 {
