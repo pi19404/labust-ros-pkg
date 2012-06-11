@@ -55,8 +55,9 @@ try
 		for (int i = 0; i<1000000; ++i)
 		{
 			//ent Ts = ent(reader.value<int>("//sampling-time"));
-			//double Ts(0); reader.value("//sampling-time",&Ts);
-			//std::string str; reader.value("//textparam",&str);
+			double Ts(0); reader.value("//sampling-time",&Ts);
+			//std::cout<<Ts<<std::endl;
+			std::string str; reader.value("//textparam",&str);
 			//std::string str = reader.value<std::string>("//textparam");
 		}
 

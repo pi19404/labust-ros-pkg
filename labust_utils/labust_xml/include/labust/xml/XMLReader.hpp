@@ -66,6 +66,9 @@ namespace labust
      * \todo Check for const-correctness.
      * \todo Switch try_* functions to boolean.
      * \todo Add method hasNode() to test if a node exists (it can be empty).
+     * \todo Extract the throw and nothrow into policies.
+     * \todo Allow for policies optimizing during conversions.
+     * \todo Handle xmlNode* and xmlNodeSets to not throw exceptions.
      */
     class Reader
     {
@@ -114,12 +117,23 @@ namespace labust
       _xmlNode* currentNode() const;
 
       /**
-       * The method evaluates the given XPath expression and return the content. If the evaluation
+       * The method evaluates the given XPath expression and returns the content. If the evaluation
        * fails or it evaluates to a node it will throws a labust::xml::XMLException.
+       *
+       * \param xpath_expression The desired expression to evaluate.
        *
        * \return Return the evaluated node content.
        */
       const char* evaluate(const char* xpath_expression) const;
+      /**
+       * The method evaluates the given XPath expression and returns the content. If the evaluation
+       * fails or it evaluates to a node it will return false.
+       *
+       * \param xpath_expression The desired expression to evaluate.
+       * \param content The content of the node in a constant string expression.
+       * \return Return true if node found, false otherwise.
+       */
+      bool evaluate(const char* xpath_expression, const char** content) const;
 
       /**
        * The method tests if the specified XPath expression can be evaluated. Useful if you want to
@@ -141,7 +155,7 @@ namespace labust
       }
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
-       * fails it returns false. Use this for testing if a parameter was specified in the XML.
+       * fails it throw a XML exception.
        * Useful to avoid try-catch phrases when multiple optional parameters exist.
        *
        * \param xpath_expression The XPath expression.
@@ -154,29 +168,27 @@ namespace labust
       template <typename ReturnType>
       inline bool try_value(const std::string& xpath_expression, ReturnType* const data) const
       {
-        try
-        {
-          this->value(xpath_expression,data);
-          return true;
-        }
-        catch (XMLException&){};
-        return false;
+      	if (this->value(xpath_expression,data)) return true;
+        throw XMLException(lastErrorMessage);
       }
 
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
-       * fails it throws a labust::xml::XMLException.
+       * fails it returns false. Useful to avoid try-catch phrases when multiple optional parameters exist.
        *
        * \param xpath_expression The XPath expression.
        * \param data Address of the return object.
+       * \param noThrow Does not throw a exception when evaluation fails.
        *
        * \tparam ReturnType Adjusts to the desired return type.
+       *
+       * \return True if expression evaluated successfully.
        */
       template <typename ReturnType>
-      inline void value(const std::string& xpath_expression, ReturnType* const data) const
+      inline bool value(const std::string& xpath_expression, ReturnType* const data) const
       {
       	typedef typename boost::mpl::or_<boost::is_float<ReturnType>, boost::is_integral<ReturnType>, boost::is_enum<ReturnType> > decision_type;
-      	this->cvalue(xpath_expression, data, decision_type());
+      	return this->cvalue(xpath_expression, data, decision_type());
       }
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
@@ -256,13 +268,23 @@ namespace labust
        */
       NodeCollectionPtr evaluate2nodeset(const char* xpath_expression) const;
       /**
-       * The method returns the content of the given node.
+       * The method returns the content of the given node. Throws a XMLException if unsuccessful.
        *
        * \param xml_node The pointer to the XML node.
        *
        * \return Pointer to the extracted string value.
        */
-      const xmlChar* content(const _xmlNode*  const xml_node) const;
+      const char* content(const _xmlNode*  const xml_node) const;
+      /**
+       * The method returns the content of the given node.
+       *
+       * \param xml_node The pointer to the XML node.
+       * \param content The extracted content in string value.
+       * \param doThrow Throw XML exception.
+       *
+       * \return Pointer to the extracted string value.
+       */
+      bool content(const _xmlNode*  const xml_node, const char** content) const;
 
       /**
        * The generic converter method. Uses a string stream to convert the evaluated value.
@@ -273,10 +295,16 @@ namespace labust
        * \tparam ReturnType Adjusts to the desired return type.
        */
       template<typename ReturnType>
-      inline void cvalue(const std::string& xpath_expression, ReturnType* const data, boost::mpl::false_) const
+      bool cvalue(const std::string& xpath_expression, ReturnType* const data, boost::mpl::false_) const
       {
-        std::stringstream out(this->evaluate(xpath_expression.c_str()));
-        out>>(*data);
+      	const char* content(0);
+      	if (this->evaluate(xpath_expression.c_str(), &content))
+      	{
+      		std::stringstream out(content);
+      		out>>(*data);
+      		return true;
+      	}
+      	return false;
       }
       /**
        * The converter specialization for numerics. Uses a ASCII to number converter.
@@ -287,20 +315,25 @@ namespace labust
        * \tparam ReturnType Adjusts to the desired return type.
        */
       template<typename ReturnType>
-      inline void cvalue(const std::string& xpath_expression, ReturnType* const data, boost::mpl::true_) const
+      bool cvalue(const std::string& xpath_expression, ReturnType* const data, boost::mpl::true_) const
       {
-	
-      	if (boost::is_float<ReturnType>::value && !boost::is_enum<ReturnType>::value)
+      	const char* content(0);
+
+      	if (this->evaluate(xpath_expression.c_str(), &content))
       	{
-      		(*data) = (ReturnType)atof(this->evaluate(xpath_expression.c_str())); //added explicit casts to handle enums correctly
-      		return;
+      		if (boost::is_float<ReturnType>::value && !boost::is_enum<ReturnType>::value)
+      		{
+      			(*data) = static_cast<ReturnType>(atof(content)); //added explicit casts to handle enums correctly
+      			return true;
+      		}
+
+      		if (boost::is_integral<ReturnType>::value)
+      		{
+      			(*data) = static_cast<ReturnType>(atoi(content));
+      			return true;
+      		}
       	}
-      	//Internal specialization for integral types.
-      	if (boost::is_integral<ReturnType>::value)
-      	{
-      		(*data) = (ReturnType)atoi(this->evaluate(xpath_expression.c_str()));
-      		return;
-      	}
+      	return false;
       }
       /**
        * The generic converter method. Uses a string stream to convert the evaluated value.
@@ -330,11 +363,11 @@ namespace labust
       	//Internal specialization for floating point types.
       	if (boost::is_float<ReturnType>::value && !boost::is_enum<ReturnType>::value)
       	{
-      		return (ReturnType)atof(this->evaluate(xpath_expression.c_str())); //added explicit cast to handle enums correctly
+      		return static_cast<ReturnType>(atof(this->evaluate(xpath_expression.c_str()))); //added explicit cast to handle enums correctly
       	}
       	else
       	{
-      		return (ReturnType)atoi(this->evaluate(xpath_expression.c_str()));
+      		return static_cast<ReturnType>(atoi(this->evaluate(xpath_expression.c_str())));
       	}
       }
 
@@ -354,7 +387,10 @@ namespace labust
 			 * The next parameter and type name.
 			 */
 			std::string nextParamName, nextParamType;
-
+			/**
+			 * The last error message.
+			 */
+			mutable std::string lastErrorMessage;
     };
 
     /**
@@ -366,9 +402,10 @@ namespace labust
      * \param data Address of the return object.
      */
     template <>
-    inline void Reader::value<_xmlNode*>(const std::string& xpath_expression, _xmlNode** const data) const
+    inline bool Reader::value<_xmlNode*>(const std::string& xpath_expression, _xmlNode** const data) const
     {
     	*data = this->evaluate2nodeset(xpath_expression.c_str())->at(0);
+    	return true;
     }
     /**
      * Specialization for returning XML node pointers. Useful for retrieving a desired node group
@@ -392,11 +429,16 @@ namespace labust
      * \param xpath_expression The XPath expression.
      * \param data Address of the return object.
      */
-
     template <>
-    inline void Reader::value<std::string>(const std::string& xpath_expression, std::string* const data) const
+    inline bool Reader::value<std::string>(const std::string& xpath_expression, std::string* const data) const
     {
-      *data = this->evaluate(xpath_expression.c_str());
+    	const char* content(0);
+      if (this->evaluate(xpath_expression.c_str(),&content))
+      {
+      	*data = content;
+      	return true;
+      }
+      return false;
     }
     /**
      * Specialization for strings. Useful when a string contains whitespace characters. If the
@@ -411,7 +453,6 @@ namespace labust
 		{
     	return this->evaluate(xpath_expression.c_str());
 		}
-
     /**
      * The method returns all the node pointers that match the evaluated XPath expression.
      *
