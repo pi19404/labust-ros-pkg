@@ -155,7 +155,7 @@ namespace labust
       }
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
-       * fails it throw a XML exception.
+       * fails it return false.
        * Useful to avoid try-catch phrases when multiple optional parameters exist.
        *
        * \param xpath_expression The XPath expression.
@@ -168,13 +168,13 @@ namespace labust
       template <typename ReturnType>
       inline bool try_value(const std::string& xpath_expression, ReturnType* const data) const
       {
-      	if (this->value(xpath_expression,data)) return true;
-        throw XMLException(lastErrorMessage);
+      	typedef typename boost::mpl::or_<boost::is_float<ReturnType>, boost::is_integral<ReturnType>, boost::is_enum<ReturnType> > decision_type;
+      	return this->cvalue(xpath_expression, data, decision_type());
       }
 
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
-       * fails it returns false. Useful to avoid try-catch phrases when multiple optional parameters exist.
+       * fails it throws a XMLException.
        *
        * \param xpath_expression The XPath expression.
        * \param data Address of the return object.
@@ -185,10 +185,9 @@ namespace labust
        * \return True if expression evaluated successfully.
        */
       template <typename ReturnType>
-      inline bool value(const std::string& xpath_expression, ReturnType* const data) const
+      inline void value(const std::string& xpath_expression, ReturnType* const data) const
       {
-      	typedef typename boost::mpl::or_<boost::is_float<ReturnType>, boost::is_integral<ReturnType>, boost::is_enum<ReturnType> > decision_type;
-      	return this->cvalue(xpath_expression, data, decision_type());
+      	if (!this->try_value(xpath_expression,data)) throw XMLException(lastErrorMessage);
       }
       /**
        * Evaluates the XPath expression and returns the desired value. If the expression evaluation
@@ -380,6 +379,10 @@ namespace labust
        */
       xmlXPathContextPtr xpath_context;
       /**
+       * The pointer to the XPath expression evaluation.
+       */
+      mutable xmlXPathObjectPtr xpath_object;
+      /**
        * Pointer to the root node of the XPath context.
        */
       mutable xmlNodePtr root_node;
@@ -402,7 +405,7 @@ namespace labust
      * \param data Address of the return object.
      */
     template <>
-    inline bool Reader::value<_xmlNode*>(const std::string& xpath_expression, _xmlNode** const data) const
+    inline bool Reader::try_value<_xmlNode*>(const std::string& xpath_expression, _xmlNode** const data) const
     {
     	NodeCollectionPtr collection;
     	this->evaluate2nodeset(xpath_expression.c_str(), collection);
@@ -445,7 +448,7 @@ namespace labust
      * \param data Address of the return object.
      */
     template <>
-    inline bool Reader::value<std::string>(const std::string& xpath_expression, std::string* const data) const
+    inline bool Reader::try_value<std::string>(const std::string& xpath_expression, std::string* const data) const
     {
     	const char* content(0);
       if (this->evaluate(xpath_expression.c_str(),&content))
@@ -488,6 +491,23 @@ namespace labust
     	{
     		throw XMLException(lastErrorMessage);
     	}
+    }
+    /**
+     * The method returns all the node pointers that match the evaluated XPath expression.
+     *
+     * \param xpath_expression The XPath expression.
+     *
+     * \return Pointer to the vector of XML nodes.
+     */
+    template <>
+    inline bool Reader::try_value<NodeCollectionPtr>(const std::string& xpath_expression, NodeCollectionPtr* nodes) const
+    {
+    	this->evaluate2nodeset(xpath_expression.c_str(),*nodes);
+    	if ((*nodes) != 0)
+    	{
+    		return true;
+    	}
+    	return false;
     }
   }
 }

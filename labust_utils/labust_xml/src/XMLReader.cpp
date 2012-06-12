@@ -102,7 +102,7 @@ _xmlNode* Reader::currentNode() const
 
 const char* Reader::evaluate(const char* xpath_expression) const
 {
-	const char* content;
+	const char* content(0);
 	if (this->evaluate(xpath_expression, &content))
 	{
 		return content;
@@ -115,7 +115,7 @@ const char* Reader::evaluate(const char* xpath_expression) const
 
 bool Reader::evaluate(const char* xpath_expression, const char** content) const
 {
-  xmlXPathObjectPtr xpath_object(
+  xpath_object = xmlXPathObjectPtr(
   		xmlXPathEvalExpression(BAD_CAST xpath_expression, this->xpath_context.get()),
   		std::ptr_fun(xmlXPathFreeObject));
 
@@ -133,22 +133,25 @@ bool Reader::evaluate(const char* xpath_expression, const char** content) const
     if (xpath_object->nodesetval && (xpath_object->nodesetval->nodeNr > 0))
     {
     	return this->content(xpath_object->nodesetval->nodeTab[0], content);
+    	return true;
     }
     else
     {
    		lastErrorMessage = std::string("XPATH node set is empty or undefined. When evaluating:'") +	xpath_expression + std::string("'");
       return false;
     }
-  case XPATH_STRING: *content = reinterpret_cast<const char*>(xpath_object->stringval); return true;
+  case XPATH_STRING: (*content) = reinterpret_cast<const char*>(xpath_object->stringval); return true;
   default:
   		lastErrorMessage = std::string("Unknown XPATH expression type. When evaluating:'") + xpath_expression + std::string("'. We cover only the XPATH_NODESET and XPATH_STRING types.");
   	return false;
   }
+
+  return false;
 }
 
 bool Reader::evaluate2nodeset(const char* xpath_expression, NodeCollectionPtr& nodeCollection) const
 {
-  xmlXPathObjectPtr xpath_object(
+  xpath_object = xmlXPathObjectPtr(
   		xmlXPathEvalExpression(BAD_CAST xpath_expression, this->xpath_context.get()),
   		std::ptr_fun(xmlXPathFreeObject));
 
@@ -159,6 +162,7 @@ bool Reader::evaluate2nodeset(const char* xpath_expression, NodeCollectionPtr& n
   	return false;
   }
 
+  nodeCollection.reset();
   if (xpath_object->type == XPATH_NODESET)
   {
   	if (xpath_object->nodesetval && (xpath_object->nodesetval->nodeNr > 0))
@@ -204,7 +208,7 @@ bool Reader::content(const _xmlNode* const xml_node, const char** content) const
     if (xml_node->children && (xml_node->children[0].type == XML_TEXT_NODE))
     {
       //Try to return a child content text
-    	*content = reinterpret_cast<const char*>(xml_node->children[0].content);
+    	(*content) = reinterpret_cast<const char*>(xml_node->children[0].content);
       return true;
     }
     else
@@ -212,8 +216,8 @@ bool Reader::content(const _xmlNode* const xml_node, const char** content) const
     	lastErrorMessage = "Can not return content of node that has no text.";
       return false;
     }
-	case XML_ATTRIBUTE_NODE: *content = reinterpret_cast<const char*>(xml_node->children[0].content); return true;
-	case XML_TEXT_NODE: *content = reinterpret_cast<const char*>(xml_node->content); return true;
+	case XML_ATTRIBUTE_NODE: (*content) = reinterpret_cast<const char*>(xml_node->children[0].content); return true;
+	case XML_TEXT_NODE: (*content) = reinterpret_cast<const char*>(xml_node->content); return true;
 	default:
 		lastErrorMessage = "Can not return content to unhandled type.";
 		return false;

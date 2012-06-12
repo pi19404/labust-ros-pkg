@@ -163,7 +163,7 @@ namespace labust
 		{
 			_xmlNode* org_node(reader.currentNode());
 			_xmlNode* node(0);
-			if (reader.value(id.empty()?type:type+"[@id='"+id+"']", &node))
+			if (reader.try_value(id.empty()?type:type+"[@id='"+id+"']", &node))
 			{
 				reader.useNode(node);
 				reader>>object;
@@ -179,7 +179,7 @@ namespace labust
 		inline bool unwrapFromXml(labust::xml::Reader& reader, Value& object,
 				const std::string& name, const std::string& type, boost::mpl::false_)
 		{
-			return reader.value("param[@name='"+name+"']/@value",&object);
+			return reader.try_value("param[@name='"+name+"']/@value",&object);
 		};
 	}
 }

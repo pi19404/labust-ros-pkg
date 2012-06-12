@@ -171,7 +171,11 @@ try
 
 	std::string xmltest("<testC><param name=\"st\" value=\"1\" /></testC>");
 
-	t.a.stuff = 10;
+	labust::xml::Reader reader(xmltest);
+	reader.useNode(reader.value<_xmlNode*>("//param"));
+	std::cout<<reader.value<std::string>("name()");
+
+	/*t.a.stuff = 10;
 	t.a.stuff2 = 12;
 	t.b.stuff = 13;
 	t.b.stuff2 = 14;
@@ -195,7 +199,7 @@ try
 	if (t.hasUpdated(t.aFlag))
 		std::cout<<"Updated a."<<std::endl;
 
-	std::cout<<"Exit."<<std::endl;
+	std::cout<<"Exit."<<std::endl;*/
 
 	exit(0);
 	bool flag(true);
