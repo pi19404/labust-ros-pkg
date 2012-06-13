@@ -111,6 +111,7 @@ try
 
 	//Initialize sonar
 	BVTSonar sonar = BVTSonar_Create();
+
 	BVTHead head(0);
 	try
 	{

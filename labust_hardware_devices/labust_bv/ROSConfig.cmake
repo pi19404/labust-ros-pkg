@@ -31,3 +31,6 @@ rosbuild_link_boost(${PR_NAME} thread)
 
 set(PR_NAME bv_monitor)
 rosbuild_add_executable(${PR_NAME} src/bv_monitor.cpp)
+
+rosbuild_add_executable(blueview_test src/blueview_test.cpp)
+rosbuild_link_boost(blueview_test thread)
