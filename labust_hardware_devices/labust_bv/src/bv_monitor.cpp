@@ -31,7 +31,7 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <sensor_msgs/Image.h>
+#include <labust_bv/BVSonar.h>
 #include <sensor_msgs/image_encodings.h>
 #include <labust_bv/SetRange.h>
 #include <cv_bridge/cv_bridge.h>
@@ -43,15 +43,45 @@
 
 ros::Time last;
 
-void callback(const sensor_msgs::ImageConstPtr& image)
+void callback(const labust_bv::BVSonarConstPtr& image)
 {
-	ROS_INFO("Received image: %d x %d x 4 = %d",image->width, image->height,image->data.size());
+	ROS_INFO("Received image: %d x %d x 2 = %d",image->image.width, image->image.height,image->image.data.size());
 	ROS_INFO("Elapsed time: %f",(ros::Time::now() - last).toSec());
 	last = ros::Time::now();
 
-	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvShare(image, sensor_msgs::image_encodings::MONO16);
+	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvCopy(image->image, sensor_msgs::image_encodings::MONO16);
 
 	cv::imshow("Sonar",cv_ptr->image*200);
+	cv::waitKey(10);
+
+
+	/*ros::NodeHandle nh;
+	ros::ServiceClient client = nh.serviceClient<labust_bv::SetRange>("SetRange");
+	labust_bv::SetRange service;
+
+	service.request.stop = 15;
+	service.request.start = 5;
+
+	if (client.call(service))
+	{
+		ROS_INFO("Service ok.");
+	}
+	else
+	{
+		ROS_INFO("Service failed.");
+	}
+	*/
+}
+
+void callback2(const labust_bv::BVSonarConstPtr& image)
+{
+	ROS_INFO("Received image: %d x %d x 4 = %d",image->image.width, image->image.height,image->image.data.size());
+	ROS_INFO("Elapsed time: %f",(ros::Time::now() - last).toSec());
+	last = ros::Time::now();
+
+	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvCopy(image->image, sensor_msgs::image_encodings::BGRA8);
+
+	cv::imshow("SonarColor",cv_ptr->image);
 	cv::waitKey(10);
 
 
@@ -81,8 +111,9 @@ try
 	ros::NodeHandle nhandle;
 
 	//Configure this node
-	std::string topicName("bv_image");
-	int bufferSize(5),rate(10);
+	std::string topicName("bvsonar_img");
+	std::string topicName2("bvsonar_cimg");
+	int bufferSize(1),rate(10);
 	ros::NodeHandle phandle("~");
 	phandle.param("TopicName",topicName,topicName);
 	phandle.param("BufferSize",bufferSize,bufferSize);
@@ -90,6 +121,7 @@ try
 
 	//Create topic subscription
 	ros::Subscriber imageTopic = nhandle.subscribe(topicName,bufferSize,callback);
+	ros::Subscriber imageTopic2 = nhandle.subscribe(topicName2,bufferSize,callback2);
 
 	ros::spin();
 	return 0;
