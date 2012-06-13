@@ -1,0 +1,22 @@
+<package>
+	<description brief="BlueView image processing.">
+		The package contains the modular image processing tools for the 
+		BlueView and similar imaging sonars.
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/labust_bvimgprocessor</url> -->
+
+	<rosdep name="boost" />
+	<rosdep name="opencv" />
+
+	<depend package="labust_tools" />
+	<depend package="labust_xml" />
+	<depend package="labust_navcon" />
+	
+	<export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lbvimgprocessor -lbvprocchain" />
+  </export>
+</package>
+
