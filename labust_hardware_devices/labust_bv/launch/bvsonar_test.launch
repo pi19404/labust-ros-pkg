@@ -1,7 +1,6 @@
  <launch>
   <node pkg="labust_bv" name="blueview_node" type="blueview_node">
-   <!-- <env name="LD_LIBRARY_PATH" value="$(find seamor)/lib" /> -->
-   <param name="Address" value="/home/dnad/Development/sonar/swimmer.son" />
-   <param name="ColormapDir" value="/usr/local/share/bvt_sdk/colormaps" />
+   <param name="Address" value="/home/dnad/Development/sonar/swimmer_old.son" />
+   <param name="ColormapDir" value="$(find bvt_sdk)/colormaps" />
   </node>
  </launch>

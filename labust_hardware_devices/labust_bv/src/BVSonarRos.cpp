@@ -34,6 +34,7 @@
 #include <labust/blueview/BVSonarRos.hpp>
 #include <labust_bv/BVSonar.h>
 #include <sensor_msgs/image_encodings.h>
+#include <tf/transform_broadcaster.h>
 
 using namespace labust::blueview;
 
@@ -55,7 +56,7 @@ void BVSonarRos::configure()
 	std::string colortopicName("bvsonar_cimg");
 	std::string colormap("jet");
 	std::string colormapDir(".");
-	int headNumber(0);
+	int headNumber(0), soundSpeed(1475);
 
 	phandle.param("Type",sonarType,sonarType);
 	phandle.param("Address",sonarAddress,sonarAddress);
@@ -65,6 +66,7 @@ void BVSonarRos::configure()
 	phandle.param("Colormap",colormap,colormap);
 	phandle.param("ColormapDir",colormapDir,colormapDir);
 	phandle.param("PingRate",pingRate,pingRate);
+	phandle.param("SoundSpeed", soundSpeed, soundSpeed);
 
 	//Sonar configuration
 	sonar = BVFactory::makeBVSonar();
@@ -78,6 +80,8 @@ void BVSonarRos::configure()
 	{
 		throw std::invalid_argument(BVTError_GetString(error));
 	}
+	//Sonar calibration
+	BVTHead_SetSoundSpeed(head,soundSpeed);
 
 	//Topics configuration
 	imageTopic = nhandle.advertise<labust_bv::BVSonar>(magtopicName,1);
@@ -99,6 +103,11 @@ void BVSonarRos::runFileAcquisition()
 		BVPingPtr ping(BVFactory::getBVPing(head,counter));
 		BVMagImagePtr image(BVFactory::getBVMagImage(ping));
 		BVColorImagePtr cimage(BVFactory::getBVColorImage(image,mapper));
+		try
+		{
+			BVNavDataPtr navData(BVFactory::getBVNavData(ping));
+		}
+		catch (std::exception& e){};
 
 		labust_bv::BVSonarPtr msg(new labust_bv::BVSonar());
 		msg->image.height = BVTMagImage_GetHeight(image.get());

@@ -49,12 +49,23 @@ namespace labust
 		typedef boost::shared_ptr<void> BVPingPtr;
 		typedef boost::shared_ptr<void> BVMagImagePtr;
 		typedef boost::shared_ptr<void> BVColorImagePtr;
+		typedef boost::shared_ptr<void> BVNavDataPtr;
 
 		struct BVFactory
 		{
 			static inline BVSonarPtr makeBVSonar()
 			{
 				return BVSonarPtr(BVTSonar_Create(), std::ptr_fun(&BVTSonar_Destroy));
+			};
+
+			static inline BVNavDataPtr makeBVNavData()
+			{
+				return BVNavDataPtr(BVTNavData_Create(), std::ptr_fun(&BVTNavData_Destroy));
+			};
+
+			static inline BVNavDataPtr makeBVNavData(void* data)
+			{
+				return BVNavDataPtr(data, std::ptr_fun(&BVTNavData_Destroy));
 			};
 
 			static inline BVColorMapperPtr makeBVColorMapper(const std::string& colormap)
@@ -69,6 +80,13 @@ namespace labust
 				BVTPing ping(0);
 				if (int error = BVTHead_GetPing(head,pingNum,&ping)) throw std::invalid_argument(BVTError_GetString(error));
 				return BVPingPtr(ping, std::ptr_fun(&BVTPing_Destroy));
+			};
+
+			static inline BVNavDataPtr getBVNavData(BVPingPtr ping)
+			{
+				BVTNavData navData = BVTNavData_Create();
+				if (int error = BVTPing_GetNavDataCopy(ping.get(),&navData)) throw std::invalid_argument(BVTError_GetString(error));
+				return BVNavDataPtr(navData,std::ptr_fun(&BVTNavData_Destroy));
 			};
 
 			static inline BVMagImagePtr getBVMagImage(BVPingPtr ping)
