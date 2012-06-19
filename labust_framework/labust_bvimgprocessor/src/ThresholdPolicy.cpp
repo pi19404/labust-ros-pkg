@@ -40,6 +40,7 @@ MatPtr SimpleThreshold::threshold(const MatPtr prefiltered, float weight)
 {
 	MatPtr thresholded(new cv::Mat(prefiltered->size(),CV_8UC1));
 	cv::threshold(*prefiltered, *thresholded, weight, 255, CV_THRESH_BINARY);
+	thresholded->convertTo(*thresholded,CV_8UC1);
 	return thresholded;
 }
 

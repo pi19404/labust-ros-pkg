@@ -65,7 +65,7 @@ namespace labust
 			 *
 			 * \return The pointer to the prefiltered image.
 			 */
-			inline static MatPtr prefilter(const MatPtr original);
+			static MatPtr prefilter(const MatPtr original);
 		};
 
 	}

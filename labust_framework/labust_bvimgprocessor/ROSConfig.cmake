@@ -26,15 +26,15 @@ include_directories(${OpenCV_INCLUDES})
 include_directories(include)
 
 
-set(PR_NAME bvimgprocessor)
+set(PR_NAME1 bvimgprocessor)
 set(SRC src/TrackerROI.cpp
 	src/ImageProcessing.cpp)
 set(HPP include/labust/blueview/TrackerROI.hpp
 	include/labust/blueview/ImageProcessing.hpp)
-rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
-target_link_libraries(${PR_NAME} ${OpenCV_LIBS} modpbase64)
+rosbuild_add_library(${PR_NAME1} ${SRC} ${HPP})
+target_link_libraries(${PR_NAME1} ${OpenCV_LIBS} modpbase64)
 
-set(PR_NAME bvprocchain)
+set(PR_NAME2 bvprocchain)
 set(SRC src/TrackerROI.cpp
 	src/PrefilterPolicy.cpp
 	src/ThresholdPolicy.cpp
@@ -48,8 +48,11 @@ SET(HPP include/labust/blueview/trackerfwd.hpp
 		include/labust/blueview/LabelPolicy.hpp
 		include/labust/blueview/AssociatePolicy.hpp
 		include/labust/blueview/ProcessingChain.hpp)
-rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
-target_link_libraries(${PR_NAME} ${OpenCV_LIBS} modpbase64)
+rosbuild_add_library(${PR_NAME2} ${SRC} ${HPP})
+target_link_libraries(${PR_NAME2} ${OpenCV_LIBS} modpbase64)
 
 rosbuild_add_executable(processor_test src/processor_test.cpp)
-target_link_libraries(processor_test ${PR_NAME})
+target_link_libraries(processor_test ${PR_NAME2})
+
+rosbuild_add_executable(bv_processor src/bv_processor.cpp)
+target_link_libraries(bv_processor ${PR_NAME1} ${PR_NAME2})

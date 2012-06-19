@@ -47,12 +47,13 @@ BVImageProcessor::BVImageProcessor():
   roi_len(1.5),
   resolution(0),
   hasVehicle(false),
+  foundVehicle(false),
   hasTarget(false){};
 
 BVImageProcessor::~BVImageProcessor(){};
 
 
-void BVImageProcessor::processROI(TrackerROI& roi)
+bool BVImageProcessor::processROI(TrackerROI& roi)
 {
   resolution = roi.headData.resolution;
   if (hasVehicle || foundVehicle)
@@ -65,7 +66,6 @@ void BVImageProcessor::processROI(TrackerROI& roi)
     llz2xy(roi.headData,tracklet);
     meter2pixel(roi,tracklet);
 
-
     if (hasTarget)
     {
       llz2xy(roi.headData,target);
@@ -77,7 +77,7 @@ void BVImageProcessor::processROI(TrackerROI& roi)
     cv::Mat disp = roi.roi.clone();
 
     std::cout<<"debug point 3"<<std::endl;
-    //cv::circle(disp,getTracklet().pposition,10,cv::Scalar(65536));
+    cv::circle(disp,getTracklet().pposition,10,cv::Scalar(65536));
 
     cv::imshow("Expected",disp*500);
     //cv::waitKey(10);
@@ -88,7 +88,7 @@ void BVImageProcessor::processROI(TrackerROI& roi)
 
     //From here things are the same as in the old version
     //Calculate the pixel region (3x3) meters
-    roi_len = 2;
+    roi_len = 3;
     int add = int(roi_len/roi.headData.resolution);
 
     //    if (roi->roi.size().height<200)
@@ -120,7 +120,7 @@ void BVImageProcessor::processROI(TrackerROI& roi)
     //Label
     boost::shared_ptr<std::vector<TrackedFeature> > features = label(binary);
     //Associate the results
-    associate(features);
+    bool retVal = associate(features);
 
     pixel2meter(roi,tracklet);
     xy2llz(roi.headData,tracklet);
@@ -131,12 +131,16 @@ void BVImageProcessor::processROI(TrackerROI& roi)
     std::cout<<"After:"<<std::scientific<<tracklet.latlon.x<<","<<tracklet.latlon.y<<std::endl;
     std::cout<<"After:"<<std::scientific<<tracklet.pposition.x<<","<<tracklet.pposition.y<<std::endl;
 
+    return retVal;
+
     //exit(0);
   }
   else
   {
     //Do automatic detection on the region
   }
+
+  return false;
 }
 
 cv::Mat BVImageProcessor::adjust(cv::Mat& original)
@@ -152,8 +156,8 @@ cv::Mat BVImageProcessor::adjust(cv::Mat& original)
 cv::Mat BVImageProcessor::threshold(cv::Mat& adjusted)
 {
   cv::Mat thresholded(adjusted.size(),CV_8UC1);
-  //cv::threshold(adjusted, thresholded, 0.5, 255, CV_THRESH_BINARY);
-  thresholded = histthresh(adjusted, 0.3,0.5,255);
+  cv::threshold(adjusted, thresholded, 0.35, 255, CV_THRESH_BINARY);
+  //thresholded = histthresh(adjusted, 0.3,0.5,255);
   thresholded.convertTo(thresholded,CV_8UC1);
 
   return thresholded;
@@ -239,10 +243,13 @@ boost::shared_ptr<std::vector<TrackedFeature> > BVImageProcessor::label(cv::Mat&
 	return info;
 }
 
-void BVImageProcessor::associate(boost::shared_ptr<std::vector<TrackedFeature> > features)
+bool BVImageProcessor::associate(boost::shared_ptr<std::vector<TrackedFeature> > features)
 {
  int idx = -1;
  double mindiff = 10000;
+
+ //When its hard to detect anything
+ if (features->size()>10) return false;
 
  for (size_t i=0;i<features->size();++i)
  {
@@ -258,8 +265,8 @@ void BVImageProcessor::associate(boost::shared_ptr<std::vector<TrackedFeature> >
   
   if (!hasTarget) tt_distance = 100;
 
-  if (tt_distance > distance)
-  {   
+  //if (tt_distance > distance)
+  //{
    if (hasTarget) std::cout<<"Distance to target:"<<tt_distance*resolution<<std::endl;
 
    if (distance<mindiff)
@@ -267,18 +274,23 @@ void BVImageProcessor::associate(boost::shared_ptr<std::vector<TrackedFeature> >
     mindiff = distance;
     idx = i;
    }
-  }
-  else
-  {
-    std::cout<<"Skipped target."<<std::endl;
-  }
+  //}
+  //else
+  //{
+    //std::cout<<"Skipped target."<<std::endl;
+  //}
  }
 
  if (idx != -1)
  {
   tracklet.pposition = (*features)[idx].pposition;
-  this->hasVehicle = true;
-  this->foundVehicle = true;
+  foundVehicle = true;
+  hasVehicle = true;
+  return true;
+ }
+ else
+ {
+	 return false;
  }
 }
 

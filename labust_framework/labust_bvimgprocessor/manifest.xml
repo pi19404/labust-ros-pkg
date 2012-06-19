@@ -1,7 +1,7 @@
 <package>
-	<description brief="BlueView image processing.">
-		The package contains the modular image processing tools for the 
-		BlueView and similar imaging sonars.
+  <description brief="BlueView image processing.">
+	The package contains the modular image processing tools for the 
+	BlueView and similar imaging sonars.
   </description>
   <author>Dula Nad</author>
   <license>BSD</license>
@@ -14,6 +14,7 @@
 	<depend package="labust_tools" />
 	<depend package="labust_xml" />
 	<depend package="labust_navcon" />
+	<depend package="labust_bv" />
 	
 	<export>
     <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lbvimgprocessor -lbvprocchain" />

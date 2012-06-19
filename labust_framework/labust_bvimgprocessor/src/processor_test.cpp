@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	labust::blueview::ProcessingChain<> chain;
 
 	TrackerROI roi("");
-	chain.process(roi);
+	chain.processROI(roi);
 
 	return 0;
 }

@@ -54,7 +54,7 @@ void CConverter::llz2xy(const SonarHead& head, const TrackedFeaturePtr tracklet)
   //std::cout<<"Move:"<<value.first<<","<<value.second<<std::endl;
 
   enum {x = 0,y,z};
-  vector pos;
+  vector pos(3);
   pos(x) = value.first;
   pos(y) = value.second;
   //We assume its in the middle of the beam (A BIG ASSUMPTION)

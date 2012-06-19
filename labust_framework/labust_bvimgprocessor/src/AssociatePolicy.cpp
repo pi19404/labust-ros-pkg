@@ -47,7 +47,7 @@ bool DirectAssociate::associate(const TrackedFeatureVecPtr features, const Sonar
 	{
 		TrackedFeature& tfeature = (*features)[i];
 
-		double tt_distance(0);
+		/*double tt_distance(0);
 		if (hasTarget)
 		{
 			double tt_dx = tfeature.pposition.x - target->pposition.x;
@@ -58,25 +58,27 @@ bool DirectAssociate::associate(const TrackedFeatureVecPtr features, const Sonar
 		{
 			tt_distance = 100;
 		}
+		*/
 
 	  double dx = (tfeature.pposition.x) - tracklet->pposition.x;
 	  double dy = (tfeature.pposition.y) - tracklet->pposition.y;
 	  double distance = sqrt(dx*dx + dy*dy);
 
-	  if (tt_distance > distance)
+	  /*if (tt_distance > distance)
 	  {
-	   if (hasTarget) std::cout<<"Distance to target:"<<tt_distance*head.resolution<<std::endl;
+	   if (hasTarget) std::cout<<"Distance to target:"<<tt_distance*head.resolution<<std::endl;*/
 
 	   if (distance<mindiff)
 	   {
 	    mindiff = distance;
 	    idx = i;
 	   }
-	  }
+	  /*}
 	  else
 	  {
 	    std::cout<<"Skipped target."<<std::endl;
 	  }
+	  */
 	}
 
 	if (idx != -1)

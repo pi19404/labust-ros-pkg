@@ -61,7 +61,7 @@ namespace labust
        *
        * \param roi The ROI object.
        */
-      void processROI(TrackerROI& roi);
+      bool processROI(TrackerROI& roi);
 
       /**
        * Set manually the inital vehicle contact.
@@ -112,7 +112,7 @@ namespace labust
        * Associate detections with one or more targets
        * \param features Features found in the image
        */
-      void associate(boost::shared_ptr<std::vector<TrackedFeature> > features);
+      bool associate(boost::shared_ptr<std::vector<TrackedFeature> > features);
       /**
        * This method updates the rotation matrix NED->XYZ conversion
        */

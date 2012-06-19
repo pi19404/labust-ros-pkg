@@ -98,23 +98,25 @@ void BVSonarRos::runFileAcquisition()
 	size_t pingNum = BVTHead_GetPingCount(head);
 	size_t counter = 0;
 	ros::Rate loop_rate(pingRate);
+	BVTHead_SetImageRes(head,BVTHEAD_RES_HIGH);
 	while (nhandle.ok())
 	{
 		BVPingPtr ping(BVFactory::getBVPing(head,counter));
+
 		BVMagImagePtr image(BVFactory::getBVMagImage(ping));
 		BVColorImagePtr cimage(BVFactory::getBVColorImage(image,mapper));
-		try
-		{
-			BVNavDataPtr navData(BVFactory::getBVNavData(ping));
-		}
-		catch (std::exception& e){};
 
+		//Add navigation data reading.
 		labust_bv::BVSonarPtr msg(new labust_bv::BVSonar());
 		msg->image.height = BVTMagImage_GetHeight(image.get());
 		msg->image.width = BVTMagImage_GetWidth(image.get());
 		msg->image.encoding = sensor_msgs::image_encodings::MONO16;
 		msg->image.step = 2*msg->image.width;
 		msg->image.is_bigendian = 0;
+		msg->resolution = BVTMagImage_GetRangeResolution(image.get());
+		msg->origin.z = 0;
+		msg->origin.x = BVTMagImage_GetWidth(image.get())/2;
+   	msg->origin.y = BVTMagImage_GetOriginRow(image.get());
 
 		unsigned char* datap = reinterpret_cast<unsigned char*>(BVTMagImage_GetBits(image.get()));
 		msg->image.data.assign(datap,datap + msg->image.step*msg->image.height);

@@ -52,7 +52,7 @@ namespace labust
 		 * BlueView sonar image processing algorithm.
 		 */
 		template<
-			class Prefilter = NoPrefilter,
+			class Prefilter = SimpleAdjust,
 			class Threshold = SimpleThreshold,
 			class Label = SimpleLabel,
 			class Associate = DirectAssociate>
@@ -63,13 +63,15 @@ namespace labust
 			 * Generic constructor.
 			 */
 			ProcessingChain():
-			tracklet(new TrackedFeature){};
+			tracklet(new TrackedFeature),
+			hasTarget(false),
+			foundVehicle(false){};
 
 			/**
 			 * The main processing command. Performs the operation on the specifed
 			 * ROI and returns the contanct if any.
 			 */
-			TrackedFeaturePtr process(const TrackerROI& roi)
+			TrackedFeaturePtr processROI(const TrackerROI& roi)
 			{
 				if (true)
 				{
@@ -84,12 +86,16 @@ namespace labust
 			      CConverter::meter2pixel(roi,target);
 			    }
 
+			    cv::Mat disp = roi.roi.clone();
+			    cv::circle(disp,this->tracklet->pposition,10,cv::Scalar(65536));
+			    cv::imshow("Expected",disp*500);
+
 			    //From here things are the similar to the old version
 			    //Calculate the pixel region (3x3) meters
 			    MatPtr roiImg(new cv::Mat(roi.roi));
 			    //Do adjustment
 			    MatPtr prefiltered = Prefilter::prefilter(roiImg);
-			    MatPtr binary = Threshold::threshold(prefiltered);
+			    MatPtr binary = Threshold::threshold(prefiltered,0.65);
 			    TrackedFeatureVecPtr features = Label::label(binary);
 
 			    this->foundVehicle = Associate::associate(features, roi.headData, tracklet.get(), target.get());
@@ -104,6 +110,16 @@ namespace labust
 			  }
 
 				return TrackedFeaturePtr();
+			}
+
+			inline bool isTracking(){return foundVehicle;};
+
+			void setPosition(const SonarHead& cnt)
+			{
+			  tracklet->position.x = cnt.range*cos((cnt.bearing - cnt.panAngle)*M_PI/180);
+			  tracklet->position.y = cnt.range*sin((cnt.bearing - cnt.panAngle)*M_PI/180);
+			  this->ccon.xy2llz(cnt,tracklet);
+			  foundVehicle = true;
 			}
 
 		private:
