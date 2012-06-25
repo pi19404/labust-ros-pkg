@@ -1,0 +1,16 @@
+<package>
+  <description brief="LABUST kinect applications.">
+    Applications developed by LABUST students to utilize
+    kinect for vehicle command and similar. 
+  </description>
+  <author>LABUST</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <!-- <url>http://ros.org/wiki/labust_kinect</url> -->
+ 
+  <!-- Some work is derived from the hand_interaction package. -->
+  <depend package="hand_interaction" />
+  <depend package="turtlesim" />
+</package>
+
+
