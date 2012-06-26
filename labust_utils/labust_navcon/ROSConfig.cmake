@@ -31,6 +31,7 @@ file(GLOB HPP include/labust/control/*.hpp
 rosbuild_add_library(${PR_NAME} ${SRC} ${HPP})
 #Build without plugin hooks.
 set_target_properties(${PR_NAME} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_WITHOUT_PLUGIN_HOOK")
+rosbuild_link_boost(${PR_NAME} thread)
 
 
 set(LFC_NAME lfcontrol-plug)
