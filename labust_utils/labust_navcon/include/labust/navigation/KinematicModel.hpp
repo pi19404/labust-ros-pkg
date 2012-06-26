@@ -57,12 +57,13 @@ namespace labust
       typedef vector input_type;
       typedef vector output_type;
 
-      enum {xp=0,yp,Vv,psi,r,size = 5};
+      enum {xp=0,yp,Vv,psi,r};
+      enum {stateNum = 5};
 
       /**
        * The main constructor.
        */
-      KinematicModel(const labust::xml::ReaderPtr reader);
+      KinematicModel();
       /**
        * Generic destructor.
        */
@@ -72,7 +73,7 @@ namespace labust
       /**
        * Configure the model based on the XML supplied.
        */
-      void configure(const labust::xml::ReaderPtr reader);
+      void configure();
       /**
        * Perform a prediction step based on the system input.
        *

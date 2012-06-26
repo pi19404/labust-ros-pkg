@@ -36,6 +36,8 @@
 #include <labust/blueview/ProcessingChain.hpp>
 #include <labust_bv/BVSonar.h>
 
+#include <labust/navigation/KFCore.hpp>
+#include <labust/navigation/KinematicModel.hpp>
 
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
@@ -44,6 +46,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 #include <exception>
 #include <cmath>
@@ -55,8 +58,15 @@ struct click
 	bool isNew;
 };
 
+boost::mutex navP;
+
 click clickData;
 click ROIPosition;
+click EstimatePosition;
+click Measurement;
+double traceP = 10000;
+
+bool simulateLoss = false;
 
 void mouse_cb(int event, int x, int y, int flags, void* param)
 {
@@ -65,6 +75,7 @@ void mouse_cb(int event, int x, int y, int flags, void* param)
   case CV_EVENT_RBUTTONDOWN:
   {
     std::cout<<"Target: ("<<x<<", "<<y<<")\n";
+    simulateLoss = !simulateLoss;
     break;
   }
   case CV_EVENT_LBUTTONDOWN:
@@ -117,17 +128,26 @@ void callback(labust::blueview::BVImageProcessor* /*labust::blueview::Processing
 
 	cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(image->image, sensor_msgs::image_encodings::MONO16);
 
+  cv::Mat img2 = cv_ptr->image.clone();
+
 	if (processor->isTracking())
 	{
-		int roi_len = 4/image->resolution;
+		boost::mutex::scoped_lock l(navP);
+		int wishSize = ((0.25*traceP>4)?4:0.25*traceP);
+		int roi_len = (wishSize>0.75?wishSize:0.75)/image->resolution;
+    l.unlock();
 
 		//std::cout<<"Feature:("<<ROIPosition.x<<","<<ROIPosition.y<<")"<<std::endl;
-		cv::Point roiup(ROIPosition.x - roi_len/2, ROIPosition.y - roi_len/2);
+		int xup = ROIPosition.x - roi_len/2;
+		int yup = ROIPosition.y - roi_len/2;
+		cv::Point roiup(((xup>0)?xup:0), ((yup>0)?yup:0));
 
 		int xrest = cv_ptr->image.size().width - (roiup.x + roi_len);
 		int yrest = cv_ptr->image.size().height - (roiup.y + roi_len);
 
 		if ((xrest<0) || (yrest<0)) std::cout<<"Out of bounds."<<std::endl;
+
+		std::cout<<"ROIup:"<<roiup.x<<","<<roiup.y<<std::endl;
 
 		cv::Rect rect(roiup.x, roiup.y, (xrest<0)?(roi_len+xrest):roi_len, (yrest<0)?(roi_len+yrest):roi_len);
 
@@ -137,9 +157,15 @@ void callback(labust::blueview::BVImageProcessor* /*labust::blueview::Processing
     roi.origin.x = -(roiup.x - image->origin.x);
 		//labust::blueview::TrackedFeaturePtr feature = processor->processROI(roi);
     //Draw ROI
-    cv::rectangle(cv_ptr->image, rect, cv::Scalar(255,255,255), 3);
+    cv::rectangle(img2, rect, cv::Scalar(255,255,255), 3);
 
-    //processor->processROI(roi);
+    boost::mutex::scoped_lock lock(navP);
+    cv::circle(img2,cv::Point(EstimatePosition.x, EstimatePosition.y),10,cv::Scalar(65536));
+    std::cout<<"Estimate:"<<EstimatePosition.x<<","<<EstimatePosition.y<<std::endl;
+  	ROIPosition.y = EstimatePosition.y;
+  	ROIPosition.x = EstimatePosition.x;
+    lock.unlock();
+
     if (processor->processROI(roi))
     {
     	std::cout<<"Found contact."<<std::endl;
@@ -148,15 +174,58 @@ void callback(labust::blueview::BVImageProcessor* /*labust::blueview::Processing
     	//ROIPosition.x = roiup.x + feature->pposition.x;
     	ROIPosition.y = roiup.y + feature.pposition.y;
     	ROIPosition.x = roiup.x + feature.pposition.x;
+
+    	if (!simulateLoss)
+    	{
+    		boost::mutex::scoped_lock lock(navP);
+    		Measurement.isNew = true;
+    		Measurement.x = roiup.x + feature.pposition.x;
+    		Measurement.y = roiup.y + feature.pposition.y;
+    		lock.unlock();
+    	};
     }
-    //else
+    else
     {
     	std::cout<<"Unable to find contact."<<std::endl;
     }
 	}
 
-	cv::imshow("Sonar",cv_ptr->image*200);
+	cv::imshow("Sonar",img2*200);
 	cv::waitKey(10);
+}
+
+typedef labust::navigation::KFCore<labust::navigation::KinematicModel> KinNav;
+
+
+bool runTest = true;
+
+void do_estimation(KinNav* kinnav)
+{
+	ros::Rate rate(10);
+	while (runTest)
+	{
+		kinnav->predict();
+		boost::mutex::scoped_lock l(navP);
+		if (Measurement.isNew)
+		{
+			Measurement.isNew = false;
+			KinNav::output_type vec(2);
+			vec(0) = Measurement.x;
+			vec(1) = Measurement.y;
+			kinnav->correct(vec);
+			//KinNav::vector state = kinnav->getState();
+			//state(KinNav::Vv) = 10;
+			//kinnav->setState(state);
+		}
+		EstimatePosition.x = kinnav->getState()(KinNav::xp);
+		EstimatePosition.y = kinnav->getState()(KinNav::yp);
+
+		std::cout<<"KINNAV: "<<kinnav->getState()(KinNav::Vv)<<","<<kinnav->getState()(KinNav::xp)<<","<<kinnav->getState()(KinNav::yp)<<","<<kinnav->traceP()<<std::endl;
+		traceP = kinnav->traceP();
+		l.unlock();
+
+		rate.sleep();
+	}
 }
 
 int main(int argc, char* argv[])
@@ -179,13 +248,22 @@ try
 	//labust::blueview::ProcessingChain<> processor;
 
 	//Create a window
-	cv::namedWindow("Sonar",0);
+	cv::namedWindow("Sonar");
 	cv::setMouseCallback("Sonar",&mouse_cb,0);
 
 	//Create topic subscription
 	ros::Subscriber imageTopic = nhandle.subscribe<labust_bv::BVSonar>(topicName,bufferSize,boost::bind(&callback,&processor,_1));
 
+	//setup estimation
+	KinNav estimator;
+	estimator.setTs(0.1);
+	Measurement.isNew = false;
+	boost::thread test(boost::bind(&do_estimation,&estimator));
+
 	ros::spin();
+
+	runTest = false;
+	test.join();
 	return 0;
 }
 catch (std::exception& e)

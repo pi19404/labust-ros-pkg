@@ -2,5 +2,6 @@
   <node pkg="labust_bv" name="blueview_node" type="blueview_node">
    <param name="Address" value="/home/dnad/Development/sonar/900Linija03.son" />
    <param name="ColormapDir" value="$(find bvt_sdk)/colormaps" />
+   <param name="PingRate" value="1000" />
   </node>
  </launch>

@@ -48,6 +48,11 @@ set(SRC src/LFNav.cpp src/LFModel.cpp)
 set(HPP include/labust/navigation/LFNav.hpp include/labust/navigation/LFModel.hpp)
 rosbuild_add_library(${LFNAV_NAME} ${SRC} ${HPP})
 
+set(KINNAV_NAME kinematicnavigation-plug)
+set(SRC src/KinematicModel.cpp)
+set(HPP include/labust/navigation/KinematicModel.hpp)
+rosbuild_add_library(${KINNAV_NAME} ${SRC} ${HPP})
+
 #target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)

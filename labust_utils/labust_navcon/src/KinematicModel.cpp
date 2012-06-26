@@ -37,27 +37,31 @@
 
 using namespace labust::navigation;
 
-KinematicModel::KinematicModel(const labust::xml::ReaderPtr reader)
+KinematicModel::KinematicModel()
 {
-	this->configure(reader);
+	this->configure();
 }
 
 KinematicModel::~KinematicModel(){};
 
-void KinematicModel::configure(const labust::xml::ReaderPtr reader)
+void KinematicModel::configure()
 {
+	Ts = 0.1;
 	this->initModel();
 };
 
 void KinematicModel::initModel()
 {
   //Setup the transition matrix
-  A = eye(size,size);
+  A = eye(stateNum,stateNum);
+  x = zeros(stateNum);
 
   A(xp,Vv) = Ts*std::cos(x(psi));
-  A(yp,Vv) = Ts*std::sin(x(psi));
+  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
+  A(yp,Vv) = Ts*sin(x(psi));
+  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
   A(psi,r) = Ts;
-  W = mzeros(size,3);
+  W = mzeros(stateNum,3);
 
   W(2,0) = 1;
   W(3,1) = 1;
@@ -69,7 +73,7 @@ void KinematicModel::initModel()
   q(1) = std::pow(0.05,2);
   q(2) = std::pow(0.2,2);
   Q = boost::numeric::ublas::diagonal_matrix<double>(q.size(),q.data());
-  H = eye(2,size);
+  H = eye(2,stateNum);
   V = eye(2,2);
   R = eye(2,2);
 }
@@ -77,17 +81,16 @@ void KinematicModel::initModel()
 void KinematicModel::step(const input_type& input)
 {
   //This model is already discrete and we update only the interesting parts
+  x(xp) += Ts*x(Vv)*std::cos(x(psi));
+  x(yp) += Ts*x(Vv)*std::sin(x(psi));
+  x(psi) += Ts*x(r);
+
+  //Linearize the matrix for KF
   A(xp,Vv) = Ts*std::cos(x(psi));
-  A(yp,Vv) = Ts*std::sin(x(psi));
-  A(xp,psi) = 0;
-  A(yp,psi) = 0;
-
-  //Propagate state
-  x += prod(A,x);
-
-  //Linearize the matrix for
   A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
+  A(yp,Vv) = Ts*sin(x(psi));
   A(yp,psi) = Ts*x(Vv)*cos(x(psi));
+  A(psi,r) = Ts;
 };
 
 void KinematicModel::estimate_y(output_type& y)

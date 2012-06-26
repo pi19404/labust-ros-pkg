@@ -156,7 +156,7 @@ cv::Mat BVImageProcessor::adjust(cv::Mat& original)
 cv::Mat BVImageProcessor::threshold(cv::Mat& adjusted)
 {
   cv::Mat thresholded(adjusted.size(),CV_8UC1);
-  cv::threshold(adjusted, thresholded, 0.35, 255, CV_THRESH_BINARY);
+  cv::threshold(adjusted, thresholded, 0.5, 255, CV_THRESH_BINARY);
   //thresholded = histthresh(adjusted, 0.3,0.5,255);
   thresholded.convertTo(thresholded,CV_8UC1);
 

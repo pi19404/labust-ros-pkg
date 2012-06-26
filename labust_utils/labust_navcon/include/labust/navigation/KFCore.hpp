@@ -57,7 +57,7 @@ namespace labust
        *
        * \param u Input vector.
        */
-      void predict(typename Base::inputref u)
+      void predict(const typename Base::inputref u = typename Base::input_type())
       {
       	assert((this->Ts) && "KFCore: Sampling time set to zero." );
         using namespace boost::numeric::ublas;
