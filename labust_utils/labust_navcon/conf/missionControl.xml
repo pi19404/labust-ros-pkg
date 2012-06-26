@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<configurations>
+	<config type="program" name="pMissionControl">		
+		<moduleConfig name="UUVMissionControl" type="LabustMissionControl">
+			<state name="Init" initial="true">
+				<output>
+					<param name="State" value="Init"/>
+					<param name="Description" value="Beginning testing of MissionControl petri net"/>	
+				</output>
+				<transition state="Test1">
+					<param name="Mode" value="Test1"/>
+				</transition>											
+			</state>
+
+			<state name="Test1">
+				<output>
+					<param name="State" value="Test1"/>
+					<param name="Description" value="Testing multiple conditions, textual equality and inequality"/>	
+				</output>
+				<transition state="Test2">
+					<param name="Mode" value="Test2"/>
+					<param name="Var1" value="Testing"/>
+					<param name="Var2" value="Testing_too"/>
+				</transition>								
+			</state>
+
+			<state name="Test2">
+				<output>
+					<param name="State" value="Test2"/>	
+					<param name="Description" value="Testing multiple conditions, numeric inequality (lt, gt and range)"/>	
+				</output>
+				<transition state="Success">
+					<param name="Mode" value="Success"/>
+					<param name="Var1" value="&lt;=20"/>
+					<param name="Var2" value=">=30"/>
+					<param name="Var3" value="12" tolerance="2"/>
+				</transition>								
+			</state>
+
+			<state name="Success">
+				<output>
+					<param name="State" value="Success"/>
+					<param name="Description" value="If you get to this state, your mission controller is working properly"/>	
+				</output>
+				<transition state="Init">
+					<param name="Mode" value="Init"/>
+				</transition>	
+			</state>
+
+					</moduleConfig>
+	</config>
+</configurations>
