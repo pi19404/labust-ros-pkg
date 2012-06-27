@@ -320,13 +320,13 @@ namespace labust
 
       	if (this->evaluate(xpath_expression.c_str(), &content))
       	{
-      		if (boost::is_float<ReturnType>::value && !boost::is_enum<ReturnType>::value)
+      		if (boost::is_float<ReturnType>::value)
       		{
       			(*data) = static_cast<ReturnType>(atof(content)); //added explicit casts to handle enums correctly
       			return true;
       		}
 
-      		if (boost::is_integral<ReturnType>::value)
+      		if (boost::is_integral<ReturnType>::value || boost::is_enum<ReturnType>::value)
       		{
       			(*data) = static_cast<ReturnType>(atoi(content));
       			return true;
