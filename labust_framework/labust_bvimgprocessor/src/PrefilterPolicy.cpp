@@ -31,69 +31,22 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/navigation/KinematicModel.hpp>
+#include <labust/blueview/PrefilterPolicy.hpp>
 
-#include <boost/numeric/ublas/banded.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-using namespace labust::navigation;
+using namespace labust::blueview;
 
-KinematicModel::KinematicModel()
+MatPtr SimpleAdjust::prefilter(const MatPtr original)
 {
-	this->configure();
-}
-
-KinematicModel::~KinematicModel(){};
-
-void KinematicModel::configure()
-{
-	Ts = 0.1;
-	this->initModel();
+	MatPtr adjust(new cv::Mat(original->size(),CV_32FC1));
+	double min = 0, max = 0;
+	cv::minMaxLoc(*original,&min,&max);
+	original->convertTo(*adjust,CV_32FC1,1/max);
+  return adjust;
 };
 
-void KinematicModel::initModel()
-{
-  //Setup the transition matrix
-  A = eye(stateNum,stateNum);
-  x = zeros(stateNum);
 
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-  W = mzeros(stateNum,3);
 
-  W(2,0) = 1;
-  W(3,1) = 1;
-  W(4,2) = 1;
 
-  //These are the noise variances
-  vector q(3);
-  q(0) = std::pow(0.5,2);
-  q(1) = std::pow(0.05,2);
-  q(2) = std::pow(0.2,2);
-  Q = boost::numeric::ublas::diagonal_matrix<double>(q.size(),q.data());
-  H = eye(2,stateNum);
-  V = eye(2,2);
-  R = eye(2,2);
-}
 
-void KinematicModel::step(const input_type& input)
-{
-  //This model is already discrete and we update only the interesting parts
-  x(xp) += Ts*x(Vv)*std::cos(x(psi));
-  x(yp) += Ts*x(Vv)*std::sin(x(psi));
-  x(psi) += Ts*x(r);
-
-  //Linearize the matrix for KF
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-};
-
-void KinematicModel::estimate_y(output_type& y)
-{
-  y=prod(H,x);
-}

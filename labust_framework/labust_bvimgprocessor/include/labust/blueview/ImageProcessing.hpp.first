@@ -1,0 +1,60 @@
+///////////////////////////////////////////////////////////////////////////////////////////
+//The old image processing definitions
+///////////////////////////////////////////////////////////////////////////////////////////
+
+struct ContourInfo
+{
+    double area;
+    double x_pos;
+    double y_pos;
+};
+
+class ImageProcessing {
+public:
+    ImageProcessing();
+    virtual ~ImageProcessing();
+
+    void headCoordinates(float x, float y);
+
+    void setOriginal(IplImage*);
+
+    //Image processing
+    static IplImage* equalizeHist(IplImage*,bool overwrite = true);
+    IplImage* drawGrayHistogram(IplImage*);
+
+    //IplImage* simpleThreshold(IplImage*,int upper, int lower);
+
+    IplImage* toBinary(IplImage*);
+
+    std::vector<ContourInfo>& contours(IplImage*, CvSeq**);
+    IplImage* drawContours(IplImage*, CvSeq** = NULL, int* count = NULL);
+    void processContours(std::vector<ContourInfo>&);
+
+    CvHistogram* getGrayHistogram(IplImage*, float& min_value, float& max_value);
+
+    static void mouse_cb(int event, int x, int y, int flags, void* param);
+
+    const CvPoint2D32f& getVehicleCoordinates(void);
+    
+public:
+    //Interesting points, should be 3D in future
+    CvPoint2D32f headPos;
+    CvPoint2D32f imgOffset;
+    CvPoint2D32f targetPos;
+    CvPoint2D32f vehiclePos;
+
+    //Images
+    IplImage* original;
+    std::vector<IplImage*> pipeline;
+
+    bool gotTarget;
+    bool gotVehicle;
+
+    int w_width;
+    float v_area;
+    float diff_area;
+    int v_mag;
+
+    CvMemStorage* mem_storage;
+	bool test;
+};

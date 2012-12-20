@@ -31,69 +31,44 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/navigation/KinematicModel.hpp>
+#include <labust/blueview/LabelPolicy.hpp>
 
-#include <boost/numeric/ublas/banded.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
-using namespace labust::navigation;
+using namespace labust::blueview;
 
-KinematicModel::KinematicModel()
+TrackedFeatureVecPtr SimpleLabel::label(const MatPtr binary)
 {
-	this->configure();
-}
+	//This will be replaced with a LABELING algorithm to save execution time
+	cv::morphologyEx(*binary, *binary, cv::MORPH_OPEN,cv::Mat());
 
-KinematicModel::~KinematicModel(){};
+	std::vector< std::vector<cv::Point> > contours;
+	std::vector<cv::Vec4i> hierarchy;
 
-void KinematicModel::configure()
-{
-	Ts = 0.1;
-	this->initModel();
+	cv::findContours(*binary,contours,hierarchy,cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+	TrackedFeatureVecPtr info(new TrackedFeatureVec);
+
+	for (size_t i = 0; i < contours.size(); ++i)
+	{
+		std::vector<cv::Point> c_new;
+		cv::convexHull(cv::Mat(contours[i]),c_new,true);
+		contours[i] = c_new;
+		cv::Moments moments = cv::moments(cv::Mat(contours[i]),true);
+
+		TrackedFeature tfeature;
+		tfeature.perimeter = cv::arcLength(cv::Mat(contours[i]),true);
+		tfeature.area = moments.m00;
+		tfeature.pposition.x = (moments.m10)/moments.m00;
+		tfeature.pposition.y = (moments.m01)/moments.m00;
+
+		info->push_back(tfeature);
+	}
+
+	return info;
 };
 
-void KinematicModel::initModel()
-{
-  //Setup the transition matrix
-  A = eye(stateNum,stateNum);
-  x = zeros(stateNum);
 
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-  W = mzeros(stateNum,3);
 
-  W(2,0) = 1;
-  W(3,1) = 1;
-  W(4,2) = 1;
 
-  //These are the noise variances
-  vector q(3);
-  q(0) = std::pow(0.5,2);
-  q(1) = std::pow(0.05,2);
-  q(2) = std::pow(0.2,2);
-  Q = boost::numeric::ublas::diagonal_matrix<double>(q.size(),q.data());
-  H = eye(2,stateNum);
-  V = eye(2,2);
-  R = eye(2,2);
-}
 
-void KinematicModel::step(const input_type& input)
-{
-  //This model is already discrete and we update only the interesting parts
-  x(xp) += Ts*x(Vv)*std::cos(x(psi));
-  x(yp) += Ts*x(Vv)*std::sin(x(psi));
-  x(psi) += Ts*x(r);
-
-  //Linearize the matrix for KF
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-};
-
-void KinematicModel::estimate_y(output_type& y)
-{
-  y=prod(H,x);
-}

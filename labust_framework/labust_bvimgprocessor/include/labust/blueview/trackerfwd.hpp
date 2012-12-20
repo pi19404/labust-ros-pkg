@@ -31,72 +31,105 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef KINEMATICMODEL_HPP_
-#define KINEMATICMODEL_HPP_
-
-#include <labust/navigation/SSModel.hpp>
-
-#include <labust/xml/XMLReader.hpp>
+#ifndef TRACKERFWD_HPP_
+#define TRACKERFWD_HPP_
+#include <opencv2/core/core.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace labust
 {
-  namespace navigation
+  namespace blueview
   {
     /**
-     * This class implements a basic kinematic model for the EKF filter.
-     * The model is taken from:
-     * A. Alcocer, P. Oliveira, A. Pascoal
-     *  "Study and implementation of an EKF GIB based underwater positioning system"
-     *
-     * We ignore the existence of currents.
+     * The general sonar head data.
      */
-    class KinematicModel : public SSModel<double>
+    struct SonarHead
     {
-    	typedef SSModel<double> Base;
-    public:
-      typedef vector input_type;
-      typedef vector output_type;
-
-      enum {xp=0,yp,Vv,psi,r};
-      enum {stateNum = 5};
-
       /**
-       * The main constructor.
+       * Sonar geographical world position. Latitude/longitude in degrees and depth in meters.
        */
-      KinematicModel();
+      cv::Point3d latlon;
       /**
-       * Generic destructor.
+       * Sonar platform heading.
        */
-      ~KinematicModel();
-
-    protected:
+      double heading;
       /**
-       * Configure the model based on the XML supplied.
+       * Sonar pan and tilt angle.
        */
-      void configure();
+      double panAngle, tiltAngle;
       /**
-       * Perform a prediction step based on the system input.
-       *
-       * \param u System input.
+       * Sonar range and bearing measurement towards target.
        */
-      void step(const input_type& input);
+      double range, bearing;
       /**
-       * Calculates the estimated output of the model.
-       *
-       * \param y Inserts the estimated output values here.
+       * Sonar image resolution.
        */
-      void estimate_y(output_type& y);
-      /**
-       * Initialize the model to default values
-       */
-      void initModel();
-      /**
-       * Calculate the Jacobian matrices
-       */
-      void calculateJacobian();
+      double resolution;
     };
+
+    /**
+     * The tracked feature parameters.
+     */
+    struct TrackedFeature
+    {
+      /**
+       * Relative 2D feature position in meters
+       */
+      cv::Point2d position;
+      /**
+       * Feature world position.
+       */
+      cv::Point3d latlon;
+      /**
+       * Feature pixel position.
+       */
+      cv::Point pposition;
+      /**
+       * Feature area and perimeter in the image.
+       */
+      double area, perimeter;
+    };
+    /**
+     * The TrackedFeature pointer.
+     */
+    typedef boost::shared_ptr<TrackedFeature> TrackedFeaturePtr;
+    /**
+     * Tracked feature vector.
+     */
+    typedef std::vector<TrackedFeature> TrackedFeatureVec;
+    /**
+     * The tracked feature vector pointer.
+     */
+    typedef boost::shared_ptr< TrackedFeatureVec > TrackedFeatureVecPtr;
+
+
+    /**
+     * The class implements the tracker Region-of-Interest(ROI).
+     */
+    class TrackerROI;
+    /**
+     * The TrackerROI pointer.
+     */
+    typedef boost::shared_ptr<TrackerROI> TrackerROIPtr;
+
+    /**
+     * The image processing class.
+     */
+
+    /**
+     * This structure contains all the line data interesting to us.
+     */
+    /*struct LineData
+    {
+      cv::Point origin;
+      cv::Point target;
+    };*/
+
+    /**
+     * The OpenCV data pointer.
+     */
+    typedef boost::shared_ptr<cv::Mat> MatPtr;
   }
 }
-
-
-#endif /* KINEMATICMODEL_HPP_ */
+/* TRACKERFWD_HPP_ */
+#endif

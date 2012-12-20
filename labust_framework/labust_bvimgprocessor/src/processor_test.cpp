@@ -31,69 +31,19 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/navigation/KinematicModel.hpp>
+#include <labust/blueview/ProcessingChain.hpp>
 
-#include <boost/numeric/ublas/banded.hpp>
-
-using namespace labust::navigation;
-
-KinematicModel::KinematicModel()
+int main(int argc, char* argv[])
 {
-	this->configure();
+	using namespace labust::blueview;
+	labust::blueview::ProcessingChain<> chain;
+
+	TrackerROI roi("");
+	chain.processROI(roi);
+
+	return 0;
 }
 
-KinematicModel::~KinematicModel(){};
 
-void KinematicModel::configure()
-{
-	Ts = 0.1;
-	this->initModel();
-};
 
-void KinematicModel::initModel()
-{
-  //Setup the transition matrix
-  A = eye(stateNum,stateNum);
-  x = zeros(stateNum);
 
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-  W = mzeros(stateNum,3);
-
-  W(2,0) = 1;
-  W(3,1) = 1;
-  W(4,2) = 1;
-
-  //These are the noise variances
-  vector q(3);
-  q(0) = std::pow(0.5,2);
-  q(1) = std::pow(0.05,2);
-  q(2) = std::pow(0.2,2);
-  Q = boost::numeric::ublas::diagonal_matrix<double>(q.size(),q.data());
-  H = eye(2,stateNum);
-  V = eye(2,2);
-  R = eye(2,2);
-}
-
-void KinematicModel::step(const input_type& input)
-{
-  //This model is already discrete and we update only the interesting parts
-  x(xp) += Ts*x(Vv)*std::cos(x(psi));
-  x(yp) += Ts*x(Vv)*std::sin(x(psi));
-  x(psi) += Ts*x(r);
-
-  //Linearize the matrix for KF
-  A(xp,Vv) = Ts*std::cos(x(psi));
-  A(xp,psi) = -Ts*x(Vv)*sin(x(psi));
-  A(yp,Vv) = Ts*sin(x(psi));
-  A(yp,psi) = Ts*x(Vv)*cos(x(psi));
-  A(psi,r) = Ts;
-};
-
-void KinematicModel::estimate_y(output_type& y)
-{
-  y=prod(H,x);
-}

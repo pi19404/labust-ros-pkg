@@ -1,7 +1,7 @@
 all: blueview_sdk
 
 TARBALL = bvt_sdk_4966_i686.tar.gz
-TARBALL_URL = https://internal.blueview.com/drop/software/4966_linux/bvt_sdk_4966_i686.tar.gz
+TARBALL_URL = https://internal.blueview.com/drop/software/5861/bvt_sdk_linux_x86_5861.tar.gz
 UNPACK_CMD = tar xzf
 SOURCE_DIR = build/
 

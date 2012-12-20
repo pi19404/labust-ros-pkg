@@ -1,0 +1,16 @@
+<package>
+	<description brief="External installation of cvBlob library.">
+		The package downloads and installs the cvBlob library. The library
+		is used for labeling in image processing algorithms.
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/cvblob_external</url> -->
+
+	<export>
+		<cpp cflags="-I${prefix}/build/cvBlob/" lfags="-L${prefix}/build/cvblob/lib -lcvblob" />
+	</export>
+</package>
+
+

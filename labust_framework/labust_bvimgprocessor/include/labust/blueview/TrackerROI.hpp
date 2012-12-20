@@ -31,72 +31,83 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef KINEMATICMODEL_HPP_
-#define KINEMATICMODEL_HPP_
-
-#include <labust/navigation/SSModel.hpp>
-
-#include <labust/xml/XMLReader.hpp>
+#ifndef TRACKERROI_HPP_
+#define TRACKERROI_HPP_
+#include <labust/blueview/trackerfwd.hpp>
 
 namespace labust
 {
-  namespace navigation
+  namespace blueview
   {
     /**
-     * This class implements a basic kinematic model for the EKF filter.
-     * The model is taken from:
-     * A. Alcocer, P. Oliveira, A. Pascoal
-     *  "Study and implementation of an EKF GIB based underwater positioning system"
-     *
-     * We ignore the existence of currents.
+     * The class implements the tracker Region-of-Interest(ROI) used in the NURC sonar
+     * image processing applications.
      */
-    class KinematicModel : public SSModel<double>
+    class TrackerROI
     {
-    	typedef SSModel<double> Base;
     public:
-      typedef vector input_type;
-      typedef vector output_type;
-
-      enum {xp=0,yp,Vv,psi,r};
-      enum {stateNum = 5};
-
+    	/**
+    	 * Generic constructor.
+    	 */
+    	TrackerROI();
       /**
-       * The main constructor.
+       * Main constructor. Constructs the TracerROI from the XML data.
+       *
+       * \param str The XML encoded string.
        */
-      KinematicModel();
+      TrackerROI(const std::string& str);
       /**
        * Generic destructor.
        */
-      ~KinematicModel();
+      ~TrackerROI();
+
+      /**
+       * Converts the current Tracker ROI information to a XML encoded version.
+       *
+       * \param object The Tracker ROI object.
+       * \param str The string object address.
+       *
+       * \return Returns true if serialization is successful, false otherwise.
+       */
+      static bool serialize(const TrackerROI& object, std::string* str);
+      /**
+       * Converts the XML string to the Tracker ROI object.
+       *
+       * \param str String containing XML data.
+       * \param object The TrackerROI object address.
+       *
+       * \return Returns true if serialization is successful, false otherwise.
+       */
+      static bool deserialize(const std::string& str, TrackerROI* const object);
+
+      /**
+       * The ROI size.
+       */
+      cv::Size size;
+      /**
+       * The ROI Sonar head information.
+       */
+      SonarHead headData;
+      /**
+       * Origin of the coordinate system where the ROI is taken.
+       */
+      cv::Point origin;
+      /**
+       * The ROI image.
+       */
+      cv::Mat roi;
 
     protected:
       /**
-       * Configure the model based on the XML supplied.
+       * The method decodes the pixel information from the string.
        */
-      void configure();
+      void _decodePixels(std::string& str);
       /**
-       * Perform a prediction step based on the system input.
-       *
-       * \param u System input.
+       * Separate encoding policy
        */
-      void step(const input_type& input);
-      /**
-       * Calculates the estimated output of the model.
-       *
-       * \param y Inserts the estimated output values here.
-       */
-      void estimate_y(output_type& y);
-      /**
-       * Initialize the model to default values
-       */
-      void initModel();
-      /**
-       * Calculate the Jacobian matrices
-       */
-      void calculateJacobian();
+      inline const char* _encodePixels(char* dst);
     };
   }
 }
 
-
-#endif /* KINEMATICMODEL_HPP_ */
+#endif /* TRACKERROI_HPP_ */
