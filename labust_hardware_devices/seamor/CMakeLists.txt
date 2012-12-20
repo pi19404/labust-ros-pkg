@@ -1,6 +1,0 @@
-cmake_minimum_required (VERSION 2.6)
-IF (CLEAN_BUILD)
-	INCLUDE (CleanConfig.cmake NO_POLICY_SCOPE)
-ELSE ()
-	INCLUDE(ROSConfig.cmake NO_POLICY_SCOPE)
-ENDIF()
