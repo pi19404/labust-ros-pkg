@@ -15,15 +15,7 @@
   <rosdep name="qwt" />
 
   <export>
-	<cpp cflags="-I${prefix}/labust-base/src/labust_tools/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/labust_drivers/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/labust_xml/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/labust_uvsim/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/labust_navcon/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/labust_uvapp/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/reson_sdk/include" />
-	<cpp cflags="-I${prefix}/labust-base/src/tritech_sdk/include" />
-	<cpp cflags="-L${prefix}/labust-base/build/lib" />
+	<cpp cflags="-I${prefix}/labust-base/src/labust_tools/include -I${prefix}/labust-base/src/labust_drivers/include -I${prefix}/labust-base/src/labust_xml/include -I${prefix}/labust-base/src/labust_uvsim/include -I${prefix}/labust-base/src/labust_navcon/include -I${prefix}/labust-base/src/labust_uvapp/include -I${prefix}/labust-base/src/reson_sdk/include -I${prefix}/labust-base/src/tritech_sdk/include" lflags="-L${prefix}/labust-base/build/lib" />
   </export>
 
 </package>

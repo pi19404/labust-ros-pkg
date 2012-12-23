@@ -9,7 +9,7 @@ checkout: $(BUILDDIR)/checkout
 		  touch $(BUILDDIR)/checkout
 
 pull: checkout
-	  (cd $(CHECKOUTDIR) ; git pull)
+	  (cd $(CHECKOUTDIR) ; git fetch; git pull)
 
 labust-base: pull checkout
 	  (cd $(CHECKOUTDIR) ; ./build.sh -j4)

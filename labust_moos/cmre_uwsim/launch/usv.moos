@@ -1,0 +1,12 @@
+ServerHost = localhost
+ServerPort = 9901
+//Simulator  = true
+
+//Community    = bravo
+MOOSTimeWarp = 1
+
+ProcessConfig = MOOS_ROS_BRIDGE
+{
+  AppTick    = 10
+  CommsTick  = 10
+}

@@ -1,0 +1,17 @@
+<launch>
+  <group ns="uuv">
+   <node pkg="cmre_uwsim" name="Goldrake" type="CMRE2UWSim">
+    <param name="InputState" value="uuv_meas" />
+    <param name="OutputState" value="dataNavigator" />
+    <param name="nav_type" value="xml" />
+   </node>
+  </group>
+  <group ns="usv">
+   <node pkg="cmre_uwsim" name="Gemellina" type="CMRE2UWSim">
+    <param name="nav_x" value="nav_x" />
+    <param name="nav_y" value="nav_y" />
+    <param name="nav_heading" value="nav_heading" />
+    <param name="nav_type" value="moos" />
+   </node>
+  </group>
+</launch>
