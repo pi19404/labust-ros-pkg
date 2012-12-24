@@ -11,9 +11,7 @@
 	<rosdep name="boost" />
 	<rosdep name="opencv" />
 
-	<depend package="labust_tools" />
-	<depend package="labust_xml" />
-	<depend package="labust_navcon" />
+	<depend package="labust_base" />
 	<depend package="labust_bv" />
 	
 	<export>

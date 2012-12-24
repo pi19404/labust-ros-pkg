@@ -14,7 +14,7 @@
 	<depend package="bvt_sdk" />
 	<depend package="sensor_msgs" />
 	<depend package="cv_bridge" />
-	<depend package="labust_tools" />
+	<depend package="labust_base" />
 	<depend package="tf" />
 
 </package>

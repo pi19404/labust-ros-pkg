@@ -16,3 +16,4 @@ srv_gen/
 msg_gen/
 #Backup files
 *~
+*.swp

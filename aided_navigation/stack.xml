@@ -1,6 +1,7 @@
 <stack>
-	<description brief="The MOOS applications developed at LABUST">
-		The stack contains MOOS related applications developed at LABUST.
+	<description brief="The Aided navigation stack.">
+	  The stack contains applications for the aided navigation research. The MOOS-ROS bridge for visualization
+	  and ROS ported applications can be found in this stack.
 	</description>
   <author>Maintained by Đula Nađ</author>
   <license>BSD</license>  

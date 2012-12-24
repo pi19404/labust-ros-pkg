@@ -10,13 +10,9 @@
 	<!-- <url>http://ros.org/wiki/labust_uvapp</url> -->
 
 	<depend package="roscpp" />
-	<depend package="labust_tools" />
-	<depend package="labust_xml" />
-	<depend package="labust_navcon" />
-	<depend package="labust_drivers" />
+	<depend package="labust_base" />
 	<depend package="std_msgs" />
 	<depend package="nav_msgs" />
-	<depend package="MOOS_msgs" />
 	
 	<export>
 	 <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -luvapp" />

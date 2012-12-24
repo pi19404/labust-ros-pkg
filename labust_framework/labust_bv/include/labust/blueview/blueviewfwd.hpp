@@ -44,12 +44,12 @@ namespace labust
 {
 	namespace blueview
 	{
-		typedef boost::shared_ptr<void> BVSonarPtr;
-		typedef boost::shared_ptr<void> BVColorMapperPtr;
-		typedef boost::shared_ptr<void> BVPingPtr;
-		typedef boost::shared_ptr<void> BVMagImagePtr;
-		typedef boost::shared_ptr<void> BVColorImagePtr;
-		typedef boost::shared_ptr<void> BVNavDataPtr;
+		typedef boost::shared_ptr<BVTOpaqueSonar> BVSonarPtr;
+		typedef boost::shared_ptr<BVTOpaqueColorMapper> BVColorMapperPtr;
+		typedef boost::shared_ptr<BVTOpaquePing> BVPingPtr;
+		typedef boost::shared_ptr<BVTOpaqueMagImage> BVMagImagePtr;
+		typedef boost::shared_ptr<BVTOpaqueColorImage> BVColorImagePtr;
+		typedef boost::shared_ptr<BVTOpaqueNavData> BVNavDataPtr;
 
 		struct BVFactory
 		{
@@ -63,7 +63,7 @@ namespace labust
 				return BVNavDataPtr(BVTNavData_Create(), std::ptr_fun(&BVTNavData_Destroy));
 			};
 
-			static inline BVNavDataPtr makeBVNavData(void* data)
+			static inline BVNavDataPtr makeBVNavData(BVTNavData data)
 			{
 				return BVNavDataPtr(data, std::ptr_fun(&BVTNavData_Destroy));
 			};
