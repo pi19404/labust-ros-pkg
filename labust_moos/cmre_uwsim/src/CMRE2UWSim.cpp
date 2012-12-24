@@ -112,7 +112,7 @@ void onNewState(std::string name,MoosPos::Ptr mpos, ros::Publisher* pub, const s
 	mpos->pos[name] = msg->data;
 	mpos->updatedPos[name] = 1;
 
-	bool flag = true;
+	bool flag = 1;
 
 	for(std::map<std::string,bool>::iterator it=mpos->updatedPos.begin(); it != mpos->updatedPos.end(); ++it)
 	{
@@ -126,6 +126,11 @@ void onNewState(std::string name,MoosPos::Ptr mpos, ros::Publisher* pub, const s
 		state[x]=mpos->pos[mpos->nav_x];
 		state[y]=mpos->pos[mpos->nav_y];
 		state[yaw]=mpos->pos[mpos->nav_heading]/180*M_PI;
+		
+		for(std::map<std::string,bool>::iterator it=mpos->updatedPos.begin(); it != mpos->updatedPos.end(); ++it)
+		{
+		  it->second=false;
+		}
 
 		onUpdate(pub,state);
 	}
