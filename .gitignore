@@ -17,3 +17,7 @@ msg_gen/
 #Backup files
 *~
 *.swp
+#The labust-base stuff
+labust-base
+checkout
+
