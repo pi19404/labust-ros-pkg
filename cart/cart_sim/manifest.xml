@@ -1,0 +1,14 @@
+<package>
+  <description brief="cart_sim">
+
+     cart_sim
+
+  </description>
+  <author>Dula Nad</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/cart_sim</url>
+
+</package>
+
+

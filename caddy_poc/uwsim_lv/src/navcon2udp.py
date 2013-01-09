@@ -3,7 +3,6 @@ Created on Dec 19, 2012
 
 @author: dnad
 '''
-
 import roslib; roslib.load_manifest("uwsim_lv");
 import rospy;
 from navigation_g500.msg import FastraxIt500Gps
