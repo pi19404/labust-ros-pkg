@@ -1,6 +1,6 @@
 all: pull checkout labust-base
 
-GITREPO = http://labust.fer.hr/git/labust-base.git
+GITREPO = http://lapost.rasip.fer.hr/git/labust-base.git
 BUILDDIR = .
 CHECKOUTDIR = $(BUILDDIR)/labust-base
 
