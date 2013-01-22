@@ -1,10 +1,12 @@
 all: blueview_sdk
 
 TARBALL = bvt_sdk_linux_x86_5861.tar.gz
+URL = http://labust-ros-pkg.googlecode.com/files/bvt_sdk_linux_x86_5861.tar.gz
 UNPACK_CMD = tar xzf
 SOURCE_DIR = build/
 
-blueview_sdk: 
+blueview_sdk:
+	wget -nc --no-check-certificate ${URL}
 	mkdir -p ${SOURCE_DIR}
 	cd ${SOURCE_DIR} && ${UNPACK_CMD} ../${TARBALL}
 	cp -r ${SOURCE_DIR}/bvtsdk/include .

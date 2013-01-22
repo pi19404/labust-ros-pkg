@@ -20,4 +20,9 @@ msg_gen/
 #The labust-base stuff
 labust-base
 checkout
-
+*.tar.gz
+*.tar.bz2
+#Ignore simulation non-versioned data 
+*/*/data/robot/
+*/*/data/robots/
+downloaded
