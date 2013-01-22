@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<robot name="cart2">
+  <link name="base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <geometry>
+        <mesh filename="package://cart_sim/data/robot/cart2.osg"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
+
+
