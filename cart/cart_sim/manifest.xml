@@ -9,6 +9,13 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/cart_sim</url>
 
+	<depend package="roscpp" />
+	<depend package="labust_base" />
+	<depend package="std_msgs" />
+	<depend package="auv_msgs" />
+	<depend package="sensor_msgs" />
+	<depend package="underwater_sensor_msgs" />
+
 </package>
 
 

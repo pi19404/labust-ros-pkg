@@ -1,0 +1,3 @@
+#The velocity controller closed loop parameters
+velocity_controller/closed_loop_freq: [1.0,1.0,0.1,1.0,1.0,1.0]
+velocity_controller/output_limits: [20.0,20.0,20.0,.0,.0,10.0]

@@ -21,13 +21,24 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
-find_package(Eigen REQUIRED)
-include_directories(${Eigen_INCLUDE_DIRS})
+#add dynamic reconfigure api
+#rosbuild_find_ros_package(dynamic_reconfigure)
+#include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+#gencfg()
 
-SET(PR_NAME cart2_node)
-rosbuild_add_executable(${PR_NAME} src/cart2_node.cpp)
-target_link_libraries(${PR_NAME} labust_uvapp labust_xml labust_navcon)
+include_directories(include)
 
-SET(PR_NAME velocity_demo)
-rosbuild_add_executable(${PR_NAME} src/velocity_demo.cpp)
-#target_link_libraries(${PR_NAME} labust_uvapp labust_xml labust_navcon)
+set(PR_NAME velocity_control)
+rosbuild_add_executable(${PR_NAME} 
+	src/velocity_control.cpp 
+	src/VelocityControl.cpp
+	include/labust/control/VelocityControl.hpp)
+target_link_libraries(${PR_NAME} labust_navcon)
+
+#common commands for building c++ executables and libraries
+#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
+#target_link_libraries(${PROJECT_NAME} another_library)
+#rosbuild_add_boost_directories()
+#rosbuild_link_boost(${PROJECT_NAME} thread)
+#rosbuild_add_executable(example examples/example.cpp)
+#target_link_libraries(example ${PROJECT_NAME})

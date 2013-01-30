@@ -1,0 +1,14 @@
+model_name: falcon
+
+falcon/dynamics/period: 0.1
+falcon/dynamics/mass: 20.0
+falcon/dynamics/rg: [0.0, 0.0, 0.0]
+falcon/dynamics/rb: [0.0, 0.0, 0.0]
+falcon/dynamics/g: 9.81
+
+#Add some parameters for the buoyancy calculations 
+
+falcon/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 12.274219]
+falcon/dynamics/added_mass: [20.0, 20.0, 79.4777, 15.0, 30.0, 0.0]
+falcon/dynamics/damping: [15.0, 15.0, 24.2846, 400.0, 300.0, 2.351080]
+falcon/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]

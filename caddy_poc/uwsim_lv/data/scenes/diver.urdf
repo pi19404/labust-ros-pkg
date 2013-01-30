@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<robot name="platforma">
+<robot name="diver">
   <link name="base_link">
     <visual>
       <origin rpy="-3.1459 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://UWSim/data/robot/diver/diver.osg"/>
+        <mesh filename="package://uwsim_lv/data/robots/diver/diver.osg"/>
       </geometry>
     </visual>
   </link>

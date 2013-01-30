@@ -1,0 +1,33 @@
+<launch>
+  <node pkg="UWSim" name="UWSim" type="UWSim" 
+  args="--configfile $(find uwsim_lv)/data/scenes/test_environment.xml 
+  --dataPath $(find uwsim_lv)/data/scenes"  />
+  <group ns="pladypos">
+  	<rosparam command="load" file="$(find uwsim_lv)/launch/model.yaml" />
+  	<rosparam command="load" file="$(find uwsim_lv)/launch/simulation.yaml" />
+  	
+    <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
+      <remap from="tauIn" to="tauOut" />
+    </node>
+    
+    <node pkg="velocity_control" name="velocity_control" type="velocity_control" /> 
+  </group>
+  
+  <group ns="diver">
+  	<rosparam command="load" file="$(find uwsim_lv)/launch/model.yaml" />
+  	<rosparam command="load" file="$(find uwsim_lv)/launch/simulation.yaml" />
+  	<rosparam command="load" file="$(find control_g500)/config/joy.yaml"/>
+  	
+  	<node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
+      <remap from="tauIn" to="tauOut" />
+      <remap from="nuRef" to="dummy" />
+    </node>
+    
+    <node pkg="velocity_control" name="velocity_control" type="velocity_control" />
+    
+    <node pkg="control_g500" name="teleoperation" type="teleoperation" >
+      <remap from="body_velocity_req" to="nuRef" />
+    </node> 
+  </group>
+
+</launch>
