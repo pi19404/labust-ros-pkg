@@ -7,4 +7,4 @@ dynamic_positioning/Kp: [0.3,0,0,0.3]
 dynamic_positioning/Ki: [0,0,0,0]
 dynamic_positioning/Ts: 0.1
 #Mode: 0- sway,surge control; 1- surge,heading control
-dynamic_positioning/mode: 0
+dynamic_positioning/mode: 1

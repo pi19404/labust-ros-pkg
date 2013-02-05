@@ -9,13 +9,16 @@
     <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
       <remap from="tauIn" to="tauOut" />
     </node>
+    <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
+      <remap from="trackedNav" to="usblEstimate" />
+    </node>
     
     <node pkg="velocity_control" name="velocity_control" type="velocity_control" /> 
   </group>
   
   <group ns="diver">
   	<rosparam command="load" file="$(find uwsim_lv)/launch/model.yaml" />
-  	<rosparam command="load" file="$(find uwsim_lv)/launch/simulation.yaml" />
+  	<rosparam command="load" file="$(find uwsim_lv)/launch/sim_diver.yaml" />
   	<rosparam command="load" file="$(find control_g500)/config/joy.yaml"/>
   	
   	<node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
@@ -24,10 +27,14 @@
     </node>
     
     <node pkg="velocity_control" name="velocity_control" type="velocity_control" />
+    <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
+      <remap from="trackedNav" to="trajectory" />
+    </node>
+    <node pkg="cart_sim" name="lawngenerator" type="lawn_generator.py" />
     
-    <node pkg="control_g500" name="teleoperation" type="teleoperation" >
+    <!-- <node pkg="control_g500" name="teleoperation" type="teleoperation" >
       <remap from="body_velocity_req" to="nuRef" />
-    </node> 
+    </node> --> 
   </group>
 
 </launch>

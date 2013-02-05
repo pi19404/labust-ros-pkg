@@ -128,7 +128,8 @@
 				<p>0</p>
 				<y>0</y>
 			</orientation>
-			<std>0.5</std>
+			<!-- <std>0.5</std> -->
+			<std>0</std>
 			<transponder>
 				<name>diver</name>
 				<id>0</id>

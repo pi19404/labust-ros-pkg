@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
 
 		req.disable_axis.roll = req.disable_axis.pitch = req.disable_axis.z = true;
 
-		pub_full.publish(req);
+		//pub_full.publish(req);
 		/////////////////////////////////////////////////////////////
 
 		std::cout<<"References:"<<stateRef[state::z]<<std::endl;
