@@ -34,6 +34,7 @@
 #include <labust/control/VelocityControl.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
+#include <std_msgs/Byte.h>
 
 #include <boost/bind.hpp>
 
@@ -42,27 +43,25 @@ using labust::control::VelocityControl;
 VelocityControl::VelocityControl():
 	runFlag(false),
 	nh(),
-	ph("~")
+	ph("~"),
+	lastTime(ros::Time::now())
 {
 	std::string name;
 
 	//Initialize publishers
-	name = "tauOut";
-	ph.param("TauOut", name, name);
-	tauOut = nh.advertise<auv_msgs::BodyForceReq>(name, 1);
+	tauOut = nh.advertise<auv_msgs::BodyForceReq>("tauOut", 1);
+	//Windup flag
+	windup = nh.advertise<std_msgs::Byte>("vcWindupFlag",1);
 
 	//Initialze subscribers
-	name = "nuRef";	ph.param("VelocityReference", name, name);
-	velocityRef = nh.subscribe<auv_msgs::BodyVelocityReq>(name, 1,
+	velocityRef = nh.subscribe<auv_msgs::BodyVelocityReq>("nuRef", 1,
 			&VelocityControl::handleReference,this);
-
-	name = "stateHat"; ph.param("StateEstimates", name, name);
-	stateHat = nh.subscribe<auv_msgs::NavSts>(name, 1,
+	stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
 			&VelocityControl::handleEstimates,this);
-
-	name = "stateMeas"; ph.param("StateMeasurements", name, name);
-	stateMeas = nh.subscribe<auv_msgs::NavSts>(name, 1,
+	stateMeas = nh.subscribe<auv_msgs::NavSts>("stateMeas", 1,
 			&VelocityControl::handleMeasurements,this);
+
+	nh.param("velocity_control/synced",synced,true);
 
 	initialize_controller();
 }
@@ -85,6 +84,8 @@ void VelocityControl::handleReference(const auv_msgs::BodyVelocityReq::ConstPtr&
 	disable_axis[p] = ref->disable_axis.roll;
 	disable_axis[q] = ref->disable_axis.pitch;
 	disable_axis[r] = ref->disable_axis.yaw;
+
+	if (!synced && newEstimate) step();
 }
 
 void VelocityControl::handleMeasurements(const auv_msgs::NavSts::ConstPtr& ref)
@@ -103,49 +104,69 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 	controller[p].state = estimate->orientation_rate.roll;
 	controller[q].state = estimate->orientation_rate.pitch;
 	controller[r].state = estimate->orientation_rate.yaw;
+
+	if (!synced && newReference) step();
 };
+
+void VelocityControl::step()
+{
+	auv_msgs::BodyForceReq tau;
+	std_msgs::Byte windupFlag;
+
+	if (newReference && newEstimate)
+	{
+		float Ts = (ros::Time::now() - lastTime).toSec();
+		if (Ts > 0.2) Ts = 0.1;
+		lastTime = ros::Time::now();
+
+		ROS_INFO("VelocityControl::Sampling Time=%f",Ts);
+
+		for (int i=u; i<=r;++i)
+		{
+			if (disable_axis[i])
+				controller[i].output = 0;
+			else
+			{
+				PIFFController_step(&controller[i], Ts);
+			  if (controller[i].windup)
+			  	windupFlag.data = windupFlag.data | (1<<i);
+			}
+		}
+
+ 		//Copy to tau
+		tau.wrench.force.x = controller[u].output;
+		tau.wrench.force.y = controller[v].output;
+		tau.wrench.force.z = controller[w].output;
+		tau.wrench.torque.x = controller[p].output;
+		tau.wrench.torque.y = controller[q].output;
+		tau.wrench.torque.z = controller[r].output;
+
+		//Restart values
+		newReference = newEstimate = false;
+	}
+	else
+	{
+		ROS_WARN("VelocityControl - messages are out of sync.");
+	}
+
+	tauOut.publish(tau);
+	windup.publish(windupFlag);
+}
 
 void VelocityControl::start()
 {
 	ros::Rate rate(10);
 
-	float Ts = 0.1;
-
 	while (ros::ok())
 	{
-		auv_msgs::BodyForceReq tau;
-
-		if (newReference && newEstimate)
+		if (synced)
 		{
-
-			for (int i=u; i<=r;++i)
-			{
-				if (disable_axis[i])
-					controller[i].output = 0;
-				else
-					PIFFController_step(&controller[i], Ts);
-			}
-
-   		//Copy to tau
-			tau.wrench.force.x = controller[u].output;
-			tau.wrench.force.y = controller[v].output;
-			tau.wrench.force.z = controller[w].output;
-			tau.wrench.torque.x = controller[p].output;
-			tau.wrench.torque.y = controller[q].output;
-			tau.wrench.torque.z = controller[r].output;
-
-			//Restart values
-			newReference = newEstimate = false;
+			rate.sleep();
+			ros::spinOnce();
+			step();
 		}
 		else
-		{
-			ROS_WARN("VelocityControl - messages are out of sync.");
-		}
-
-		tauOut.publish(tau);
-
-		rate.sleep();
-		ros::spinOnce();
+			ros::spin();
 	}
 }
 

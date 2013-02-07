@@ -69,6 +69,11 @@ namespace labust
 			 */
 			inline void stop(){this->runFlag = false;};
 
+			/**
+			 * Performs one iteration.
+			 */
+			void step();
+
 		private:
 			/**
 			 * Handle incoming reference message.
@@ -108,7 +113,7 @@ namespace labust
 			/**
 			 * The publisher of the TAU and status command.
 			 */
-			ros::Publisher tauOut, status;
+			ros::Publisher tauOut, windup;
 			/**
 			 * The subscribed topics.
 			 */
@@ -117,6 +122,14 @@ namespace labust
 			 * The ROS node handles.
 			 */
 			ros::NodeHandle nh,ph;
+			/**
+			 * The last execution time.
+			 */
+			ros::Time lastTime;
+			/**
+			 * Use message or time driven operation.
+			 */
+			bool synced;
 		};
 	}
 }

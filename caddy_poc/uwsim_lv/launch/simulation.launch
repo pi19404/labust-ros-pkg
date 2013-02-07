@@ -10,7 +10,7 @@
       <remap from="tauIn" to="tauOut" />
     </node>
     <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
-      <remap from="trackedNav" to="usblEstimate" />
+      <remap from="trackedNav" to="/diver/stateHat" />
     </node>
     
     <node pkg="velocity_control" name="velocity_control" type="velocity_control" /> 
@@ -34,7 +34,7 @@
     
     <!-- <node pkg="control_g500" name="teleoperation" type="teleoperation" >
       <remap from="body_velocity_req" to="nuRef" />
-    </node> --> 
+    </node> -->
   </group>
 
 </launch>
