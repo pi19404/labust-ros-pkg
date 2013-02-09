@@ -18,7 +18,7 @@
 			<added-mass>diag([6](20,20,20,15,30,0))</added-mass>
 			<linear-damping>diag([6](20,20,15,400,300,2.351080))</linear-damping>
 			<quadratic-damping>diag([6](0,0,0,0,0,0))</quadratic-damping>
-			<eta0>[6](15,-10,0,0,0,0.7)</eta0>
+			<eta0>[6](15,-10,0,0,0,0)</eta0>
 			<nu0>[6](0,0,0,0,0,0)</nu0>
 			<coupled>0</coupled>
 			<current>[3](0,0,0)</current>

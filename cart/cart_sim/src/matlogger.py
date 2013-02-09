@@ -27,6 +27,8 @@ class MatLogger:
         rospy.Subscriber("tauOut", BodyForceReq, self.onTau);
         
         self.stateFile = open("state_log.csv",'w');
+        
+        self.stateFile.write("%Tau, nuRef, stateHat,meas, ")
         self.nuRef = [];
           
     def onNavSts(self,name,data):

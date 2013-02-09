@@ -121,6 +121,8 @@ void VelocityControl::step()
 
 		ROS_INFO("VelocityControl::Sampling Time=%f",Ts);
 
+		std::vector<float> scaling(r+2);
+
 		for (int i=u; i<=r;++i)
 		{
 			if (disable_axis[i])
@@ -128,9 +130,45 @@ void VelocityControl::step()
 			else
 			{
 				PIFFController_step(&controller[i], Ts);
-			  if (controller[i].windup)
-			  	windupFlag.data = windupFlag.data | (1<<i);
 			}
+
+			scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
+			if (scaling[i] != scaling[i]) scaling[i] = 0;
+
+			std::cout<<i<<". has scaling:"<<scaling[i]<<","<<controller[i].output<<","<<controller[i].outputLimit<<std::endl;
+		}
+
+		scaling[r+1] = 1;
+
+		std::sort(scaling.begin(),scaling.end());
+
+		std::cout<<"Sorted scales:";
+		for (int i=u; i<r+2; ++i)
+		{
+			std::cout<<scaling[i]<<",";
+		}
+		std::cout<<std::endl;
+
+		float scale = scaling[r+1];
+		std::cout<<"Take scaling:"<<scale<<std::endl;
+
+		for (int i=u; i<=r; ++i)
+		{
+			if (controller[i].autoTracking == 0)
+			{
+				controller[i].tracking = controller[i].output/scale;
+				std::cout<<"Doing external tracking."<<std::endl;
+				//controller[i].tracking = controller[i].output;
+				PIDController_trackingUpdate(&controller[i],Ts,1);
+				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
+			}
+			else
+			{
+				std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
+			}
+
+			if (controller[i].windup)
+		  	windupFlag.data = windupFlag.data | (1<<i);
 		}
 
  		//Copy to tau
@@ -247,6 +285,8 @@ void VelocityControl::initialize_controller()
 	for (int i=u; i<=r;++i)
 	{
 		PIFFController_tune(&controller[i]);
+
+		controller[i].autoTracking = 1;
 
 		ROS_INFO("Controller %d:",i);
 		ROS_INFO("ModelParams: %f %f %f",controller[i].modelParams[alpha], controller[i].modelParams[beta],

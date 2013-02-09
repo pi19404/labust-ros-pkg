@@ -31,7 +31,7 @@ class DynamicPositioning:
         self.Ki = numpy.array([[w[0]*w[0], 0], [0, w[1]*w[1]]], 
                                dtype=numpy.float32);
                                
-        self.Kt = 5*self.Ki;
+        self.Kt = 2*self.Ki;
         
         #self.Kp = numpy.reshape(
         #            numpy.array(rospy.get_param("dynamic_positioning/Kp"),
@@ -111,16 +111,18 @@ class DynamicPositioning:
         '''Propagate integration after the output calculation'''
         #if numpy.linalg.norm(du,2) == 0 :
         if numpy.linalg.norm(self.windup, 2):
-            self.internalState += self.windup*numpy.dot(self.R,numpy.dot(self.Kt,du-ddu)*self.Ts);
+            self.internalState += self.windup*numpy.dot(self.R,numpy.dot(self.Kt,du-u)*self.Ts);
+            #if self.windup[0]: u[0] = du[0];
+            #if self.windup[1]: u[1] = du[1];
             
-        self.internalState += numpy.dot(self.Ki,d)*self.Ts + numpy.dot(self.R,numpy.dot(self.Kt,ddu-u)*self.Ts);
+        self.internalState += numpy.dot(self.Ki,d)*self.Ts + 0*numpy.dot(self.R,numpy.dot(self.Kt,ddu-u)*self.Ts);
         #self.internalState += numpy.dot(self.Ki,d)*self.Ts + numpy.dot(self.R,numpy.dot(self.Kt,ddu-u)*self.Ts);
         #     print "No windup"
         #else:    
         self.uk_1 = u;
         
-        print "Windup:",self.windup, du-u, ddu-u, u;
-        u=ddu;
+        print "Windup:",self.windup, u;
+        #u=ddu;
         
         pub = BodyVelocityReq();
         pub.twist.linear.x = u[0];
