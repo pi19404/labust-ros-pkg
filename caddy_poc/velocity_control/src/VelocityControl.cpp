@@ -113,6 +113,8 @@ void VelocityControl::step()
 	auv_msgs::BodyForceReq tau;
 	std_msgs::Byte windupFlag;
 
+	tau.header.stamp = ros::Time::now();
+
 	if (newReference && newEstimate)
 	{
 		float Ts = (ros::Time::now() - lastTime).toSec();
@@ -157,6 +159,7 @@ void VelocityControl::step()
 			if (controller[i].autoTracking == 0)
 			{
 				controller[i].tracking = controller[i].output/scale;
+				controller[i].windup = scale>1;
 				std::cout<<"Doing external tracking."<<std::endl;
 				//controller[i].tracking = controller[i].output;
 				PIDController_trackingUpdate(&controller[i],Ts,1);
@@ -181,13 +184,14 @@ void VelocityControl::step()
 
 		//Restart values
 		newReference = newEstimate = false;
+		tauOut.publish(tau);
 	}
 	else
 	{
 		ROS_WARN("VelocityControl - messages are out of sync.");
 	}
 
-	tauOut.publish(tau);
+	//tauOut.publish(tau);
 	windup.publish(windupFlag);
 }
 
@@ -286,7 +290,7 @@ void VelocityControl::initialize_controller()
 	{
 		PIFFController_tune(&controller[i]);
 
-		controller[i].autoTracking = 1;
+		controller[i].autoTracking = 0;
 
 		ROS_INFO("Controller %d:",i);
 		ROS_INFO("ModelParams: %f %f %f",controller[i].modelParams[alpha], controller[i].modelParams[beta],

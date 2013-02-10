@@ -53,7 +53,7 @@ namespace labust
 			enum {u=0,v,w,p,q,r};
 			enum {X=0,Y,Z,K,M,N};
 			enum {alpha=0,beta,betaa};
-			enum {Kp=0,Ki,Kt};
+			enum {Kp=0,Ki,Kd,Kt};
 
 		public:
 			/**
