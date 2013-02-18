@@ -44,6 +44,7 @@
 #include <auv_msgs/BodyVelocityReq.h>
 #include <auv_msgs/VehiclePose.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Quaternion.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Int32.h>
 #include <underwater_sensor_msgs/USBL.h>
@@ -147,6 +148,13 @@ void handleUSBL(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const unde
 	msgOut->first = true;
 }
 
+void handleOceanInfo(labust::vehicles::UVApp* app, const geometry_msgs::Quaternion::ConstPtr& msgIn)
+{
+	std::ostringstream str;
+	str<<"<uvapp><UVSim><param name=\"waterLevel\" value=\""<<-msgIn->w<<"\" type=\"double\" /></UVSim></uvapp>";
+	//app->setCommand(str.str());
+}
+
 Eigen::Vector2f stateDP;
 
 int main(int argc, char* argv[])
@@ -178,6 +186,7 @@ int main(int argc, char* argv[])
 	ros::Subscriber refIn = nh.subscribe<auv_msgs::VehiclePose>("refIn", 10, boost::bind(&handleRef,&stateRef,_1));
 	ros::Subscriber modeIn = nh.subscribe<std_msgs::Int32>("modeIn", 10, boost::bind(&handleMode,&app,_1));
 	ros::Subscriber usblIn = nh.subscribe<underwater_sensor_msgs::USBL>("usbl", 10, boost::bind(&handleUSBL,&msg,_1));
+	ros::Subscriber oceanInfo = nh.subscribe<geometry_msgs::Quaternion>("ocean_info", 10, boost::bind(&handleOceanInfo,&app,_1));
 
 	ros::Rate rate(10);
 

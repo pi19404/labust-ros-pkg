@@ -21,11 +21,18 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
-set(PR_NAME vehicleNode)
-set(SRC src/vehicleNode.cpp src/VehicleApp.cpp)
-set(HPP include/labust/vehicles/VehicleApp.hpp)
-rosbuild_add_executable(${PR_NAME} ${SRC} ${HPP})
-target_link_libraries(${PR_NAME} labust_xml)
+#set(PR_NAME vehicleNode)
+#set(SRC src/vehicleNode.cpp src/VehicleApp.cpp)
+#set(HPP include/labust/vehicles/VehicleApp.hpp)
+#rosbuild_add_executable(${PR_NAME} ${SRC} ${HPP})
+#target_link_libraries(${PR_NAME} labust_xml)
+
+set(PR_NAME velocity_control)
+rosbuild_add_executable(${PR_NAME} 
+	src/velocity_control.cpp 
+	src/VelocityControl.cpp
+	include/labust/control/VelocityControl.hpp)
+target_link_libraries(${PR_NAME} labust_navcon)
 
 rosbuild_add_executable(identificationNode src/identificationNode.cpp)
 target_link_libraries(identificationNode labust_xml labust_navcon)

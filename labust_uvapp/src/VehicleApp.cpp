@@ -30,6 +30,9 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
+*
+*  Author: Dula Nad
+*  Created: 12.02.2013.
 *********************************************************************/
 #include <labust/vehicles/VehicleApp.hpp>
 #include <labust/vehicles/VehicleDriver.hpp>

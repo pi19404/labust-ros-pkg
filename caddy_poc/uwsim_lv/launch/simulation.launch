@@ -13,7 +13,11 @@
       <remap from="trackedNav" to="/diver/stateHat" />
     </node> -->
     
-    <node pkg="velocity_control" name="velocity_control" type="velocity_control" />
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
+    
+    <node pkg="cart_sim" name="logger" type="matlogger.py">
+      <param name="filename" value="/home/dnad/Development/Matlab/ros/pladypos_log.csv" />
+    </node>
   </group>
   
   <group ns="diver">
@@ -26,7 +30,7 @@
       <remap from="nuRef" to="dummy" />
     </node>
     
-    <node pkg="velocity_control" name="velocity_control" type="velocity_control" />
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
     <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
       <remap from="trackedNav" to="trajectory" />
     </node>

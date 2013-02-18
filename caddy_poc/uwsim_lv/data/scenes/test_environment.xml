@@ -4,11 +4,21 @@
 
 <UWSimScene>
 	<oceanState>
+		<!-- <windx> 0.04 </windx>
+		<windy> 0.04 </windy>
+		<windSpeed> 12 </windSpeed>
+		<depth> 1000 </depth>
+		<reflectionDamping> 0.35 </reflectionDamping>
+		<waveScale> 1e-7 </waveScale>
+		<isNotChoppy> 0 </isNotChoppy>
+		<choppyFactor> 2.5 </choppyFactor>
+		<crestFoamHeight> 2.2 </crestFoamHeight>
+		<oceanSurfaceHeight> 0 </oceanSurfaceHeight> -->
 		<windx> 0.0 </windx>
 		<windy> 0.0 </windy>
 		<windSpeed> 0 </windSpeed>
 		<depth> 1000 </depth>
-		<reflectionDamping> 0 </reflectionDamping>
+		<reflectionDamping> 0.0 </reflectionDamping>
 		<waveScale> 0 </waveScale>
 		<isNotChoppy> 0 </isNotChoppy>
 		<choppyFactor> 0 </choppyFactor>
@@ -33,7 +43,7 @@
 			<b> 0.005 </b>
 		</attenuation>
 	</oceanState>
-	
+
 	<simParams>
 		<disableShaders> 0 </disableShaders>
 		<resw> 800 </resw>
@@ -75,7 +85,7 @@
 		<position>
 			<x> 0</x>
 			<y> 0 </y>
-			<z> 0 </z>
+			<z> 10 </z>
 		</position>
 		<orientation>
 			<r>0</r>
@@ -214,6 +224,11 @@
 			<topic>pladypos/usbl</topic>
 			<rate>1</rate>
 		</USBLSensorToROS>
+		<OceanInfoToROS>
+			<name>diver</name>
+			<topic>pladypos/ocean_info</topic>
+			<rate>20</rate>
+		</OceanInfoToROS>
 	</rosInterfaces>
 </UWSimScene>
 

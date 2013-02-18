@@ -26,24 +26,26 @@ class MatLogger:
         rospy.Subscriber("nuRef", BodyVelocityReq, self.onNuRef);
         rospy.Subscriber("tauOut", BodyForceReq, self.onTau);
         
-        self.stateFile = open("state_log.csv",'w');
+        name = rospy.get_param("~filename");
+                
+        self.stateFile = open(name,'w');
         
-        self.stateFile.write("%Tau, nuRef, stateHat,meas, ")
+        self.stateFile.write("%Tau, nuRef, stateHat,meas");
         self.nuRef = [];
           
     def onNavSts(self,name,data):
-        self.varname[name]=[data.position.north,
-           data.position.east,
-           data.position.depth,
-           data.orientation.roll,
-           data.orientation.pitch,
-           data.orientation.yaw,
-           data.body_velocity.x,
+        self.varname[name]=[data.body_velocity.x,
            data.body_velocity.y,
            data.body_velocity.z,
            data.orientation_rate.roll,
            data.orientation_rate.pitch,
-           data.orientation_rate.yaw];
+           data.orientation_rate.yaw,
+           data.position.north,
+           data.position.east,
+           data.position.depth,
+           data.orientation.roll,
+           data.orientation.pitch,
+           data.orientation.yaw,];
                 
     def onNuRef(self,data):
         self.nuRef = [data.twist.linear.x,
@@ -62,12 +64,13 @@ class MatLogger:
                        data.wrench.torque.z];
                        
         out = [rospy.Time.now().to_sec()] + self.tauRef + self.nuRef;
-        for key in self.varname.keys():
-            out += self.varname[key];
+        out += self.varname["meas"] + self.varname["stateHat"];
+        out += self.varname["usblMeas"] + self.varname["usblEstimate"];
+        out += self.varname["trajectory"];
         self.stateFile.write(str(out).strip("[]") + "\n")
         
 if __name__ == "__main__":
-    rospy.init_node("dpcontrol");
+    rospy.init_node("logger");
     log = MatLogger(); 
         
     while not rospy.is_shutdown():
