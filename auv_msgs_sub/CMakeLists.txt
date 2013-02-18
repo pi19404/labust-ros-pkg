@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(labust_uvapp)
+project(auv_msgs_sub)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs sensor_msgs std_msgs message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -18,11 +18,17 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 #######################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+	 BodyForceReq.msg  
+	 BodyVelocityReq.msg  
+	 Bool6Axis.msg  
+	 DecimalLatLon.msg  
+	 GoalDescriptor.msg  
+	 NavSts.msg  
+	 NED.msg  
+	 RPY.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -32,10 +38,10 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs sensor_msgs std_msgs
+)
 
 ###################################################
 ## Declare things to be passed to other projects ##
@@ -45,9 +51,9 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-#  LIBRARIES labust_uvapp
-  CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp
+#  INCLUDE_DIRS include
+#  LIBRARIES auv_msgs_sub
+  CATKIN_DEPENDS geometry_msgs sensor_msgs std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -56,27 +62,21 @@ catkin_package(
 ###########
 
 ## Specify additional locations of header files
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+# include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 ## Declare a cpp library
-# add_library(labust_uvapp
-#   src/${PROJECT_NAME}/labust_uvapp.cpp
+# add_library(auv_msgs_sub
+#   src/${PROJECT_NAME}/auv_msgs_sub.cpp
 # )
 
 ## Declare a cpp executable
-# add_executable(labust_uvapp_node src/labust_uvapp_node.cpp)
-set(PR_NAME velocity_control)
-add_executable(${PR_NAME} 
-	src/velocity_control.cpp 
-	src/VelocityControl.cpp
-	include/labust/control/VelocityControl.hpp)
-target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
+# add_executable(auv_msgs_sub_node src/auv_msgs_sub_node.cpp)
 
 ## Add dependencies to the executable
-# add_dependencies(labust_uvapp_node ${PROJECT_NAME})
+# add_dependencies(auv_msgs_sub_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(labust_uvapp_node
+# target_link_libraries(auv_msgs_sub_node
 #   ${catkin_LIBRARIES}
 # )
 
@@ -92,11 +92,11 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 # )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS velocity_control
+# install(TARGETS auv_msgs_sub auv_msgs_sub_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -117,7 +117,7 @@ install(TARGETS velocity_control
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_labust_uvapp.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_auv_msgs_sub.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
