@@ -1,0 +1,28 @@
+#ignore Eclipse project files
+.project
+.cproject
+.pydevproject
+#ignore CMake install
+cmake_install.cmake
+#ignore build dirs.
+build/
+lib/
+bin/
+#ignore bvt_sdk dirs
+*/bvt_sdk/include/
+*/bvt_sdk/colormaps/
+#ignore generated files
+srv_gen/
+msg_gen/
+#Backup files
+*~
+*.swp
+#The labust-base stuff
+labust-base
+checkout
+*.tar.gz
+*.tar.bz2
+#Ignore simulation non-versioned data 
+*/*/data/robot/
+*/*/data/robots/
+downloaded
