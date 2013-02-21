@@ -1,0 +1,9 @@
+<moosrosconfig>
+  <message>
+    <moosname>uuv_meas</moosname>
+	<rosname>uuv_meas</rosname>
+    <moostype>String</moostype>
+    <rostype>std_msgs/String</rostype>
+    <direction>toROS</direction>
+  </message>
+</moosrosconfig>
