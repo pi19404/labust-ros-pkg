@@ -41,6 +41,10 @@
 
 #include <boost/bind.hpp>
 
+#include <Eigen/Dense>
+
+#include <cmath>
+
 using labust::control::VelocityControl;
 
 VelocityControl::VelocityControl():
@@ -64,7 +68,7 @@ VelocityControl::VelocityControl():
 	stateMeas = nh.subscribe<auv_msgs::NavSts>("stateMeas", 1,
 			&VelocityControl::handleMeasurements,this);
 
-	nh.param("velocity_control/synced",synced,true);
+	nh.param("velocity_controller/synced",synced,true);
 
 	initialize_controller();
 }
@@ -121,8 +125,10 @@ void VelocityControl::step()
 	if (newReference && newEstimate)
 	{
 		float Ts = (ros::Time::now() - lastTime).toSec();
-		if (Ts > 0.2) Ts = 0.1;
+		if (Ts > 0.3) Ts = 0.1;
 		lastTime = ros::Time::now();
+
+		Ts = 0.1;
 
 		ROS_INFO("VelocityControl::Sampling Time=%f",Ts);
 
@@ -135,46 +141,99 @@ void VelocityControl::step()
 			else
 			{
 				PIFFController_step(&controller[i], Ts);
+				if (controller[i].windup)	windupFlag.data = windupFlag.data | (1<<i);
 			}
 
-			scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
-			if (scaling[i] != scaling[i]) scaling[i] = 0;
+			//scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
+			//if (scaling[i] != scaling[i]) scaling[i] = 0;
 
 			std::cout<<i<<". has scaling:"<<scaling[i]<<","<<controller[i].output<<","<<controller[i].outputLimit<<std::endl;
 		}
 
-		scaling[r+1] = 1;
+		////////////////////////////Allocation stuff/////////////////////////////////////////
+		Eigen::Matrix<float, 3,4> B;
+		float cp(cos(M_PI/4)),sp(sin(M_PI/4));
+		B<<cp,cp,-cp,-cp,
+			 sp,-sp,sp,-sp,
+			 1,-1,-1,1;
+		Eigen::Matrix<float, 4,3> pinv = B.transpose()*(B*B.transpose()).inverse();
 
-		std::sort(scaling.begin(),scaling.end());
+		Eigen::Vector3f virtualInput;
+		virtualInput<<controller[u].output, controller[v].output, controller[r].output;
+
+		Eigen::Vector4f tdes = pinv*virtualInput;
+
+		enum{T1 = 0,T2,T3,T4};
+
+		float taumax(13/(2*cp));
+
+		Eigen::Vector4f scaled = tdes/taumax;
+		Eigen::Matrix<float,5,1> tscale;
+		tscale<<fabs(scaled(0)),fabs(scaled(1)),fabs(scaled(2)),fabs(scaled(3)),1.0f;
+		//std::for_each(tscale.data(), tscale.data() + tscale.SizeAtCompileTime, fabs);
+		std::sort(tscale.data(),tscale.data() + tscale.SizeAtCompileTime);
 
 		std::cout<<"Sorted scales:";
-		for (int i=u; i<r+2; ++i)
+		for (int i=0; i<tscale.SizeAtCompileTime; ++i)
 		{
-			std::cout<<scaling[i]<<",";
+			std::cout<<tscale(i)<<",";
 		}
 		std::cout<<std::endl;
 
-		float scale = scaling[r+1];
-		std::cout<<"Take scaling:"<<scale<<std::endl;
+		//With scaling
+		//tdes = tdes/tscale(tscale.SizeMinusOne);
+		//Without scaling
+		for (int i=0; i<4; ++i)
+		{
+			if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
+		}
 
+		Eigen::Vector3f virtualInputLim = B*tdes;
+		/////////////////////////////////////////////////////////////////////////////////////
+		float scale = tscale(tscale.SizeMinusOne);
+		std::cout<<"Take scaling:"<<tscale(tscale.SizeMinusOne)<<std::endl;
+
+		std::cout<<std::endl;
+
+		std::cout<<"Virtual input:";
+		for (int i=0;i<3;++i) std::cout<<virtualInput(i)<<",";
+		std::cout<<std::endl;
+		std::cout<<"Desired u:";
+		for (int i=0;i<4;++i) std::cout<<tdes(i)<<",";
+		std::cout<<std::endl;
+		std::cout<<"Virtual input limited:";
+		for (int i=0;i<3;++i) std::cout<<virtualInputLim(i)<<",";
+		std::cout<<std::endl;
+
+		ROS_INFO("Thrust:%f,%f,%f,%f",tdes(0),tdes(1),tdes(2),tdes(3));
+
+
+		std::cout<<std::endl;
+
+		Eigen::Matrix<float,6,1> vin;
+		vin<<virtualInputLim(0),virtualInputLim(1),0,0,0,virtualInputLim(2);
+		//windupFlag.data = 0;
 		for (int i=u; i<=r; ++i)
 		{
-			if (controller[i].autoTracking == 0)
+			if (controller[i].autoTracking == 0 && (!disable_axis[i]))
 			{
-				controller[i].tracking = controller[i].output/scale;
+				controller[i].tracking = vin(i);
 				controller[i].windup = scale>1;
+				controller[i].output = vin(i);
+				//controller[i].integratorState = vin(i);
 				std::cout<<"Doing external tracking."<<std::endl;
 				//controller[i].tracking = controller[i].output;
-				PIDController_trackingUpdate(&controller[i],Ts,1);
+				//PIDController_trackingUpdate(&controller[i],Ts,1);
 				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
 			}
 			else
 			{
-				std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
+				//controller[i].windup = 0;
+				//std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
 			}
 
-			if (controller[i].windup)
-		  	windupFlag.data = windupFlag.data | (1<<i);
+			//if (controller[i].windup)
+		  	//windupFlag.data = windupFlag.data | (1<<i);
 		}
 
  		//Copy to tau
@@ -206,9 +265,9 @@ void VelocityControl::start()
 	{
 		if (synced)
 		{
-			rate.sleep();
 			ros::spinOnce();
 			step();
+			rate.sleep();
 		}
 		else
 			ros::spin();

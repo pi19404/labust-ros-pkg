@@ -15,10 +15,10 @@
 			<rb>[3](0,0,0)</rb>
 			<rho>1025</rho>
 			<lift-force>200</lift-force>
-			<added-mass>diag([6](20,20,20,15,30,0))</added-mass>
-			<linear-damping>diag([6](20,20,15,400,300,2.351080))</linear-damping>
+			<added-mass>diag([6](6,6,20,15,30,0))</added-mass>
+			<linear-damping>diag([6](13,13,15,400,300,2.351080))</linear-damping>
 			<quadratic-damping>diag([6](0,0,0,0,0,0))</quadratic-damping>
-			<eta0>[6](15,1,2,0,0,0)</eta0>
+			<eta0>[6](5,2,0,0,0,0)</eta0>
 			<nu0>[6](0,0,0,0,0,0)</nu0>
 			<coupled>0</coupled>
 			<current>[3](0,0,0)</current>

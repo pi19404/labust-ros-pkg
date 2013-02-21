@@ -28,6 +28,7 @@ add_message_files(
 	 NavSts.msg  
 	 NED.msg  
 	 RPY.msg
+	 VehiclePose.msg
 )
 
 ## Generate services in the 'srv' folder

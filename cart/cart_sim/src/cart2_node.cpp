@@ -50,7 +50,9 @@
 #include <underwater_sensor_msgs/USBL.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <ros/ros.h>
-
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/normal_distribution.hpp>
+#include <boost/random/variate_generator.hpp>
 #include <Eigen/Dense>
 
 #include <boost/bind.hpp>
@@ -58,6 +60,9 @@
 #include <iostream>
 
 typedef labust::navigation::KFCore<labust::navigation::KinematicModel> USBLFilter;
+
+boost::mt19937 rng_; ///< Boost random number generator
+
 
 void mapToOdometry(labust::vehicles::stateMap& stateHat, nav_msgs::Odometry* odom)
 {
@@ -148,6 +153,22 @@ void handleUSBL(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const unde
 	msgOut->first = true;
 }
 
+void handleUSBL2(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const auv_msgs::NavSts::ConstPtr& msgIn)
+{
+	float std_ = 0.3;
+	static boost::normal_distribution<> normal(0,std_);
+	static boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor(rng_, normal);
+	static int it = 0;
+	++it;
+	msgOut->first = (it%10)==0;
+	if (msgOut->first)
+	{
+		(*msgOut).second.position.x = msgIn->position.north + 0*var_nor();
+		(*msgOut).second.position.y = msgIn->position.east + 0*var_nor();
+	}
+	//msgOut->first = true;
+}
+
 void handleOceanInfo(labust::vehicles::UVApp* app, const geometry_msgs::Quaternion::ConstPtr& msgIn)
 {
 	std::ostringstream str;
@@ -166,27 +187,29 @@ int main(int argc, char* argv[])
 	labust::vehicles::UVApp app(reader,"cart2");
 	USBLFilter filter;
 	filter.setTs(0.1);
+	filter.setStateCovariance(100*USBLFilter::eye(USBLFilter::stateNum));
 
 	ros::NodeHandle nh;
 
 	//Publishers
-	ros::Publisher pub_state = nh.advertise<auv_msgs::NavSts>("stateHat",10);
-	ros::Publisher pub_meas = nh.advertise<auv_msgs::NavSts>("meas",10);
-	ros::Publisher uwsim_hook = nh.advertise<nav_msgs::Odometry>("uwsim_hook",10);
+	ros::Publisher pub_state = nh.advertise<auv_msgs::NavSts>("stateHat",1);
+	ros::Publisher pub_meas = nh.advertise<auv_msgs::NavSts>("meas",1);
+	ros::Publisher uwsim_hook = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
 
-	ros::Publisher pub_full = nh.advertise<auv_msgs::BodyVelocityReq>("nuRef",10);
-	ros::Publisher usbl_full = nh.advertise<auv_msgs::NavSts>("usblEstimate",10);
-	ros::Publisher usbl_meas = nh.advertise<auv_msgs::NavSts>("usblMeas",10);
+	//ros::Publisher pub_full = nh.advertise<auv_msgs::BodyVelocityReq>("nuRef",10);
+	ros::Publisher usbl_full = nh.advertise<auv_msgs::NavSts>("usblEstimate",1);
+	ros::Publisher usbl_meas = nh.advertise<auv_msgs::NavSts>("usblMeas",1);
 
 	std::pair<bool,underwater_sensor_msgs::USBL> msg;
 	labust::vehicles::stateMap stateRef;
 
 	//Subscribers
-	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 10, boost::bind(&handleTau,&app,_1));
-	ros::Subscriber refIn = nh.subscribe<auv_msgs::VehiclePose>("refIn", 10, boost::bind(&handleRef,&stateRef,_1));
-	ros::Subscriber modeIn = nh.subscribe<std_msgs::Int32>("modeIn", 10, boost::bind(&handleMode,&app,_1));
-	ros::Subscriber usblIn = nh.subscribe<underwater_sensor_msgs::USBL>("usbl", 10, boost::bind(&handleUSBL,&msg,_1));
-	ros::Subscriber oceanInfo = nh.subscribe<geometry_msgs::Quaternion>("ocean_info", 10, boost::bind(&handleOceanInfo,&app,_1));
+	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&app,_1));
+	ros::Subscriber refIn = nh.subscribe<auv_msgs::VehiclePose>("refIn", 1, boost::bind(&handleRef,&stateRef,_1));
+	ros::Subscriber modeIn = nh.subscribe<std_msgs::Int32>("modeIn", 1, boost::bind(&handleMode,&app,_1));
+	ros::Subscriber usblIn2 = nh.subscribe<underwater_sensor_msgs::USBL>("usbl", 10, boost::bind(&handleUSBL,&msg,_1));
+	ros::Subscriber usblIn = nh.subscribe<auv_msgs::NavSts>("/diver/stateHat", 1, boost::bind(&handleUSBL2,&msg,_1));
+	ros::Subscriber oceanInfo = nh.subscribe<geometry_msgs::Quaternion>("ocean_info", 1, boost::bind(&handleOceanInfo,&app,_1));
 
 	ros::Rate rate(10);
 
@@ -209,10 +232,9 @@ int main(int argc, char* argv[])
 		if (msg.first)
 		{
 			USBLFilter::input_type vec(2);
-			vec(0) = ext_measurements[state::x] + msg.second.position.x;
-			vec(1) = ext_measurements[state::y] + msg.second.position.y;
+			vec(0) = msg.second.position.x;
+			vec(1) = msg.second.position.y;
 			filter.correct(vec);
-			msg.first = false;
 		}
 
 		USBLFilter::output_type data = filter.getState();
@@ -229,44 +251,47 @@ int main(int argc, char* argv[])
 
 		usbl_full.publish(usbl_estimate);
 
-		auv_msgs::NavSts usblMeas;
-		usblMeas.position.north = ext_measurements[state::x] + msg.second.position.x;;
-		usblMeas.position.east = ext_measurements[state::y] + msg.second.position.y;
-		usblMeas.header.stamp = ros::Time::now();
+		//if (msg.first)
+		{
+			auv_msgs::NavSts usblMeas;
+			usblMeas.position.north = msg.second.position.x;;
+			usblMeas.position.east = msg.second.position.y;
+			usblMeas.header.stamp = ros::Time::now();
+			usbl_meas.publish(usblMeas);
+		}
 
-		usbl_meas.publish(usblMeas);
+		msg.first = false;
 
-
-		//Nikola's DP/////////////////////////////////////////////////
-		Eigen::Matrix2f R;
-		R(0,0) = R(1,1) = cos(stateHat[state::yaw]);
-		R(1,0) = -sin(stateHat[state::yaw]);
-		R(0,1) = -R(1,0);
-
-		Eigen::Matrix2f Kp;
-		Kp(0,0) = 0.3;
-		Kp(1,1) = 0.3;
-		Kp(0,1) = 0;
-		Kp(1,0) = 0;
-
-		Eigen::Vector2f d,ff,nuRef;
-		d(0) = ext_measurements[state::x] - data(USBLFilter::xp);
-		d(1) = ext_measurements[state::y] - data(USBLFilter::yp);
-
-		ff(0) = data(USBLFilter::Vv) * cos(data(USBLFilter::psi));
-		ff(1) = data(USBLFilter::Vv) * sin(data(USBLFilter::psi));
-
-		nuRef = R.transpose()*(-Kp*d + ff);
-
-		auv_msgs::BodyVelocityReq req;
-		req.twist.linear.x = nuRef(0);
-		req.twist.linear.y = nuRef(1);
-		req.twist.angular.z = 2*(stateRef[state::yaw] - ext_measurements[state::yaw]);
-
-		req.disable_axis.roll = req.disable_axis.pitch = req.disable_axis.z = true;
-
-		//pub_full.publish(req);
-		/////////////////////////////////////////////////////////////
+//		//Nikola's DP/////////////////////////////////////////////////
+//		Eigen::Matrix2f R;
+//		R(0,0) = R(1,1) = cos(stateHat[state::yaw]);
+//		R(1,0) = -sin(stateHat[state::yaw]);
+//		R(0,1) = -R(1,0);
+//
+//		Eigen::Matrix2f Kp;
+//		Kp(0,0) = 0.3;
+//		Kp(1,1) = 0.3;
+//		Kp(0,1) = 0;
+//		Kp(1,0) = 0;
+//
+//		Eigen::Vector2f d,ff,nuRef;
+//		d(0) = ext_measurements[state::x] - data(USBLFilter::xp);
+//		d(1) = ext_measurements[state::y] - data(USBLFilter::yp);
+//
+//		ff(0) = data(USBLFilter::Vv) * cos(data(USBLFilter::psi));
+//		ff(1) = data(USBLFilter::Vv) * sin(data(USBLFilter::psi));
+//
+//		nuRef = R.transpose()*(-Kp*d + ff);
+//
+//		auv_msgs::BodyVelocityReq req;
+//		req.twist.linear.x = nuRef(0);
+//		req.twist.linear.y = nuRef(1);
+//		req.twist.angular.z = 2*(stateRef[state::yaw] - ext_measurements[state::yaw]);
+//
+//		req.disable_axis.roll = req.disable_axis.pitch = req.disable_axis.z = true;
+//
+//		//pub_full.publish(req);
+//		/////////////////////////////////////////////////////////////
 
 		std::cout<<"References:"<<stateRef[state::z]<<std::endl;
 
@@ -286,7 +311,6 @@ int main(int argc, char* argv[])
 		nav_msgs::Odometry odom;
 		mapToOdometry(ext_measurements, &odom);
 		uwsim_hook.publish(odom);
-
 		rate.sleep();
 		ros::spinOnce();
 	}

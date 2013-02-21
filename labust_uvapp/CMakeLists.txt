@@ -63,6 +63,9 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 #   src/${PROJECT_NAME}/labust_uvapp.cpp
 # )
 
+find_package(Eigen REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
+
 ## Declare a cpp executable
 # add_executable(labust_uvapp_node src/labust_uvapp_node.cpp)
 set(PR_NAME velocity_control)

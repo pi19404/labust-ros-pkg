@@ -17,7 +17,7 @@ class LawnGenerator:
         self.u = 0.5;
         self.Ts = 0.1;   
         
-        self.points=[[0,0],[50,0],[50,50],[0,50]];
+        self.points=[[0,0],[10,0],[10,10],[0,10]];
         self.lastPoint = numpy.array(self.points[0],dtype=numpy.float32);
         self.next = 1;
         self.nextPoint = numpy.array(self.points[self.next],
