@@ -5,15 +5,16 @@
   <group ns="pladypos">
   	<rosparam command="load" file="$(find caddy_uwsim)/launch/model.yaml" />
   	<rosparam command="load" file="$(find caddy_uwsim)/launch/simulation.yaml" />
-  	
+  	    
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
+    
     <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
       <remap from="tauIn" to="tauOut" />
-    </node>
+    </node>    
+    
     <!-- <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
       <remap from="trackedNav" to="usblEstimate" />
-    </node> --> 
-    
-    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
+    </node> -->
     
     <node pkg="cart_sim" name="logger" type="matlogger.py">
       <param name="filename" value="/home/dnad/Development/Matlab/ros/pladypos_log.csv" />
@@ -25,16 +26,22 @@
   	<rosparam command="load" file="$(find caddy_uwsim)/launch/sim_diver.yaml" />
   	<rosparam command="load" file="$(find control_g500)/config/joy.yaml"/>
   	
-  	<!-- <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
-      <remap from="tauIn" to="tauOut" />
-      <remap from="nuRef" to="dummy" />
+  	<node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
+      <remap from="trackedNav" to="trajectory" />
     </node>
     
     <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
-    <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
-      <remap from="trackedNav" to="trajectory" />
-    </node>
-    <node pkg="cart_sim" name="lawngenerator" type="lawn_generator.py" /> --> 
+    
+  	<node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/diver_app.xml">
+      <remap from="tauIn" to="tauOut" />
+      <remap from="nuRef" to="dummy" />
+    </node> -->
+
+    <!-- <node pkg="cart_sim" name="lawngenerator" type="lawn_generator.py" /> -->
+    
+    <!-- <node pkg="cart_sim" name="logger" type="matlogger.py">
+      <param name="filename" value="/home/dnad/Development/Matlab/ros/diver_log.csv" />
+    </node> --> 
     
     <!-- <node pkg="control_g500" name="teleoperation" type="teleoperation" >
       <remap from="body_velocity_req" to="nuRef" />
