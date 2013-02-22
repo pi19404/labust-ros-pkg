@@ -153,18 +153,33 @@ void handleUSBL(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const unde
 	msgOut->first = true;
 }
 
+double xpp=5, ypp=2;
+
 void handleUSBL2(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const auv_msgs::NavSts::ConstPtr& msgIn)
 {
-	float std_ = 0.3;
+	float std_ = 0.5;
 	static boost::normal_distribution<> normal(0,std_);
 	static boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor(rng_, normal);
 	static int it = 0;
 	++it;
-	msgOut->first = (it%10)==0;
+	msgOut->first = (it%20)==0;
+
 	if (msgOut->first)
 	{
-		(*msgOut).second.position.x = msgIn->position.north + 0*var_nor();
-		(*msgOut).second.position.y = msgIn->position.east + 0*var_nor();
+//		double dx = msgIn->position.north - xpp;
+//		double dy = msgIn->position.east - ypp;
+//		double dz = 10;
+//		double slant = sqrt(dx*dx + dy*dy + dz*dz) +  0.1*var_nor();
+//		double bearing = atan2(dy, dx) + 5*M_PI/180*var_nor();
+//		double elevation = atan2(dz, sqrt(dx*dx + dy*dy)) + 5*M_PI/180*var_nor();
+//		(*msgOut).second.position.x = xpp + slant*cos(elevation)*cos(bearing);
+//		(*msgOut).second.position.y = ypp + slant*cos(elevation)*sin(bearing);
+//
+//		std::cout<<"diff:"<<(*msgOut).second.position.x - msgIn->position.north<<std::endl;
+//		std::cout<<"diff:"<<(*msgOut).second.position.y - msgIn->position.east<<std::endl;
+
+		(*msgOut).second.position.x = msgIn->position.north + var_nor();
+		(*msgOut).second.position.y = msgIn->position.east + var_nor();
 	}
 	//msgOut->first = true;
 }
@@ -187,7 +202,7 @@ int main(int argc, char* argv[])
 	labust::vehicles::UVApp app(reader,"cart2");
 	USBLFilter filter;
 	filter.setTs(0.1);
-	filter.setStateCovariance(100*USBLFilter::eye(USBLFilter::stateNum));
+	filter.setStateCovariance(10*USBLFilter::eye(USBLFilter::stateNum));
 
 	ros::NodeHandle nh;
 
@@ -207,7 +222,7 @@ int main(int argc, char* argv[])
 	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&app,_1));
 	ros::Subscriber refIn = nh.subscribe<auv_msgs::VehiclePose>("refIn", 1, boost::bind(&handleRef,&stateRef,_1));
 	ros::Subscriber modeIn = nh.subscribe<std_msgs::Int32>("modeIn", 1, boost::bind(&handleMode,&app,_1));
-	ros::Subscriber usblIn2 = nh.subscribe<underwater_sensor_msgs::USBL>("usbl", 10, boost::bind(&handleUSBL,&msg,_1));
+	//ros::Subscriber usblIn2 = nh.subscribe<underwater_sensor_msgs::USBL>("usbl", 10, boost::bind(&handleUSBL,&msg,_1));
 	ros::Subscriber usblIn = nh.subscribe<auv_msgs::NavSts>("/diver/stateHat", 1, boost::bind(&handleUSBL2,&msg,_1));
 	ros::Subscriber oceanInfo = nh.subscribe<geometry_msgs::Quaternion>("ocean_info", 1, boost::bind(&handleOceanInfo,&app,_1));
 
@@ -225,6 +240,8 @@ int main(int argc, char* argv[])
 		tau[tau::Y] = -1.5;
 		//app.setExternalTau(tau);
 		stateHat = app.step(ext_measurements);
+		xpp = ext_measurements[state::x];
+		ypp = ext_measurements[state::y];
 		std::cout<<"Speed:"<<stateHat[state::u]<<std::endl;
 
 		filter.predict();
@@ -247,6 +264,7 @@ int main(int argc, char* argv[])
 		usbl_estimate.position.north = data(USBLFilter::xp);
 		usbl_estimate.position.east = data(USBLFilter::yp);
 		usbl_estimate.body_velocity.x = data(USBLFilter::Vv);
+		usbl_estimate.orientation_rate.yaw = data(USBLFilter::r);
 		usbl_estimate.header.stamp = ros::Time::now();
 
 		usbl_full.publish(usbl_estimate);

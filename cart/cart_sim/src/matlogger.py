@@ -17,6 +17,7 @@ class MatLogger:
                  "meas":[],
                  "usblEstimate":[],
                  "usblMeas":[],
+                 "/diver/meas":[],
                  "trajectory":[]};
                      
         for key in self.varname.keys():
@@ -66,6 +67,7 @@ class MatLogger:
         out = [rospy.Time.now().to_sec()] + self.tauRef + self.nuRef;
         out += self.varname["meas"] + self.varname["stateHat"];
         out += self.varname["usblMeas"] + self.varname["usblEstimate"];
+        out += self.varname["/diver/meas"];
         out += self.varname["trajectory"];
         self.stateFile.write(str(out).strip("[]") + "\n")
         

@@ -181,11 +181,11 @@ void VelocityControl::step()
 		std::cout<<std::endl;
 
 		//With scaling
-		//tdes = tdes/tscale(tscale.SizeMinusOne);
+		tdes = tdes/tscale(tscale.SizeMinusOne);
 		//Without scaling
 		for (int i=0; i<4; ++i)
 		{
-			if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
+			//if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
 		}
 
 		Eigen::Vector3f virtualInputLim = B*tdes;

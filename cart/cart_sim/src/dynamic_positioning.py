@@ -132,6 +132,8 @@ class DynamicPositioning:
         self.internalState += numpy.dot(self.R,self.ff) - self.lastFF;
         self.lastFF = numpy.dot(self.R,self.ff);
         
+        print "Feed forward:",self.lastFF;
+        
         if (numpy.linalg.norm(self.lastW, 2) == 0) and (numpy.linalg.norm(self.windup, 2) != 0):
             print "Oduzimanje."
             self.internalState -= self.lastI;
