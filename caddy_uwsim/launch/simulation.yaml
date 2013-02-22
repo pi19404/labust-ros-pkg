@@ -3,12 +3,12 @@ thrusters/count: 4
 thrusters/allocation_matrix: []
 
 #The velocity controller closed loop parameters
-velocity_controller/closed_loop_freq: [3.0,3.0,0.1,1.0,1.0,1.0]
+velocity_controller/closed_loop_freq: [0.5,0.5,0.1,1.0,1.0,1.0]
 velocity_controller/output_limits: [13.0,13.0,2000.0,.0,.0,10.0]
 velocity_controller/synced: 0
 
 #The dynamic positioning parameters
-dynamic_positioning/closed_loop_freq: [0.5,0.5]
+dynamic_positioning/closed_loop_freq: [0.25,0.25]
 dynamic_positioning/max: [1,1]
 dynamic_positioning/Ts: 0.1
 #Mode: 0- sway,surge control; 1- surge,heading control

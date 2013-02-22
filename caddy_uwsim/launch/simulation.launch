@@ -37,7 +37,7 @@
       <remap from="nuRef" to="dummy" />
     </node> -->
 
-    <!-- <node pkg="cart_sim" name="lawngenerator" type="lawn_generator.py" /> -->
+    <node pkg="cart_sim" name="lawngenerator" type="lawn_generator.py" />
     
     <!-- <node pkg="cart_sim" name="logger" type="matlogger.py">
       <param name="filename" value="/home/dnad/Development/Matlab/ros/diver_log.csv" />
