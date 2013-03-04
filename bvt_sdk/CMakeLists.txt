@@ -8,11 +8,12 @@ find_package(catkin REQUIRED COMPONENTS
 	roscpp 
 	rospy 
 	std_msgs 
-	sensor_msgs 
+	sensor_msgs
+	geometry_msgs
 	message_generation)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and scripts declared therein get installed
@@ -29,17 +30,17 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   SetRange.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
    DEPENDENCIES
    std_msgs 
    sensor_msgs
+   geometry_msgs
 )
 
 ###################################################
@@ -50,7 +51,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  #  INCLUDE_DIRS bvtsdk/include
+  INCLUDE_DIRS include/
   #LIBRARIES bvt_sdk
 #  CATKIN_DEPENDS other_catkin_pkg
   DEPENDS message_runtime rospy roscpp
@@ -59,12 +60,8 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-
-#execute_process(COMMAND sh scripts/download_sdk.sh 
-#	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 ## Specify additional locations of header files
-# include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 ## Declare a cpp library
 # add_library(bvt_sdk
@@ -72,15 +69,15 @@ catkin_package(
 # )
 
 ## Declare a cpp executable
-# add_executable(bvt_sdk_node src/bvt_sdk_node.cpp)
+#add_executable(bv_monitor src/bv_monitor.cpp)
+add_executable(blueview_node src/BVSonarRos.cpp src/blueview_node.cpp)
 
 ## Add dependencies to the executable
 # add_dependencies(bvt_sdk_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(bvt_sdk_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(blueview_node bvtsdk ${catkin_LIBRARIES})
+#target_link_libraries(bv_monitor ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -100,21 +97,21 @@ catkin_package(
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-install(DIRECTORY 
-	bvtsdk/include/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/bvtsdk
-)
+#install(DIRECTORY 
+#	bvtsdk/include/
+#    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}/bvtsdk
+#)
 
-install(DIRECTORY
-   bvtsdk/colormaps
-   bvtsdk/data
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+#install(DIRECTORY
+#   bvtsdk/colormaps
+#   bvtsdk/data
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#)
 
-install(FILES
-   bvtsdk/lib/*
-   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+#install(FILES
+#   bvtsdk/lib/*
+#   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#)
 
 #############
 ## Testing ##
