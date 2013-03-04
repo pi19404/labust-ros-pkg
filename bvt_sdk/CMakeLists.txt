@@ -69,7 +69,6 @@ include_directories(include include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS
 # )
 
 ## Declare a cpp executable
-#add_executable(bv_monitor src/bv_monitor.cpp)
 add_executable(blueview_node src/BVSonarRos.cpp src/blueview_node.cpp)
 
 ## Add dependencies to the executable
@@ -77,7 +76,6 @@ add_executable(blueview_node src/BVSonarRos.cpp src/blueview_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(blueview_node bvtsdk ${catkin_LIBRARIES})
-#target_link_libraries(bv_monitor ${catkin_LIBRARIES})
 
 #############
 ## Install ##

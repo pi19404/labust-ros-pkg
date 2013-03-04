@@ -1,7 +1,8 @@
  <launch>
-  <node pkg="labust_bv" name="blueview_node" type="blueview_node">
-   <param name="Address" value="/home/dnad/Development/sonar/900Linija03.son" />
-   <param name="ColormapDir" value="$(find bvt_sdk)/colormaps" />
-   <param name="PingRate" value="1000" />
+  <node pkg="bvt_sdk" name="blueview_node" type="blueview_node">
+   <param name="Address" value="/usr/local/share/bvtsdk/data/swimmer.son" />
+   <param name="ColormapDir" value="/usr/local/share/bvtsdk/colormaps" />
+   <param name="PingRate" value="1" />
   </node>
+  <node pkg="target_detector" name="bv_monitor" type="bv_monitor" />
  </launch>
