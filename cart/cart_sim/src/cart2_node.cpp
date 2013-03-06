@@ -162,7 +162,7 @@ void handleUSBL2(std::pair<bool,underwater_sensor_msgs::USBL>* msgOut, const auv
 	static boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > var_nor(rng_, normal);
 	static int it = 0;
 	++it;
-	msgOut->first = (it%20)==0;
+	msgOut->first = (it%10)==0;
 
 	if (msgOut->first)
 	{

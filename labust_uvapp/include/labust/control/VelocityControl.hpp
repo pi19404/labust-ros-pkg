@@ -37,6 +37,7 @@
 
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyVelocityReq.h>
+#include <auv_msgs/BodyForceReq.h>
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 
@@ -88,6 +89,10 @@ namespace labust
 			 */
 			void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate);
 			/**
+			 * Handle incoming estimates message.
+			 */
+			void handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau);
+			/**
 			 * Message updates.
 			 */
 			bool newReference, newEstimate, newMeasurement;
@@ -101,9 +106,9 @@ namespace labust
 			 */
 			PIDController controller[r+1];
 			/**
-			 * Enable/disable controllers.
+			 * Enable/disable controllers, external windup flag.
 			 */
-			bool disable_axis[r+1];
+			bool disable_axis[r+1], windupNote;
 
 			/**
 			 * The loop control flag.
@@ -113,11 +118,11 @@ namespace labust
 			/**
 			 * The publisher of the TAU and status command.
 			 */
-			ros::Publisher tauOut, windup;
+			ros::Publisher tauOut,windup;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn;
+			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn, tauAch;
 			/**
 			 * The ROS node handles.
 			 */

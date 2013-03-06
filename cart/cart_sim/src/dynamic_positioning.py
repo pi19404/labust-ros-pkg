@@ -68,7 +68,7 @@ class DynamicPositioning:
         cp = numpy.cos(numpy.pi/4); sp = numpy.sin(numpy.pi/4);
         allocM = numpy.array([[cp,cp,-cp,-cp],
                               [sp,-sp,sp,-sp]]);
-                              
+                                                           
         self.Bstar = 0.9*numpy.dot(Betainv,allocM);       
         self.tmax = 13/(2*cp);           
         
@@ -91,7 +91,7 @@ class DynamicPositioning:
         
     def onRef(self,data):
         self.desired = numpy.array([data.position.north,data.position.east], 
-                                   dtype=numpy.float32);
+                                   dtype=numpy.float32);                           
         self.step();                           
     
     def onTrackedNav(self,data):       

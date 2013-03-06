@@ -48,6 +48,7 @@
 using labust::control::VelocityControl;
 
 VelocityControl::VelocityControl():
+	windupNote(false),
 	runFlag(false),
 	nh(),
 	ph("~"),
@@ -67,6 +68,8 @@ VelocityControl::VelocityControl():
 			&VelocityControl::handleEstimates,this);
 	stateMeas = nh.subscribe<auv_msgs::NavSts>("stateMeas", 1,
 			&VelocityControl::handleMeasurements,this);
+	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
+				&VelocityControl::handleWindup,this);
 
 	nh.param("velocity_controller/synced",synced,true);
 
@@ -98,6 +101,19 @@ void VelocityControl::handleReference(const auv_msgs::BodyVelocityReq::ConstPtr&
 void VelocityControl::handleMeasurements(const auv_msgs::NavSts::ConstPtr& ref)
 {
 	//Copy into identification controller
+};
+
+void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
+{
+	//Quick testing addition
+	//\todo Add per controller windup detection
+	windupNote = true;
+	controller[u].windup = 1;
+	controller[u].tracking = tau->wrench.force.x;
+	controller[v].windup = 1;
+	controller[v].tracking = tau->wrench.force.y;
+	controller[r].windup = 1;
+	controller[r].tracking = tau->wrench.torque.z;
 };
 
 void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -141,7 +157,7 @@ void VelocityControl::step()
 			else
 			{
 				PIFFController_step(&controller[i], Ts);
-				if (controller[i].windup)	windupFlag.data = windupFlag.data | (1<<i);
+				if (controller[i].windup) windupFlag.data = windupFlag.data | (1<<i);
 			}
 
 			//scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
@@ -149,92 +165,92 @@ void VelocityControl::step()
 
 			std::cout<<i<<". has scaling:"<<scaling[i]<<","<<controller[i].output<<","<<controller[i].outputLimit<<std::endl;
 		}
-
-		////////////////////////////Allocation stuff/////////////////////////////////////////
-		Eigen::Matrix<float, 3,4> B;
-		float cp(cos(M_PI/4)),sp(sin(M_PI/4));
-		B<<cp,cp,-cp,-cp,
-			 sp,-sp,sp,-sp,
-			 1,-1,-1,1;
-		Eigen::Matrix<float, 4,3> pinv = B.transpose()*(B*B.transpose()).inverse();
-
-		Eigen::Vector3f virtualInput;
-		virtualInput<<controller[u].output, controller[v].output, controller[r].output;
-
-		Eigen::Vector4f tdes = pinv*virtualInput;
-
-		enum{T1 = 0,T2,T3,T4};
-
-		float taumax(13/(2*cp));
-
-		Eigen::Vector4f scaled = tdes/taumax;
-		Eigen::Matrix<float,5,1> tscale;
-		tscale<<fabs(scaled(0)),fabs(scaled(1)),fabs(scaled(2)),fabs(scaled(3)),1.0f;
-		//std::for_each(tscale.data(), tscale.data() + tscale.SizeAtCompileTime, fabs);
-		std::sort(tscale.data(),tscale.data() + tscale.SizeAtCompileTime);
-
-		std::cout<<"Sorted scales:";
-		for (int i=0; i<tscale.SizeAtCompileTime; ++i)
-		{
-			std::cout<<tscale(i)<<",";
-		}
-		std::cout<<std::endl;
-
-		//With scaling
-		tdes = tdes/tscale(tscale.SizeMinusOne);
-		//Without scaling
-		for (int i=0; i<4; ++i)
-		{
-			//if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
-		}
-
-		Eigen::Vector3f virtualInputLim = B*tdes;
-		/////////////////////////////////////////////////////////////////////////////////////
-		float scale = tscale(tscale.SizeMinusOne);
-		std::cout<<"Take scaling:"<<tscale(tscale.SizeMinusOne)<<std::endl;
-
-		std::cout<<std::endl;
-
-		std::cout<<"Virtual input:";
-		for (int i=0;i<3;++i) std::cout<<virtualInput(i)<<",";
-		std::cout<<std::endl;
-		std::cout<<"Desired u:";
-		for (int i=0;i<4;++i) std::cout<<tdes(i)<<",";
-		std::cout<<std::endl;
-		std::cout<<"Virtual input limited:";
-		for (int i=0;i<3;++i) std::cout<<virtualInputLim(i)<<",";
-		std::cout<<std::endl;
-
-		ROS_INFO("Thrust:%f,%f,%f,%f",tdes(0),tdes(1),tdes(2),tdes(3));
-
-
-		std::cout<<std::endl;
-
-		Eigen::Matrix<float,6,1> vin;
-		vin<<virtualInputLim(0),virtualInputLim(1),0,0,0,virtualInputLim(2);
-		//windupFlag.data = 0;
-		for (int i=u; i<=r; ++i)
-		{
-			if (controller[i].autoTracking == 0 && (!disable_axis[i]))
-			{
-				controller[i].tracking = vin(i);
-				controller[i].windup = scale>1;
-				controller[i].output = vin(i);
-				//controller[i].integratorState = vin(i);
-				std::cout<<"Doing external tracking."<<std::endl;
-				//controller[i].tracking = controller[i].output;
-				//PIDController_trackingUpdate(&controller[i],Ts,1);
-				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
-			}
-			else
-			{
-				//controller[i].windup = 0;
-				//std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
-			}
-
-			//if (controller[i].windup)
-		  	//windupFlag.data = windupFlag.data | (1<<i);
-		}
+//
+//		////////////////////////////Allocation stuff/////////////////////////////////////////
+//		Eigen::Matrix<float, 3,4> B;
+//		float cp(cos(M_PI/4)),sp(sin(M_PI/4));
+//		B<<cp,cp,-cp,-cp,
+//			 sp,-sp,sp,-sp,
+//			 1,-1,-1,1;
+//		Eigen::Matrix<float, 4,3> pinv = B.transpose()*(B*B.transpose()).inverse();
+//
+//		Eigen::Vector3f virtualInput;
+//		virtualInput<<controller[u].output, controller[v].output, controller[r].output;
+//
+//		Eigen::Vector4f tdes = pinv*virtualInput;
+//
+//		enum{T1 = 0,T2,T3,T4};
+//
+//		float taumax(13/(2*cp));
+//
+//		Eigen::Vector4f scaled = tdes/taumax;
+//		Eigen::Matrix<float,5,1> tscale;
+//		tscale<<fabs(scaled(0)),fabs(scaled(1)),fabs(scaled(2)),fabs(scaled(3)),1.0f;
+//		//std::for_each(tscale.data(), tscale.data() + tscale.SizeAtCompileTime, fabs);
+//		std::sort(tscale.data(),tscale.data() + tscale.SizeAtCompileTime);
+//
+//		std::cout<<"Sorted scales:";
+//		for (int i=0; i<tscale.SizeAtCompileTime; ++i)
+//		{
+//			std::cout<<tscale(i)<<",";
+//		}
+//		std::cout<<std::endl;
+//
+//		//With scaling
+//		tdes = tdes/tscale(tscale.SizeMinusOne);
+//		//Without scaling
+//		for (int i=0; i<4; ++i)
+//		{
+//			//if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
+//		}
+//
+//		Eigen::Vector3f virtualInputLim = B*tdes;
+//		/////////////////////////////////////////////////////////////////////////////////////
+//		float scale = tscale(tscale.SizeMinusOne);
+//		std::cout<<"Take scaling:"<<tscale(tscale.SizeMinusOne)<<std::endl;
+//
+//		std::cout<<std::endl;
+//
+//		std::cout<<"Virtual input:";
+//		for (int i=0;i<3;++i) std::cout<<virtualInput(i)<<",";
+//		std::cout<<std::endl;
+//		std::cout<<"Desired u:";
+//		for (int i=0;i<4;++i) std::cout<<tdes(i)<<",";
+//		std::cout<<std::endl;
+//		std::cout<<"Virtual input limited:";
+//		for (int i=0;i<3;++i) std::cout<<virtualInputLim(i)<<",";
+//		std::cout<<std::endl;
+//
+//		ROS_INFO("Thrust:%f,%f,%f,%f",tdes(0),tdes(1),tdes(2),tdes(3));
+//
+//
+//		std::cout<<std::endl;
+//
+//		Eigen::Matrix<float,6,1> vin;
+//		vin<<virtualInputLim(0),virtualInputLim(1),0,0,0,virtualInputLim(2);
+//		//windupFlag.data = 0;
+//		for (int i=u; i<=r; ++i)
+//		{
+//			if (controller[i].autoTracking == 0 && (!disable_axis[i]))
+//			{
+//				controller[i].tracking = vin(i);
+//				controller[i].windup = scale>1;
+//				controller[i].output = vin(i);
+//				//controller[i].integratorState = vin(i);
+//				std::cout<<"Doing external tracking."<<std::endl;
+//				//controller[i].tracking = controller[i].output;
+//				//PIDController_trackingUpdate(&controller[i],Ts,1);
+//				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
+//			}
+//			else
+//			{
+//				//controller[i].windup = 0;
+//				//std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
+//			}
+//
+//			//if (controller[i].windup)
+//		  	//windupFlag.data = windupFlag.data | (1<<i);
+//		}
 
  		//Copy to tau
 		tau.wrench.force.x = controller[u].output;
@@ -245,7 +261,7 @@ void VelocityControl::step()
 		tau.wrench.torque.z = controller[r].output;
 
 		//Restart values
-		newReference = newEstimate = false;
+		windupNote = newReference = newEstimate = false;
 		tauOut.publish(tau);
 	}
 	else
@@ -348,11 +364,14 @@ void VelocityControl::initialize_controller()
 	  controller[i].modelParams[betaa] = static_cast<double>(modelParams[i]);
 	}
 
+	bool autoTracking(1);
+	nh.param("velocity_controller/auto_tracking",autoTracking,autoTracking);
+
 	for (int i=u; i<=r;++i)
 	{
 		PIFFController_tune(&controller[i]);
 
-		controller[i].autoTracking = 0;
+		controller[i].autoTracking = 0;autoTracking;
 
 		ROS_INFO("Controller %d:",i);
 		ROS_INFO("ModelParams: %f %f %f",controller[i].modelParams[alpha], controller[i].modelParams[beta],

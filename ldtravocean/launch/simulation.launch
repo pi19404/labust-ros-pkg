@@ -1,0 +1,19 @@
+<launch> 
+  <group ns="rov">
+    <rosparam command="load" file="$(find ldtravocean)/data/config/simulation.yaml" />
+    
+  	<node pkg="UWSim" name="UWSim" type="UWSim" 
+  		args="--configfile $(find ldtravocean)/data/scenes/test_environment.xml 
+  		--dataPath $(find ldtravocean)/data/scenes"  />    
+  		    
+    <node pkg="ldtravocean" name="model_node" type="model_node" args="$(find ldtravocean)/data/config/model.xml">
+        <!-- This will also adjust the model sampling time -->
+    	<param name="Rate" value="10" />
+    </node>
+    
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control">
+      <remap from="tauOut" to="tauIn" />
+      <remap from="stateHat" to="meas" />
+    </node>
+  </group>
+</launch>

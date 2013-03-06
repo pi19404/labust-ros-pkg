@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="ldtravROV">
+  <link name="base_link">
+    <visual>
+      <origin rpy="3.14 0 -1.57" xyz="0.87 0 0.75"/>
+      <geometry>
+        <mesh filename="package://ldtravocean/data/robots/ldtravROV/LDTVOrov2.wrl"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
