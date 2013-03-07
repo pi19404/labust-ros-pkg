@@ -4,7 +4,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0.15"/>
       <geometry>
-        <mesh filename="package://cart_sim/data/robot/cart2.osg"/>
+        <mesh filename="package://cart_sim/data/robot/cart2.wrl"/>
       </geometry>
     </visual>
   </link>
