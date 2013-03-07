@@ -4,7 +4,7 @@
     <visual>
       <origin rpy="-3.1459 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://caddy_uwsim/data/robots/diver/diver.osg"/>
+        <mesh filename="package://caddy_uwsim/data/robots/diver/diver.3ds"/>
       </geometry>
     </visual>
   </link>

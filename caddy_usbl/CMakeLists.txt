@@ -29,5 +29,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 rosbuild_add_executable(usbl_node src/usbl_node.cpp)
 target_link_libraries(usbl_node tritech-sdk)
 
+rosbuild_add_executable(usbl_filter src/usbl_filter.cpp)
+
 rosbuild_add_executable(modem_node src/modem_node.cpp)
 target_link_libraries(modem_node tritech-sdk)

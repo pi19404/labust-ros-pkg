@@ -13,7 +13,7 @@
     </node>    
     
     <!-- <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
-      <remap from="trackedNav" to="usblEstimate" />
+      <remap from="trackedNav" to="/diver/meas" />
     </node> -->
     
     <node pkg="cart_sim" name="logger" type="matlogger.py">

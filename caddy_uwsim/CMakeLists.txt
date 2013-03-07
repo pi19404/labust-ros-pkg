@@ -54,7 +54,6 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-
 execute_process(COMMAND sh scripts/download_models.sh 
 	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
