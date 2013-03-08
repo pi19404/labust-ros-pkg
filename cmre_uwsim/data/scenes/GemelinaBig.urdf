@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<robot name="GemelinaBig">
+  <link name="base_link">
+    <visual>
+      <origin rpy="3.14 0 -1.57 " xyz="-2 0 0.7"/>
+      <geometry>
+        <mesh filename="package://cmre_uwsim/data/robots/GemelinaBig.wrl"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>

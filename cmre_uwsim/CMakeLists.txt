@@ -21,6 +21,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+find_package(Eigen REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
+
 rosbuild_add_executable(CMRE2UWSim src/CMRE2UWSim.cpp)
 target_link_libraries(CMRE2UWSim osg labust_xml)
 

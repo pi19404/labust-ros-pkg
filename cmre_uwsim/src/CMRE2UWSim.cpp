@@ -50,38 +50,37 @@
 #include <string.h>
 #include <map>
 
+#include <Eigen/Dense>
+
 void onUpdate(ros::Publisher* pub, labust::vehicles::stateMapRef state)
 {
 	nav_msgs::Odometry odom;
 	using namespace labust::vehicles::state;
 
-	osg::Matrixd T, Rx, Ry, Rz, transform;
-	T.makeTranslate(state[x],state[y],state[z]);
-	Rx.makeRotate(state[roll],1,0,0);
-	Ry.makeRotate(state[pitch],0,1,0);
-	Rz.makeRotate(state[yaw],0,0,1);
-	transform=Rz*Ry*Rx*T;
-	osg::Vec3d trans=transform.getTrans();
-	osg::Quat rot=transform.getRotate();
+	Eigen::Matrix3f m;
+	m = Eigen::AngleAxisf(state[yaw], Eigen::Vector3f::UnitZ())*
+		Eigen::AngleAxisf(state[pitch], Eigen::Vector3f::UnitY())*
+		Eigen::AngleAxisf(state[roll], Eigen::Vector3f::UnitX());
 
-	odom.pose.pose.position.x=trans.x();
-	odom.pose.pose.position.y=trans.y();
-	odom.pose.pose.position.z=trans.z();
-	odom.pose.pose.orientation.x=rot.x();
-	odom.pose.pose.orientation.y=rot.y();
-	odom.pose.pose.orientation.z=rot.z();
-	odom.pose.pose.orientation.w=rot.w();
+	Eigen::Quaternion<float> q(m);
 
-	odom.twist.twist.linear.x=0;
-	odom.twist.twist.linear.y=0;
-	odom.twist.twist.linear.z=0;
-	odom.twist.twist.angular.x=0;
-	odom.twist.twist.angular.y=0;
-	odom.twist.twist.angular.z=0;
-	for (int i=0; i<36; i++) {
-		odom.twist.covariance[i]=0;
-		odom.pose.covariance[i]=0;
-	}
+	odom.pose.pose.position.x=state[x];
+	odom.pose.pose.position.y=state[y];
+	odom.pose.pose.position.z=state[z];
+	odom.pose.pose.orientation.x=q.x();
+	odom.pose.pose.orientation.y=q.y();
+	odom.pose.pose.orientation.z=q.z();
+	odom.pose.pose.orientation.w=q.w();
+
+	odom.twist.twist.linear.x=state[u];
+	odom.twist.twist.linear.y=state[v];
+	odom.twist.twist.linear.z=state[w];
+	odom.twist.twist.angular.x=state[p];
+	odom.twist.twist.angular.y=state[labust::vehicles::state::q];
+	odom.twist.twist.angular.z=state[r];
+
+	odom.header.stamp = ros::Time::now();
+
 	pub->publish(odom);
 }
 
@@ -123,8 +122,8 @@ void onNewState(std::string name,MoosPos::Ptr mpos, ros::Publisher* pub, const s
 	{
 		labust::vehicles::stateMap state;
 		using namespace labust::vehicles::state;
-		state[x]=mpos->pos[mpos->nav_x];
-		state[y]=mpos->pos[mpos->nav_y];
+		state[y]=mpos->pos[mpos->nav_x];
+		state[x]=mpos->pos[mpos->nav_y];
 		state[yaw]=mpos->pos[mpos->nav_heading]/180*M_PI;
 		
 		for(std::map<std::string,bool>::iterator it=mpos->updatedPos.begin(); it != mpos->updatedPos.end(); ++it)
@@ -155,7 +154,7 @@ void createMOOSSubscription(ros::Publisher* pub)
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "UVApp2UWSim");
+	ros::init(argc, argv, "CMRE2UWSim");
 	ros::NodeHandle nh;
 	ros::NodeHandle pnh("~");
 
