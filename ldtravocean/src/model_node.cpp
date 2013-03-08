@@ -41,11 +41,14 @@
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/String.h>
 #include <ros/ros.h>
 
 #include <Eigen/Dense>
 
 #include <boost/bind.hpp>
+
+#include <sstream>
 
 nav_msgs::Odometry* mapToOdometry(const labust::simulation::vector& eta, const labust::simulation::vector& nu, nav_msgs::Odometry* odom)
 {
@@ -117,6 +120,13 @@ void handleTau(labust::simulation::vector* tauIn, const auv_msgs::BodyForceReq::
 	(*tauIn)(VehicleModel6DOF::N) = tau->wrench.torque.z;
 };
 
+void handleCurrent(labust::simulation::vector* current, const std_msgs::String::ConstPtr& data)
+{
+	std::istringstream out(data->data);
+	float a;
+	out>>(*current)(0)>>(*current)(1)>>(*current)(2);;
+};
+
 //Simple dynamics simulation only ROS node
 //\todo Add allocation algorithm
 //\todo Add thruster nonlinearity ?
@@ -137,8 +147,9 @@ int main(int argc, char* argv[])
 	ros::Publisher uwsim = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	//Subscribers
-	labust::simulation::vector tau(labust::simulation::zero_v(6));
+	labust::simulation::vector tau(labust::simulation::zero_v(6)), current(labust::simulation::zero_v(3));
 	ros::Subscriber tauSub = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&tau,_1));
+	ros::Subscriber curSub = nh.subscribe<std_msgs::String>("currents", 1, boost::bind(&handleCurrent,&current,_1));
 
 	auv_msgs::NavSts nav,navNoisy;
 	nav_msgs::Odometry odom;
@@ -185,6 +196,7 @@ int main(int argc, char* argv[])
 			tauAch.publish(t);
 		}
 
+		model.setCurrent(current);
 		model.step(tau);
 
 		uwsim.publish(*mapToOdometry(model.Eta(),model.Nu(),&odom));

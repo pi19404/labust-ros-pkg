@@ -103,6 +103,38 @@
 			<std>0.00000001</std>
 		</imu>
 
+		<pressureSensor>
+			<name>PressureSensor</name>
+			<relativeTo>base_link</relativeTo>
+			<position>
+				<x>0</x>
+				<y>0</y>
+				<z>0</z>
+			</position>
+			<orientation>
+				<r>0</r>
+				<p>0</p>
+				<y>0</y>
+			</orientation>
+			<std>0.02</std>
+		</pressureSensor>
+
+		<gpsSensor>
+			<name>GPSSensor</name>
+			<relativeTo>base_link</relativeTo>
+			<position>
+				<x>0</x>
+				<y>0</y>
+				<z>-0.8</z>
+			</position>
+			<orientation>
+				<r>0</r>
+				<p>0</p>
+				<y>0</y>
+			</orientation>
+			<std>0.00005</std>
+		</gpsSensor>
+
 		<dvlSensor>
 			<name>DVLSensor</name>
 			<relativeTo>base_link</relativeTo>
@@ -146,10 +178,20 @@
 			<topic>imu</topic>
 			<rate>10</rate>
 		</ImuToROSImu>
+		<PressureSensorToROS>
+			<name>PressureSensor</name>
+			<topic>pressure</topic>
+			<rate>10</rate>
+		</PressureSensorToROS>
+		<GPSSensorToROS>
+			<name>GPSSensor</name>
+			<topic>gps</topic>
+			<rate>1</rate>
+		</GPSSensorToROS>
 		<DVLSensorToROS>
 			<name>DVLSensor</name>
 			<topic>dvl</topic>
-			<rate>5</rate>
+			<rate>1</rate>
 		</DVLSensorToROS>
 	</rosInterfaces>
 </UWSimScene>

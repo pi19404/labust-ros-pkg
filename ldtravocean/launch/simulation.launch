@@ -15,5 +15,9 @@
       <remap from="tauOut" to="tauIn" />
       <remap from="stateHat" to="meas" />
     </node>
+    
+    <node pkg="ldtravocean" name="simple_dp" type="simple_dp.py">
+      <remap from="stateHat" to="meas" />
+    </node>
   </group>
 </launch>
