@@ -99,6 +99,7 @@ void BVSonarRos::runFileAcquisition()
 	size_t counter = 0;
 	ros::Rate loop_rate(pingRate);
 	BVTHead_SetImageRes(head,BVTHEAD_RES_HIGH);
+	//BVTHead_SetImageType(head,BVTHEAD_IMAGE_RTHETA);
 	while (nhandle.ok())
 	{
 		BVPingPtr ping(BVFactory::getBVPing(head,counter));

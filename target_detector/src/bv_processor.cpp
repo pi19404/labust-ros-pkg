@@ -248,7 +248,7 @@ try
 	//labust::blueview::ProcessingChain<> processor;
 
 	//Create a window
-	cv::namedWindow("Sonar");
+	cv::namedWindow("Sonar",0);
 	cv::setMouseCallback("Sonar",&mouse_cb,0);
 
 	//Create topic subscription

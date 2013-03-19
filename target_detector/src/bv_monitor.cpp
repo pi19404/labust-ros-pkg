@@ -38,10 +38,47 @@
 
 
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <ros/ros.h>
 #include <exception>
 
 ros::Time last;
+
+void normalize(const cv::Mat& frame)
+{
+	cv::Scalar mean, std;
+	double min,max;
+
+	cv::Mat nimg;// = (frame - mean.val[0])/std.val[0];
+	frame.convertTo(nimg,CV_32FC1);
+	nimg /= 4096;
+	cv::meanStdDev(nimg,mean,std);
+	std::cout<<"Mean:"<<mean<<","<<std<<std::endl;
+	nimg = (nimg - mean.val[0])/std.val[0];
+
+	cv::minMaxLoc(nimg,&min,&max);
+	std::cout<<"Max:"<<max<<std::endl;
+
+	cv::imshow("Normalized",nimg/max);
+
+
+//    cv::Mat back;
+//    cv::Mat fore;
+//    cv::BackgroundSubtractorMOG2 bg;
+//    //bg.set("nmixtures",3);
+//    //bg.set("bShadowDetection",false);
+//
+//    std::vector<std::vector<cv::Point> > contours;
+//
+//    bg.operator ()(frame,fore);
+//    bg.getBackgroundImage(back);
+//    cv::erode(fore,fore,cv::Mat());
+//    cv::dilate(fore,fore,cv::Mat());
+//    cv::findContours(fore,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+//    cv::drawContours(frame,contours,-1,cv::Scalar(0,0,255),2);
+//    cv::imshow("Frame",frame);
+//    cv::imshow("Background",back);
+}
 
 void callback(const bvt_sdk::MBSonarConstPtr& image)
 {
@@ -51,7 +88,13 @@ void callback(const bvt_sdk::MBSonarConstPtr& image)
 
 	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvCopy(image->image, sensor_msgs::image_encodings::MONO16);
 
-	cv::imshow("Sonar",cv_ptr->image*200);
+	cv::Mat nimg;// = (frame - mean.val[0])/std.val[0];
+	cv_ptr->image.convertTo(nimg,CV_32FC1);
+	nimg /= 4096;
+	cv::imshow("Original",nimg);
+
+	normalize(cv_ptr->image);
+
 	cv::waitKey(10);
 
 
@@ -122,6 +165,9 @@ try
 	//Create topic subscription
 	ros::Subscriber imageTopic = nhandle.subscribe(topicName,bufferSize,callback);
 	ros::Subscriber imageTopic2 = nhandle.subscribe(topicName2,bufferSize,callback2);
+
+    cv::namedWindow("Original",0);
+    cv::namedWindow("Normalized",0);
 
 	ros::spin();
 	return 0;
