@@ -99,7 +99,7 @@ void BVSonarRos::runFileAcquisition()
 	size_t counter = 0;
 	ros::Rate loop_rate(pingRate);
 	BVTHead_SetImageRes(head,BVTHEAD_RES_HIGH);
-	//BVTHead_SetImageType(head,BVTHEAD_IMAGE_RTHETA);
+	BVTHead_SetImageType(head,BVTHEAD_IMAGE_RTHETA);
 	while (nhandle.ok())
 	{
 		BVPingPtr ping(BVFactory::getBVPing(head,counter));
@@ -123,8 +123,7 @@ void BVSonarRos::runFileAcquisition()
 		msg->image.data.assign(datap,datap + msg->image.step*msg->image.height);
 		imageTopic.publish(msg);
 
-		/*
-		msg.reset(new labust_bv::BVSonar());
+		msg.reset(new bvt_sdk::MBSonar());
 		msg->image.height = BVTColorImage_GetHeight(cimage.get());
 		msg->image.width = BVTColorImage_GetWidth(cimage.get());
 		msg->image.encoding = sensor_msgs::image_encodings::BGRA8;
@@ -132,7 +131,6 @@ void BVSonarRos::runFileAcquisition()
 		datap = reinterpret_cast<unsigned char*>(BVTColorImage_GetBits(cimage.get()));
 		msg->image.data.assign(datap,datap + msg->image.step*msg->image.height);
 		cImageTopic.publish(msg);
-		*/
 
 		++counter;
 		counter %= pingNum;

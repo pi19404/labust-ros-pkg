@@ -44,40 +44,59 @@
 
 ros::Time last;
 
+cv::Mat disp(const cv::Mat& img, float max = 1024)
+{
+	cv::Mat nimg;
+	img.convertTo(nimg,CV_32FC1);
+	return (nimg=nimg/max);
+}
+
 void normalize(const cv::Mat& frame)
 {
 	cv::Scalar mean, std;
 	double min,max;
 
-	cv::Mat nimg;// = (frame - mean.val[0])/std.val[0];
-	frame.convertTo(nimg,CV_32FC1);
-	nimg /= 4096;
+	cv::Mat nimg = frame;
+	//frame.convertTo(nimg,CV_32FC1);
+	//nimg /= 65536;
 	cv::meanStdDev(nimg,mean,std);
-	std::cout<<"Mean:"<<mean<<","<<std<<std::endl;
-	nimg = (nimg - mean.val[0])/std.val[0];
+	//std::cout<<"Mean:"<<mean<<","<<std<<std::endl;
+	nimg = (nimg - mean.val[0])*std.val[0];
 
 	cv::minMaxLoc(nimg,&min,&max);
-	std::cout<<"Max:"<<max<<std::endl;
+	//std::cout<<"Max:"<<max<<std::endl;
 
-	cv::imshow("Normalized",nimg/max);
+	//cv::imshow("Normalized",disp(nimg,512));
+}
 
+std::pair<float, float> noise_estimate(cv::Mat& meanM, cv::Mat& stdM, size_t x, size_t y, int colSpan, int rowSpan)
+{
+	std::pair<float, float> noisep;
+	noisep.first = 0;
+	noisep.second = 0;
 
-//    cv::Mat back;
-//    cv::Mat fore;
-//    cv::BackgroundSubtractorMOG2 bg;
-//    //bg.set("nmixtures",3);
-//    //bg.set("bShadowDetection",false);
-//
-//    std::vector<std::vector<cv::Point> > contours;
-//
-//    bg.operator ()(frame,fore);
-//    bg.getBackgroundImage(back);
-//    cv::erode(fore,fore,cv::Mat());
-//    cv::dilate(fore,fore,cv::Mat());
-//    cv::findContours(fore,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-//    cv::drawContours(frame,contours,-1,cv::Scalar(0,0,255),2);
-//    cv::imshow("Frame",frame);
-//    cv::imshow("Background",back);
+	int nrois = 0;
+	for (int i=-colSpan; i<colSpan; i+=colSpan)
+	{
+		for (int j=-rowSpan; j<rowSpan; j+=rowSpan)
+		{
+			if ((i!=0) || (j!=0))
+			{
+				int xroi = x+i;
+				int yroi = y+j;
+
+				if ((xroi<0) || (xroi>meanM.cols) || (yroi<0) || (yroi>meanM.rows)) continue;
+				++nrois;
+				noisep.first += meanM.at<float>(xroi,yroi);
+				noisep.second += stdM.at<float>(xroi,yroi);
+			}
+		}
+	}
+
+	noisep.first /= nrois;
+	noisep.second /= nrois;
+
+	return noisep;
 }
 
 void callback(const bvt_sdk::MBSonarConstPtr& image)
@@ -88,12 +107,75 @@ void callback(const bvt_sdk::MBSonarConstPtr& image)
 
 	cv_bridge::CvImageConstPtr cv_ptr = cv_bridge::toCvCopy(image->image, sensor_msgs::image_encodings::MONO16);
 
-	cv::Mat nimg;// = (frame - mean.val[0])/std.val[0];
-	cv_ptr->image.convertTo(nimg,CV_32FC1);
-	nimg /= 4096;
-	cv::imshow("Original",nimg);
+	cv::imshow("Original",disp(cv_ptr->image,512));
 
-	normalize(cv_ptr->image);
+	cv::Mat org = cv_ptr->image.clone();
+
+	//cv::imwrite("high_res.bmp",cv_ptr->image,);
+
+	size_t colSpan = 40, rowSpan = 40;
+
+	cv::Mat meanM(org.cols,org.rows,CV_32FC1);
+	cv::Mat stdM(org.cols,org.rows,CV_32FC1);
+  for(size_t i=colSpan/2; i<org.cols; i+=colSpan)
+	{
+		for (size_t j=rowSpan/2; j<org.rows; j+=rowSpan)
+		{
+			cv::Rect roi(i-colSpan/2,j-rowSpan/2,colSpan,rowSpan);
+			cv::Mat roiImg(org,roi);
+			//cv::rectangle(org,roi,cv::Scalar(255,2552,255),1);
+			cv::Scalar mean, std;
+			cv::meanStdDev(roiImg,mean,std);
+			meanM.at<float>(i,j) = mean.val[0];
+			stdM.at<float>(i,j) = std.val[0];
+			//std::cout<<"The ROI mean:"<<noisep.first<<std::endl;
+			//roiImg = roiImg - noisep.first;
+			//normalize(roiImg);
+		}
+	}
+
+  cv::imshow("Normalized",disp(org,512));
+
+  org = cv_ptr->image.clone();
+  cv::Mat org2;
+  org.convertTo(org2, CV_32FC1);
+  org = org2;
+
+  for(size_t i=colSpan/2; i<org.cols; i+=colSpan)
+	{
+		for (size_t j=rowSpan/2; j<org.rows; j+=rowSpan)
+		{
+			cv::Rect roi(i-colSpan/2,j-rowSpan/2,colSpan,rowSpan);
+			cv::Mat roiImg(org,roi);
+			std::pair<float, float> noisep = noise_estimate(meanM, stdM, i,j, colSpan, rowSpan);
+			std::cout<<"The ROI mean:"<<noisep.first<<std::endl;
+			roiImg = (roiImg - noisep.first);
+			normalize(roiImg);
+			cv::rectangle(org,roi,cv::Scalar(255,2552,255),1);
+		}
+	}
+  double min,max;
+	cv::minMaxLoc(org,&min,&max);
+  cv::imshow("Normalized2",disp(org,1));
+
+
+  org = cv_ptr->image.clone();
+
+  for(size_t i=colSpan/2; i<org.cols; i+=colSpan)
+	{
+		for (size_t j=rowSpan/2; j<org.rows; j+=rowSpan)
+		{
+			cv::Rect roi(i-colSpan/2,j-rowSpan/2,colSpan,rowSpan);
+			cv::Mat roiImg(org,roi);
+			//cv::rectangle(org,roi,cv::Scalar(255,2552,255),1);
+			//std::pair<float, float> noisep = noise_estimate(meanM, stdM, i,j, colSpan, rowSpan);
+			//std::cout<<"The ROI mean:"<<noisep.first<<std::endl;
+			roiImg = (roiImg - meanM.at<float>(i,j))*stdM.at<float>(i,j);
+			//normalize(roiImg);
+		}
+	}
+
+  cv::imshow("Normalized3",disp(org,512));
 
 	cv::waitKey(10);
 
