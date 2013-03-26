@@ -88,9 +88,9 @@
 			<z> 0 </z>
 		</position>
 		<orientation>
-			<r>0</r>
+			<r>3.14</r>
 			<p>0</p>
-			<y>0</y>
+			<y>-1.57</y>
 		</orientation>
 
 		<imu>
@@ -104,7 +104,7 @@
 			<orientation>
 				<r>0</r>
 				<p>0</p>
-				<y>3.1415</y>
+				<y>0</y>
 			</orientation>
 			<std>0.00000001</std>
 		</imu>
@@ -207,7 +207,7 @@
 		<ImuToROSImu>
 			<name>imu</name>
 			<topic>pladypos/imu</topic>
-			<rate>20</rate>
+			<rate>10</rate>
 		</ImuToROSImu>
 		<PressureSensorToROS>
 			<name>diverPressureSensor</name>

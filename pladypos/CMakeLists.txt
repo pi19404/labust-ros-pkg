@@ -4,7 +4,7 @@ project(pladypos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base)
+find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs orocos_kdl)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -49,7 +49,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES pladypos
-   CATKIN_DEPENDS auv_msgs message_runtime roscpp labust_base
+   CATKIN_DEPENDS auv_msgs message_runtime roscpp labust_base sensor_msgs orocos_kdl
 #  DEPENDS system_lib
 )
 
@@ -67,12 +67,14 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp executable
 add_executable(pladypos_node src/pladypos_node.cpp src/PlaDyPosNode.cpp)
+add_executable(nav_node src/nav_node.cpp)
 
 ## Add dependencies to the executable
 # add_dependencies(pladypos_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pladypos_node ${catkin_LIBRARIES} labust_comms)
+target_link_libraries(nav_node ${catkin_LIBRARIES} labust_navcon)
 
 #############
 ## Install ##

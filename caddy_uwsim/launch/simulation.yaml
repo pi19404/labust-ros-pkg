@@ -6,6 +6,7 @@ thrusters/allocation_matrix: []
 velocity_controller/closed_loop_freq: [0.8,0.8,0.1,1.0,1.0,1.0]
 velocity_controller/output_limits: [13.0,13.0,2000.0,.0,.0,10.0]
 velocity_controller/synced: 0
+velocity_controller/joy_scale: 13.0
 
 #The dynamic positioning parameters
 dynamic_positioning/closed_loop_freq: [0.1,0.1]

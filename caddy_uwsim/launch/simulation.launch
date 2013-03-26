@@ -8,9 +8,20 @@
   	    
     <node pkg="labust_uvapp" name="velocity_control" type="velocity_control" />
     
-    <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
+    <!-- <node pkg="cart_sim" name="cart2_node" type="cart2_node" args="$(find cart_sim)/config/cart_app.xml">
       <remap from="tauIn" to="tauOut" />
-    </node>    
+    </node> -->
+    
+    <node pkg="ldtravocean" name="pladypos_node" type="model_node" args="$(find caddy_uwsim)/data/config/pladypos_model.xml">
+        <!-- This will also adjust the model sampling time -->
+    	<param name="Rate" value="10" />
+    	<remap from="tauIn" to="tauOut" />
+    	<remap from="meas" to="sim_meas" />
+    	<param name="maxThrust" value="9.2" />
+    	<param name="minThrust" value="-9.2" />
+    </node>
+    
+    <node pkg="pladypos" name="pladypos_nav" type="nav_node" />
     
     <!-- <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
       <remap from="trackedNav" to="/diver/meas" />
@@ -19,6 +30,14 @@
     <node pkg="cart_sim" name="logger" type="matlogger.py">
       <param name="filename" value="/home/dnad/Development/Matlab/ros/pladypos_log.csv" />
     </node>
+    
+    <node pkg="joy" name="joystick" type="joy_node">
+      <param name="dev" value="/dev/input/js0" />
+      <param name="coalesce_interval" value="0.1" />
+      <param name="autorepeat_rate" value="10" />
+      <param name="deadzone" value="0.05" />
+    </node>
+    
   </group>
   
   <group ns="diver">
