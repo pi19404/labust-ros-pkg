@@ -48,7 +48,7 @@
 using labust::control::VelocityControl;
 
 VelocityControl::VelocityControl():
-	windupNote(false),
+	joy_scale(1),
 	runFlag(false),
 	nh(),
 	ph("~"),
@@ -79,6 +79,7 @@ VelocityControl::VelocityControl():
 			&VelocityControl::handleOpMode,this);
 
 	nh.param("velocity_controller/synced",synced,true);
+	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 
 	initialize_controller();
 }
@@ -129,12 +130,11 @@ void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	//Quick testing addition
 	//\todo Add per controller windup detection
-	windupNote = true;
-	controller[u].windup = 1;
+	controller[u].windup = tau->disable_axis.x;
 	controller[u].tracking = tau->wrench.force.x;
-	controller[v].windup = 1;
+	controller[v].windup = tau->disable_axis.y;
 	controller[v].tracking = tau->wrench.force.y;
-	controller[r].windup = 1;
+	controller[r].windup = tau->disable_axis.yaw;
 	controller[r].tracking = tau->wrench.torque.z;
 };
 
@@ -280,7 +280,7 @@ void VelocityControl::stepVC(auv_msgs::BodyForceReq& tau)
 			tau.wrench.torque.z = controller[r].output;
 
 			//Restart values
-			windupNote = newReference = newEstimate = false;
+			newReference = newEstimate = false;
 			tauOut.publish(tau);
 		}
 		else
@@ -293,12 +293,12 @@ void VelocityControl::stepVC(auv_msgs::BodyForceReq& tau)
 
 void VelocityControl::stepManual(auv_msgs::BodyForceReq& tau)
 {
-	tau.wrench.force.x = tauManual[X];
-	tau.wrench.force.y = tauManual[Y];
-	tau.wrench.force.z = tauManual[Z];
-	tau.wrench.torque.x = tauManual[K];
-	tau.wrench.torque.y = tauManual[M];
-	tau.wrench.torque.z = tauManual[N];
+	tau.wrench.force.x = joy_scale*tauManual[X];
+	tau.wrench.force.y = joy_scale*tauManual[Y];
+	tau.wrench.force.z = joy_scale*tauManual[Z];
+	tau.wrench.torque.x = joy_scale*tauManual[K];
+	tau.wrench.torque.y = joy_scale*tauManual[M];
+	tau.wrench.torque.z = joy_scale*tauManual[N];
 	tauOut.publish(tau);
 }
 

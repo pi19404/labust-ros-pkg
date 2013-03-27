@@ -51,6 +51,8 @@ namespace labust
 	{
 		/**
 		 * The class contains the implementation of the velocity controller, manual control manager and model identification.
+		 * \todo Add separate joystick scaling for all DOFs
+		 * \todo Add identification
 		 */
 		class VelocityControl
 		{
@@ -130,9 +132,13 @@ namespace labust
 			 */
 			float tauManual[N+1];
 			/**
+			 * Joystick scaling.
+			 */
+			double joy_scale;
+			/**
 			 * Enable/disable controllers, external windup flag.
 			 */
-			bool disable_axis[r+1], windupNote;
+			bool disable_axis[r+1];
 
 			/**
 			 * The loop control flag.

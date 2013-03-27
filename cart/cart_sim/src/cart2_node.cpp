@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
 		tau[tau::X] = 1.5;
 		tau[tau::Y] = -1.5;
 		//app.setExternalTau(tau);
-		stateHat = app.step(ext_measurements);
+		//stateHat = app.step(ext_measurements);
 		xpp = ext_measurements[state::x];
 		ypp = ext_measurements[state::y];
 		std::cout<<"Speed:"<<stateHat[state::u]<<std::endl;
@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
 		//Estimated states
 		auv_msgs::NavSts meas;
 		mapToNavSts(ext_measurements, &meas);
-		pub_meas.publish(meas);
+		//pub_meas.publish(meas);
 
 		//UWSim odometry message hook
 		nav_msgs::Odometry odom;

@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 
 	double maxThrust(100/(2*cp)),minThrust(-maxThrust);
 	ph.param("maxThrust",maxThrust,maxThrust);
-	ph.param("minThrust",minThrust,minThrust);
+	ph.param("minThrust",minThrust,-maxThrust);
 
 	//Scaling allocation only for XYN
 	labust::vehicles::ScaleAllocation allocator(B,maxThrust,minThrust);
@@ -182,19 +182,23 @@ int main(int argc, char* argv[])
 		tauXYN<<tau(VehicleModel6DOF::X),tau(VehicleModel6DOF::Y),tau(VehicleModel6DOF::N);
 		double scale = allocator.scale(tauXYN,&tauXYNsc);
 
+		auv_msgs::BodyForceReq t;
+		tau(VehicleModel6DOF::X) = t.wrench.force.x = tauXYNsc(0);
+		tau(VehicleModel6DOF::Y) = t.wrench.force.y = tauXYNsc(1);
+		t.wrench.force.z = tau(VehicleModel6DOF::Z);
+		t.wrench.torque.x = tau(VehicleModel6DOF::K);
+		t.wrench.torque.y = tau(VehicleModel6DOF::M);
+		tau(VehicleModel6DOF::N) = t.wrench.torque.z = tauXYNsc(2);
+		t.header.stamp = ros::Time::now();
+
 		//Publish the scaled values if scaling occured
 		if (scale>1)
 		{
-			auv_msgs::BodyForceReq t;
-			tau(VehicleModel6DOF::X) = t.wrench.force.x = tauXYNsc(0);
-			tau(VehicleModel6DOF::Y) = t.wrench.force.y = tauXYNsc(1);
-			t.wrench.force.z = tau(VehicleModel6DOF::Z);
-			t.wrench.torque.x = tau(VehicleModel6DOF::K);
-			t.wrench.torque.y = tau(VehicleModel6DOF::M);
-			tau(VehicleModel6DOF::N) = t.wrench.torque.z = tauXYNsc(2);
-			t.header.stamp = ros::Time::now();
-			tauAch.publish(t);
+			//Signal windup occured
+			t.disable_axis.x = t.disable_axis.y = t.disable_axis.yaw = 1;
 		}
+
+		tauAch.publish(t);
 
 		model.setCurrent(current);
 		model.step(tau);
