@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file was generated from uv_moos_apps.meta, you might not want to edit this file. -->
+
+<configurations>
+<UVApp id="vr">
+  <!-- Plugin configuration -->
+  <!-- Vehicle simulation parameters -->
+
+<param name="PortName" value="/dev/ttyUSB1" />
+<param name="BaudRate" value="9600" />
+<param name="FlowControl" value="none"/>
+<param name="Parity" value="none"/>
+<param name="StopBits" value="1"/>
+<param name="DataBits" value="8"/>
+<!-- set VR4 = 1 for the new protocol, 0 for the old protocol. -->
+<!-- <vr4>0</vr4> -->
+<!-- Thruster mappings -->
+<!-- <thruster-param an="0.0004872" bn="0.0001389" /> -->
+<!-- for vr4 divide by 0.21 -->
+<thruster-param an="0.0003" bn="0.0001389" />
+<!-- <thruster-param an="0.001428571" bn="0.000661429" /> -->
+<!-- Depth mappings -->
+<depth-map low="1017" high="313" psiHigh="50" psiLow="0" />
+<!-- Revolution limits -->
+<revLimit min="-220" max="220" />
+<lightLimit min="0" max="100" />
+  <!-- <plugin name="videoray-plug" id=_UV_MODEL_ID /> -->
+  <plugin name="videoray-plug" />
+  <!-- Controller parameters -->
+<param name="Ts" value="0.1" />
+<!-- dH controller parameters -->
+<param name="w_h" value="0.9" />
+<param name="attack_angle" value="45" />
+<!-- dV controller parameters -->
+<param name="w_v" value="0.42" />
+<param name="Xi" value="0" />
+<!-- Yaw controller parameters -->
+<param name="w_r" value="0.8" />
+<!-- Depth controller parameters -->
+<param name="w_w" value="0.42" />
+<!-- Yaw model parameters -->
+<param name="alpha_r" value="12.274219" />
+<param name="beta_r" value="2.351080" />
+<!-- <param name="alpha_r" value="3.523" /> -->
+<!-- <param name="beta_r" value="1.49" /> -->
+<param name="Max_N" value="7" />
+<!-- Depth model parameters -->
+<!-- <param name="alpha_w" value="25.4857" /> -->
+<!-- <param name="beta_w" value="11.815" /> -->
+<param name="alpha_w" value="99.4777" />
+<param name="beta_w" value="24.2846" />
+<param name="Max_Z" value="14.5" />
+<param name="alpha_u" value="40" />
+<param name="beta_u" value="15" />
+  <!-- Navigation parameters -->
+<param name="measurement-delay" value="21" />
+<param name="measurement-frequency" value="0" />
+<line T1="[3](0,0,0)" T2="[3](1,1,0)" />
+<!-- measurement vector <z,psi,dV,dH> -->
+<param name="R" value="diag([4](0.01,0.03,10,10))" />
+<param name="V" value="diag([4](1,1,1,1))" />
+<!-- noise vector <u,w,r,b,vertCurrent,horzCurrent,xuvCurrent, yuvCurrent> -->
+<!-- <param name="Q" value="diag([8](0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1))" /> -->
+<param name="Q" value="diag([10](0.1,0.1,0.003,0.01,0.003,0.01,0.01,0.001,0.001,0.001)" />
+<!-- <param name="W" value="[10,6]((1,0,0,0,0,0,0,0),
+         (0,1,0,0,0,0,0,0),
+                              (0,0,1,0,0,0,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,1,0,0,0,0),
+                              (0,0,0,0,1,0,0,0),
+                              (0,0,0,0,0,1,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,0,0,0,0,0),
+                              (0,0,0,0,0,0,1,0),
+                              (0,0,0,0,0,0,0,1))" /> -->
+<param name="W" value="diag([10](1,1,1,1,1,1,1,1,1,1))" />
+ <!-- filter options -->
+<param name="initial-state" value="[10](0,0,0,0,0,0,0,0,0,0)" />
+<param name="sampling-time" value="0.1" />
+  <!-- Identification -->
+<moduleConfig name="MissionControl" type="LabustMissionControl">
+  <state name="Ready" initial="true">
+  <output>
+   <param name="Action" value="None"/>
+  </output>
+  <transition state="SetupIdentDepth">
+   <param name="Mode" value="Identification"/>
+  </transition>
+ </state>
+ <state name="SetupIdentDepth">
+  <output>
+   <param name="Action" value="SetupIdent"/>
+   <param name="Amplitude" value="7"/>
+   <param name="Hysteresis" value="0.6"/>
+   <param name="StateToIdentify" value="8"/>
+   <param name="SamplingPeriod" value="0.1"/>
+  </output>
+  <transition state="IdentDepth">
+   <param name="Mode" value="Identification"/>
+  </transition> <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="IdentDepth">
+  <output>
+   <param name="Action" value="Ident"/>
+  </output>
+  <transition state="SetupIdentHeading">
+   <param name="Mode" value="Identification"/>
+   <param name="TAU-Z" value="0"/>
+   <param name="TAU-Z" value="0"/>
+  </transition>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="SetupIdentHeading">
+  <output>
+   <param name="Action" value="SetupIdent"/>
+   <param name="Amplitude" value="5"/>
+   <param name="Hysteresis" value="0.17"/>
+   <param name="StateToIdentify" value="11"/>
+   <param name="SamplingPeriod" value="0.1"/>
+  </output>
+  <transition state="IdentHeading">
+   <param name="Mode" value="Identification"/>
+  </transition>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="IdentHeading">
+  <output>
+   <param name="Action" value="Ident"/>
+  </output>
+  <transition state="Tune">
+   <param name="Mode" value="Identification"/>
+   <param name="TAU-N" value="0"/>
+   <param name="TAU-N" value="0"/>
+  </transition>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="Tune">
+  <output>
+   <param name="Action" value="Tune"/>
+  </output>
+  <transition state="Saving">
+   <param name="Mode" value="Identification"/>
+  </transition>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="Saving">
+  <output>
+   <param name="Action" value="Save"/>
+   <param name="SaveDepthIdent" value="1"/>
+   <param name="SaveHeadingIdent" value="1"/>
+  </output>
+  <transition state="Done">
+   <param name="Mode" value="Identification"/>
+  </transition>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+ <state name="Done">
+  <output>
+   <param name="Action" value="Done"/>
+  </output>
+  <transition state="Ready">
+   <param name="Mode" value="!Identification"/>
+  </transition>
+ </state>
+</moduleConfig>
+</UVApp>
+<!-- iUUVModem configuration -->
+<UUVModem id="default">
+  <param name="PortName" value="/dev/ttyUSB0"/>
+  <param name="BaudRate" value="19200"/>
+  <param name="FlowControl" value="none"/>
+  <param name="Parity" value="none"/>
+  <param name="StopBits" value="1"/>
+  <param name="DataBits" value="8"/>
+  <param name="packetNum" value="1" />
+  <plugin name="whoi-plug"/>
+</UUVModem>
+</configurations>
