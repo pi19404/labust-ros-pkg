@@ -114,9 +114,9 @@ void VelocityControl::handleMeasurements(const auv_msgs::NavSts::ConstPtr& ref)
 void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 {
 	tauManual[X] = joy->axes[1];
-	tauManual[Y] = joy->axes[0];
+	tauManual[Y] = -joy->axes[0];
 	tauManual[Z] = joy->axes[3];
-	tauManual[N] = joy->axes[2];
+	tauManual[N] = -joy->axes[2];
 	tauManual[K] = 0;
 	tauManual[M] = 0;
 }
