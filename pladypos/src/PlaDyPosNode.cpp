@@ -59,9 +59,9 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	//Initialize the allocation matrix
 	Eigen::Matrix<float, 3,4> B;
 	float cp(cos(M_PI/4)),sp(sin(M_PI/4));
-	B<<cp,cp,-cp,-cp,
-		 sp,-sp,sp,-sp,
-		 1,-1,-1,1;
+	B<<-cp,-cp,cp,cp,
+	   -sp,sp,sp,-sp,
+	    1,-1,1,-1;
 
 	//Scaling allocation only for XYN
 	allocator.configure(B,maxThrust,minThrust);
@@ -117,9 +117,11 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 	for (int i=0; i<4;++i)
 	{
 		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
-		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?0:1)<<")";
+		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
 	}
 
+	//if (tauI(0)<0.1) out<<"(P0,0,0)(P1,0,0)(P2,0,0)(P3,0,0)";
+	//else out<<"(P0,0,0)(P1,0,0)(P2,40,1)(P3,40,0)";
 	std::string todriver(out.str());
 	ROS_INFO("Revolutions output:%s\n",todriver.c_str());
 	ROS_INFO("Revs: %d %d %d %d\n",n[0],n[1],n[2],n[3]);
