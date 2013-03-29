@@ -45,12 +45,16 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
 
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+
 #include <ros/ros.h>
 
 #include <boost/bind.hpp>
 #include <sstream>
 
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
+tf::TransformListener* listener;
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -72,10 +76,24 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 {
 	enum {r,p,y,newMsg};
 	double roll,pitch,yaw;
-	KDL::Rotation::Quaternion(data->orientation.x,data->orientation.y,
-			data->orientation.z,data->orientation.w).GetRPY(roll,pitch,yaw);
 
-	std::cout<<"My yaw:"<<yaw<<std::endl;
+  tf::StampedTransform transform;
+  try
+  {
+     listener->lookupTransform("base_link", "imu", ros::Time(0), transform);
+  }
+  catch (tf::TransformException& ex)
+  {
+     ROS_ERROR("%s",ex.what());
+  }
+
+  tf::Quaternion meas(data->orientation.x,data->orientation.y,
+			data->orientation.z,data->orientation.w);
+  tf::Quaternion result = meas*transform.getRotation();
+
+	KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetRPY(roll,pitch,yaw);
+
+	std::cout<<"RPY:"<<roll<<","<<pitch<<","<<yaw<<std::endl;
 
 	rpy(r) = roll;
 	rpy(p) = pitch;
@@ -169,6 +187,9 @@ int main(int argc, char* argv[])
 	//Subscribers
 	KFNav::vector tau(KFNav::zeros(KFNav::inputSize)),xy(KFNav::zeros(2+1)),rpy(KFNav::zeros(3+1));
 
+	tf::TransformBroadcaster broadcast;
+	listener = new tf::TransformListener();
+
 	ros::Subscriber tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, boost::bind(&handleTau,boost::ref(tau),_1));
 	ros::Subscriber navFix = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1, boost::bind(&handleGPS,boost::ref(xy),_1));
 	ros::Subscriber imu = nh.subscribe<sensor_msgs::Imu>("imu", 1, boost::bind(&handleImu,boost::ref(rpy),_1));
@@ -209,6 +230,15 @@ int main(int argc, char* argv[])
 		state.position.east = estimate(KFNav::yp);
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
 		stateHat.publish(state);
+
+		tf::StampedTransform transform;
+		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
+		transform.setRotation(tf::createQuaternionFromRPY(rpy(0),rpy(1),estimate(KFNav::psi)));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+
+		transform.setOrigin(tf::Vector3(0, 0, 0));
+		transform.setRotation(tf::createQuaternionFromRPY(1.57,0,3.14));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu"));
 
 		rate.sleep();
 		ros::spinOnce();

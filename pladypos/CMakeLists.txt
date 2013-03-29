@@ -4,7 +4,7 @@ project(pladypos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs orocos_kdl)
+find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs orocos_kdl tf)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -49,7 +49,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES pladypos
-   CATKIN_DEPENDS auv_msgs message_runtime roscpp labust_base sensor_msgs orocos_kdl
+   CATKIN_DEPENDS auv_msgs message_runtime roscpp labust_base sensor_msgs orocos_kdl tf
 #  DEPENDS system_lib
 )
 

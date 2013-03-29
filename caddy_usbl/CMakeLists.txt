@@ -32,4 +32,7 @@ target_link_libraries(usbl_node tritech-sdk)
 #rosbuild_add_executable(usbl_filter src/usbl_filter.cpp)
 
 rosbuild_add_executable(modem_node src/modem_node.cpp)
+rosbuild_add_executable(bitpack_test src/MsgEncoder.cpp)
+rosbuild_link_boost(bitpack_test serialization system)
+target_link_libraries(bitpack_test tritech-sdk)
 target_link_libraries(modem_node tritech-sdk)
