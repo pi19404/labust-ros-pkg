@@ -32,6 +32,11 @@ SET(PR_NAME vr_node)
 rosbuild_add_executable(${PR_NAME} src/vr_node.cpp)
 target_link_libraries(${PR_NAME} labust_uvapp labust_xml labust_navcon)
 
+SET(PR_NAME radio_node)
+rosbuild_add_executable(${PR_NAME} src/radio_node.cpp)
+rosbuild_link_boost(${PR_NAME} thread system)
+#target_link_libraries(${PR_NAME} labust_uvapp labust_xml labust_navcon)
+
 SET(PR_NAME velocity_demo)
 rosbuild_add_executable(${PR_NAME} src/velocity_demo.cpp)
 #target_link_libraries(${PR_NAME} labust_uvapp labust_xml labust_navcon)
