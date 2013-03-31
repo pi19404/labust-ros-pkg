@@ -7,6 +7,8 @@ project(bvt_sdk)
 find_package(catkin REQUIRED COMPONENTS 
 	roscpp 
 	rospy 
+	nodelet
+	dynamic_reconfigure
 	aidnav_msgs)
 
 ## System dependencies are found with CMake's conventions
@@ -41,6 +43,11 @@ find_package(Boost REQUIRED)
 #)
 
 ###################################################
+## Dynamic reconfigure
+###################################################
+generate_dynamic_reconfigure_options(cfg/BVSonar.cfg)
+
+###################################################
 ## Declare things to be passed to other projects ##
 ###################################################
 
@@ -50,7 +57,7 @@ find_package(Boost REQUIRED)
 catkin_package(
   INCLUDE_DIRS include/
   #LIBRARIES bvt_sdk
-  CATKIN_DEPENDS roscpp rospy aidnav_msgs
+  CATKIN_DEPENDS roscpp rospy aidnav_msgs nodelet
   #DEPENDS message_runtime rospy roscpp
 )
 
@@ -66,13 +73,15 @@ include_directories(include include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS
 # )
 
 ## Declare a cpp executable
-add_executable(blueview_node src/BVSonarRos.cpp src/blueview_node.cpp)
+#add_executable(blueview_node src/BVSonarRos.cpp src/blueview_node.cpp)
+add_library(blueview-nodelet src/BVSonarRos.cpp)
 
 ## Add dependencies to the executable
+add_dependencies(blueview-nodelet BVSonar_gencfg) 
 # add_dependencies(bvt_sdk_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(blueview_node bvtsdk ${catkin_LIBRARIES})
+target_link_libraries(blueview-nodelet bvtsdk ${catkin_LIBRARIES})
 
 #############
 ## Install ##

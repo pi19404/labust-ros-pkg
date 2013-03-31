@@ -1,0 +1,7 @@
+<library path="lib/libblueview-nodelet">
+  <class name="bvt_sdk/BVSonarRos" type="labust::blueview::BVSonarRos" base_class_type="nodelet::Nodelet">
+  <description>
+  	The nodelet for the BlueView sonar acquisition.
+  </description>
+  </class>
+</library>

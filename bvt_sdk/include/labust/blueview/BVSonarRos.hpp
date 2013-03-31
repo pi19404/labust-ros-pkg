@@ -36,7 +36,12 @@
 
 #include <labust/blueview/blueviewfwd.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <bvt_sdk/BVSonarConfig.h>
+#include <nodelet/nodelet.h>
 #include <ros/ros.h>
+
+#include <boost/thread.hpp>
 
 namespace labust
 {
@@ -51,7 +56,7 @@ namespace labust
 		 * \todo Add jpeg compression instead of pure image transmission
 		 * \todo Add ROI extraction ?.
 		 */
-		class BVSonarRos
+		class BVSonarRos : public nodelet::Nodelet
 		{
 		public:
 			/**
@@ -68,6 +73,11 @@ namespace labust
 			 */
 			void run();
 
+			/**
+			 * Configures the sonar for reading.
+			 */
+			void onInit();
+
 		private:
 			/**
 			 * The ROS node handle and private handle.
@@ -79,14 +89,18 @@ namespace labust
 			ros::Publisher imageTopic, cImageTopic;
 
 			/**
-			 * Configures the sonar for reading.
-			 */
-			void configure();
-			/**
 			 * Acquisition when we have a file.
 			 */
 			void runFileAcquisition();
+			/**
+			 * Dynamic reconfigure service.
+			 */
+			void dynrec(bvt_sdk::BVSonarConfig& config, uint32_t level);
 
+			/**
+			 * The dynamic reconfigure server.
+			 */
+		  dynamic_reconfigure::Server<bvt_sdk::BVSonarConfig> server;
 			/**
 			 * The sonar object.
 			 */
@@ -103,10 +117,17 @@ namespace labust
 			 * The ping rate.
 			 */
 			int pingRate;
+			/**
+			 * The maximum range.
+			 */
+			bvt_sdk::BVSonarConfig config;
+			/**
+			 * The worker thread.
+			 */
+			boost::thread worker;
 		};
 	}
 }
-
 
 /* BVSONARROS_HPP_ */
 #endif

@@ -34,22 +34,27 @@
 #include <labust/blueview/BVSonarRos.hpp>
 #include <aidnav_msgs/MBSonar.h>
 #include <sensor_msgs/image_encodings.h>
-#include <tf/transform_broadcaster.h>
+#include <pluginlib/class_list_macros.h>
 
 using namespace labust::blueview;
 
+PLUGINLIB_DECLARE_CLASS(bvt_sdk,BVSonarRos,labust::blueview::BVSonarRos, nodelet::Nodelet)
+
 BVSonarRos::BVSonarRos():
-		phandle("~"),
 		sonar(BVFactory::makeBVSonar()),
 		pingRate(100)
-{
-	this->configure();
-}
+{}
 
-BVSonarRos::~BVSonarRos(){};
-
-void BVSonarRos::configure()
+BVSonarRos::~BVSonarRos()
 {
+	worker.join();
+};
+
+void BVSonarRos::onInit()
+{
+	phandle = this->getPrivateNodeHandle();
+	nhandle = this->getNodeHandle();
+
 	std::string sonarType("FILE");
 	std::string sonarAddress("swimmer.son");
 	std::string magtopicName("bvsonar_img");
@@ -86,6 +91,16 @@ void BVSonarRos::configure()
 	//Topics configuration
 	imageTopic = nhandle.advertise<aidnav_msgs::MBSonar>(magtopicName,1);
 	cImageTopic = nhandle.advertise<aidnav_msgs::MBSonar>(colortopicName,1);
+
+	//Configure the dynamic reconfigure server
+  server.setCallback(boost::bind(&BVSonarRos::dynrec, this, _1, _2));
+
+  worker=boost::thread(boost::bind(&BVSonarRos::run,this));
+}
+
+void BVSonarRos::dynrec(bvt_sdk::BVSonarConfig& config, uint32_t level)
+{
+	this->config = config;
 }
 
 void BVSonarRos::run()
@@ -100,8 +115,13 @@ void BVSonarRos::runFileAcquisition()
 	ros::Rate loop_rate(pingRate);
 	BVTHead_SetImageRes(head,BVTHEAD_RES_HIGH);
 	BVTHead_SetImageType(head,BVTHEAD_IMAGE_RTHETA);
+	this->config.double_param = BVTHead_GetMaximumRange(head);
+	server.setConfigMax(config);
+	this->config.double_param = BVTHead_GetStopRange(head);
+  server.setConfigDefault(this->config);
 	while (nhandle.ok())
 	{
+		BVTHead_SetRange(head,0,this->config.double_param);
 		BVPingPtr ping(BVFactory::getBVPing(head,counter));
 
 		BVMagImagePtr image(BVFactory::getBVMagImage(ping));
