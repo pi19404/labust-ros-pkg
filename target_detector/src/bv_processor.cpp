@@ -34,7 +34,7 @@
 #include <labust/blueview/TrackerROI.hpp>
 #include <labust/blueview/ImageProcessing.hpp>
 #include <labust/blueview/ProcessingChain.hpp>
-#include <bvt_sdk/MBSonar.h>
+#include <aidnav_msgs/MBSonar.h>
 
 #include <labust/navigation/KFCore.hpp>
 #include <labust/navigation/KinematicModel.hpp>
@@ -97,7 +97,7 @@ void mouse_cb(int event, int x, int y, int flags, void* param)
   }
 }
 
-void callback(labust::blueview::BVImageProcessor* /*labust::blueview::ProcessingChain<>*/ processor, const bvt_sdk::MBSonarConstPtr& image)
+void callback(labust::blueview::BVImageProcessor* /*labust::blueview::ProcessingChain<>*/ processor, const aidnav_msgs::MBSonarConstPtr& image)
 {
 	//Do some time calculation for performance.
 	static ros::Time last = ros::Time::now();
@@ -252,7 +252,7 @@ try
 	cv::setMouseCallback("Sonar",&mouse_cb,0);
 
 	//Create topic subscription
-	ros::Subscriber imageTopic = nhandle.subscribe<bvt_sdk::MBSonar>(topicName,bufferSize,boost::bind(&callback,&processor,_1));
+	ros::Subscriber imageTopic = nhandle.subscribe<aidnav_msgs::MBSonar>(topicName,bufferSize,boost::bind(&callback,&processor,_1));
 
 	//setup estimation
 	KinNav estimator;

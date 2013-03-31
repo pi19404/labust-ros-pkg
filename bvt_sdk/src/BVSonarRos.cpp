@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 #include <labust/blueview/BVSonarRos.hpp>
-#include <bvt_sdk/MBSonar.h>
+#include <aidnav_msgs/MBSonar.h>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_broadcaster.h>
 
@@ -84,8 +84,8 @@ void BVSonarRos::configure()
 	BVTHead_SetSoundSpeed(head,soundSpeed);
 
 	//Topics configuration
-	imageTopic = nhandle.advertise<bvt_sdk::MBSonar>(magtopicName,1);
-	cImageTopic = nhandle.advertise<bvt_sdk::MBSonar>(colortopicName,1);
+	imageTopic = nhandle.advertise<aidnav_msgs::MBSonar>(magtopicName,1);
+	cImageTopic = nhandle.advertise<aidnav_msgs::MBSonar>(colortopicName,1);
 }
 
 void BVSonarRos::run()
@@ -108,7 +108,7 @@ void BVSonarRos::runFileAcquisition()
 		BVColorImagePtr cimage(BVFactory::getBVColorImage(image,mapper));
 
 		//Add navigation data reading.
-		bvt_sdk::MBSonarPtr msg(new bvt_sdk::MBSonar());
+		aidnav_msgs::MBSonarPtr msg(new aidnav_msgs::MBSonar());
 		msg->image.height = BVTMagImage_GetHeight(image.get());
 		msg->image.width = BVTMagImage_GetWidth(image.get());
 		msg->image.encoding = sensor_msgs::image_encodings::MONO16;
@@ -123,7 +123,7 @@ void BVSonarRos::runFileAcquisition()
 		msg->image.data.assign(datap,datap + msg->image.step*msg->image.height);
 		imageTopic.publish(msg);
 
-		msg.reset(new bvt_sdk::MBSonar());
+		msg.reset(new aidnav_msgs::MBSonar());
 		msg->image.height = BVTColorImage_GetHeight(cimage.get());
 		msg->image.width = BVTColorImage_GetWidth(cimage.get());
 		msg->image.encoding = sensor_msgs::image_encodings::BGRA8;

@@ -38,7 +38,7 @@ import rospy
 import ctypes
 import cv2
 import numpy
-from bvt_sdk.msg import MBSonar
+from aidnav_msgs.msg import MBSonar
 
 class BvNode:       
     def __init__(self):

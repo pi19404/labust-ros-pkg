@@ -4,7 +4,7 @@ project(target_detector)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS bvt_sdk labust_base roscpp rospy cv_bridge)
+find_package(catkin REQUIRED COMPONENTS aidnav_msgs labust_base roscpp rospy cv_bridge)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -48,7 +48,7 @@ find_package(OpenCV REQUIRED)
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES target_detector
-  CATKIN_DEPENDS bvt_sdk cv_bridge roscpp rospy message_runtime
+  CATKIN_DEPENDS aidnav_msgs cv_bridge roscpp rospy message_runtime
 #  DEPENDS system_lib
 )
 

@@ -31,9 +31,9 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <bvt_sdk/MBSonar.h>
+#include <aidnav_msgs/MBSonar.h>
 #include <sensor_msgs/image_encodings.h>
-#include <bvt_sdk/SetRange.h>
+#include <aidnav_msgs/SetRange.h>
 #include <cv_bridge/cv_bridge.h>
 
 
@@ -99,7 +99,7 @@ std::pair<float, float> noise_estimate(cv::Mat& meanM, cv::Mat& stdM, size_t x, 
 	return noisep;
 }
 
-void callback(const bvt_sdk::MBSonarConstPtr& image)
+void callback(const aidnav_msgs::MBSonarConstPtr& image)
 {
 	ROS_INFO("Received image: %d x %d x 2 = %d",image->image.width, image->image.height,image->image.data.size());
 	ROS_INFO("Elapsed time: %f",(ros::Time::now() - last).toSec());
@@ -198,7 +198,7 @@ void callback(const bvt_sdk::MBSonarConstPtr& image)
 	*/
 }
 
-void callback2(const bvt_sdk::MBSonarConstPtr& image)
+void callback2(const aidnav_msgs::MBSonarConstPtr& image)
 {
 	ROS_INFO("Received image: %d x %d x 4 = %d",image->image.width, image->image.height,image->image.data.size());
 	ROS_INFO("Elapsed time: %f",(ros::Time::now() - last).toSec());

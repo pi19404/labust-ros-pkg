@@ -7,10 +7,7 @@ project(bvt_sdk)
 find_package(catkin REQUIRED COMPONENTS 
 	roscpp 
 	rospy 
-	std_msgs 
-	sensor_msgs
-	geometry_msgs
-	message_generation)
+	aidnav_msgs)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -24,24 +21,24 @@ find_package(Boost REQUIRED)
 #######################################
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  MBSonar.msg
-)
+#add_message_files(
+#  FILES
+#  MBSonar.msg
+#)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   SetRange.srv
-)
+#add_service_files(
+#   FILES
+#   SetRange.srv
+#)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs 
-   sensor_msgs
-   geometry_msgs
-)
+#generate_messages(
+#   DEPENDENCIES
+#   std_msgs 
+#   sensor_msgs
+#   geometry_msgs
+#)
 
 ###################################################
 ## Declare things to be passed to other projects ##
@@ -53,8 +50,8 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include/
   #LIBRARIES bvt_sdk
-#  CATKIN_DEPENDS other_catkin_pkg
-  DEPENDS message_runtime rospy roscpp
+  CATKIN_DEPENDS roscpp rospy aidnav_msgs
+  #DEPENDS message_runtime rospy roscpp
 )
 
 ###########
