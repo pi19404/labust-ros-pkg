@@ -40,7 +40,10 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <ros/ros.h>
 #include <std_msgs/String.h>
+#include <sensor_msgs/Joy.h>
 
+#include <string>
+#include <map>
 
 namespace labust
 {
@@ -48,6 +51,8 @@ namespace labust
 	{
 		/**
 		 * The class contains the implementation of the velocity controller, manual control manager and model identification.
+		 * \todo Add separate joystick scaling for all DOFs
+		 * \todo Add identification
 		 */
 		class VelocityControl
 		{
@@ -98,9 +103,26 @@ namespace labust
 			 */
 			void handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau);
 			/**
+			 * Handle incoming estimates message.
+			 */
+			void handleManual(const sensor_msgs::Joy::ConstPtr& joy);
+			/**
+			 * Handle incoming estimates message.
+			 */
+			void handleOpMode(const std_msgs::String::ConstPtr& mode);
+			/**
 			 * Message updates.
 			 */
 			bool newReference, newEstimate, newMeasurement;
+
+			/**
+			 * The VelocityControl mode.
+			 */
+			void stepVC(auv_msgs::BodyForceReq& tau);
+			/**
+			 * The manual control mode.
+			 */
+			void stepManual(auv_msgs::BodyForceReq& tau);
 
 			/**
 			 * Initialize the controller parameters etc.
@@ -111,9 +133,17 @@ namespace labust
 			 */
 			PIDController controller[r+1];
 			/**
+			 * Joystick message.
+			 */
+			float tauManual[N+1];
+			/**
+			 * Joystick scaling.
+			 */
+			double joy_scale;
+			/**
 			 * Enable/disable controllers, external windup flag.
 			 */
-			bool disable_axis[r+1], windupNote;
+			bool disable_axis[r+1];
 
 			/**
 			 * The loop control flag.
@@ -127,7 +157,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn, tauAch;
+			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn, tauAch, opMode;
 			/**
 			 * The ROS node handles.
 			 */
@@ -140,6 +170,14 @@ namespace labust
 			 * Use message or time driven operation.
 			 */
 			bool synced;
+			/**
+			 * Current mode.
+			 */
+			std::string mode;
+			/**
+			 * The mode reaction map.
+			 */
+			std::map<std::string, boost::function<void(auv_msgs::BodyForceReq&)> > handler;
 		};
 	}
 }

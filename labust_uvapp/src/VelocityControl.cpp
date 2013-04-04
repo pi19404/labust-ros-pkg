@@ -49,7 +49,7 @@
 using labust::control::VelocityControl;
 
 VelocityControl::VelocityControl():
-	windupNote(false),
+	joy_scale(1),
 	runFlag(false),
 	nh(ros::NodeHandle()),
 	ph(ros::NodeHandle("~")),
@@ -57,8 +57,10 @@ VelocityControl::VelocityControl():
 
 void VelocityControl::onInit()
 {
-	std::string name;
+	handler["manual"] = boost::bind(&VelocityControl::stepManual,this,_1);
+	handler["velcon"] = boost::bind(&VelocityControl::stepVC,this,_1);
 
+	std::string name;
 	//Initialize publishers
 	tauOut = nh.advertise<auv_msgs::BodyForceReq>("tauOut", 1);
 	//Windup flag
@@ -73,8 +75,13 @@ void VelocityControl::onInit()
 			&VelocityControl::handleMeasurements,this);
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
 				&VelocityControl::handleWindup,this);
+	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
+			&VelocityControl::handleManual,this);
+	opMode = nh.subscribe<std_msgs::String>("mode",1,
+			&VelocityControl::handleOpMode,this);
 
 	nh.param("velocity_controller/synced",synced,true);
+	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 
 	initialize_controller();
 }
@@ -106,16 +113,30 @@ void VelocityControl::handleMeasurements(const auv_msgs::NavSts::ConstPtr& ref)
 	//Copy into identification controller
 };
 
+void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
+{
+	tauManual[X] = joy->axes[1];
+	tauManual[Y] = -joy->axes[0];
+	tauManual[Z] = joy->axes[3];
+	tauManual[N] = -joy->axes[2];
+	tauManual[K] = 0;
+	tauManual[M] = 0;
+}
+
+void VelocityControl::handleOpMode(const std_msgs::String::ConstPtr& mode)
+{
+	if (handler.find(mode->data) != handler.end()) this->mode = mode->data;
+}
+
 void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	//Quick testing addition
 	//\todo Add per controller windup detection
-	windupNote = true;
-	controller[u].windup = 1;
+	controller[u].windup = tau->disable_axis.x;
 	controller[u].tracking = tau->wrench.force.x;
-	controller[v].windup = 1;
+	controller[v].windup = tau->disable_axis.y;
 	controller[v].tracking = tau->wrench.force.y;
-	controller[r].windup = 1;
+	controller[r].windup = tau->disable_axis.yaw;
 	controller[r].tracking = tau->wrench.torque.z;
 };
 
@@ -134,146 +155,162 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 	if (!synced && newReference) step();
 };
 
+void VelocityControl::stepVC(auv_msgs::BodyForceReq& tau)
+{
+	std_msgs::Byte windupFlag;
+
+	if (newReference && newEstimate)
+		{
+			float Ts = (ros::Time::now() - lastTime).toSec();
+			if (Ts > 0.3) Ts = 0.1;
+			lastTime = ros::Time::now();
+
+			Ts = 0.1;
+
+			ROS_INFO("VelocityControl::Sampling Time=%f",Ts);
+
+			std::vector<float> scaling(r+2);
+
+			for (int i=u; i<=r;++i)
+			{
+				if (disable_axis[i])
+					controller[i].output = 0;
+				else
+				{
+					PIFFController_step(&controller[i], Ts);
+					if (controller[i].windup) windupFlag.data = windupFlag.data | (1<<i);
+				}
+
+				//scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
+				//if (scaling[i] != scaling[i]) scaling[i] = 0;
+
+				std::cout<<i<<". has scaling:"<<scaling[i]<<","<<controller[i].output<<","<<controller[i].outputLimit<<std::endl;
+			}
+	//
+	//		////////////////////////////Allocation stuff/////////////////////////////////////////
+	//		Eigen::Matrix<float, 3,4> B;
+	//		float cp(cos(M_PI/4)),sp(sin(M_PI/4));
+	//		B<<cp,cp,-cp,-cp,
+	//			 sp,-sp,sp,-sp,
+	//			 1,-1,-1,1;
+	//		Eigen::Matrix<float, 4,3> pinv = B.transpose()*(B*B.transpose()).inverse();
+	//
+	//		Eigen::Vector3f virtualInput;
+	//		virtualInput<<controller[u].output, controller[v].output, controller[r].output;
+	//
+	//		Eigen::Vector4f tdes = pinv*virtualInput;
+	//
+	//		enum{T1 = 0,T2,T3,T4};
+	//
+	//		float taumax(13/(2*cp));
+	//
+	//		Eigen::Vector4f scaled = tdes/taumax;
+	//		Eigen::Matrix<float,5,1> tscale;
+	//		tscale<<fabs(scaled(0)),fabs(scaled(1)),fabs(scaled(2)),fabs(scaled(3)),1.0f;
+	//		//std::for_each(tscale.data(), tscale.data() + tscale.SizeAtCompileTime, fabs);
+	//		std::sort(tscale.data(),tscale.data() + tscale.SizeAtCompileTime);
+	//
+	//		std::cout<<"Sorted scales:";
+	//		for (int i=0; i<tscale.SizeAtCompileTime; ++i)
+	//		{
+	//			std::cout<<tscale(i)<<",";
+	//		}
+	//		std::cout<<std::endl;
+	//
+	//		//With scaling
+	//		tdes = tdes/tscale(tscale.SizeMinusOne);
+	//		//Without scaling
+	//		for (int i=0; i<4; ++i)
+	//		{
+	//			//if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
+	//		}
+	//
+	//		Eigen::Vector3f virtualInputLim = B*tdes;
+	//		/////////////////////////////////////////////////////////////////////////////////////
+	//		float scale = tscale(tscale.SizeMinusOne);
+	//		std::cout<<"Take scaling:"<<tscale(tscale.SizeMinusOne)<<std::endl;
+	//
+	//		std::cout<<std::endl;
+	//
+	//		std::cout<<"Virtual input:";
+	//		for (int i=0;i<3;++i) std::cout<<virtualInput(i)<<",";
+	//		std::cout<<std::endl;
+	//		std::cout<<"Desired u:";
+	//		for (int i=0;i<4;++i) std::cout<<tdes(i)<<",";
+	//		std::cout<<std::endl;
+	//		std::cout<<"Virtual input limited:";
+	//		for (int i=0;i<3;++i) std::cout<<virtualInputLim(i)<<",";
+	//		std::cout<<std::endl;
+	//
+	//		ROS_INFO("Thrust:%f,%f,%f,%f",tdes(0),tdes(1),tdes(2),tdes(3));
+	//
+	//
+	//		std::cout<<std::endl;
+	//
+	//		Eigen::Matrix<float,6,1> vin;
+	//		vin<<virtualInputLim(0),virtualInputLim(1),0,0,0,virtualInputLim(2);
+	//		//windupFlag.data = 0;
+	//		for (int i=u; i<=r; ++i)
+	//		{
+	//			if (controller[i].autoTracking == 0 && (!disable_axis[i]))
+	//			{
+	//				controller[i].tracking = vin(i);
+	//				controller[i].windup = scale>1;
+	//				controller[i].output = vin(i);
+	//				//controller[i].integratorState = vin(i);
+	//				std::cout<<"Doing external tracking."<<std::endl;
+	//				//controller[i].tracking = controller[i].output;
+	//				//PIDController_trackingUpdate(&controller[i],Ts,1);
+	//				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
+	//			}
+	//			else
+	//			{
+	//				//controller[i].windup = 0;
+	//				//std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
+	//			}
+	//
+	//			//if (controller[i].windup)
+	//		  	//windupFlag.data = windupFlag.data | (1<<i);
+	//		}
+
+	 		//Copy to tau
+			tau.wrench.force.x = controller[u].output;
+			tau.wrench.force.y = controller[v].output;
+			tau.wrench.force.z = controller[w].output;
+			tau.wrench.torque.x = controller[p].output;
+			tau.wrench.torque.y = controller[q].output;
+			tau.wrench.torque.z = controller[r].output;
+
+			//Restart values
+			newReference = newEstimate = false;
+			tauOut.publish(tau);
+		}
+		else
+		{
+			ROS_WARN("VelocityControl - messages are out of sync.");
+		}
+
+	windup.publish(windupFlag);
+}
+
+void VelocityControl::stepManual(auv_msgs::BodyForceReq& tau)
+{
+	tau.wrench.force.x = joy_scale*tauManual[X];
+	tau.wrench.force.y = joy_scale*tauManual[Y];
+	tau.wrench.force.z = joy_scale*tauManual[Z];
+	tau.wrench.torque.x = joy_scale*tauManual[K];
+	tau.wrench.torque.y = joy_scale*tauManual[M];
+	tau.wrench.torque.z = joy_scale*tauManual[N];
+	tauOut.publish(tau);
+}
+
 void VelocityControl::step()
 {
 	auv_msgs::BodyForceReq tau;
-	std_msgs::Byte windupFlag;
 
 	tau.header.stamp = ros::Time::now();
 
-	if (newReference && newEstimate)
-	{
-		float Ts = (ros::Time::now() - lastTime).toSec();
-		if (Ts > 0.3) Ts = 0.1;
-		lastTime = ros::Time::now();
-
-		Ts = 0.1;
-
-		ROS_INFO("VelocityControl::Sampling Time=%f",Ts);
-
-		std::vector<float> scaling(r+2);
-
-		for (int i=u; i<=r;++i)
-		{
-			if (disable_axis[i])
-				controller[i].output = 0;
-			else
-			{
-				PIFFController_step(&controller[i], Ts);
-				if (controller[i].windup) windupFlag.data = windupFlag.data | (1<<i);
-			}
-
-			//scaling[i] = fabs(controller[i].output/controller[i].outputLimit);
-			//if (scaling[i] != scaling[i]) scaling[i] = 0;
-
-			std::cout<<i<<". has scaling:"<<scaling[i]<<","<<controller[i].output<<","<<controller[i].outputLimit<<std::endl;
-		}
-//
-//		////////////////////////////Allocation stuff/////////////////////////////////////////
-//		Eigen::Matrix<float, 3,4> B;
-//		float cp(cos(M_PI/4)),sp(sin(M_PI/4));
-//		B<<cp,cp,-cp,-cp,
-//			 sp,-sp,sp,-sp,
-//			 1,-1,-1,1;
-//		Eigen::Matrix<float, 4,3> pinv = B.transpose()*(B*B.transpose()).inverse();
-//
-//		Eigen::Vector3f virtualInput;
-//		virtualInput<<controller[u].output, controller[v].output, controller[r].output;
-//
-//		Eigen::Vector4f tdes = pinv*virtualInput;
-//
-//		enum{T1 = 0,T2,T3,T4};
-//
-//		float taumax(13/(2*cp));
-//
-//		Eigen::Vector4f scaled = tdes/taumax;
-//		Eigen::Matrix<float,5,1> tscale;
-//		tscale<<fabs(scaled(0)),fabs(scaled(1)),fabs(scaled(2)),fabs(scaled(3)),1.0f;
-//		//std::for_each(tscale.data(), tscale.data() + tscale.SizeAtCompileTime, fabs);
-//		std::sort(tscale.data(),tscale.data() + tscale.SizeAtCompileTime);
-//
-//		std::cout<<"Sorted scales:";
-//		for (int i=0; i<tscale.SizeAtCompileTime; ++i)
-//		{
-//			std::cout<<tscale(i)<<",";
-//		}
-//		std::cout<<std::endl;
-//
-//		//With scaling
-//		tdes = tdes/tscale(tscale.SizeMinusOne);
-//		//Without scaling
-//		for (int i=0; i<4; ++i)
-//		{
-//			//if (fabs(tdes(i))>taumax) tdes(i) *= taumax/fabs(tdes(i));
-//		}
-//
-//		Eigen::Vector3f virtualInputLim = B*tdes;
-//		/////////////////////////////////////////////////////////////////////////////////////
-//		float scale = tscale(tscale.SizeMinusOne);
-//		std::cout<<"Take scaling:"<<tscale(tscale.SizeMinusOne)<<std::endl;
-//
-//		std::cout<<std::endl;
-//
-//		std::cout<<"Virtual input:";
-//		for (int i=0;i<3;++i) std::cout<<virtualInput(i)<<",";
-//		std::cout<<std::endl;
-//		std::cout<<"Desired u:";
-//		for (int i=0;i<4;++i) std::cout<<tdes(i)<<",";
-//		std::cout<<std::endl;
-//		std::cout<<"Virtual input limited:";
-//		for (int i=0;i<3;++i) std::cout<<virtualInputLim(i)<<",";
-//		std::cout<<std::endl;
-//
-//		ROS_INFO("Thrust:%f,%f,%f,%f",tdes(0),tdes(1),tdes(2),tdes(3));
-//
-//
-//		std::cout<<std::endl;
-//
-//		Eigen::Matrix<float,6,1> vin;
-//		vin<<virtualInputLim(0),virtualInputLim(1),0,0,0,virtualInputLim(2);
-//		//windupFlag.data = 0;
-//		for (int i=u; i<=r; ++i)
-//		{
-//			if (controller[i].autoTracking == 0 && (!disable_axis[i]))
-//			{
-//				controller[i].tracking = vin(i);
-//				controller[i].windup = scale>1;
-//				controller[i].output = vin(i);
-//				//controller[i].integratorState = vin(i);
-//				std::cout<<"Doing external tracking."<<std::endl;
-//				//controller[i].tracking = controller[i].output;
-//				//PIDController_trackingUpdate(&controller[i],Ts,1);
-//				std::cout<<i<<"Output after scaling:"<<controller[i].output<<std::endl;
-//			}
-//			else
-//			{
-//				//controller[i].windup = 0;
-//				//std::cout<<"Acting stupid as shit:"<<int(controller[i].autoTracking)<<std::endl;
-//			}
-//
-//			//if (controller[i].windup)
-//		  	//windupFlag.data = windupFlag.data | (1<<i);
-//		}
-
- 		//Copy to tau
-		tau.wrench.force.x = controller[u].output;
-		tau.wrench.force.y = controller[v].output;
-		tau.wrench.force.z = controller[w].output;
-		tau.wrench.torque.x = controller[p].output;
-		tau.wrench.torque.y = controller[q].output;
-		tau.wrench.torque.z = controller[r].output;
-
-		//Restart values
-		windupNote = newReference = newEstimate = false;
-		tauOut.publish(tau);
-	}
-	else
-	{
-		ROS_WARN("VelocityControl - messages are out of sync.");
-	}
-
-	//tauOut.publish(tau);
-	windup.publish(windupFlag);
+	handler[mode](tau);
 }
 
 void VelocityControl::start()
