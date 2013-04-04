@@ -42,13 +42,19 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/String.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/Imu.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <ros/ros.h>
+#include <gps_common/conversions.h>
 
 #include <Eigen/Dense>
 
 #include <boost/bind.hpp>
 
 #include <sstream>
+#include <string>
 
 nav_msgs::Odometry* mapToOdometry(const labust::simulation::vector& eta, const labust::simulation::vector& nu, nav_msgs::Odometry* odom)
 {
@@ -109,6 +115,60 @@ auv_msgs::NavSts* mapToNavSts(const labust::simulation::vector& eta, const labus
 	return nav;
 }
 
+sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, const labust::simulation::vector& nu, sensor_msgs::NavSatFix* fix,
+		const std::string& utmzone, tf::TransformListener& lisWorld, tf::TransformBroadcaster& gpsBroadcast)
+{
+	using namespace labust::simulation;
+	using namespace Eigen;
+
+	tf::StampedTransform transform;
+	try
+	{
+	    lisWorld.lookupTransform("world", "gps_frame", ros::Time(0), transform);
+	}
+	catch (tf::TransformException& ex)
+	{
+	   ROS_ERROR("%s",ex.what());
+	}
+
+	fix->altitude = transform.getOrigin().z();
+	gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
+  fix->header.stamp = ros::Time::now();
+  fix->header.frame_id = "world";
+
+	return fix;
+}
+
+sensor_msgs::Imu* mapToImu(const labust::simulation::vector& eta,
+		const labust::simulation::vector& nu, const labust::simulation::vector& nuacc,
+		sensor_msgs::Imu* imu, tf::TransformBroadcaster& imuBroadcast)
+{
+	using namespace labust::simulation;
+	using namespace Eigen;
+
+	imu->header.stamp = ros::Time::now();
+	imu->header.frame_id = "imu_frame";
+	imu->linear_acceleration.x = nuacc(VehicleModel6DOF::x);
+	imu->linear_acceleration.y = nuacc(VehicleModel6DOF::y);
+	imu->linear_acceleration.z = nuacc(VehicleModel6DOF::z);
+	imu->angular_velocity.x = nu(VehicleModel6DOF::p);
+	imu->angular_velocity.y = nu(VehicleModel6DOF::q);
+	imu->angular_velocity.z = nu(VehicleModel6DOF::r);
+	tf::Quaternion quat = tf::createQuaternionFromRPY(eta(VehicleModel6DOF::phi),
+			eta(VehicleModel6DOF::theta),eta(VehicleModel6DOF::psi));
+	imu->orientation.x = quat.x();
+	imu->orientation.y = quat.y();
+	imu->orientation.z = quat.z();
+	imu->orientation.w = quat.w();
+
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(0, 0, 0));
+	transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	imuBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
+
+	return imu;
+}
+
 void handleTau(labust::simulation::vector* tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	using namespace labust::simulation;
@@ -130,6 +190,7 @@ void handleCurrent(labust::simulation::vector* current, const std_msgs::String::
 //Simple dynamics simulation only ROS node
 //\todo Add allocation algorithm
 //\todo Add thruster nonlinearity ?
+//\todo Separate GPS, Imu sim into simulation nodelets with noise
 int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"model_node");
@@ -146,13 +207,35 @@ int main(int argc, char* argv[])
 	ros::Publisher stateNoisy = nh.advertise<auv_msgs::NavSts>("noisy_meas",1);
 	ros::Publisher uwsim = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
+	ros::Publisher gpsFix = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
+	ros::Publisher imuMeas = nh.advertise<sensor_msgs::Imu>("imu_model",1);
 	//Subscribers
 	labust::simulation::vector tau(labust::simulation::zero_v(6)), current(labust::simulation::zero_v(3));
 	ros::Subscriber tauSub = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&tau,_1));
 	ros::Subscriber curSub = nh.subscribe<std_msgs::String>("currents", 1, boost::bind(&handleCurrent,&current,_1));
+	//Transform broadcasters
+	tf::TransformBroadcaster localFrame;
+	tf::TransformListener lisWorld;
+	double originLat(0), originLon(0);
+	nh.param("LocalOriginLat",originLat,originLat);
+	nh.param("LocalOriginLon",originLon,originLon);
+
+	double northing, easting;
+	std::string utmzone;
+	tf::Transform transform;
+	gps_common::LLtoUTM(originLat, originLon,northing,easting,utmzone);
+	std::cout.precision(10);
+	std::cout<<"Northing:"<<northing<<","<<easting<<std::endl;
+	transform.setOrigin(tf::Vector3(easting, northing, 0));
+	transform.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
+	localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
+	transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+	localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "localDeg"));
 
 	auv_msgs::NavSts nav,navNoisy;
 	nav_msgs::Odometry odom;
+	sensor_msgs::NavSatFix fix;
+	sensor_msgs::Imu imu;
 
 	double fs(10);
 	ph.param("Rate",fs,fs);
@@ -175,6 +258,7 @@ int main(int argc, char* argv[])
 	//Scaling allocation only for XYN
 	labust::vehicles::ScaleAllocation allocator(B,maxThrust,minThrust);
 
+	ros::Time lastGps = ros::Time::now();
 	while (ros::ok())
 	{
 		using namespace labust::simulation;
@@ -202,6 +286,35 @@ int main(int argc, char* argv[])
 		uwsim.publish(*mapToOdometry(model.Eta(),model.Nu(),&odom));
 		state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));
 		stateNoisy.publish(*mapToNavSts(model.EtaNoisy(),model.NuNoisy(),&navNoisy));
+
+		if ((ros::Time::now()-lastGps).sec >=1)
+		{
+			mapToNavSatFix(model.Eta(),model.Nu(),&fix,utmzone,lisWorld,localFrame);
+			if (fix.altitude >= 0)
+			{
+				gpsFix.publish(fix);
+			}
+				lastGps = ros::Time::now();
+		}
+		imuMeas.publish(*mapToImu(model.Eta(),model.Nu(),model.NuAcc(),&imu,localFrame));
+
+		transform.setOrigin(tf::Vector3(easting, northing, 0));
+		transform.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
+
+		const vector& eta = model.Eta();
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
+				eta(VehicleModel6DOF::y),
+				eta(VehicleModel6DOF::z)));
+		transform.setRotation(tf::createQuaternionFromRPY(eta(VehicleModel6DOF::phi),eta(VehicleModel6DOF::theta),eta(VehicleModel6DOF::psi)));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+
+		tf::Transform transform2;
+		transform2.setOrigin(tf::Vector3(0, 0, -0.8));
+		transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
+		localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
+
 		rate.sleep();
 		ros::spinOnce();
 	}

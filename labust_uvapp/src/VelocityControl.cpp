@@ -35,6 +35,7 @@
 *  Created: 01.02.2013.
 *********************************************************************/
 #include <labust/control/VelocityControl.hpp>
+#include <labust/tools/rosutils.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
 #include <std_msgs/Byte.h>
@@ -50,9 +51,11 @@ using labust::control::VelocityControl;
 VelocityControl::VelocityControl():
 	windupNote(false),
 	runFlag(false),
-	nh(),
-	ph("~"),
-	lastTime(ros::Time::now())
+	nh(ros::NodeHandle()),
+	ph(ros::NodeHandle("~")),
+	lastTime(ros::Time::now()){this->onInit();}
+
+void VelocityControl::onInit()
 {
 	std::string name;
 
@@ -294,92 +297,39 @@ void VelocityControl::initialize_controller()
 {
 	ROS_INFO("Initializing velocity controller...");
 
-	for (int i=u; i<=r;++i) PIDController_init(&controller[i]);
+	Eigen::Vector6d closedLoopFreq(Eigen::Vector6d::Zero());
+	labust::tools::getMatrixParam(nh,"velocity_controller/closed_loop_freq", closedLoopFreq);
+	Eigen::Vector6d outputLimit(Eigen::Vector6d::Zero());
+	labust::tools::getMatrixParam(nh,"velocity_controller/output_limits", outputLimit);
 
-	//Get closed loop parameters
-	XmlRpc::XmlRpcValue controllerParams;
-	nh.getParam("velocity_controller/closed_loop_freq", controllerParams);
-	ROS_ASSERT(controllerParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
+	labust::tools::DynamicsModel model(nh);
+	Eigen::Vector6d alphas(model.added_mass);
+	Eigen::Vector6d alpha_mass;
+	alpha_mass<<model.mass,model.mass,model.mass,
+			model.inertia_matrix.diagonal();
+	alphas += alpha_mass;
 
-	for (int32_t i = u; i < controllerParams.size(); ++i)
-	{
-	  ROS_ASSERT(controllerParams[i].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-	  controller[i].closedLoopFreq = static_cast<double>(controllerParams[i]);
-	}
-
-	controllerParams.clear();
-	nh.getParam("velocity_controller/output_limits", controllerParams);
-	ROS_ASSERT(controllerParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-	for (int32_t i = u; i < controllerParams.size(); ++i)
-	{
-	  ROS_ASSERT(controllerParams[i].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-	  controller[i].outputLimit = static_cast<double>(controllerParams[i]);
-	}
-
-	//Get model parameters
-	std::string modelName("default");
-	nh.param("model_name",modelName,modelName);
-
-	//Inertia and added mass
-	double mass(1);
-	nh.param(modelName+"/dynamics/mass",mass,mass);
-	controller[u].modelParams[alpha] = mass;
-	controller[v].modelParams[alpha] = mass;
-	controller[w].modelParams[alpha] = mass;
-
-	XmlRpc::XmlRpcValue modelParams;
-	nh.getParam(modelName+"/dynamics/inertia_matrix", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-	controller[p].modelParams[alpha] = static_cast<double>(modelParams[0]);
-	controller[q].modelParams[alpha] = static_cast<double>(modelParams[4]);
-	controller[r].modelParams[alpha] = static_cast<double>(modelParams[8]);
-
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/added_mass", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	for (int32_t i = u; i < modelParams.size(); ++i)
-	{
-	  ROS_ASSERT(modelParams[i].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-	  controller[i].modelParams[alpha] += static_cast<double>(modelParams[i]);
-	}
-
-	//Linear damping
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/damping", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	for (int32_t i = u; i < modelParams.size(); ++i)
-	{
-	  ROS_ASSERT(modelParams[i].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-	  controller[i].modelParams[beta] = static_cast<double>(modelParams[i]);
-	}
-	//Quadratic damping
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/quadratic_damping", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	for (int32_t i = u; i < modelParams.size(); ++i)
-	{
-	  ROS_ASSERT(modelParams[i].getType() == XmlRpc::XmlRpcValue::TypeDouble);
-	  controller[i].modelParams[betaa] = static_cast<double>(modelParams[i]);
-	}
-
-	bool autoTracking(1);
+	bool autoTracking(0);
 	nh.param("velocity_controller/auto_tracking",autoTracking,autoTracking);
 
-	for (int i=u; i<=r;++i)
+	for (int32_t i = u; i <r; ++i)
 	{
-		PIFFController_tune(&controller[i]);
+		PIDController_init(&controller[i]);
+		controller[i].closedLoopFreq = closedLoopFreq(i);
+		controller[i].outputLimit = outputLimit(i);
+		controller[i].modelParams[alpha] = alphas(i);
+		controller[i].modelParams[beta] = model.damping(i);
+		controller[i].modelParams[betaa] = model.qdamping(i);
 
-		controller[i].autoTracking = 0;autoTracking;
+		PIFFController_tune(&controller[i]);
+		controller[i].autoTracking = autoTracking;
 
 		ROS_INFO("Controller %d:",i);
 		ROS_INFO("ModelParams: %f %f %f",controller[i].modelParams[alpha], controller[i].modelParams[beta],
 				controller[i].modelParams[betaa]);
 		ROS_INFO("Gains: %f %f %f",controller[i].gains[Kp], controller[i].gains[Ki],
 				controller[i].gains[Kt]);
-
 	}
 
-  ROS_INFO("Velocity controller initialized.");
+	ROS_INFO("Velocity controller initialized.");
 }

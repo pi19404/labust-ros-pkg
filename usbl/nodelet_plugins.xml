@@ -1,0 +1,13 @@
+<library path="lib/libusbl-plugs">
+  <class name="usbl/USBLNodelet" type="labust::tritech::USBLNodelet" base_class_type="nodelet::Nodelet">
+  <description>
+  	The nodelet contacts the Seanet server and takes over control of the USBL acquisition.
+  </description>
+  </class>
+  <class name="usbl/USBLFilter" type="labust::tritech::USBLFilter" base_class_type="nodelet::Nodelet">
+  <description>
+  	The nodelet performs kinematic filtering of USBL measurements and pusblishes estimates with a steady
+  	rate.
+  </description>
+  </class>
+</library>

@@ -2,9 +2,9 @@
 <robot name="cart2">
   <link name="base_link">
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.15"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://cart_sim/data/robot/cart2.wrl"/>
+        <mesh filename="package://cart2/data/robots/cart2.wrl"/>
       </geometry>
     </visual>
   </link>

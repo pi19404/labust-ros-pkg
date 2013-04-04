@@ -1,6 +1,9 @@
 #The model parameters for the controller
 model_name: falcon
 
+LocalOriginLat: 45.784340
+LocalOriginLon: 15.910633
+
 falcon/dynamics/mass: 536
 falcon/dynamics/inertia_matrix: [25.0, 0.0, 0.0, 0.0, 50.0, 0.0, 0.0, 0.0, 50.0]
 falcon/dynamics/added_mass: [30.0,80.0,80.0,15.0,30.0,30.0]

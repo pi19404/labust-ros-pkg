@@ -30,119 +30,121 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
+*
+*  Author: Dula Nad
+*  Created: 02.04.2013.
 *********************************************************************/
-#ifndef VELOCITYCONTROL_HPP_
-#define VELOCITYCONTROL_HPP_
-#include <labust/control/PIDController.h>
+#ifndef USBLNODELET_HPP_
+#define USBLNODELET_HPP_
+#include <labust/tritech/tritechfwd.hpp>
 
-#include <auv_msgs/NavSts.h>
-#include <auv_msgs/BodyVelocityReq.h>
-#include <auv_msgs/BodyForceReq.h>
-#include <ros/ros.h>
 #include <std_msgs/String.h>
+#include <tf/transform_broadcaster.h>
+#include <nodelet/nodelet.h>
+#include <ros/ros.h>
 
+#include <boost/thread.hpp>
+
+#include <string>
 
 namespace labust
 {
-	namespace control
+	namespace tritech
 	{
 		/**
-		 * The class contains the implementation of the velocity controller, manual control manager and model identification.
+		 * The class implements the Tritech USBL acquisition nodelet.
 		 */
-		class VelocityControl
+		class USBLNodelet : public nodelet::Nodelet
 		{
-			enum {u=0,v,w,p,q,r};
-			enum {X=0,Y,Z,K,M,N};
-			enum {alpha=0,beta,betaa};
-			enum {Kp=0,Ki,Kd,Kt};
-
 		public:
 			/**
-			 * Main constructor
+			 * Default constructor.
 			 */
-			VelocityControl();
+			USBLNodelet();
 			/**
-			 * Initialize and setup controller.
+			 * Default destructor.
+			 */
+			~USBLNodelet();
+
+			/**
+			 * Node initialization.
 			 */
 			void onInit();
+			/**
+			 * The main run method.
+			 */
+			void run();
+
+		protected:
+			/**
+			 * Handles arrived USBL navigation messages.
+			 */
+			void onNavMsg(labust::tritech::TCONMsgPtr tmsg);
+			/**
+			 * Handles other USBL messages.
+			 */
+			void onTCONMsg(labust::tritech::TCONMsgPtr tmsg);
+			/**
+			 * Handles outgoing messages requests.
+			 */
+			void onOutgoingMsg(const std_msgs::String::ConstPtr msg);
 
 			/**
-			 * Start the controller main loop.
+			 * The USBL device.
 			 */
-			void start();
+			TCPDevicePtr usbl;
 			/**
-			 * Stop the controller loop execution
+			 * The USBL address.
 			 */
-			inline void stop(){this->runFlag = false;};
+			std::string address;
+			/**
+			 * The USBL port.
+			 */
+			int port;
+			/**
+			 * Last message from USBL.
+			 */
+			ros::Time lastUSBL;
+			/**
+			 * The outgoing message.
+			 */
+			std::string msg_out;
+			/**
+			 * The USBL status.
+			 */
+			bool usblBusy;
+			/**
+			 * The lock condition variable.
+			 */
+			boost::condition_variable usblCondition;
 
 			/**
-			 * Performs one iteration.
+			 * The data and condition mux.
 			 */
-			void step();
-
-		private:
+			boost::mutex dataMux, pingLock;
 			/**
-			 * Handle incoming reference message.
+			 * The worker thread.
 			 */
-			void handleReference(const auv_msgs::BodyVelocityReq::ConstPtr& ref);
-			/**
-			 * Handle incoming measurement message.
-			 */
-			void handleMeasurements(const auv_msgs::NavSts::ConstPtr& measurement);
-			/**
-			 * Handle incoming estimates message.
-			 */
-			void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate);
-			/**
-			 * Handle incoming estimates message.
-			 */
-			void handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau);
-			/**
-			 * Message updates.
-			 */
-			bool newReference, newEstimate, newMeasurement;
+			boost::thread worker;
 
 			/**
-			 * Initialize the controller parameters etc.
+			 * The navigation and incoming data publisher.
 			 */
-			void initialize_controller();
+			ros::Publisher navPub, dataPub;
 			/**
-			 * The velocity controllers.
+			 * The outgoing data subscription.
 			 */
-			PIDController controller[r+1];
+			ros::Subscriber dataSub;
 			/**
-			 * Enable/disable controllers, external windup flag.
+			 * USBL frame transformation broadcaster.
 			 */
-			bool disable_axis[r+1], windupNote;
-
-			/**
-			 * The loop control flag.
-			 */
-			bool runFlag;
-
-			/**
-			 * The publisher of the TAU and status command.
-			 */
-			ros::Publisher tauOut,windup;
-			/**
-			 * The subscribed topics.
-			 */
-			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn, tauAch;
-			/**
-			 * The ROS node handles.
-			 */
-			ros::NodeHandle nh,ph;
-			/**
-			 * The last execution time.
-			 */
-			ros::Time lastTime;
-			/**
-			 * Use message or time driven operation.
-			 */
-			bool synced;
+			tf::TransformBroadcaster frameBroadcast;
 		};
 	}
 }
 
-/* VELOCITYCONTROL_HPP_ */
+/* USBLNODELET_HPP_ */
 #endif
+
+
+

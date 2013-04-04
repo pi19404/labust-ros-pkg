@@ -1,0 +1,8 @@
+<launch> 
+  <group ns="cart2">
+		<node pkg="gps_common" name="latlon2utm" type="utm_odometry_node">
+ 			<param name="frame_id" value="world" />
+      <param name="child_frame_id" value="world" />
+    </node>
+  </group>
+</launch>

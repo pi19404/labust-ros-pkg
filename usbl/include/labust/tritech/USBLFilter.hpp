@@ -32,20 +32,88 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *
 *  Author: Dula Nad
-*  Created: 01.02.2013.
+*  Created: 02.04.2013.
 *********************************************************************/
-#include <labust/control/VelocityControl.hpp>
+#ifndef USBLFILTER_HPP_
+#define USBLFILTER_HPP_
+#include <labust/navigation/KFCore.hpp>
+#include <labust/navigation/KinematicModel.hpp>
 
-int main(int argc, char* argv[])
+#include <tf/transform_listener.h>
+#include <geometry_msgs/PointStamped.h>
+#include <nodelet/nodelet.h>
+#include <ros/ros.h>
+
+#include <boost/thread.hpp>
+
+#include <string>
+
+namespace labust
 {
-	ros::init(argc,argv,"velocity_control");
-	//Initialize
-	labust::control::VelocityControl controller;
+	namespace tritech
+	{
+		/**
+		 * The class implements the Tritech USBL acquisition nodelet.
+		 */
+		class USBLFilter : public nodelet::Nodelet
+		{
+			typedef labust::navigation::KFCore<labust::navigation::KinematicModel> KFilter;
+		public:
+			/**
+			 * Default constructor.
+			 */
+			USBLFilter();
+			/**
+			 * Default destructor.
+			 */
+			~USBLFilter();
 
-	//Start execution.
-	controller.start();
-	return 0;
+			/**
+			 * Node initialization.
+			 */
+			void onInit();
+			/**
+			 * The main run method.
+			 */
+			void run();
+
+		protected:
+			/**
+			 * Handles arrived USBL navigation messages.
+			 */
+			void onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg);
+
+			/**
+			 * The USBL device.
+			 */
+			KFilter filter;
+			/**
+			 * The data and condition mux.
+			 */
+			boost::mutex dataMux;
+			/**
+			 * The worker thread.
+			 */
+			boost::thread worker;
+
+			/**
+			 * The navigation publisher.
+			 */
+			ros::Publisher navPub;
+			/**
+			 * The usbl measurement subscriber.
+			 */
+			ros::Subscriber usblSub;
+			/**
+			 * Frame transform listener.
+			 */
+			tf::TransformListener listener;
+		};
+	}
 }
+
+/* USBLNODELET_HPP_ */
+#endif
 
 
 
