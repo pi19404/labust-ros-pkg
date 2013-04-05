@@ -25,17 +25,21 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   SetHighLevelController.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
 #   std_msgs  # Or other packages containing msgs
 # )
+
+###################################################
+## Dynamic reconfigure
+###################################################
+generate_dynamic_reconfigure_options(cfg/VelCon.cfg)
 
 ###################################################
 ## Declare things to be passed to other projects ##
@@ -50,6 +54,8 @@ catkin_package(
    CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs
 #  DEPENDS system_lib
 )
+
+
 
 ###########
 ## Build ##
@@ -82,7 +88,8 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 #target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
 ## Add dependencies to the executable
-#add_dependencies(labust_uvapp_node ${PROJECT_NAME}_gencfg)
+add_dependencies(velocity_control ${PROJECT_NAME}_gencfg)
+add_dependencies(velocity_control ${PROJECT_NAME}_gensrv)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(labust_uvapp_node

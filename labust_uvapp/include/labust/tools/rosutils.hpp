@@ -55,6 +55,11 @@ namespace labust
 		void getMatrixParam(const ::ros::NodeHandle& nh, const std::string& name,
 				const Eigen::MatrixBase<Derived>& matrix)
 		{
+			if (!nh.hasParam(name))
+			{
+				ROS_INFO("Configuration paramter %s not found",name.c_str());
+				return;
+			}
 			XmlRpc::XmlRpcValue data;
 			nh.getParam(name, data);
 			ROS_ASSERT(data.getType() == XmlRpc::XmlRpcValue::TypeArray);
@@ -78,7 +83,6 @@ namespace labust
 
 				if (basicType)
 				{
-					std::cout<<"Size:"<<row<<","<<col<<std::endl;
 					const_cast< Eigen::MatrixBase<Derived>& >(matrix)(row,col++) =
 							static_cast< typename Eigen::MatrixBase<Derived>::Scalar >(data[i]);
 					if (col>=matrix.cols())

@@ -238,9 +238,11 @@ int main(int argc, char* argv[])
 	sensor_msgs::Imu imu;
 
 	double fs(10);
+	int wrap(1);
 	ph.param("Rate",fs,fs);
+	ph.param("ModelWrap",wrap,wrap);
 	ros::Rate rate(fs);
-	model.setTs(1/fs);
+	model.setTs(1/(fs*wrap));
 
 	//Construct the allocation matrix for the vehicle.
 	//We can have it fixed here since this is a specific application.
@@ -285,7 +287,8 @@ int main(int argc, char* argv[])
 		tauAch.publish(t);
 
 		model.setCurrent(current);
-		model.step(tau);
+		//Perform simulation with smaller sampling type if wrap>1
+		for (size_t i=0; i<wrap;++i) model.step(tau);
 
 		uwsim.publish(*mapToOdometry(model.Eta(),model.Nu(),&odom));
 		state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));

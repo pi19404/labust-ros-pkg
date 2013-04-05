@@ -34,6 +34,9 @@
 #ifndef VELOCITYCONTROL_HPP_
 #define VELOCITYCONTROL_HPP_
 #include <labust/control/PIDController.h>
+#include <labust/control/SOIdentification.hpp>
+#include <labust_uvapp/VelConConfig.h>
+#include <dynamic_reconfigure/server.h>
 
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyVelocityReq.h>
@@ -60,6 +63,10 @@ namespace labust
 			enum {X=0,Y,Z,K,M,N};
 			enum {alpha=0,beta,betaa};
 			enum {Kp=0,Ki,Kd,Kt};
+			enum {disableAxis=0,
+				manualAxis=1,
+				controlAxis=2,
+				identAxis=3};
 
 		public:
 			/**
@@ -70,20 +77,14 @@ namespace labust
 			 * Initialize and setup controller.
 			 */
 			void onInit();
-
-			/**
-			 * Start the controller main loop.
-			 */
-			void start();
-			/**
-			 * Stop the controller loop execution
-			 */
-			inline void stop(){this->runFlag = false;};
-
 			/**
 			 * Performs one iteration.
 			 */
 			void step();
+			/**
+			 * Start the controller loop.
+			 */
+			void start();
 
 		private:
 			/**
@@ -91,13 +92,13 @@ namespace labust
 			 */
 			void handleReference(const auv_msgs::BodyVelocityReq::ConstPtr& ref);
 			/**
-			 * Handle incoming measurement message.
-			 */
-			void handleMeasurements(const auv_msgs::NavSts::ConstPtr& measurement);
-			/**
 			 * Handle incoming estimates message.
 			 */
 			void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate);
+			/**
+			 * Handle incoming estimates message.
+			 */
+			void handleMeasurement(const auv_msgs::NavSts::ConstPtr& meas);
 			/**
 			 * Handle incoming estimates message.
 			 */
@@ -107,22 +108,33 @@ namespace labust
 			 */
 			void handleManual(const sensor_msgs::Joy::ConstPtr& joy);
 			/**
-			 * Handle incoming estimates message.
+			 * Dynamic reconfigure callback.
 			 */
-			void handleOpMode(const std_msgs::String::ConstPtr& mode);
+			void dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level);
 			/**
-			 * Message updates.
+			 * The safety test.
 			 */
-			bool newReference, newEstimate, newMeasurement;
-
+			void safetyTest();
 			/**
-			 * The VelocityControl mode.
+			 * Update the dynamic reconfiguration settings.
 			 */
-			void stepVC(auv_msgs::BodyForceReq& tau);
+			void updateDynRecConfig();
 			/**
-			 * The manual control mode.
+			 * Perform the identification step.
 			 */
-			void stepManual(auv_msgs::BodyForceReq& tau);
+			double doIdentification(int i);
+			/**
+			 * The ROS node handles.
+			 */
+			ros::NodeHandle nh,ph;
+			/**
+			 * Last message times.
+			 */
+			ros::Time lastRef, lastMan, lastEst, lastMeas;
+			/**
+			 * Timeout
+			 */
+			double timeout;
 
 			/**
 			 * Initialize the controller parameters etc.
@@ -133,51 +145,50 @@ namespace labust
 			 */
 			PIDController controller[r+1];
 			/**
+			 * The identification controllers.
+			 */
+			boost::shared_ptr<SOIdentification> ident[r+1];
+			/**
+			 * The mesurement needed for identification.
+			 */
+			double measurement[r+1];
+			/**
 			 * Joystick message.
 			 */
 			float tauManual[N+1];
 			/**
 			 * Joystick scaling.
 			 */
-			double joy_scale;
+			double joy_scale, Ts;
 			/**
 			 * Enable/disable controllers, external windup flag.
 			 */
-			bool disable_axis[r+1];
+			int axis_control[r+1];
 
 			/**
-			 * The loop control flag.
+			 * The publisher of the TAU message.
 			 */
-			bool runFlag;
-
-			/**
-			 * The publisher of the TAU and status command.
-			 */
-			ros::Publisher tauOut,windup;
+			ros::Publisher tauOut;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber velocityRef, stateHat, stateMeas, manualIn, tauAch, opMode;
+			ros::Subscriber velocityRef, stateHat, manualIn, tauAch, measSub;
 			/**
-			 * The ROS node handles.
+			 * High level controller service.
 			 */
-			ros::NodeHandle nh,ph;
+			ros::ServiceServer highLevelSelect;
 			/**
-			 * The last execution time.
+			 * The dynamic reconfigure parameters.
 			 */
-			ros::Time lastTime;
+			labust_uvapp::VelConConfig config;
 			/**
-			 * Use message or time driven operation.
+			 * The dynamic reconfigure server.
 			 */
-			bool synced;
-			/**
-			 * Current mode.
-			 */
-			std::string mode;
-			/**
-			 * The mode reaction map.
-			 */
-			std::map<std::string, boost::function<void(auv_msgs::BodyForceReq&)> > handler;
+		  dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
+		  /**
+		   * Variable access helper mass.
+		   */
+		  const static std::string dofName[r+1];
 		};
 	}
 }

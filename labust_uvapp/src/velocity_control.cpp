@@ -41,7 +41,6 @@ int main(int argc, char* argv[])
 	ros::init(argc,argv,"velocity_control");
 	//Initialize
 	labust::control::VelocityControl controller;
-
 	//Start execution.
 	controller.start();
 	return 0;

@@ -273,7 +273,7 @@ class DynamicPositioning:
         if self.Ts > 0.2: self.Ts = 0.1;
         self.Ts = 0.1;
         
-        rospy.loginfo("DynamicPositioning: sampling time %f",self.Ts);
+        #rospy.loginfo("DynamicPositioning: sampling time %f",self.Ts);
         
         if self.mode == 0:
             self.stepSSbackward();
