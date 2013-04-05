@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 	aidnav_msgs)
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED serialization thread system)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and scripts declared therein get installed
@@ -77,8 +77,7 @@ include_directories(include include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS
 add_library(blueview-nodelet src/BVSonarRos.cpp)
 
 ## Add dependencies to the executable
-add_dependencies(blueview-nodelet BVSonar_gencfg) 
-# add_dependencies(bvt_sdk_node ${PROJECT_NAME})
+add_dependencies(blueview-nodelet ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(blueview-nodelet bvtsdk ${catkin_LIBRARIES})

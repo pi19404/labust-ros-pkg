@@ -139,7 +139,7 @@ switch resampling_strategy
       u1 = rand/Ns;
       % this works like the inverse of the empirical distribution and returns
       % the interval where the sample is to be found
-      %[~, idx] = histc(u1:1/Ns:1, edges);
+      [~, idx] = histc(u1:1/Ns:1, edges);
    % case 'regularized_pf'      TO BE IMPLEMENTED
    % case 'stratified_sampling' TO BE IMPLEMENTED
    % case 'residual_sampling'   TO BE IMPLEMENTED
