@@ -41,7 +41,10 @@ using namespace labust::vehicles;
 
 PlaDyPosNode::PlaDyPosNode():
 	io(),
-	port(io){}
+	port(io),
+	lastTau(ros::Time::now()),
+	timeout(0.5),
+	revControl(false){}
 
 PlaDyPosNode::~PlaDyPosNode(){}
 
@@ -75,6 +78,7 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 
   if (port.is_open())
   {
+  	ROS_INFO("Port %s on is open.", portName.c_str());
     port.set_option(boost::asio::serial_port::baud_rate(baud));
     //port.set_option(serial_port::flow_control(config->flowControl));
     //port.set_option(serial_port::parity(config->parity));
@@ -83,13 +87,59 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
   }
   else
   {
-  	ROS_WARN("Port %s on open.", portName.c_str());
+  	ROS_WARN("Port %s on is not open.", portName.c_str());
   }
+
+	//Configure the dynamic reconfigure server
+  server.setCallback(boost::bind(&PlaDyPosNode::dynrec, this, _1, _2));
+
+  safety = boost::thread(boost::bind(&PlaDyPosNode::safetyTest, this));
 }
 
+void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t level)
+{
+	revControl = config.enableRevs;
+
+	if (revControl)
+	{
+		int n[4]={config.rev0, config.rev1, config.rev2, config.rev3};
+
+		if (config.lock12) n[1] = n[0];
+		if (config.lock34) n[3] = n[2];
+		std::ostringstream out("");
+		for (int i=0; i<4;++i)
+		{
+			out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+		}
+
+		std::string todriver(out.str());
+		boost::mutex::scoped_lock lock(serialMux);
+		boost::asio::write(port,boost::asio::buffer(todriver));
+		ROS_INFO("Revoultion control enabled. Sending: %s",todriver.c_str());
+	}
+}
+
+void PlaDyPosNode::safetyTest()
+{
+	ros::Rate rate(5);
+
+	while (ros::ok())
+	{
+		if (((ros::Time::now() - lastTau).toSec() > timeout) && !revControl)
+		{
+			ROS_WARN("Timeout triggered.");
+			std::string todriver("(P0,0,0)(P1,0,0)(P2,0,0)(P3,0,0)");
+			boost::mutex::scoped_lock lock(serialMux);
+			boost::asio::write(port,boost::asio::buffer(todriver));
+		}
+		rate.sleep();
+	}
+}
 
 void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 {
+	lastTau = ros::Time::now();
+	if (revControl) return;
 	//Perform allocation
 	Eigen::Vector3f tauXYN,tauXYNsc;
 	Eigen::Vector4f tauI;
@@ -116,15 +166,15 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 
 	for (int i=0; i<4;++i)
 	{
+		//Here we need the thruster mapping
 		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
 		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
 	}
 
-	//if (tauI(0)<0.1) out<<"(P0,0,0)(P1,0,0)(P2,0,0)(P3,0,0)";
-	//else out<<"(P0,0,0)(P1,0,0)(P2,40,1)(P3,40,0)";
 	std::string todriver(out.str());
 	ROS_INFO("Revolutions output:%s\n",todriver.c_str());
 	ROS_INFO("Revs: %d %d %d %d\n",n[0],n[1],n[2],n[3]);
 
+	boost::mutex::scoped_lock lock(serialMux);
 	boost::asio::write(port,boost::asio::buffer(todriver));
 }

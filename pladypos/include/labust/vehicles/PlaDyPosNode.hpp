@@ -34,13 +34,16 @@
 #ifndef PLADYPOSNODE_HPP_
 #define PLADYPOSNODE_HPP_
 #include <labust/vehicles/ScaleAllocation.hpp>
+#include <pladypos/ThrusterMappingConfig.h>
 
 #include <auv_msgs/BodyForceReq.h>
+#include <dynamic_reconfigure/server.h>
 #include <ros/ros.h>
 
 #include <Eigen/Dense>
 
 #include <boost/asio.hpp>
+#include <boost/thread.hpp>
 
 namespace labust
 {
@@ -81,12 +84,44 @@ namespace labust
 			 * Handles the arrived force and torque requests.
 			 */
 			void onTau(const auv_msgs::BodyForceReq::ConstPtr tau);
+			/**
+			 * Safety function.
+			 */
+			void safetyTest();
+			/**
+			 * Dynamic reconfigure service.
+			 */
+			void dynrec(pladypos::ThrusterMappingConfig& config, uint32_t level);
+			/**
+			 * The safety test thread.
+			 */
+			boost::thread safety;
+			/**
+			 * The output mutex.
+			 */
+			boost::mutex serialMux;
+			/**
+			 * The last TAU.
+			 */
+			ros::Time lastTau;
+			/**
+			 * The timeout.
+			 */
+			double timeout;
+
+			/**
+			 * Dynamic reconfigure server.
+			 */
+			dynamic_reconfigure::Server<pladypos::ThrusterMappingConfig> server;
+			/**
+			 * The external revolution control flag.
+			 */
+			bool revControl;
 
 			/**
 			 * The asio IO service.
 			 */
 			boost::asio::io_service io;
-
 			/**
 			 * The pladypos serial port.
 			 */
@@ -96,6 +131,9 @@ namespace labust
 			 * Allocation matrix and maximum force, torque.
 			 */
 			Eigen::Matrix<float, 3,4> B;
+			/**
+			 * The scale allocator.
+			 */
 			ScaleAllocation allocator;
 		};
 	}
