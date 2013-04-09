@@ -86,8 +86,26 @@
 			<p>0</p>
 			<y>0</y>
 		</orientation>
+		<virtualCamera>
+			<name>cam0</name>
+			<relativeTo>base_link</relativeTo>
+			<resw>640</resw>
+			<resh>480</resh>
+			<position>
+				<x>0</x>
+				<y>0</y>
+				<z>-0.25</z>
+			</position>
+			<orientation>
+				<r>0</r>
+				<p>-0.26</p>
+				<y>3.14159</y>
+			</orientation>
+			<!-- draws the FOV of the camera projected on the scene each 2 seconds -->
+			<!-- <showpath>2</showpath> -->
+		</virtualCamera>
 
-		<imu>
+<!-- 	<imu>
 			<name>imu</name>
 			<relativeTo>base_link</relativeTo>
 			<position>
@@ -102,22 +120,6 @@
 			</orientation>
 			<std>0.00000001</std>
 		</imu>
-
-		<pressureSensor>
-			<name>PressureSensor</name>
-			<relativeTo>base_link</relativeTo>
-			<position>
-				<x>0</x>
-				<y>0</y>
-				<z>0</z>
-			</position>
-			<orientation>
-				<r>0</r>
-				<p>0</p>
-				<y>0</y>
-			</orientation>
-			<std>0.02</std>
-		</pressureSensor>
 
 		<gpsSensor>
 			<name>GPSSensor</name>
@@ -149,7 +151,7 @@
 				<y>0</y>
 			</orientation>
 			<std>0.000</std>
-		</dvlSensor>
+		</dvlSensor> -->
 	</vehicle>
 
 	<object>
@@ -173,7 +175,12 @@
 			<vehicleName>cart2</vehicleName>
 			<visualize>1</visualize>
 		</ROSOdomToPAT>
-		<ImuToROSImu>
+		<VirtualCameraToROSImage> 
+      		<cameraName>cam0</cameraName>
+      		<imageTopic>cam0</imageTopic>
+      		<infoTopic>cam0_info</infoTopic>
+    	</VirtualCameraToROSImage>
+		<!--  <ImuToROSImu>
 			<name>imu</name>
 			<topic>imu</topic>
 			<rate>10</rate>
@@ -192,7 +199,7 @@
 			<name>DVLSensor</name>
 			<topic>dvl</topic>
 			<rate>1</rate>
-		</DVLSensorToROS>
+		</DVLSensorToROS> -->
 	</rosInterfaces>
 </UWSimScene>
 

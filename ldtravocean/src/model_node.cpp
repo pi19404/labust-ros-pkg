@@ -56,35 +56,59 @@
 #include <sstream>
 #include <string>
 
-nav_msgs::Odometry* mapToOdometry(const labust::simulation::vector& eta, const labust::simulation::vector& nu, nav_msgs::Odometry* odom)
+nav_msgs::Odometry* mapToUWSimOdometry(const labust::simulation::vector& eta,
+		const labust::simulation::vector& nu,
+		nav_msgs::Odometry* odom,
+		tf::TransformListener& lisWorld)
 {
 	using namespace labust::simulation;
 	using namespace Eigen;
 
-	odom->pose.pose.position.x = eta(VehicleModel6DOF::x);
+	/*odom->pose.pose.position.x = eta(VehicleModel6DOF::x);
 	odom->pose.pose.position.y = eta(VehicleModel6DOF::y);
 	odom->pose.pose.position.z = eta(VehicleModel6DOF::z);
 	Matrix3f m;
 	m = AngleAxisf(eta(VehicleModel6DOF::psi), Vector3f::UnitZ())*
 		AngleAxisf(eta(VehicleModel6DOF::theta), Vector3f::UnitY())*
-		AngleAxisf(eta(VehicleModel6DOF::phi), Vector3f::UnitX());
+		AngleAxisf(eta(VehicleModel6DOF::phi), Vector3f::UnitX());*/
 
-	Quaternion<float> q(m);
+	tf::StampedTransform transform;
+	try
+	{
+	    lisWorld.lookupTransform("uwsim_frame", "base_link", ros::Time(0), transform);
+	}
+	catch (tf::TransformException& ex)
+	{
+	   ROS_ERROR("%s",ex.what());
+	}
+
+	/*Quaternion<float> q(m);
 
 	odom->pose.pose.orientation.x = q.x();
 	odom->pose.pose.orientation.y = q.y();
 	odom->pose.pose.orientation.z = q.z();
-	odom->pose.pose.orientation.w = q.w();
+	odom->pose.pose.orientation.w = q.w();*/
 
-	odom->twist.twist.linear.x = nu(VehicleModel6DOF::u);
+  odom->twist.twist.linear.x = nu(VehicleModel6DOF::u);
 	odom->twist.twist.linear.y = nu(VehicleModel6DOF::v);
 	odom->twist.twist.linear.z = nu(VehicleModel6DOF::w);
 
 	odom->twist.twist.angular.x = nu(VehicleModel6DOF::p);
 	odom->twist.twist.angular.y = nu(VehicleModel6DOF::q);
 	odom->twist.twist.angular.z = nu(VehicleModel6DOF::r);
+	odom->child_frame_id = "base_link";
+
+	odom->pose.pose.orientation.x = transform.getRotation().x();
+	odom->pose.pose.orientation.y = transform.getRotation().y();
+	odom->pose.pose.orientation.z = transform.getRotation().z();
+	odom->pose.pose.orientation.w = transform.getRotation().w();
+
+	odom->pose.pose.position.x = transform.getOrigin().x();
+	odom->pose.pose.position.y = transform.getOrigin().y();
+	odom->pose.pose.position.z = transform.getOrigin().z();
 
 	odom->header.stamp = ros::Time::now();
+	odom->header.frame_id = "uwsim_hook";
 
 	return odom;
 }
@@ -290,7 +314,7 @@ int main(int argc, char* argv[])
 		//Perform simulation with smaller sampling type if wrap>1
 		for (size_t i=0; i<wrap;++i) model.step(tau);
 
-		uwsim.publish(*mapToOdometry(model.Eta(),model.Nu(),&odom));
+		uwsim.publish(*mapToUWSimOdometry(model.Eta(),model.Nu(),&odom, lisWorld));
 		state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));
 		stateNoisy.publish(*mapToNavSts(model.EtaNoisy(),model.NuNoisy(),&navNoisy));
 
@@ -321,6 +345,11 @@ int main(int argc, char* argv[])
 		transform2.setOrigin(tf::Vector3(0, 0, -0.8));
 		transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
 		localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
+
+		tf::Transform transform3;
+		transform3.setOrigin(tf::Vector3(0, 0, 0));
+		transform3.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
+		localFrame.sendTransform(tf::StampedTransform(transform3, ros::Time::now(), "local", "uwsim_frame"));
 
 		rate.sleep();
 		ros::spinOnce();

@@ -126,7 +126,7 @@ void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 {
 	tauManual[X] = joy_scale * joy->axes[1];
 	tauManual[Y] = joy_scale * -joy->axes[0];
-	tauManual[Z] = joy_scale * joy->axes[3];
+	tauManual[Z] = -joy_scale * joy->axes[3];
 	tauManual[K] = 0;
 	tauManual[M] = 0;
 	tauManual[N] = joy_scale * -joy->axes[2];
@@ -140,12 +140,13 @@ void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t lev
 
 	for(size_t i=u; i<=r; ++i)
 	{
-		int newMode;
+		int newMode(0);
 		ph.getParam(dofName[i]+"_mode", newMode);
 		//Stop the identification if it was aborted remotely.
 		if ((axis_control[i] == identAxis) &&
 				(newMode != identAxis) &&
 				(ident[i] != 0)) ident[i].reset();
+
 		axis_control[i] = newMode;
 	}
 }
