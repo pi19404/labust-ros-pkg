@@ -1,0 +1,5 @@
+<launch>
+  <param name="robot_description" command="cat $(find cart2)/launch/model.xml" />
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+  <node name="state_publisher" pkg="cart2" type="model_urdf" />
+</launch>
