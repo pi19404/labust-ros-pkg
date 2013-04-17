@@ -4,10 +4,12 @@ project(cart2)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs)
+find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED)
+find_package(Eigen REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -74,6 +76,7 @@ include_directories(include
 ## Declare a cpp executable
 add_executable(radio_node src/radio_node.cpp)
 add_executable(cart2_node src/cart2_main.cpp)
+add_executable(imu_node src/imu_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -90,6 +93,9 @@ target_link_libraries(cart2_node
    ${Boost_THREAD_LIBRARY}
 )
 
+target_link_libraries(imu_node
+   ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
