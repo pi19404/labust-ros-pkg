@@ -51,13 +51,13 @@
 
 struct SharedData
 {
-	enum {msg_size = 120,
+	enum {msg_size = 81,
 		data_offset=1,
 		checksum = 119};
 	ros::Publisher imuPub, gpsPub;
 	tf::Transform imuPos, gpsPos;
 	tf::TransformBroadcaster broadcast;
-	char buffer[30*4];
+	unsigned char buffer[msg_size];
 };
 
 void start_receive(SharedData& shared,
@@ -77,8 +77,8 @@ void sync(SharedData& shared,
 			boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset],
 					SharedData::msg_size-SharedData::data_offset),
 						boost::bind(&handleIncoming,
-								boost::ref(shared),
-								boost::ref(port),_1,_2));
+						boost::ref(shared),
+						boost::ref(port),_1,_2));
 		}
 		else
 		{
@@ -143,24 +143,13 @@ void handleIncoming(SharedData& shared,
 	start_receive(shared,port);
 }
 
-/*void start_receive(SharedData& shared,
-		boost::asio::streambuf& sbuffer,
-		boost::asio::serial_port& port)
-{
-	boost::asio::async_read_until(port, sbuffer, boost::regex("\n"),
-				boost::bind(&handleIncoming,
-						boost::ref(shared),
-						boost::ref(sbuffer),
-						boost::ref(port),_1,_2));
-}*/
-
 void start_receive(SharedData& shared,
 		boost::asio::serial_port& port)
 {
 	boost::asio::async_read(port, boost::asio::buffer(shared.buffer,1),
 					boost::bind(&sync,
-							boost::ref(shared),
-							boost::ref(port),_1,_2));
+					boost::ref(shared),
+					boost::ref(port),_1,_2));
 }
 
 int main(int argc, char* argv[])
@@ -211,8 +200,6 @@ int main(int argc, char* argv[])
 	shared.gpsPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
 			orientation(1),orientation(2)));
 
-	//boost::asio::streambuf sbuffer;
-	//start_receive(shared,sbuffer,port);
 	start_receive(shared,port);
 	boost::thread t(boost::bind(&ba::io_service::run,&io));
 

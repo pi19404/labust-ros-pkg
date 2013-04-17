@@ -41,7 +41,7 @@ struct TauC
 
 struct TauT
 {
-	TauT(TauC Tau, float Limit)
+	TauT(TauC Tau, float Limit = 1)
 	{
 		float ScaleThrust;
 		if (fabs(Tau.Frw) + fabs(Tau.Yaw) > 1)
@@ -51,6 +51,16 @@ struct TauT
 		Port = Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
 		Stb = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
 	}
+
+	TauC getTauC()
+	{
+		TauC tau;
+		tau.Frw = (Port+Stb)/2;
+		tau.Yaw = (Port-Stb)/2;
+
+		return tau;
+	}
+
 	float Port;
 	float Stb;
 };
@@ -180,6 +190,7 @@ void SetReference(int ID, float REF) //REF from 0 to 1. 1 represents full thrust
 void ReadHandler(const boost::system::error_code& e, std::size_t size)
 //void ReadHandler(std::size_t size)
 {
+	//std::cout<<"Mode:"<<Mode<<std::endl;
 	char ChSum[1];
 	int MessageLength=1;
 	float ByteHigh, ByteLow, value;
@@ -537,6 +548,24 @@ void sendDiagnostics(ros::Publisher& diag, bool CommsOkFlag)
 	data.value = out.str();
 	status.values.push_back(data);
 
+	out.str("");
+	out<<Temperature;
+	data.key = "Temperature";
+	data.value = out.str();
+	status.values.push_back(data);
+
+	out.str("");
+	out<<Motor_Current[0];
+	data.key = "MotorCurrent1";
+	data.value = out.str();
+	status.values.push_back(data);
+
+	out.str("");
+	out<<Motor_Current[1];
+	data.key = "MotorCurrent2";
+	data.value = out.str();
+	status.values.push_back(data);
+
 	if (!CommsOkFlag)
 	{
 		status.level = status.ERROR;
@@ -554,7 +583,7 @@ int main(int argc, char* argv[])
 	int CommsCount = 0, AverCount, Count = 0;
 	size_t tSum = 10000;
 	size_t tLoop = 100;
-	labust::tools::watchdog WD(watch, tSum, tLoop);
+	//labust::tools::watchdog WD(watch, tSum, tLoop);
 	char SyncByte[] = {0x0D};
 	TauC TauControl, TauControlOld;
 	TauControl.Frw = 0;
@@ -563,7 +592,7 @@ int main(int argc, char* argv[])
 	TauControlOld.Yaw = 0;
 	std::string path, configToUse;
 	//std::cout<<"Please enter path to config file"<<std::endl;
-	//std::cin>>path;
+	//std::cin>>path;ž
 
 
 	/*path="c:/config.xml";
@@ -593,8 +622,8 @@ int main(int argc, char* argv[])
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
 
 	//Get port name from configuration and open.
-	std::string portName("/dev/ttyS0");
-	nh.param("PortName", portName,portName);
+	std::string portName("/dev/ttyUSB0");
+	ph.param("PortName", portName,portName);
 	port.open(portName);
 
 	ros::Rate rate(10);
@@ -605,6 +634,8 @@ int main(int argc, char* argv[])
 	//WD.start();
 	if (port.is_open())
 	{
+		boost::asio::write(port, boost::asio::buffer(ResetID1,sizeof(ResetID1)));
+		boost::asio::write(port, boost::asio::buffer(ResetID2,sizeof(ResetID2)));
 		port.set_option(serial_port::baud_rate(115200)); //
 		port.set_option(serial_port::flow_control(serial_port::flow_control::none));
 		port.set_option(serial_port::parity(serial_port::parity::none));
@@ -712,6 +743,7 @@ int main(int argc, char* argv[])
 		AverCount = 0;
 		while (CommsOkFlag)
 		{
+			double time = ros::Time::now().toSec();
 			//LABUST::JoystickData joystickData;
 			//joystickData = joystick->ReadJoystickData();
 
@@ -727,14 +759,21 @@ int main(int argc, char* argv[])
 			//if ((TauControl.Frw!=TauControlOld.Frw) || (TauControl.Yaw!=TauControlOld.Yaw))
 			//{
 				TauControlOld = TauControl;*/
-			TauT thrust(TauControl, 0);
+			TauT thrust(TauControl);
+			TauC achTau = thrust.getTauC();
+			///////////////ADDED ROS STUFF//////////////////////
+			auv_msgs::BodyForceReq tau;
+			tau.wrench.force.x = achTau.Frw;
+			tau.wrench.torque.z = achTau.Yaw;
+			tauAch.publish(tau);
+			////////////////////////////////////////////////////
 			// (TauC TauControl, float Limit)*/
 			//thrust.Port = 0;
 			//thrust.Stb = 0;
 			AverCount++;
-			if (AverCount < 20)
-			{thrust.Port = 0;
-			thrust.Stb = 0.15;}
+			//if (AverCount < 20)
+			//{thrust.Port = 0;
+			//thrust.Stb = 0.15;}
 			SetReference(1,thrust.Port);
 			usleep(1000*5);
 			if (!CommsOkFlag)
@@ -744,7 +783,7 @@ int main(int argc, char* argv[])
 			if (!CommsOkFlag)
 			{break;}
 
-			//std::cout<<thrust.Port<<" "<<thrust.Stb<<" "<<TauControl.Frw<<" "<<TauControl.Yaw<<" "<<std::endl;
+			std::cout<<thrust.Port<<" "<<thrust.Stb<<" "<<TauControl.Frw<<" "<<TauControl.Yaw<<" "<<std::endl;
 			//}
 
 
@@ -764,12 +803,21 @@ int main(int argc, char* argv[])
 				{CommsOkFlag = true;
 				CommsAll++;}*/
 
-			if ((AverCount == 5) || (AverCount == 15))
+			//if ((AverCount == 5) || (AverCount == 15))
 				//{printf("%f\n",Motor_Current[0]);
 				//printf("%f\n",abs(Motor_Current[1])*100);
 			{printf("%f\n",Supply_Voltage);
 			printf("%f\n",Vehicle_Current);
 			printf("%f\n",Temperature);}
+
+			//WD.reset();}
+
+			///////////ADDED ROS STUFF/////////////
+			sendDiagnostics(diagnostic, CommsOkFlag);
+			//This we exchange with ros rate
+			//rate.sleep();
+			usleep(1000*90);
+			ros::spinOnce();
 
 			CommsOkFlag = true;
 			if ((fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0001) && (fabs(Motor_Current_Previous[0] - Motor_Current[0])<0.0001) && (fabs(Motor_Current_Previous[1] - Motor_Current[1])<0.0001))
@@ -778,16 +826,9 @@ int main(int argc, char* argv[])
 				if (CommsCount == 20)
 				{CommsOkFlag = false;}
 			}
-
-			//WD.reset();}
-
-			///////////ADDED ROS STUFF/////////////
-			sendDiagnostics(diagnostic, CommsOkFlag);
-			//This we exchange with ros rate
-			//usleep(1000*100);
-			rate.sleep();
-			ros::spinOnce();
 			/////////////////////////////////////////
+
+			std::cout<<"Loop time:"<<ros::Time::now().toSec() - time<<std::endl;
 		}
 		sendDiagnostics(diagnostic, CommsOkFlag);
 		//t.join();
