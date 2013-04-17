@@ -51,13 +51,13 @@
 
 struct SharedData
 {
-	enum {msg_size = 120,
+	enum {msg_size = 82,
 		data_offset=1,
-		checksum = 119};
+		checksum = 81};
 	ros::Publisher imuPub, gpsPub;
 	tf::Transform imuPos, gpsPos;
 	tf::TransformBroadcaster broadcast;
-	char buffer[30*4];
+	unsigned char buffer[msg_size];
 };
 
 void start_receive(SharedData& shared,
@@ -74,6 +74,7 @@ void sync(SharedData& shared,
 	{
 		if (shared.buffer[0] == 0xFF)
 		{
+			std::cout<<"Sync."<<std::endl;
 			boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset],
 					SharedData::msg_size-SharedData::data_offset),
 						boost::bind(&handleIncoming,
@@ -82,6 +83,7 @@ void sync(SharedData& shared,
 		}
 		else
 		{
+			std::cout<<"No sync."<<std::endl;
 			start_receive(shared,port);
 		}
 	}
@@ -91,24 +93,30 @@ void handleIncoming(SharedData& shared,
 		boost::asio::serial_port& port,
 		const boost::system::error_code& error, const size_t& transferred)
 {
-	if (!error && (transferred == SharedData::msg_size))
+	std::cout<<"Got stuff."<<std::endl;
+	if (!error && (transferred == (SharedData::msg_size-1)))
 	{
-    char calc = 0;
-    for (size_t i=0; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
+    unsigned char calc = 0;
+    for (size_t i=1; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
 
     if (calc != shared.buffer[SharedData::checksum])
     {
     	ROS_ERROR("Wrong checksum for imu data.");
-    	return;
+    	//return;
     }
 
-    float* data(reinterpret_cast<float*>(shared.buffer[SharedData::data_offset]));
+    float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
   	enum {time = 0,
   		lat, lon, hdop,
   		accel_x, accel_y, accel_z,
   		gyro_x, gyro_y, gyro_z,
   		mag_x, mag_y, mag_z,
-  	  roll,pitch,yaw};
+  	  roll,pitch,yaw,
+	  modul,ry,mmm,mm};
+	
+	std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
+	std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
+	std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
     //Send Imu stuff
   	sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
@@ -126,6 +134,7 @@ void handleIncoming(SharedData& shared,
   	imu->orientation.z = quat.z();
   	imu->orientation.w = quat.w();
   	shared.broadcast.sendTransform(tf::StampedTransform(shared.imuPos, ros::Time::now(), "base_link", "imu_frame"));
+	shared.imuPub.publish(imu);
 
   	//Send GPS stuff
   	sensor_msgs::NavSatFix::Ptr gps(new sensor_msgs::NavSatFix());
@@ -134,11 +143,11 @@ void handleIncoming(SharedData& shared,
   	gps->longitude = data[lon];
   	gps->position_covariance[0] = data[hdop];
   	gps->position_covariance[4] = data[hdop];
-  	gps->position_covariance[9] = 9999;
+  	gps->position_covariance[8] = 9999;
   	gps->header.frame_id = "world";
   	gps->header.stamp = ros::Time::now();
-
   	shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
+	shared.gpsPub.publish(gps);
 	}
 	start_receive(shared,port);
 }

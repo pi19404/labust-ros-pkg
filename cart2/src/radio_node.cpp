@@ -37,10 +37,9 @@
 #include <std_msgs/String.h>
 #include <sensor_msgs/Joy.h>
 #include <ros/ros.h>
-
+#include <boost/regex.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
-#include <boost/regex.hpp>
 #include <boost/thread.hpp>
 
 #include <iostream>
