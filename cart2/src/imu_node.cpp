@@ -51,9 +51,9 @@
 
 struct SharedData
 {
-	enum {msg_size = 82,
-		data_offset=1,
-		checksum = 81};
+	enum {msg_size = 85,
+		data_offset=4,
+		checksum = 84};
 	ros::Publisher imuPub, gpsPub;
 	tf::Transform imuPos, gpsPos;
 	tf::TransformBroadcaster broadcast;
@@ -61,7 +61,7 @@ struct SharedData
 };
 
 void start_receive(SharedData& shared,
-		boost::asio::serial_port& port);
+		boost::asio::serial_port& port, bool single=false);
 void handleIncoming(SharedData& shared,
 		boost::asio::serial_port& port,
 		const boost::system::error_code& error, const size_t& transferred);
@@ -72,19 +72,24 @@ void sync(SharedData& shared,
 {
 	if (!error)
 	{
-		if (shared.buffer[0] == 0xFF)
+		bool flag = true;
+		for(int i=0; i<SharedData::data_offset;++i) flag = flag && (shared.buffer[i] == 0xFF);
+
+		if (flag)
 		{
 			std::cout<<"Sync."<<std::endl;
 			boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset],
 					SharedData::msg_size-SharedData::data_offset),
 						boost::bind(&handleIncoming,
-								boost::ref(shared),
-								boost::ref(port),_1,_2));
+						boost::ref(shared),
+						boost::ref(port),_1,_2));
 		}
 		else
 		{
+			//Rotate buffer to the left and read the next byte on the end.
+			for(int i=0; i<SharedData::data_offset-1;++i) shared.buffer[i] = shared.buffer[i+1];
 			std::cout<<"No sync."<<std::endl;
-			start_receive(shared,port);
+			start_receive(shared,port,true);
 		}
 	}
 }
@@ -94,10 +99,10 @@ void handleIncoming(SharedData& shared,
 		const boost::system::error_code& error, const size_t& transferred)
 {
 	std::cout<<"Got stuff."<<std::endl;
-	if (!error && (transferred == (SharedData::msg_size-1)))
+	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
     unsigned char calc = 0;
-    for (size_t i=1; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
+    for (size_t i=SharedData::data_offset; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
 
     if (calc != shared.buffer[SharedData::checksum])
     {
@@ -139,8 +144,11 @@ void handleIncoming(SharedData& shared,
   	//Send GPS stuff
   	sensor_msgs::NavSatFix::Ptr gps(new sensor_msgs::NavSatFix());
 
-  	gps->latitude = data[lat];
-  	gps->longitude = data[lon];
+	int latDeg(data[lat]/100), lonDeg(data[lon]/100);
+		
+
+  	gps->latitude = latDeg + (data[lat]/100-latDeg)/0.6;
+  	gps->longitude = lonDeg + (data[lon]/100-lonDeg)/0.6;
   	gps->position_covariance[0] = data[hdop];
   	gps->position_covariance[4] = data[hdop];
   	gps->position_covariance[8] = 9999;
@@ -152,24 +160,23 @@ void handleIncoming(SharedData& shared,
 	start_receive(shared,port);
 }
 
-/*void start_receive(SharedData& shared,
-		boost::asio::streambuf& sbuffer,
-		boost::asio::serial_port& port)
-{
-	boost::asio::async_read_until(port, sbuffer, boost::regex("\n"),
-				boost::bind(&handleIncoming,
-						boost::ref(shared),
-						boost::ref(sbuffer),
-						boost::ref(port),_1,_2));
-}*/
-
 void start_receive(SharedData& shared,
-		boost::asio::serial_port& port)
+		boost::asio::serial_port& port, bool single)
 {
-	boost::asio::async_read(port, boost::asio::buffer(shared.buffer,1),
+   if (single)
+   {
+	boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset-1],1),
 					boost::bind(&sync,
-							boost::ref(shared),
-							boost::ref(port),_1,_2));
+					boost::ref(shared),
+					boost::ref(port),_1,_2));
+   }
+   else
+   {
+	boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[0],SharedData::data_offset),
+					boost::bind(&sync,
+					boost::ref(shared),
+					boost::ref(port),_1,_2));
+   }
 }
 
 int main(int argc, char* argv[])
@@ -220,8 +227,6 @@ int main(int argc, char* argv[])
 	shared.gpsPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
 			orientation(1),orientation(2)));
 
-	//boost::asio::streambuf sbuffer;
-	//start_receive(shared,sbuffer,port);
 	start_receive(shared,port);
 	boost::thread t(boost::bind(&ba::io_service::run,&io));
 

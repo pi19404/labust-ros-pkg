@@ -7,7 +7,7 @@
       <param name="deadzone" value="0.05" />
     </node>
     
-    <node pkg="cart_sim" name="radio_node" type="radio_node">
+    <node pkg="cart2" name="radio_node" type="radio_node">
       <param name="PortName" value="/dev/ttyUSB1" />
       <param name="Baud" value="9600" />
       <remap from="joy_in" to="joy" />

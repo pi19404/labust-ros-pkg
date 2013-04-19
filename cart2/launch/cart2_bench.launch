@@ -1,0 +1,19 @@
+<launch> 
+  <group ns="cart2">
+    <rosparam command="load" file="$(find caddy_uwsim)/launch/simulation.yaml" />
+    <rosparam command="load" file="$(find caddy_uwsim)/launch/model.yaml" />
+  
+    <node pkg="joy" name="joystick" type="joy_node">
+      <param name="dev" value="/dev/input/js1" />
+      <param name="coalesce_interval" value="0.1" />
+      <param name="autorepeat_rate" value="10" />
+      <param name="deadzone" value="0.05" />
+    </node>
+   
+    
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control">
+      <remap from="tauOut" to="tauIn" />
+      <remap from="stateHat" to="meas" />
+    </node>
+  </group>
+</launch>

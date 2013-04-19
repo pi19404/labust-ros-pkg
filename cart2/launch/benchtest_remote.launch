@@ -1,0 +1,24 @@
+<launch>
+  <group ns="cart2"> 	
+    <rosparam command="load" file="$(find cart2)/data/config/benchtest.yaml" />
+    <rosparam command="load" file="$(find pladypos)/launch/model.yaml" />
+	
+    <param name="LocalOriginLat" value="45.8011311849" />
+    <param name="LocalOriginLon" value="15.9715616862" />  
+    
+    <node pkg="cart2" name="radio_node" type="radio_node">
+      <param name="PortName" value="/dev/ttyUSB0" />
+      <param name="Baud" value="9600" />
+      <remap from="joy_out" to="joy" />
+    </node>
+    
+    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control">
+      <remap from="tauOut" to="tauIn" />
+      <remap from="stateHat" to="meas" />
+    </node>
+    
+  <!--  <node pkg="pladypos" name="nav_node" type="nav_node">
+      <remap from="gps" to="fix" />
+    </node> --> 
+  </group>
+</launch>
