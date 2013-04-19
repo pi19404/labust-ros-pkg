@@ -38,6 +38,7 @@
 #include <labust/navigation/XYModel.hpp>
 #include <labust/math/uBlasOperations.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/GeoUtilities.hpp>
 
 #include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
@@ -55,6 +56,7 @@
 
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
+double originLat(0), originLon(0);
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -67,9 +69,28 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	enum {x,y,newMsg};
 	//Calculate to X-Y tangent plane
-	xy(x) = data->latitude;
-	xy(y) = data->longitude;
-	xy(newMsg) = 1;
+  	tf::StampedTransform transform;
+  	try
+  	{
+     	   listener->lookupTransform("base_link", "gps_frame", ros::Time(0), transform);
+		
+	   std::pair<double,double> posxy = 
+		labust::tools::deg2meter(data->latitude - originLat, 
+			data->longitude - originLon,
+			data->longitude);
+
+
+           tf::Vector3 pos(tf::Vector3(posxy.first, posxy.second,0) - transform.getOrigin());
+
+	   xy(x) = pos.x();
+	   xy(y) = pos.y();
+	   std::cout<<"Position:"<<pos.x()<<","<<pos.y()<<std::endl;
+	   xy(newMsg) = 1;
+  	}
+	catch(tf::TransformException& ex)
+  	{
+     		ROS_ERROR("%s",ex.what());
+  	}
 };
 
 void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
@@ -80,13 +101,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
   tf::StampedTransform transform;
   try
   {
-     listener->lookupTransform("base_link", "imu", ros::Time(0), transform);
-  }
-  catch (tf::TransformException& ex)
-  {
-     ROS_ERROR("%s",ex.what());
-  }
-
+     listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
   tf::Quaternion meas(data->orientation.x,data->orientation.y,
 			data->orientation.z,data->orientation.w);
   tf::Quaternion result = meas*transform.getRotation();
@@ -99,6 +114,11 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	rpy(p) = pitch;
 	rpy(y) = yaw;
 	rpy[newMsg] = 1;
+  }
+  catch (tf::TransformException& ex)
+  {
+     ROS_ERROR("%s",ex.what());
+  }
 };
 
 void configureNav(KFNav& nav, ros::NodeHandle& nh)
@@ -181,6 +201,9 @@ int main(int argc, char* argv[])
 	//Configure the navigation
 	configureNav(nav,nh);
 
+	nh.param("LocalOriginLat",originLat,originLat);
+	nh.param("LocalOriginLon",originLon,originLon);
+
 	//Publishers
 	ros::Publisher stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 	ros::Publisher stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
@@ -205,14 +228,15 @@ int main(int argc, char* argv[])
 
 		if (rpy(3))
 		{
+			double yaw = unwrap(rpy(2));
 			if (xy(2) == 1)
 			{
-				nav.correct(nav.fullUpdate(xy(0),xy(1),unwrap(rpy(2))));
+				//nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
 				xy(2) = 0;
 			}
 			else
 			{
-				nav.correct(nav.yawUpdate(unwrap(rpy(2))));
+				//nav.correct(nav.yawUpdate(yaw));
 			}
 			rpy(3) = 0;
 		}
