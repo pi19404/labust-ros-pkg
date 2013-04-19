@@ -62,8 +62,8 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	//Initialize the allocation matrix
 	Eigen::Matrix<float, 3,4> B;
 	float cp(cos(M_PI/4)),sp(sin(M_PI/4));
-	B<<-cp,-cp,cp,cp,
-	   -sp,sp,sp,-sp,
+	B<<-cp,cp,cp,-cp,
+	   -sp,-sp,sp,sp,
 	    1,-1,1,-1;
 
 	//Scaling allocation only for XYN
@@ -104,8 +104,8 @@ void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t leve
 	{
 		int n[4]={config.rev0, config.rev1, config.rev2, config.rev3};
 
-		if (config.lock12) n[1] = n[0];
-		if (config.lock34) n[3] = n[2];
+		//if (config.lock12) n[1] = n[0];
+		//if (config.lock34) n[3] = n[2];
 		std::ostringstream out("");
 		for (int i=0; i<4;++i)
 		{
