@@ -124,13 +124,12 @@ void VelocityControl::handleReference(const auv_msgs::BodyVelocityReq::ConstPtr&
 
 void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 {
-	tauManual[X] = joy_scale * joy->axes[1];
-	tauManual[Y] = joy_scale * -joy->axes[0];
-	tauManual[Z] = -joy_scale * joy->axes[3];
+	tauManual[X] = config.Surge_joy_scale * joy->axes[1];
+	tauManual[Y] = -config.Sway_joy_scale * joy->axes[0];
+	tauManual[Z] = -config.Heave_joy_scale * joy->axes[3];
 	tauManual[K] = 0;
 	tauManual[M] = 0;
-	tauManual[N] = joy_scale * -joy->axes[2];
-
+	tauManual[N] = -config.Yaw_joy_scale * joy->axes[2];
 	lastMan = ros::Time::now();
 }
 
