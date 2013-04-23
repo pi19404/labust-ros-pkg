@@ -37,6 +37,8 @@
 #include <labust/xml/XMLReader.hpp>
 #include <labust/simulation/VehicleModel6DOF.hpp>
 #include <labust/vehicles/ScaleAllocation.hpp>
+#include <labust/tools/rosutils.hpp>
+#include <labust/tools/GeoUtilities.hpp>
 
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
@@ -47,7 +49,6 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
-#include <gps_common/conversions.h>
 
 #include <Eigen/Dense>
 
@@ -98,17 +99,28 @@ nav_msgs::Odometry* mapToUWSimOdometry(const labust::simulation::vector& eta,
 	odom->twist.twist.angular.z = nu(VehicleModel6DOF::r);
 	odom->child_frame_id = "base_link";
 
+	//tf::Quaternion q(tf::createQuaternionFromRPY(eta(VehicleModel6DOF::phi),eta(VehicleModel6DOF::theta),eta(VehicleModel6DOF::psi)));
 	odom->pose.pose.orientation.x = transform.getRotation().x();
 	odom->pose.pose.orientation.y = transform.getRotation().y();
 	odom->pose.pose.orientation.z = transform.getRotation().z();
 	odom->pose.pose.orientation.w = transform.getRotation().w();
+
+	/*Quaternion<float> q;
+	labust::tools::quaternionFromEuler(eta(VehicleModel6DOF::phi),
+			eta(VehicleModel6DOF::theta),
+			eta(VehicleModel6DOF::psi), q);
+
+	odom->pose.pose.orientation.x = q.x();
+	odom->pose.pose.orientation.y = q.y();
+	odom->pose.pose.orientation.z = q.z();
+	odom->pose.pose.orientation.w = q.w();*/
 
 	odom->pose.pose.position.x = transform.getOrigin().x();
 	odom->pose.pose.position.y = transform.getOrigin().y();
 	odom->pose.pose.position.z = transform.getOrigin().z();
 
 	odom->header.stamp = ros::Time::now();
-	odom->header.frame_id = "uwsim_hook";
+	odom->header.frame_id = "uwsim_frame";
 
 	return odom;
 }
@@ -145,20 +157,28 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	using namespace labust::simulation;
 	using namespace Eigen;
 
-	tf::StampedTransform transform;
+	tf::StampedTransform transformLocal, transformDeg, transformVertical;
 	try
 	{
-	    lisWorld.lookupTransform("world", "gps_frame", ros::Time(0), transform);
+	    lisWorld.lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
+	    lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+	    lisWorld.lookupTransform("worldLatLon", "gps_frame", ros::Time(0), transformVertical);
 	}
 	catch (tf::TransformException& ex)
 	{
 	   ROS_ERROR("%s",ex.what());
 	}
 
-	fix->altitude = transform.getOrigin().z();
-	gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
+	fix->altitude = transformVertical.getOrigin().z();
+	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
+	std::pair<double, double> diffAngle = labust::tools::meter2deg(transformLocal.getOrigin().x(),
+		transformLocal.getOrigin().y(),
+		//The latitude angle
+		transformDeg.getOrigin().y());
+	fix->latitude = transformDeg.getOrigin().y() + diffAngle.first;
+	fix->longitude = transformDeg.getOrigin().x() + diffAngle.second;
   fix->header.stamp = ros::Time::now();
-  fix->header.frame_id = "world";
+  fix->header.frame_id = "worldLatLon";
 
 	return fix;
 }
@@ -178,8 +198,12 @@ sensor_msgs::Imu* mapToImu(const labust::simulation::vector& eta,
 	imu->angular_velocity.x = nu(VehicleModel6DOF::p);
 	imu->angular_velocity.y = nu(VehicleModel6DOF::q);
 	imu->angular_velocity.z = nu(VehicleModel6DOF::r);
-	tf::Quaternion quat = tf::createQuaternionFromRPY(eta(VehicleModel6DOF::phi),
-			eta(VehicleModel6DOF::theta),eta(VehicleModel6DOF::psi));
+
+	Quaternion<float> quat;
+	labust::tools::quaternionFromEuler(eta(VehicleModel6DOF::phi),
+			eta(VehicleModel6DOF::theta),
+			eta(VehicleModel6DOF::psi), quat);
+
 	imu->orientation.x = quat.x();
 	imu->orientation.y = quat.y();
 	imu->orientation.z = quat.z();
@@ -244,17 +268,12 @@ int main(int argc, char* argv[])
 	nh.param("LocalOriginLat",originLat,originLat);
 	nh.param("LocalOriginLon",originLon,originLon);
 
-	double northing, easting;
 	std::string utmzone;
+	/*/double northing, easting;
 	tf::Transform transform;
 	gps_common::LLtoUTM(originLat, originLon,northing,easting,utmzone);
 	std::cout.precision(10);
-	std::cout<<"Northing:"<<northing<<","<<easting<<std::endl;
-	transform.setOrigin(tf::Vector3(easting, northing, 0));
-	transform.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
-	localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
-	transform.setOrigin(tf::Vector3(originLon, originLat, 0));
-	localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "localDeg"));
+	std::cout<<"Northing:"<<northing<<","<<easting<<std::endl;*/
 
 	auv_msgs::NavSts nav,navNoisy;
 	nav_msgs::Odometry odom;
@@ -329,27 +348,36 @@ int main(int argc, char* argv[])
 		}
 		imuMeas.publish(*mapToImu(model.Eta(),model.Nu(),model.NuAcc(),&imu,localFrame));
 
-		transform.setOrigin(tf::Vector3(easting, northing, 0));
-		transform.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "worldLatLon", "world"));
+		transform.setOrigin(tf::Vector3(0, 0, 0));
+		Eigen::Quaternion<float> q;
+		labust::tools::quaternionFromEuler(M_PI,0,M_PI/2,q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
 
+		tf::Transform transform3;
+		transform3.setOrigin(tf::Vector3(0, 0, 0));
+		q = q.conjugate();
+		transform3.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		localFrame.sendTransform(tf::StampedTransform(transform3, ros::Time::now(), "local", "uwsim_frame"));
+
 		const vector& eta = model.Eta();
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
+		//tf::Transform transform;
+		/*transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
 				eta(VehicleModel6DOF::y),
 				eta(VehicleModel6DOF::z)));
-		transform.setRotation(tf::createQuaternionFromRPY(eta(VehicleModel6DOF::phi),eta(VehicleModel6DOF::theta),eta(VehicleModel6DOF::psi)));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+		labust::tools::quaternionFromEuler(eta(VehicleModel6DOF::phi),
+				eta(VehicleModel6DOF::theta),
+				eta(VehicleModel6DOF::psi), q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));*/
 
 		tf::Transform transform2;
 		transform2.setOrigin(tf::Vector3(0, 0, -0.8));
 		transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
 		localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
-
-		tf::Transform transform3;
-		transform3.setOrigin(tf::Vector3(0, 0, 0));
-		transform3.setRotation(tf::createQuaternionFromRPY(M_PI,0,M_PI/2));
-		localFrame.sendTransform(tf::StampedTransform(transform3, ros::Time::now(), "local", "uwsim_frame"));
 
 		rate.sleep();
 		ros::spinOnce();
