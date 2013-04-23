@@ -69,28 +69,28 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	enum {x,y,newMsg};
 	//Calculate to X-Y tangent plane
-  	tf::StampedTransform transform;
-  	try
-  	{
-     	   listener->lookupTransform("base_link", "gps_frame", ros::Time(0), transform);
-		
-	   std::pair<double,double> posxy = 
-		labust::tools::deg2meter(data->latitude - originLat, 
-			data->longitude - originLon,
-			data->longitude);
+	tf::StampedTransform transform;
+	try
+	{
+		listener->lookupTransform("base_link", "gps_frame", ros::Time(0), transform);
+
+		std::pair<double,double> posxy =
+				labust::tools::deg2meter(data->latitude - originLat,
+						data->longitude - originLon,
+						data->longitude);
 
 
-           tf::Vector3 pos(tf::Vector3(posxy.first, posxy.second,0) - transform.getOrigin());
+		tf::Vector3 pos(tf::Vector3(posxy.first, posxy.second,0) - transform.getOrigin());
 
-	   xy(x) = pos.x();
-	   xy(y) = pos.y();
-	   std::cout<<"Position:"<<pos.x()<<","<<pos.y()<<std::endl;
-	   xy(newMsg) = 1;
-  	}
+		xy(x) = pos.x();
+		xy(y) = pos.y();
+		std::cout<<"Position:"<<pos.x()<<","<<pos.y()<<std::endl;
+		xy(newMsg) = 1;
+	}
 	catch(tf::TransformException& ex)
-  	{
-     		ROS_ERROR("%s",ex.what());
-  	}
+	{
+		ROS_ERROR("%s",ex.what());
+	}
 };
 
 void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
@@ -98,27 +98,27 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	enum {r,p,y,newMsg};
 	double roll,pitch,yaw;
 
-  tf::StampedTransform transform;
-  try
-  {
-     listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
-  tf::Quaternion meas(data->orientation.x,data->orientation.y,
-			data->orientation.z,data->orientation.w);
-  tf::Quaternion result = meas*transform.getRotation();
+	tf::StampedTransform transform;
+	try
+	{
+		listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
+		tf::Quaternion meas(data->orientation.x,data->orientation.y,
+				data->orientation.z,data->orientation.w);
+		tf::Quaternion result = meas*transform.getRotation();
 
-	KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetRPY(roll,pitch,yaw);
+		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetRPY(roll,pitch,yaw);
 
-	std::cout<<"RPY:"<<roll<<","<<pitch<<","<<yaw<<std::endl;
+		std::cout<<"RPY:"<<roll<<","<<pitch<<","<<yaw<<std::endl;
 
-	rpy(r) = roll;
-	rpy(p) = pitch;
-	rpy(y) = yaw;
-	rpy[newMsg] = 1;
-  }
-  catch (tf::TransformException& ex)
-  {
-     ROS_ERROR("%s",ex.what());
-  }
+		rpy(r) = roll;
+		rpy(p) = pitch;
+		rpy(y) = yaw;
+		rpy[newMsg] = 1;
+	}
+	catch (tf::TransformException& ex)
+	{
+		ROS_ERROR("%s",ex.what());
+	}
 };
 
 void configureNav(KFNav& nav, ros::NodeHandle& nh)
@@ -259,10 +259,6 @@ int main(int argc, char* argv[])
 		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
 		transform.setRotation(tf::createQuaternionFromRPY(rpy(0),rpy(1),estimate(KFNav::psi)));
 		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
-
-		transform.setOrigin(tf::Vector3(0, 0, 0));
-		transform.setRotation(tf::createQuaternionFromRPY(1.57,0,3.14));
-		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu"));
 
 		rate.sleep();
 		ros::spinOnce();
