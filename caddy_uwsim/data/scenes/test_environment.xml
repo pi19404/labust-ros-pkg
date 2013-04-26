@@ -54,9 +54,9 @@
 			<z>0</z>
 		</offsetp>
 		<offsetr>
-			<x> 3.14</x>
-			<y> 0</y>
-			<z> -1.57 </z>
+			<x>0</x>
+			<y>0</y>
+			<z>0</z>
 		</offsetr>
 		<enablePhysics> 1 </enablePhysics>
 	</simParams>
@@ -74,8 +74,8 @@
 		</position>
 		<lookAt>
 			<x>0</x>
-			<y>0 </y>
-			<z>0 </z>
+			<y>0</y>
+			<z>0</z>
 		</lookAt>
 	</camera>
 
@@ -88,12 +88,12 @@
 			<z> 0 </z>
 		</position>
 		<orientation>
-			<r>3.14</r>
+			<r>0</r>
 			<p>0</p>
-			<y>-1.57</y>
+			<y>0</y>
 		</orientation>
 
-		<imu>
+		<!-- <imu>
 			<name>imu</name>
 			<relativeTo>base_link</relativeTo>
 			<position>
@@ -107,9 +107,9 @@
 				<y>0</y>
 			</orientation>
 			<std>0.00000001</std>
-		</imu>
+		</imu> -->
 
-		<gpsSensor>
+		<!-- <gpsSensor>
 			<name>GPSSensor</name>
 			<relativeTo>base_link</relativeTo>
 			<position>
@@ -123,7 +123,7 @@
 				<y>0</y>
 			</orientation>
 			<std>0.00005</std>
-		</gpsSensor>
+		</gpsSensor> -->
 
 		<usblSensor>
 			<name>USBLSensor</name>
@@ -187,9 +187,9 @@
 			<z> 0 </z>
 		</position>
 		<orientation>
-			<r>-3.14</r>
+			<r>0</r>
 			<p>0</p>
-			<y>1.57</y>
+			<y>0</y>
 		</orientation>
 	</object>
 
@@ -204,21 +204,21 @@
 			<vehicleName> diver </vehicleName>
 			<visualize> 1 </visualize>
 		</ROSOdomToPAT>
-		<ImuToROSImu>
+		<!-- <ImuToROSImu>
 			<name>imu</name>
 			<topic>pladypos/imu</topic>
 			<rate>10</rate>
-		</ImuToROSImu>
+		</ImuToROSImu> -->
 		<PressureSensorToROS>
 			<name>diverPressureSensor</name>
 			<topic>diver/pressure</topic>
 			<rate>5</rate>
 		</PressureSensorToROS>
-		<GPSSensorToROS>
+		<!-- <GPSSensorToROS>
 			<name>GPSSensor</name>
 			<topic>pladypos/gps</topic>
 			<rate>1</rate>
-		</GPSSensorToROS>
+		</GPSSensorToROS> -->
 		<USBLSensorToROS>
 			<name>USBLSensor</name>
 			<topic>pladypos/usbl</topic>
