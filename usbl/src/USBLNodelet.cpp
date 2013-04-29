@@ -151,7 +151,7 @@ void USBLNodelet::run()
 	while (ros::ok())
 	{
 		boost::mutex::scoped_lock lock(pingLock);
-		//while (usblBusy) 	usblCondition.wait(lock);
+		while (usblBusy) 	usblCondition.wait(lock);
 
 		TCONMsgPtr tmsg(new TCONMsg());
 		tmsg->txNode = 255;
@@ -174,7 +174,7 @@ void USBLNodelet::run()
 
 		boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
 		ar<<mmsg;
-		//usbl->send(tmsg);
+		usbl->send(tmsg);
 		usblBusy = true;
 
 		//Broadcast frame

@@ -157,28 +157,27 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	using namespace labust::simulation;
 	using namespace Eigen;
 
-	tf::StampedTransform transformLocal, transformDeg, transformVertical;
+	tf::StampedTransform transformLocal, transformDeg;
 	try
 	{
-	    lisWorld.lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
+	    lisWorld.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);
 	    lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
-	    lisWorld.lookupTransform("worldLatLon", "gps_frame", ros::Time(0), transformVertical);
+
+	  	fix->altitude = eta(VehicleModel6DOF::z) + transformLocal.getOrigin().z();
+	  	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
+	  	std::pair<double, double> diffAngle = labust::tools::meter2deg(eta(VehicleModel6DOF::x),
+	  		eta(VehicleModel6DOF::y),
+	  		//The latitude angle
+	  		transformDeg.getOrigin().y());
+	  	fix->latitude = transformDeg.getOrigin().y() + diffAngle.first;
+	  	fix->longitude = transformDeg.getOrigin().x() + diffAngle.second;
+	    fix->header.stamp = ros::Time::now();
+	    fix->header.frame_id = "worldLatLon";
 	}
 	catch (tf::TransformException& ex)
 	{
 	   ROS_ERROR("%s",ex.what());
 	}
-
-	fix->altitude = transformVertical.getOrigin().z();
-	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
-	std::pair<double, double> diffAngle = labust::tools::meter2deg(transformLocal.getOrigin().x(),
-		transformLocal.getOrigin().y(),
-		//The latitude angle
-		transformDeg.getOrigin().y());
-	fix->latitude = transformDeg.getOrigin().y() + diffAngle.first;
-	fix->longitude = transformDeg.getOrigin().x() + diffAngle.second;
-  fix->header.stamp = ros::Time::now();
-  fix->header.frame_id = "worldLatLon";
 
 	return fix;
 }
@@ -200,7 +199,7 @@ sensor_msgs::Imu* mapToImu(const labust::simulation::vector& eta,
 	imu->angular_velocity.z = nu(VehicleModel6DOF::r);
 
 	Quaternion<float> quat;
-	labust::tools::quaternionFromEuler(eta(VehicleModel6DOF::phi),
+	labust::tools::quaternionFromEulerZYX(eta(VehicleModel6DOF::phi),
 			eta(VehicleModel6DOF::theta),
 			eta(VehicleModel6DOF::psi), quat);
 
@@ -344,16 +343,17 @@ int main(int argc, char* argv[])
 			{
 				gpsFix.publish(fix);
 			}
-				lastGps = ros::Time::now();
+			lastGps = ros::Time::now();
 		}
 		imuMeas.publish(*mapToImu(model.Eta(),model.Nu(),model.NuAcc(),&imu,localFrame));
 
 		tf::Transform transform;
 		transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "worldLatLon", "world"));
 		transform.setOrigin(tf::Vector3(0, 0, 0));
 		Eigen::Quaternion<float> q;
-		labust::tools::quaternionFromEuler(M_PI,0,M_PI/2,q);
+		labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
 
@@ -365,17 +365,17 @@ int main(int argc, char* argv[])
 
 		const vector& eta = model.Eta();
 		//tf::Transform transform;
-		/*transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
+		transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
 				eta(VehicleModel6DOF::y),
 				eta(VehicleModel6DOF::z)));
-		labust::tools::quaternionFromEuler(eta(VehicleModel6DOF::phi),
+		labust::tools::quaternionFromEulerZYX(eta(VehicleModel6DOF::phi),
 				eta(VehicleModel6DOF::theta),
 				eta(VehicleModel6DOF::psi), q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));*/
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
 
 		tf::Transform transform2;
-		transform2.setOrigin(tf::Vector3(0, 0, -0.8));
+		transform2.setOrigin(tf::Vector3(0, 0, -0.2));
 		transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
 		localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
 

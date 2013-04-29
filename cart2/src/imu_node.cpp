@@ -55,7 +55,7 @@ struct SharedData
 		data_offset=4,
 		checksum = 84};
 	ros::Publisher imuPub, gpsPub;
-	tf::Transform imuPos, gpsPos;
+	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
 	unsigned char buffer[msg_size];
 };
@@ -80,9 +80,9 @@ void sync(SharedData& shared,
 			std::cout<<"Sync."<<std::endl;
 			boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset],
 					SharedData::msg_size-SharedData::data_offset),
-						boost::bind(&handleIncoming,
-						boost::ref(shared),
-						boost::ref(port),_1,_2));
+					boost::bind(&handleIncoming,
+							boost::ref(shared),
+							boost::ref(port),_1,_2));
 		}
 		else
 		{
@@ -101,61 +101,63 @@ void handleIncoming(SharedData& shared,
 	std::cout<<"Got stuff."<<std::endl;
 	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
-    unsigned char calc = 0;
-    for (size_t i=SharedData::data_offset; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
+		unsigned char calc = 0;
+		for (size_t i=SharedData::data_offset; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
 
-    if (calc != shared.buffer[SharedData::checksum])
-    {
-    	ROS_ERROR("Wrong checksum for imu data.");
-    	//return;
-    }
+		if (calc != shared.buffer[SharedData::checksum])
+		{
+			ROS_ERROR("Wrong checksum for imu data.");
+			//return;
+		}
 
-    float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
-  	enum {time = 0,
-  		lat, lon, hdop,
-  		accel_x, accel_y, accel_z,
-  		gyro_x, gyro_y, gyro_z,
-  		mag_x, mag_y, mag_z,
-  	  roll,pitch,yaw,
-	  modul,ry,mmm,mm};
-	
-	std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
-	std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
-	std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
+		float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
+		enum {time = 0,
+			lat, lon, hdop,
+			accel_x, accel_y, accel_z,
+			gyro_x, gyro_y, gyro_z,
+			mag_x, mag_y, mag_z,
+			roll,pitch,yaw,
+			modul,ry,mmm,mm};
 
-    //Send Imu stuff
-  	sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
-  	imu->header.stamp = ros::Time::now();
-  	imu->header.frame_id = "imu_frame";
-  	imu->linear_acceleration.x = data[accel_x];
-  	imu->linear_acceleration.y = data[accel_y];
-  	imu->linear_acceleration.z = data[accel_z];
-  	imu->angular_velocity.x = data[gyro_x];
-  	imu->angular_velocity.y = data[gyro_y];
-  	imu->angular_velocity.z = data[gyro_z];
-  	tf::Quaternion quat = tf::createQuaternionFromRPY(data[roll],data[pitch],data[yaw]);
-  	imu->orientation.x = quat.x();
-  	imu->orientation.y = quat.y();
-  	imu->orientation.z = quat.z();
-  	imu->orientation.w = quat.w();
-  	shared.broadcast.sendTransform(tf::StampedTransform(shared.imuPos, ros::Time::now(), "base_link", "imu_frame"));
-	shared.imuPub.publish(imu);
+		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
+		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
+		//std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
-  	//Send GPS stuff
-  	sensor_msgs::NavSatFix::Ptr gps(new sensor_msgs::NavSatFix());
+		//Send Imu stuff
+		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
+		imu->header.stamp = ros::Time::now();
+		imu->header.frame_id = "imu_frame";
+		imu->linear_acceleration.x = data[accel_x];
+		imu->linear_acceleration.y = data[accel_y];
+		imu->linear_acceleration.z = data[accel_z];
+		imu->angular_velocity.x = data[gyro_x];
+		imu->angular_velocity.y = data[gyro_y];
+		imu->angular_velocity.z = data[gyro_z];
+		tf::Quaternion quat = tf::createQuaternionFromRPY(data[roll],data[pitch],data[yaw]);
+		imu->orientation.x = quat.x();
+		imu->orientation.y = quat.y();
+		imu->orientation.z = quat.z();
+		imu->orientation.w = quat.w();
+		shared.broadcast.sendTransform(tf::StampedTransform(shared.imuPos, ros::Time::now(), "base_link", "imu_frame"));
+		shared.imuPub.publish(imu);
 
-	int latDeg(data[lat]/100), lonDeg(data[lon]/100);
-		
+		//Send GPS stuff
+		sensor_msgs::NavSatFix::Ptr gps(new sensor_msgs::NavSatFix());
 
-  	gps->latitude = latDeg + (data[lat]/100-latDeg)/0.6;
-  	gps->longitude = lonDeg + (data[lon]/100-lonDeg)/0.6;
-  	gps->position_covariance[0] = data[hdop];
-  	gps->position_covariance[4] = data[hdop];
-  	gps->position_covariance[8] = 9999;
-  	gps->header.frame_id = "world";
-  	gps->header.stamp = ros::Time::now();
-  	shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
-	shared.gpsPub.publish(gps);
+		int latDeg(data[lat]/100), lonDeg(data[lon]/100);
+		gps->latitude = latDeg + (data[lat]/100-latDeg)/0.6;
+		gps->longitude = lonDeg + (data[lon]/100-lonDeg)/0.6;
+		gps->position_covariance[0] = data[hdop];
+		gps->position_covariance[4] = data[hdop];
+		gps->position_covariance[8] = 9999;
+		gps->header.frame_id = "worldLatLon";
+		gps->header.stamp = ros::Time::now();
+		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
+		shared.gpsPub.publish(gps);
+
+		//Send the WorldLatLon frame update
+		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
+		shared.broadcast.sendTransform(tf::StampedTransform(shared.world, ros::Time::now(), "world", "local"));
 	}
 	start_receive(shared,port);
 }
@@ -163,20 +165,20 @@ void handleIncoming(SharedData& shared,
 void start_receive(SharedData& shared,
 		boost::asio::serial_port& port, bool single)
 {
-   if (single)
-   {
-	boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset-1],1),
-					boost::bind(&sync,
-					boost::ref(shared),
-					boost::ref(port),_1,_2));
-   }
-   else
-   {
-	boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[0],SharedData::data_offset),
-					boost::bind(&sync,
-					boost::ref(shared),
-					boost::ref(port),_1,_2));
-   }
+	if (single)
+	{
+		boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[SharedData::data_offset-1],1),
+				boost::bind(&sync,
+						boost::ref(shared),
+						boost::ref(port),_1,_2));
+	}
+	else
+	{
+		boost::asio::async_read(port, boost::asio::buffer(&shared.buffer[0],SharedData::data_offset),
+				boost::bind(&sync,
+						boost::ref(shared),
+						boost::ref(port),_1,_2));
+	}
 }
 
 int main(int argc, char* argv[])
@@ -226,6 +228,17 @@ int main(int argc, char* argv[])
 	shared.gpsPos.setOrigin(tf::Vector3(origin(0),origin(1),origin(2)));
 	shared.gpsPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
 			orientation(1),orientation(2)));
+
+	//Setup the world coordinates
+	double originLat(0), originLon(0);
+	nh.param("LocalOriginLat",originLat,originLat);
+	nh.param("LocalOriginLon",originLon,originLon);
+	shared.worldLatLon.setOrigin(tf::Vector3(originLon, originLat, 0));
+	shared.worldLatLon.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	Eigen::Quaternion<float> q;
+	labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
+	shared.world.setOrigin(tf::Vector3(0,0,0));
+	shared.world.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 
 	start_receive(shared,port);
 	boost::thread t(boost::bind(&ba::io_service::run,&io));
