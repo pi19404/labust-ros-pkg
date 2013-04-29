@@ -54,7 +54,10 @@ USBLNodelet::USBLNodelet():
 	port(4000),
 	usblBusy(false){};
 
-USBLNodelet::~USBLNodelet(){};
+USBLNodelet::~USBLNodelet()
+{
+	usbl.reset();
+};
 
 void USBLNodelet::onInit()
 {
@@ -62,21 +65,27 @@ void USBLNodelet::onInit()
 	ph.param("ip",address,address);
 	ph.param("port",port,port);
 	//Connect to the TCPDevice
-	//usbl.reset(new TCPDevice(address,port));
+	usbl.reset(new TCPDevice(address,port));
 	//Register handlers
 	TCPDevice::HandlerMap map;
 	map[MTMsg::mtAlive] = boost::bind(&USBLNodelet::onTCONMsg,this,_1);
 	map[MTMsg::mtAMNavDataV2] = boost::bind(&USBLNodelet::onNavMsg,this, _1);
 	//map[MTMsg::mtAMNavDataV2] = map[MTMsg::mtAMNavData];
-	//usbl->registerHandlers(map);
+	usbl->registerHandlers(map);
 
 	ros::NodeHandle nh = this->getNodeHandle();
-	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	1, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));
+	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));
 	navPub = nh.advertise<geometry_msgs::PointStamped>("usbl_nav",1);
 	dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
 
 	worker = boost::thread(boost::bind(&USBLNodelet::run,this));
 }
+
+void USBLNodelet::onOutgoingMsg(const std_msgs::String::ConstPtr msg)
+{
+	boost::mutex::scoped_lock lock(dataMux);
+	msg_out = msg->data;
+};
 
 void USBLNodelet::onOutgoingMsg(const std_msgs::String::ConstPtr msg)
 {
@@ -121,7 +130,9 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 		dataSer>>usbl_data>>modem_data;
 
 		std_msgs::String::Ptr modem(new std_msgs::String());
-		modem->data.assign(modem_data.data.begin(), modem_data.data.begin()+7);
+		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
+		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload,
+				modem_data.data.begin() + MMCMsg::ranged_payload + size);
 		dataPub.publish(modem);
 	}
 
@@ -151,16 +162,15 @@ void USBLNodelet::run()
 	while (ros::ok())
 	{
 		boost::mutex::scoped_lock lock(pingLock);
-		//while (usblBusy) 	usblCondition.wait(lock);
+		while (usblBusy) 	usblCondition.wait(lock);
+		//msg_out = "Test";
 
 		TCONMsgPtr tmsg(new TCONMsg());
 		tmsg->txNode = 255;
 		tmsg->rxNode = labust::tritech::Nodes::USBL;
-		tmsg->node = labust::tritech::Nodes::USBL;;
+		tmsg->node = 255;
 		tmsg->msgType = MTMsg::mtMiniModemCmd;
 
-		std::istringstream s;
-		//int id = msg->data.size();
 		MMCMsg mmsg;
 		mmsg.msgType = labust::tritech::mmcGetRangeSync;
 
@@ -174,7 +184,7 @@ void USBLNodelet::run()
 
 		boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
 		ar<<mmsg;
-		//usbl->send(tmsg);
+		usbl->send(tmsg);
 		usblBusy = true;
 
 		//Broadcast frame
@@ -185,6 +195,8 @@ void USBLNodelet::run()
 		transform.setRotation(tf::Quaternion(0,0,0,1));
 		frameBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "usbl"));
 	}
+
+	usblCondition.notify_all();
 }
 
 

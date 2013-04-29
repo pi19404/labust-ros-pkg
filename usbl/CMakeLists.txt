@@ -4,7 +4,7 @@ project(usbl)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf2_ros nodelet)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf nodelet)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread serialization)
@@ -50,7 +50,7 @@ find_package(Boost REQUIRED COMPONENTS thread serialization)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES usbl
-   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf2_ros nodelet
+   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf nodelet
 #  DEPENDS system_lib
 )
 
@@ -69,6 +69,7 @@ include_directories(include
 add_library(usbl-plugs
   src/USBLNodelet.cpp
   src/USBLFilter.cpp
+  src/USBLManager.cpp
 )
 
 ## Declare a cpp executable

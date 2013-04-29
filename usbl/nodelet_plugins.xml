@@ -10,4 +10,9 @@
   	rate.
   </description>
   </class>
+    <class name="usbl/USBLManager" type="labust::tritech::USBLManager" base_class_type="nodelet::Nodelet">
+  <description>
+  	The nodelet performs USBL-diver/auv message encoding and decoding.
+  </description>
+  </class>
 </library>
