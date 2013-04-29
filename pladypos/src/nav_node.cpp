@@ -39,6 +39,7 @@
 #include <labust/math/uBlasOperations.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
+#include <labust/tools/rosutils.hpp>
 
 #include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
@@ -69,22 +70,23 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	enum {x,y,newMsg};
 	//Calculate to X-Y tangent plane
-	tf::StampedTransform transform;
+	tf::StampedTransform transformInternal, transformLocal;
 	try
 	{
-		listener->lookupTransform("base_link", "gps_frame", ros::Time(0), transform);
+		listener->lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
 
 		std::pair<double,double> posxy =
 				labust::tools::deg2meter(data->latitude - originLat,
 						data->longitude - originLon,
-						data->longitude);
+						data->latitude);
 
+		//correct for lever arm shift during pitch and roll
+		tf::Vector3 pos = tf::Vector3(posxy.first, posxy.second,0);
 
-		tf::Vector3 pos(tf::Vector3(posxy.first, posxy.second,0) - transform.getOrigin());
-
-		xy(x) = pos.x();
-		xy(y) = pos.y();
-		std::cout<<"Position:"<<pos.x()<<","<<pos.y()<<std::endl;
+		//xy(x) = pos.x();
+		//xy(y) = pos.y();
+		xy(x) = posxy.first;
+		xy(y) = posxy.second;
 		xy(newMsg) = 1;
 	}
 	catch(tf::TransformException& ex)
@@ -106,9 +108,12 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 				data->orientation.z,data->orientation.w);
 		tf::Quaternion result = meas*transform.getRotation();
 
-		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetRPY(roll,pitch,yaw);
-
-		std::cout<<"RPY:"<<roll<<","<<pitch<<","<<yaw<<std::endl;
+		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		/*labust::tools::eulerZYXFromQuaternion(
+				Eigen::Quaternion<float>(result.x(),result.y(),
+						result.z(),result.w()),
+				roll,pitch,yaw);*/
+		ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
 
 		rpy(r) = roll;
 		rpy(p) = pitch;
@@ -170,10 +175,6 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 	yaw.betaa = static_cast<double>(modelParams[5]);
 
 	nav.setParameters(surge,sway,yaw);
-	/*nav.setParameters(
-		KFNav::ModelParams(40,0,56),
-		KFNav::ModelParams(40,0,56),
-		KFNav::ModelParams(2.5,0,3.6));*/
 
 	std::string sQ,sW,sV,sR;
 	nh.getParam(modelName+"/navigation/Q", sQ);
@@ -231,12 +232,14 @@ int main(int argc, char* argv[])
 			double yaw = unwrap(rpy(2));
 			if (xy(2) == 1)
 			{
-				//nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+				ROS_INFO("XY correction:%f, %f",xy(0),xy(1));
+				nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
 				xy(2) = 0;
 			}
 			else
 			{
-				//nav.correct(nav.yawUpdate(yaw));
+				ROS_INFO("Heading correction:%f",yaw);
+				nav.correct(nav.yawUpdate(yaw));
 			}
 			rpy(3) = 0;
 		}
@@ -252,12 +255,31 @@ int main(int argc, char* argv[])
 		state.orientation_rate.yaw = estimate(KFNav::r);
 		state.position.north = estimate(KFNav::xp);
 		state.position.east = estimate(KFNav::yp);
+		try
+			{
+				tf::StampedTransform transformDeg;
+				listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+
+				std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
+			  		state.position.east,
+			  		//The latitude angle
+			  		transformDeg.getOrigin().y());
+				state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
+				state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+			}
+			catch(tf::TransformException& ex)
+			{
+				ROS_ERROR("%s",ex.what());
+			}
+
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
 		stateHat.publish(state);
 
 		tf::StampedTransform transform;
 		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
-		transform.setRotation(tf::createQuaternionFromRPY(rpy(0),rpy(1),estimate(KFNav::psi)));
+		Eigen::Quaternion<float> q;
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),estimate(KFNav::psi),q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
 
 		rate.sleep();
