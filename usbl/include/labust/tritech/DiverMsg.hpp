@@ -36,6 +36,9 @@
  *********************************************************************/
 #ifndef DIVERMSG_HPP_
 #define DIVERMSG_HPP_
+#include <boost/integer/integer_mask.hpp>
+
+#include <cstdint>
 
 #define ADD_DIVER_MESSAGE(NAME, CODE, DEPTHSIZE, \
 		LATLONSIZE, MSGSIZE) \

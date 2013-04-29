@@ -53,7 +53,7 @@ void USBLManager::onInit()
 	outgoing = nh.advertise<std_msgs::String>("outgoing_data",1);
 }
 
-void USBLNodelet::onNavMsg(const nav_msgs::Odometry::ConstPtr nav)
+void USBLManager::onNavMsg(const nav_msgs::Odometry::ConstPtr nav)
 {
 	NODELET_DEBUG("Received nav message.\n");
 

@@ -149,7 +149,7 @@ namespace labust
 		};
 
 		template <class T>
-		void quaternionFromEuler(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
+		void quaternionFromEulerZYX(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
 		{
 			using namespace Eigen;
 			Matrix3f m;
@@ -157,6 +157,16 @@ namespace labust
 			* AngleAxisf(pitch, Vector3f::UnitY())
 			* AngleAxisf(roll, Vector3f::UnitX());
 			q = Quaternion<T>(m);
+		}
+
+		//\todo Test and document this method
+		template <class T>
+		void eulerZYXFromQuaternion(const Eigen::Quaternion<T>& q, double& roll, double& pitch, double& yaw)
+		{
+			using namespace Eigen;
+			yaw = atan2(2*(q.w()*q.x() + q.y()*q.z()),1-2*(q.x()*q.x() + q.y()*q.y()));
+			pitch = asin(2*(q.w()*q.y()-q.z()*q.x()));
+			roll = atan2(2*(q.w()*q.z()+q.x()*q.y()),1-2*(q.y()*q.y()+q.z()*q.z()));
 		}
 
 	}

@@ -41,6 +41,7 @@
 
 #include <nodelet/nodelet.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/String.h>
 #include <ros/ros.h>
 
 #include <boost/thread.hpp>
@@ -82,7 +83,7 @@ namespace labust
 			/**
 			 * Handles arrived modem messages.
 			 */
-			void onIncomingMsg(const std_msgs::String::ConstPtr msg)
+			void onIncomingMsg(const std_msgs::String::ConstPtr msg);
 
 			/**
 			 * The navigation and incoming data publisher.

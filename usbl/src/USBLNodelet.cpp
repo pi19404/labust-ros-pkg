@@ -87,12 +87,6 @@ void USBLNodelet::onOutgoingMsg(const std_msgs::String::ConstPtr msg)
 	msg_out = msg->data;
 };
 
-void USBLNodelet::onOutgoingMsg(const std_msgs::String::ConstPtr msg)
-{
-	boost::mutex::scoped_lock lock(dataMux);
-	msg_out = msg->data;
-};
-
 void USBLNodelet::onTCONMsg(labust::tritech::TCONMsgPtr tmsg)
 {
 	if (tmsg->msgType == MTMsg::mtAlive)
@@ -163,7 +157,6 @@ void USBLNodelet::run()
 	{
 		boost::mutex::scoped_lock lock(pingLock);
 		while (usblBusy) 	usblCondition.wait(lock);
-		//msg_out = "Test";
 
 		TCONMsgPtr tmsg(new TCONMsg());
 		tmsg->txNode = 255;
