@@ -1,0 +1,5 @@
+<launch> 
+    <node pkg="cart_sim" name="logger" type="matlogger.py">
+      <param name="filename" value="$(env LOGDIR)/pladypos.csv" />
+    </node>  
+</launch>
