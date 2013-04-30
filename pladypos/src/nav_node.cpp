@@ -256,21 +256,21 @@ int main(int argc, char* argv[])
 		state.position.north = estimate(KFNav::xp);
 		state.position.east = estimate(KFNav::yp);
 		try
-			{
-				tf::StampedTransform transformDeg;
-				listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+		{
+			tf::StampedTransform transformDeg;
+			listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
 
-				std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
-			  		state.position.east,
-			  		//The latitude angle
-			  		transformDeg.getOrigin().y());
-				state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
-				state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
-			}
-			catch(tf::TransformException& ex)
-			{
-				ROS_ERROR("%s",ex.what());
-			}
+			std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
+					state.position.east,
+					//The latitude angle
+					transformDeg.getOrigin().y());
+			state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
+			state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+		}
+		catch(tf::TransformException& ex)
+		{
+			ROS_ERROR("%s",ex.what());
+		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
 		stateHat.publish(state);

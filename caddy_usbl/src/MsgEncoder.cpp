@@ -61,10 +61,14 @@
 
 struct DiverMsg
 {
+	//Topside messages
 	ADD_DIVER_MESSAGE(PositionInit,1,0,22,0);
 	ADD_DIVER_MESSAGE(Position,2,7,18,1);
 	ADD_DIVER_MESSAGE(PositionMsg,3,7,7,23);
 	ADD_DIVER_MESSAGE(PositionDef,5,7,14,9);
+	//Diver messages
+	ADD_DIVER_MESSAGE(PositonInitAck,1,0,22,0);
+	ADD_DIVER_MESSAGE(Msg,2,0,0,44);
 
 	DiverMsg():
 		latitude(0),
