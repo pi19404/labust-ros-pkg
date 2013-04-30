@@ -48,19 +48,35 @@ USBLManager::~USBLManager(){};
 void USBLManager::onInit()
 {
 	ros::NodeHandle nh = this->getNodeHandle();
-	navData = nh.subscribe<nav_msgs::Odometry>("navData",	0, boost::bind(&USBLManager::onNavMsg,this,_1));
-	incoming = nh.subscribe<std_msgs::String>("incoming_data",	0, boost::bind(&USBLManager::onIncomingMsg,this,_1));
+	navData = nh.subscribe<auv_msgs::NavSts>("usblFiltered",	1, boost::bind(&USBLManager::onNavMsg,this,_1));
+	incoming = nh.subscribe<std_msgs::String>("incoming_data",	1, boost::bind(&USBLManager::onIncomingMsg,this,_1));
 	outgoing = nh.advertise<std_msgs::String>("outgoing_data",1);
 }
 
-void USBLManager::onNavMsg(const nav_msgs::Odometry::ConstPtr nav)
+void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
 {
 	NODELET_DEBUG("Received nav message.\n");
+	encoder.latitude = nav->global_position.latitude;
+	encoder.longitude = nav->global_position.longitude;
+	encoder.z = nav->position.depth;
 
-
+	//Here we select based on the algorithm
+	uint64_t msg = encoder.pack<DiverMsg::PositionInit>();
+	char* p = reinterpret_cast<char*>(&msg);
+	std_msgs::StringPtr out(new std_msgs::String());
+	out->data.assign(p,sizeof(uint64_t));
+	outgoing.publish(out);
 }
 
 void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 {
 	NODELET_DEBUG("Received modem message.\n");
+	if (msg->data.size() > 8)
+	{
+		std::string data(msg->data);
+		uint64_t* binData = reinterpret_cast<uint64_t*>(&data[0]);
+		encoder.unpack<DiverMsg::AutoDiver>(*binData);
+
+		NODELET_INFO("Recevied message: %d", encoder.msgType);
+	}
 }

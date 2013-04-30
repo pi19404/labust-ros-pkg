@@ -88,6 +88,10 @@ namespace labust
 			 */
 			KFilter filter;
 			/**
+			 * The depth state.
+			 */
+			double depth;
+			/**
 			 * The data and condition mux.
 			 */
 			boost::mutex dataMux;

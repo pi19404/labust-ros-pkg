@@ -122,12 +122,6 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 		//Decoding V2 message
 		NODELET_DEBUG("Decoding V2 message type: %d\n",tmsg->msgType);
 		dataSer>>usbl_data>>modem_data;
-
-		std_msgs::String::Ptr modem(new std_msgs::String());
-		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
-		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload,
-				modem_data.data.begin() + MMCMsg::ranged_payload + size);
-		dataPub.publish(modem);
 	}
 
 	geometry_msgs::PointStamped::Ptr usblOut(new geometry_msgs::PointStamped());
@@ -142,6 +136,12 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 		usblOut->point.z = usbl_data.attitudeCorrectedPos[2];
 
 		navPub.publish(usblOut);
+
+		std_msgs::String::Ptr modem(new std_msgs::String());
+		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
+		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload,
+				modem_data.data.begin() + MMCMsg::ranged_payload + size);
+		dataPub.publish(modem);
 	}
 	else
 	{

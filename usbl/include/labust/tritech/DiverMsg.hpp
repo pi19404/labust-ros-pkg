@@ -36,39 +36,55 @@
  *********************************************************************/
 #ifndef DIVERMSG_HPP_
 #define DIVERMSG_HPP_
-#include <boost/integer/integer_mask.hpp>
+#include <labust/tritech/detail/message_preprocess.hpp>
 
 #include <cstdint>
-
-#define ADD_DIVER_MESSAGE(NAME, CODE, DEPTHSIZE, \
-		LATLONSIZE, MSGSIZE) \
-		struct NAME\
-		{\
-	enum{type=CODE};\
-	enum{depthSize=DEPTHSIZE,latlonSize=LATLONSIZE,msgSize=MSGSIZE};\
-		};\
+#include <map>
 
 namespace labust
 {
 	namespace tritech
 	{
+		struct DiverMsg;
+
+		struct Packer
+		{
+			virtual ~Packer(){};
+			virtual uint64_t pack(DiverMsg& msg) = 0;
+			virtual void unpack(uint64_t data, DiverMsg& msg) = 0;
+		};
+
 		struct DiverMsg
 		{
-			ADD_DIVER_MESSAGE(PositionInit,1,0,22,0);
-			ADD_DIVER_MESSAGE(Position,2,7,18,1);
-			ADD_DIVER_MESSAGE(PositionMsg,3,7,7,23);
-			ADD_DIVER_MESSAGE(PositionDef,5,7,14,9);
+			struct AutoTopside{};
+			struct AutoDiver{};
+
+			DEFINE_TOPSIDE_MESSAGES(
+					(PositionInit,1,0,22,0)
+					(Position,2,7,18,1)
+					(PositionMsg,3,7,7,23)
+					(PositionDef,5,7,14,9))
+
+			DEFINE_DIVER_MESSAGES(
+					(PositionInitAck,1,0,22,0)
+					(Msg,2,0,0,44))
 
 			DiverMsg():
 				latitude(0),
 				longitude(0),
 				z(0),
-				depthRes(0.5){};
+				depthRes(0.5),
+				msgType(0)
+			{
+				DiverMsg::registerTopsideMessages();
+				DiverMsg::registerDiverMessages();
+			};
 
 			//\todo Add automatic extraction of lat-lon data from double values
 			template <class msg>
 			uint64_t pack()
 			{
+				msgType = msg::type;
 				fullmsg = msg::type;
 				fullmsg <<= msg::depthSize;
 				fullmsg |= int(z/depthRes) & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
@@ -88,7 +104,7 @@ namespace labust
 			}
 
 			template <class msg>
-			bool unpack(uint64_t data)
+			void unpack(uint64_t data)
 			{
 				fullmsg=data;
 				this->msg = data & boost::low_bits_mask_t<msg::msgSize>::sig_bits;
@@ -99,8 +115,8 @@ namespace labust
 				data >>= msg::latlonSize;
 				depth = data & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
 				data >>= msg::depthSize;
-
-				assert(((data & 0x0F) == msg::type) &&
+				msgType = data & 0x0F;
+				assert((msgType == msg::type) &&
 						"DiverMsg desired unpack type and received data type do not match.");
 			};
 
@@ -109,12 +125,45 @@ namespace labust
 
 			double latitude, longitude, z, depthRes;
 			uint64_t fullmsg;
-			uint8_t depth;
+			uint8_t depth, msgType;
 			int lat,lon;
 			uint64_t msg;
 			//uint8_t noKML, def, checksum;
 			//int kmlX, kmlY;
+
+		private:
+			std::map<int, boost::shared_ptr<Packer> > topsideMap, diverMap;
 		};
+
+		template <>
+		inline uint64_t DiverMsg::pack<DiverMsg::AutoTopside>()
+		{
+			assert(topsideMap.find(msgType) != topsideMap.end());
+			return topsideMap[msgType]->pack(*this);
+		}
+
+		template <>
+		inline void DiverMsg::unpack<DiverMsg::AutoTopside>(uint64_t data)
+		{
+			testType(data);
+			assert(topsideMap.find(msgType) != topsideMap.end());
+			topsideMap[msgType]->unpack(data, *this);
+		}
+
+		template <>
+		inline uint64_t DiverMsg::pack<DiverMsg::AutoDiver>()
+		{
+			assert(diverMap.find(msgType) != diverMap.end());
+			return diverMap[msgType]->pack(*this);
+		}
+
+		template <>
+		inline void DiverMsg::unpack<DiverMsg::AutoDiver>(uint64_t data)
+		{
+			testType(data);
+			assert(diverMap.find(msgType) != diverMap.end());
+			diverMap[msgType]->unpack(data,*this);
+		}
 
 		template <>
 		inline std::pair<int,int> DiverMsg::latlonToBits<22>(double lat, double lon)
@@ -159,7 +208,7 @@ namespace labust
 	}
 }
 
-#undef ADD_DIVER_MESSAGE
+#include <labust/tritech/detail/message_preprocess_undef.hpp>
 
 /* DIVERMSG_HPP_ */
 #endif

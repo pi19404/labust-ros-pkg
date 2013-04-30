@@ -32,76 +32,26 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  Author: Dula Nad
- *  Created: 02.04.2013.
+ *  Created: 29.04.2013.
  *********************************************************************/
-#ifndef USBLMANAGER_HPP_
-#define USBLMANAGER_HPP_
-#include <labust/tritech/tritechfwd.hpp>
-#include <labust/tritech/DiverMsg.hpp>
+#ifndef MESSAGE_PREPROCESS_UNDEF_HPP_
+#define MESSAGE_PREPROCESS_UNDEF_HPP_
+#include <boost/integer/integer_mask.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/tuple/rem.hpp>
 
-#include <nodelet/nodelet.h>
-#include <auv_msgs/NavSts.h>
-#include <std_msgs/String.h>
-#include <ros/ros.h>
+#undef PP_MSG_FILLER_0
+#undef PP_MSG_FILLER_1
+#undef PP_MSG_FILLER_0_END
+#undef PP_MSG_FILLER_1_END
 
-#include <boost/thread.hpp>
+#undef DEFINE_TOPSIDE_MESSAGES
+#undef DEFINE_DIVER_MESSAGES
+#undef ADD_TO_MAP
+#undef ADD_CADDY_MESSAGE2
+#undef ADD_CADDY_MESSAGE
 
-#include <string>
-
-namespace labust
-{
-	namespace tritech
-	{
-		/**
-		 * The class implements the Tritech USBL manager that allows specifying which
-		 * messages and what data to relay to the modem. It also encodes arrived modem messages.
-		 *
-		 * \todo Add dynamic reconfiguration GUI options
-		 */
-		class USBLManager : public nodelet::Nodelet
-		{
-		public:
-			/**
-			 * Default constructor.
-			 */
-			USBLManager();
-			/**
-			 * Default destructor.
-			 */
-			~USBLManager();
-
-			/**
-			 * Node initialization.
-			 */
-			void onInit();
-
-		protected:
-			/**
-			 * Handles arrived USBL navigation messages.
-			 */
-			void onNavMsg(const auv_msgs::NavSts::ConstPtr nav);
-			/**
-			 * Handles arrived modem messages.
-			 */
-			void onIncomingMsg(const std_msgs::String::ConstPtr msg);
-
-			/**
-			 * The navigation and incoming data publisher.
-			 */
-			ros::Publisher outgoing;
-			/**
-			 * The navigation data subscription.
-			 */
-			ros::Subscriber navData, incoming;
-			/**
-			 * The message encoder.
-			 */
-			DiverMsg encoder;
-		};
-	}
-}
-
-/* USBLMANAGER_HPP_ */
+/* MESSAGE_PREPROCESS_UNDEF_HPP_ */
 #endif
 
 

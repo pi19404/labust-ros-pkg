@@ -4,7 +4,7 @@ project(usbl)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf nodelet)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread serialization)
@@ -50,7 +50,7 @@ find_package(Boost REQUIRED COMPONENTS thread serialization)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES usbl
-   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf nodelet
+   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs
 #  DEPENDS system_lib
 )
 
@@ -73,7 +73,7 @@ add_library(usbl-plugs
 )
 
 ## Declare a cpp executable
-# add_executable(usbl_node src/usbl_node.cpp)
+add_executable(modem_node src/test/modem_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -85,6 +85,11 @@ target_link_libraries(usbl-plugs
    ${Boost_THREAD_LIBRARY}
    tritech-sdk
    labust_navcon
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(modem_node
+   tritech-sdk
    ${catkin_LIBRARIES}
 )
 
