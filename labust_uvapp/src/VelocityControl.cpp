@@ -333,7 +333,7 @@ void VelocityControl::initialize_controller()
 {
 	ROS_INFO("Initializing velocity controller...");
 
-	Eigen::Vector6d closedLoopFreq(Eigen::Vector6d::Zero());
+	Eigen::Vector6d closedLoopFreq(Eigen::Vector6d::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/closed_loop_freq", closedLoopFreq);
 	Eigen::Vector6d outputLimit(Eigen::Vector6d::Zero());
 	//labust::tools::getMatrixParam(nh,"velocity_controller/output_limits", outputLimit);

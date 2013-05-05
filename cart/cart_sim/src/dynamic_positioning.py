@@ -7,6 +7,7 @@ Created on Feb 04, 2013
 import roslib; roslib.load_manifest("cart_sim");
 import rospy;
 from auv_msgs.msg import BodyVelocityReq;
+from auv_msgs.msg import BodyForceReq;
 from auv_msgs.msg import NavSts;
 from std_msgs.msg import Byte
 import numpy
@@ -17,7 +18,7 @@ class DynamicPositioning:
         #rospy.Subscriber("desiredPosition", VehiclePose, self.onRef)
         rospy.Subscriber("stateHat", NavSts, self.onStateHat);
         rospy.Subscriber("trackedNav", NavSts, self.onTrackedNav);
-        rospy.Subscriber("vcWindupFlag", Byte, self.onWindupFlag);
+        rospy.Subscriber("tauAch", BodyForceReq, self.onWindupFlag);
                
         self.stateHat = NavSts();
         
@@ -73,13 +74,9 @@ class DynamicPositioning:
         self.tmax = 13/(2*cp);           
         
     def onWindupFlag(self,data):
-        if self.mode == 0:
-            self.windup[0] = data.data & 1;
-            self.windup[1] = (data.data & 2)>>1;
-        else:
-            self.windup[0] = data.data & 1;
-            self.windup[1] = (data.data & 2**5)>>6;
-
+        self.windup[0] = data.disable_axis.x;
+        self.windup[1] = data.disable_axis.y;
+        print "Got windup", data.disable_axis.x, ",", data.disable_axis.y;
         
     def onStateHat(self,data):
         self.stateHat = data;
@@ -88,6 +85,8 @@ class DynamicPositioning:
         yaw = data.orientation.yaw;
         self.R = numpy.array([[math.cos(yaw),-math.sin(yaw)],
                               [math.sin(yaw),math.cos(yaw)]],numpy.float32);
+                              
+        self.step();
         
     def onRef(self,data):
         self.desired = numpy.array([data.position.north,data.position.east], 
@@ -285,7 +284,7 @@ if __name__ == "__main__":
     rospy.init_node("dpcontrol");
     dp = DynamicPositioning();
     
-    synced = True;
+    synced = False;
         
     rate = rospy.Rate(10.0);
         

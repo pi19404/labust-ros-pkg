@@ -81,6 +81,20 @@ add_executable(${PR_NAME}
 	include/labust/control/VelocityControl.hpp)
 target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
+set(PR_NAME lf_control)
+add_executable(${PR_NAME} 
+	src/lf_control.cpp 
+	src/LFControl.cpp
+	include/labust/control/LFControl.hpp)
+target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
+
+set(PR_NAME dp_control)
+add_executable(${PR_NAME} 
+	src/dp_control.cpp 
+	src/DPControl.cpp
+	include/labust/control/DPControl.hpp)
+target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
+
 #set(PR_NAME labust-uvapp)
 #add_library(${PR_NAME} 
 #	src/VelocityControl.cpp

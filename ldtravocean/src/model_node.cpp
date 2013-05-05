@@ -163,7 +163,7 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	    lisWorld.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);
 	    lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
 
-	  	fix->altitude = eta(VehicleModel6DOF::z) + transformLocal.getOrigin().z();
+	  	fix->altitude = eta(VehicleModel6DOF::z) - transformLocal.getOrigin().z() ;
 	  	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
 	  	std::pair<double, double> diffAngle = labust::tools::meter2deg(eta(VehicleModel6DOF::x),
 	  		eta(VehicleModel6DOF::y),
@@ -310,14 +310,31 @@ int main(int argc, char* argv[])
 		tauXYN<<tau(VehicleModel6DOF::X),tau(VehicleModel6DOF::Y),tau(VehicleModel6DOF::N);
 		double scale = allocator.scale(tauXYN,&tauXYNsc);
 
+//		tau(VehicleModel6DOF::X) = labust::math::coerce(tau(VehicleModel6DOF::X), minThrust, maxThrust);
+//		tau(VehicleModel6DOF::N) = labust::math::coerce(tau(VehicleModel6DOF::N), minThrust, maxThrust);
+//
+//		//Differential allocation
+//		double t1 = (tau(VehicleModel6DOF::X) + tau(VehicleModel6DOF::N))/2;
+//		double t2 = (tau(VehicleModel6DOF::X) - tau(VehicleModel6DOF::N))/2;
+//
+//		t1 = labust::math::coerce(t1, minThrust, maxThrust);
+//		t2 = labust::math::coerce(t2, minThrust, maxThrust);
+
 		auv_msgs::BodyForceReq t;
+		//tau(VehicleModel6DOF::X) = t.wrench.force.x = t1+t2;
 		tau(VehicleModel6DOF::X) = t.wrench.force.x = tauXYNsc(0);
 		tau(VehicleModel6DOF::Y) = t.wrench.force.y = tauXYNsc(1);
 		t.wrench.force.z = tau(VehicleModel6DOF::Z);
 		t.wrench.torque.x = tau(VehicleModel6DOF::K);
 		t.wrench.torque.y = tau(VehicleModel6DOF::M);
 		tau(VehicleModel6DOF::N) = t.wrench.torque.z = tauXYNsc(2);
+		//tau(VehicleModel6DOF::N) = t.wrench.torque.z = t1-t2;
 		t.header.stamp = ros::Time::now();
+
+		//t.disable_axis.x = tau(VehicleModel6DOF::X) != tauXYN(0);
+		//t.disable_axis.yaw = tau(VehicleModel6DOF::N) != tauXYN(2);
+
+		//scale = 1;
 
 		//Publish the scaled values if scaling occured
 		if (scale>1)
@@ -350,12 +367,12 @@ int main(int argc, char* argv[])
 		tf::Transform transform;
 		transform.setOrigin(tf::Vector3(originLon, originLat, 0));
 		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "worldLatLon", "world"));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
 		transform.setOrigin(tf::Vector3(0, 0, 0));
 		Eigen::Quaternion<float> q;
 		labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "local"));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
 
 		tf::Transform transform3;
 		transform3.setOrigin(tf::Vector3(0, 0, 0));
@@ -375,7 +392,7 @@ int main(int argc, char* argv[])
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
 
 		tf::Transform transform2;
-		transform2.setOrigin(tf::Vector3(0, 0, -0.2));
+		transform2.setOrigin(tf::Vector3(0, 0, -0.25));
 		transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
 		localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
 

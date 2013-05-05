@@ -86,6 +86,8 @@ void onMsg(labust::tritech::MTDevice* modem, const std_msgs::String::ConstPtr ms
 	ar<<mmsg;
 
 	modem->send(tmsg);
+
+	std::cout<<"send message."<<std::endl;
 };
 
 void onData(ros::Publisher* modemOut, labust::tritech::MTMsgPtr tmsg)
