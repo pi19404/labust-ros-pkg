@@ -255,6 +255,9 @@ int main(int argc, char* argv[])
 		state.orientation_rate.yaw = estimate(KFNav::r);
 		state.position.north = estimate(KFNav::xp);
 		state.position.east = estimate(KFNav::yp);
+		state.orientation_rate.roll = estimate(KFNav::xc);
+		state.orientation_rate.pitch = estimate(KFNav::yc);
+
 		try
 		{
 			tf::StampedTransform transformDeg;

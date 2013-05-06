@@ -24,7 +24,7 @@
   <group ns="diver">
    <rosparam command="load" file="$(find caddy_uwsim)/launch/model.yaml" />
    <rosparam command="load" file="$(find caddy_uwsim)/launch/sim_diver.yaml" />
-   <rosparam command="load" file="$(find control_g500)/config/joy.yaml"/>
+   <!-- <rosparam command="load" file="$(find control_g500)/config/joy.yaml"/> -->
 
    <node pkg="cart_sim" name="dpcontroller" type="dynamic_positioning.py">
       <remap from="trackedNav" to="trajectory" />
