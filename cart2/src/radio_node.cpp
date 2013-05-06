@@ -41,23 +41,41 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <labust/preprocessor/mem_serialized_struct.hpp>
+#include <cart2/SetHLMode.h>
 
 #include <iostream>
 
-void handleJoy(boost::asio::serial_port& port,const sensor_msgs::Joy::ConstPtr& joy)
+typedef boost::array<double,2> vec2d;
+
+BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec2d , boost::serialization::primitive_type)
+
+PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN(,ModemData,
+			(float, surgeForce)
+			(float, torqueForce)
+	    (vec2d, latlon)
+			(int32_t, mode))
+
+struct SharedData
 {
-	std::ostringstream out;
-
-	out.precision(8);
-	out<<"JOY";
-	for (size_t i=0; i<4;++i)
-	{
-		out<<" "<<joy->axes[i];
-	}
-	out<<"\r"<<std::endl;
-
-	boost::asio::write(port, boost::asio::buffer(out.str()));
+	ModemData data;
+	boost::mutex dataLock;
 };
+
+void handleJoy(SharedData& data,const sensor_msgs::Joy::ConstPtr& joy)
+{
+	boost::mutex::scoped_lock l(data.dataLock);
+	data.data.surgeForce = joy->axes[1];
+	data.data.torqueForce = joy->axes[3];
+};
+
+bool setHLMode(SharedData& data, cart2::SetHLMode::Request& req,
+		cart2::SetHLMode::Response& resp)
+{
+	boost::mutex::scoped_lock l(data.dataLock);
+	data.data.mode = req.mode;
+	data.data.latlon = req.ref_point;
+}
 
 void handleOutgoing(boost::asio::serial_port& port, const std_msgs::String::ConstPtr& msg)
 {
@@ -119,8 +137,11 @@ void start_receive(ros::Publisher& pub,
 
 int main(int argc, char* argv[])
 {
+	SharedData data;
 	ros::init(argc,argv,"vr_node");
 	ros::NodeHandle nh,ph("~");
+	ros::ServiceServer hlManager = nh.advertiseService("SetHLMode",
+				boost::bind(&setHLMode, boost::ref(data),_1,_2));
 
 	std::string portName("/dev/ttyUSB0");
 	int baud(9600);
