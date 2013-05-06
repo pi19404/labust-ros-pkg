@@ -31,78 +31,85 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *
-*  Created on: 03.05.2013.
+*  Created on: 06.05.2013.
 *  Author: Dula Nad
 *********************************************************************/
-#ifndef LFCONTROL_HPP_
-#define LFCONTROL_HPP_
-#include <labust/control/PIDController.hpp>
-#include <labust/navigation/LFModel.hpp>
-#include <labust_uvapp/EnableControl.h>
+#ifndef HLMANAGER_HPP_
+#define HLMANAGER_HPP_
 
-#include <auv_msgs/NavSts.h>
-#include <geometry_msgs/PointStamped.h>
+#include <cart2/SetHLMode.h>
 #include <std_msgs/Bool.h>
+#include <geometry_msgs/PointStamped.h>
+#include <auv_msgs/NavSts.h>
+
 #include <ros/ros.h>
+#include <boost/thread/mutex.hpp>
+
+#include <map>
 
 namespace labust
 {
 	namespace control
 	{
 		/**
-		 * The class contains the implementation of the velocity line following controller.
-		 * \todo Add 3D line following support.
-		 * \todo Remove dependencies to LFModel class.
-		 * \todo Move onNewPoint to service ?
-		 * \todo Move enable to service ?
-		 * \todo Add external speed/force specification
+		 * The class implements the mission manager for the B-Art and C-Art vehicles.
+		 * \todo Look into ROS actionlib to replace this in a more generic resuable way ?
+		 * \todo Add controller registration and checking that neccessary controllers run.
+		 * \todo Consider making everything async ?
 		 */
-		class LFControl
+		class HLManager
 		{
+			enum {bArt=0, cArt};
+			enum {stop=0, manual,
+				gotoPoint, stationKeeping, circle};
+
+			typedef std::map<std::string,bool> ControllerMap;
+
 		public:
 			/**
 			 * Main constructor
 			 */
-			LFControl();
+			HLManager();
 			/**
-			 * Initialize and setup controller.
+			 * Initialize and setup the manager.
 			 */
 			void onInit();
 			/**
-			 * Performs one iteration.
-			 */
-			void step();
-			/**
-			 * Start the controller loop.
+			 * Start the manager.
 			 */
 			void start();
 
 		private:
 			/**
-			 * Handle the new point.
+			 * Handle vehicle position updates.
 			 */
-			void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& ref);
+			void onVehicleEstimates(const auv_msgs::NavSts::ConstPtr& estimate);
 			/**
-			 * Handle incoming estimates message.
+			 * The C-Art service handler.
 			 */
-			void onEstimate(const auv_msgs::NavSts::ConstPtr& estimate);
+			bool setHLMode(cart2::SetHLMode::Request& req, cart2::SetHLMode::Response& resp);
 			/**
-			 * Handle the enable control request.
+			 * Handle launch detection.
 			 */
-			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
-					labust_uvapp::EnableControl::Response& resp);
-			/**
-			 * Dynamic reconfigure callback.
-			 */
-			//void dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level);
+			void onLaunch(const std_msgs::Bool::ConstPtr& isLaunched);
 			/**
 			 * The safety test.
 			 */
-			//void safetyTest();
+			void safetyTest();
 			/**
-			 * Update the dynamic reconfiguration settings.
+			 * Make one action step.
 			 */
-			//void updateDynRecConfig();
+			void step();
+
+			/**
+			 * The full stop mode.
+			 */
+			bool fullStop();
+			/**
+			 * Configure controllers.
+			 */
+			bool configureControllers();
+
 			/**
 			 * The ROS node handles.
 			 */
@@ -110,67 +117,58 @@ namespace labust
 			/**
 			 * Last message times.
 			 */
-			ros::Time lastEst;
+			ros::Time lastEst, launchTime;
+			/**
+			 * Launch detected flag.
+			 */
+			bool launchDetected;
 			/**
 			 * Timeout
 			 */
 			double timeout;
+			/**
+			 * The operation mode and vehicle type.
+			 */
+			int32_t mode, type;
+			/**
+			 * The reference point.
+			 */
+			geometry_msgs::PointStamped point;
+			/**
+			 * The last vehicle state and trajectory specs.
+			 */
+			auv_msgs::NavSts stateHat, trackPoint;
 
 			/**
-			 * Initialize the controller parameters etc.
+			 * The safety radius, distance and time for B-Art.
 			 */
-			void initialize_controller();
+			double safetyRadius, safetyDistance, safetyTime;
 			/**
-			 * Adjust the controller based on surge speed.
+			 * Circle parameters
 			 */
-			void adjustDH();
-
+			double circleRadius, turnDir, lookAhead;
 			/**
-			 * The horizontal distance PD controller. It has a
-			 * limit on the P output value.
+			 * Spinner mutex.
 			 */
-			lfPD dh_controller;
-			/**
-			 * The sampling time.
-			 */
-			double Ts, surge, currSurge, wh, currYaw;
-			/**
-			 * The line description.
-			 */
-			labust::navigation::LFModel::Line line;
-			/**
-			 * Last received vehicle state.
-			 */
-			labust::navigation::LFModel::vector T0;
-			/**
-			 * Enabled.
-			 */
-			bool enable;
-
-
+			boost::mutex dataMux;
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher nuRef;
+			ros::Publisher refPoint, refTrack;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint;
+			ros::Subscriber state, launch;
 			/**
-			 * High level controller service.
+			 * Mode selector service server.
 			 */
-			ros::ServiceServer enableControl;
+			ros::ServiceServer modeServer;
 			/**
-			 * The dynamic reconfigure parameters.
+			 * The highlevel controller set.
 			 */
-			//labust_uvapp::VelConConfig config;
-			/**
-			 * The dynamic reconfigure server.
-			 */
-		  //dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
+			ControllerMap controllers;
 		};
 	}
 }
-
-/* VELOCITYCONTROL_HPP_ */
+/* HLMANAGER_HPP_ */
 #endif

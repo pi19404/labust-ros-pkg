@@ -4,7 +4,8 @@ project(labust_uvapp)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp dynamic_reconfigure sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp dynamic_reconfigure sensor_msgs
+	message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -27,14 +28,15 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-   SetHighLevelController.srv
+   ConfigureVelocityController.srv
+   EnableControl.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ###################################################
 ## Dynamic reconfigure
@@ -103,7 +105,7 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
 ## Add dependencies to the executable
 add_dependencies(velocity_control ${PROJECT_NAME}_gencfg)
-add_dependencies(velocity_control ${PROJECT_NAME}_gensrv)
+add_dependencies(velocity_control ${PROJECT_NAME}_genmsg)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(labust_uvapp_node

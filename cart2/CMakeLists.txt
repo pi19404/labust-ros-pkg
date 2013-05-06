@@ -4,7 +4,8 @@ project(cart2)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp)
+find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp
+	message_generation)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -29,17 +30,16 @@ include_directories(${Eigen_INCLUDE_DIRS})
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  SetHLMode.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   auv_msgs#   sensor_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  auv_msgs sensor_msgs std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -52,7 +52,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES cart2
-   CATKIN_DEPENDS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs
+   CATKIN_DEPENDS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -77,10 +77,12 @@ include_directories(include
 add_executable(radio_node src/radio_node.cpp)
 add_executable(cart2_node src/cart2_main.cpp)
 add_executable(imu_node src/imu_node.cpp)
+add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
+	include/labust/control/HLManager.hpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(cart2_node cart2_generate_messages_cpp)
+add_dependencies(hlmanager cart2_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(radio_node
@@ -94,6 +96,10 @@ target_link_libraries(cart2_node
 )
 
 target_link_libraries(imu_node
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(hlmanager
    ${catkin_LIBRARIES}
 )
 

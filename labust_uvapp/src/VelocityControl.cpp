@@ -58,7 +58,8 @@ VelocityControl::VelocityControl():
 			lastMeas(ros::Time::now()),
 			timeout(0.5),
 			joy_scale(1),
-			Ts(0.1)
+			Ts(0.1),
+			server(serverMux)
 {this->onInit();}
 
 void VelocityControl::onInit()
@@ -79,6 +80,13 @@ void VelocityControl::onInit()
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
 			&VelocityControl::handleManual,this, ros::TransportHints().unreliable());
 
+	//Configure service
+	highLevelSelect = nh.advertiseService("ConfigureVelocityController",
+			&VelocityControl::handleServerConfig, this);
+	enableControl = nh.advertiseService("VelCon_enable",
+			&VelocityControl::handleEnableControl, this);
+
+
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
 
@@ -89,6 +97,18 @@ void VelocityControl::onInit()
 	config.__fromServer__(ph);
 	server.setConfigDefault(config);
 	this->updateDynRecConfig();
+}
+
+bool VelocityControl::handleEnableControl(labust_uvapp::EnableControl::Request& req,
+		labust_uvapp::EnableControl::Response& resp)
+{
+	if (!req.enable)
+	{
+		for (int i=u; i<=r;++i) axis_control[i] = disableAxis;
+		this->updateDynRecConfig();
+	}
+
+	return true;
 }
 
 void VelocityControl::updateDynRecConfig()
@@ -106,6 +126,14 @@ void VelocityControl::updateDynRecConfig()
 	config.High_level_controller="0 - None\n 1 - DP";
 
 	server.updateConfig(config);
+}
+
+bool VelocityControl::handleServerConfig(labust_uvapp::ConfigureVelocityController::Request& req,
+		labust_uvapp::ConfigureVelocityController::Response& resp)
+{
+	axis_control = req.desired_mode;
+	this->updateDynRecConfig();
+	return true;
 }
 
 void VelocityControl::handleReference(const auv_msgs::BodyVelocityReq::ConstPtr& ref)
@@ -136,6 +164,7 @@ void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 
 void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
 {
+	boost::recursive_mutex::scoped_lock l(serverMux);
 	this->config = config;
 
 	for(size_t i=u; i<=r; ++i)

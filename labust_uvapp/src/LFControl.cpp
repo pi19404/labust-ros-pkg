@@ -68,7 +68,8 @@ void LFControl::onInit()
 			&LFControl::onEstimate,this);
 	refPoint = nh.subscribe<geometry_msgs::PointStamped>("LFPoint", 1,
 			&LFControl::onNewPoint,this);
-	enableFlag = nh.subscribe<std_msgs::Bool>("lf_enable",1,&LFControl::onEnable,this);
+	enableControl = nh.advertiseService("LF_enable",
+			&LFControl::onEnableControl, this);
 
 	nh.param("lf_controller/timeout",timeout,timeout);
 
@@ -125,9 +126,12 @@ void LFControl::onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 
 	line.setLine(T0,Tt);
 };
-void LFControl::onEnable(const std_msgs::Bool::ConstPtr& flag)
+
+bool LFControl::onEnableControl(labust_uvapp::EnableControl::Request& req,
+		labust_uvapp::EnableControl::Response& resp)
 {
-	this->enable = flag->data;
+	this->enable = req.enable;
+	return true;
 }
 
 void LFControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)

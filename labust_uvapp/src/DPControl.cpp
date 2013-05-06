@@ -70,7 +70,8 @@ void DPControl::onInit()
 			&DPControl::onTrackPoint,this);
 	windup = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
 			&DPControl::onWindup,this);
-	enableFlag = nh.subscribe<std_msgs::Bool>("dp_enable",1,&DPControl::onEnable,this);
+	enableControl = nh.advertiseService("DP_enable",
+			&DPControl::onEnableControl, this);
 
 	nh.param("dp_controller/timeout",timeout,timeout);
 
@@ -124,9 +125,11 @@ void DPControl::onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 	trackPoint.position.depth = point->point.z;
 };
 
-void DPControl::onEnable(const std_msgs::Bool::ConstPtr& flag)
+bool DPControl::onEnableControl(labust_uvapp::EnableControl::Request& req,
+		labust_uvapp::EnableControl::Response& resp)
 {
-	this->enable = flag->data;
+	this->enable = req.enable;
+	return true;
 }
 
 void DPControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -205,9 +208,9 @@ void DPControl::step()
 		PIFFExtController_step(&distanceController,Ts);
 		nu.twist.linear.x = distanceController.output;
 	}
-	else
+	else if (angleDiff < M_PI/2)
 	{
-		nu.twist.linear.x = 5*distanceController.gains[0]*safetyRadius;
+		nu.twist.linear.x = 2;
 	}
 
 

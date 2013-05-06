@@ -38,6 +38,7 @@
 #define DPCONTROL_HPP_
 #include <labust/control/PIDController.h>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust_uvapp/EnableControl.h>
 
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
@@ -93,9 +94,10 @@ namespace labust
 			 */
 			void onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch);
 			/**
-			 * Handle enable flag message.
+			 * Handle the enable control request.
 			 */
-			void onEnable(const std_msgs::Bool::ConstPtr& flag);
+			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
+					labust_uvapp::EnableControl::Response& resp);
 			/**
 			 * Dynamic reconfigure callback.
 			 */
@@ -159,7 +161,7 @@ namespace labust
 			/**
 			 * High level controller service.
 			 */
-			//ros::ServiceServer highLevelSelect;
+			ros::ServiceServer enableControl;
 			/**
 			 * The dynamic reconfigure parameters.
 			 */

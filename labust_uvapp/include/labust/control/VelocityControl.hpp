@@ -36,6 +36,8 @@
 #include <labust/control/PIDController.h>
 #include <labust/control/SOIdentification.hpp>
 #include <labust_uvapp/VelConConfig.h>
+#include <labust_uvapp/ConfigureVelocityController.h>
+#include <labust_uvapp/EnableControl.h>
 #include <dynamic_reconfigure/server.h>
 
 #include <auv_msgs/NavSts.h>
@@ -108,6 +110,16 @@ namespace labust
 			 */
 			void handleManual(const sensor_msgs::Joy::ConstPtr& joy);
 			/**
+			 * Handle server request for configuration.
+			 */
+			bool handleServerConfig(labust_uvapp::ConfigureVelocityController::Request& req,
+					labust_uvapp::ConfigureVelocityController::Response& resp);
+			/**
+			 * Handle the enable control request.
+			 */
+			bool handleEnableControl(labust_uvapp::EnableControl::Request& req,
+					labust_uvapp::EnableControl::Response& resp);
+			/**
 			 * Dynamic reconfigure callback.
 			 */
 			void dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level);
@@ -163,11 +175,15 @@ namespace labust
 			/**
 			 * Enable/disable controllers, external windup flag.
 			 */
-			int axis_control[r+1];
+			boost::array<int32_t,r+1> axis_control;
 			/**
 			 * Timeout management.
 			 */
 			bool suspend_axis[r+1];
+			/**
+			 * Dynamic reconfigure server.
+			 */
+			boost::recursive_mutex serverMux;
 
 			/**
 			 * The publisher of the TAU message.
@@ -180,7 +196,7 @@ namespace labust
 			/**
 			 * High level controller service.
 			 */
-			ros::ServiceServer highLevelSelect;
+			ros::ServiceServer highLevelSelect, enableControl;
 			/**
 			 * The dynamic reconfigure parameters.
 			 */

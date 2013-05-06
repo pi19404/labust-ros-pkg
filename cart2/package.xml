@@ -28,6 +28,7 @@
   <!-- Use test_depend for packages you need only for testing: -->
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
   <build_depend>auv_msgs</build_depend>
   <build_depend>labust_base</build_depend>
   <build_depend>roscpp</build_depend>
@@ -46,5 +47,6 @@
   <run_depend>std_msgs</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>diagnostic_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
   
 </package>
