@@ -1,0 +1,20 @@
+<launch>
+  <include file="$(find cart2)/data/config/$(env ROBOT).machine" /> 
+    
+  <group if="$(env USE_UWSIM)">
+  	<include file="$(find cart2)/data/config/uwsim.xml" />
+  </group>
+  
+  <group if="$(env USE_RVIZ)">
+    <include file="$(find cart2)/data/config/rviz.xml" />
+  </group>  
+
+  <group ns="cart2">
+  	<rosparam command="load" file="$(find cart2)/data/config/$(env LOCATION).yaml" />  	
+  	<include file="$(find cart2)/data/config/navigation.xml" />
+  	<include file="$(find cart2)/data/config/control.xml" />
+   	<include file="$(find cart2)/data/config/joy.xml" />
+  	<include file="$(find cart2)/data/config/driver.xml" />
+  	<include file="$(find cart2)/data/config/manager.xml" />
+  </group>
+</launch>

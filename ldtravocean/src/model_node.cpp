@@ -57,6 +57,9 @@
 #include <sstream>
 #include <string>
 
+double modelLat(0),modelLon(0);
+double originLat(0), originLon(0);
+
 nav_msgs::Odometry* mapToUWSimOdometry(const labust::simulation::vector& eta,
 		const labust::simulation::vector& nu,
 		nav_msgs::Odometry* odom,
@@ -129,8 +132,8 @@ auv_msgs::NavSts* mapToNavSts(const labust::simulation::vector& eta, const labus
 {
 	using namespace labust::simulation;
 	using namespace Eigen;
-	nav->global_position.latitude = 0;
-	nav->global_position.longitude = 0;
+	nav->global_position.latitude = modelLat;
+	nav->global_position.longitude = modelLon;
 
 	nav->position.north = eta(VehicleModel6DOF::x);
 	nav->position.east = eta(VehicleModel6DOF::y);
@@ -161,16 +164,17 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	try
 	{
 	    lisWorld.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);
-	    lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+	    //lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
 
 	  	fix->altitude = eta(VehicleModel6DOF::z) - transformLocal.getOrigin().z() ;
 	  	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
 	  	std::pair<double, double> diffAngle = labust::tools::meter2deg(eta(VehicleModel6DOF::x),
 	  		eta(VehicleModel6DOF::y),
 	  		//The latitude angle
-	  		transformDeg.getOrigin().y());
-	  	fix->latitude = transformDeg.getOrigin().y() + diffAngle.first;
-	  	fix->longitude = transformDeg.getOrigin().x() + diffAngle.second;
+	  		originLat);
+
+	  	modelLat = fix->latitude = originLat + diffAngle.first;
+	  	modelLon = fix->longitude = originLon + diffAngle.second;
 	    fix->header.stamp = ros::Time::now();
 	    fix->header.frame_id = "worldLatLon";
 	}
@@ -252,7 +256,7 @@ int main(int argc, char* argv[])
 	//Publishers
 	ros::Publisher state = nh.advertise<auv_msgs::NavSts>("meas",1);
 	ros::Publisher stateNoisy = nh.advertise<auv_msgs::NavSts>("noisy_meas",1);
-	ros::Publisher uwsim = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
+	//ros::Publisher uwsim = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher gpsFix = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
 	ros::Publisher imuMeas = nh.advertise<sensor_msgs::Imu>("imu_model",1);
@@ -263,9 +267,13 @@ int main(int argc, char* argv[])
 	//Transform broadcasters
 	tf::TransformBroadcaster localFrame;
 	tf::TransformListener lisWorld;
-	double originLat(0), originLon(0);
+	bool publishWorld, useNoisy;
+	double gpsTime;
 	nh.param("LocalOriginLat",originLat,originLat);
 	nh.param("LocalOriginLon",originLon,originLon);
+	ph.param("publish_world", publishWorld, true);
+	ph.param("use_noise", useNoisy, false);
+	ph.param("gps_time",gpsTime,1.0);
 
 	std::string utmzone;
 	/*/double northing, easting;
@@ -298,6 +306,7 @@ int main(int argc, char* argv[])
 	double maxThrust(100/(2*cp)),minThrust(-maxThrust);
 	ph.param("maxThrust",maxThrust,maxThrust);
 	ph.param("minThrust",minThrust,-maxThrust);
+
 
 	//Scaling allocation only for XYN
 	labust::vehicles::ScaleAllocation allocator(B,maxThrust,minThrust);
@@ -349,25 +358,30 @@ int main(int argc, char* argv[])
 		//Perform simulation with smaller sampling type if wrap>1
 		for (size_t i=0; i<wrap;++i) model.step(tau);
 
-		uwsim.publish(*mapToUWSimOdometry(model.Eta(),model.Nu(),&odom, lisWorld));
+		//uwsim.publish(*mapToUWSimOdometry(model.Eta(),model.Nu(),&odom, lisWorld));
 		state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));
 		stateNoisy.publish(*mapToNavSts(model.EtaNoisy(),model.NuNoisy(),&navNoisy));
 
-		if ((ros::Time::now()-lastGps).sec >=1)
+		const vector& Nu = (useNoisy?model.NuNoisy():model.Nu());
+		const vector& Eta = (useNoisy?model.EtaNoisy():model.Eta());
+		if ((ros::Time::now()-lastGps).sec >= gpsTime)
 		{
-			mapToNavSatFix(model.Eta(),model.Nu(),&fix,utmzone,lisWorld,localFrame);
+			mapToNavSatFix(Eta,Nu,&fix,utmzone,lisWorld,localFrame);
 			if (fix.altitude >= 0)
 			{
 				gpsFix.publish(fix);
 			}
 			lastGps = ros::Time::now();
 		}
-		imuMeas.publish(*mapToImu(model.Eta(),model.Nu(),model.NuAcc(),&imu,localFrame));
+		imuMeas.publish(*mapToImu(Eta,Nu,model.NuAcc(),&imu,localFrame));
 
 		tf::Transform transform;
 		transform.setOrigin(tf::Vector3(originLon, originLat, 0));
 		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+		if (publishWorld)
+		{
+			localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+		}
 		transform.setOrigin(tf::Vector3(0, 0, 0));
 		Eigen::Quaternion<float> q;
 		labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
@@ -390,6 +404,16 @@ int main(int argc, char* argv[])
 				eta(VehicleModel6DOF::psi), q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
+
+		//tf::Transform transform;
+		transform.setOrigin(tf::Vector3(Eta(VehicleModel6DOF::x),
+				Eta(VehicleModel6DOF::y),
+				Eta(VehicleModel6DOF::z)));
+		labust::tools::quaternionFromEulerZYX(Eta(VehicleModel6DOF::phi),
+				Eta(VehicleModel6DOF::theta),
+				Eta(VehicleModel6DOF::psi), q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_noisy"));
 
 		tf::Transform transform2;
 		transform2.setOrigin(tf::Vector3(0, 0, -0.25));

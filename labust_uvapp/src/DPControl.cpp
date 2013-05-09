@@ -182,17 +182,27 @@ void DPControl::step()
 	if (!enable) return;
 	//this->safetyTest();
 
+	static double pyaw = state.orientation.yaw;
+
 	auv_msgs::BodyVelocityReq nu;
 	//For 2D non-holonomic case
 	double dy(trackPoint.position.east - state.position.east);
 	double dx(trackPoint.position.north - state.position.north);
-	double angleDiff(labust::math::wrapRad(fabs(atan2(dy,dx) - labust::math::wrapRad(state.orientation.yaw))));
+	//double angle = state.orientation.yaw;
+	//dy += safetyRadius*sin(angle);
+	//dx += safetyRadius*cos(angle);
 	double dist(sqrt(dy*dy+dx*dx));
+	double angleDiff(labust::math::wrapRad(fabs(atan2(dy,dx) - labust::math::wrapRad(state.orientation.yaw))));
 
 	distanceController.desired = -safetyRadius;
 	distanceController.state = -dist;
 	headingController.state = state.orientation.yaw;
+
 	headingController.desired = atan2(dy,dx);
+	if (dist < 5*safetyRadius && (angleDiff > M_PI/2))
+	{
+		//headingController.desired = atan(dy/dx);
+	}
 	headingController.feedforward = trackPoint.orientation_rate.yaw;
 	distanceController.feedforward = sqrt(pow(trackPoint.body_velocity.x,2) + pow(trackPoint.body_velocity.y,2));
 
@@ -203,8 +213,9 @@ void DPControl::step()
 	nu.twist.angular.z = headingController.output;
 	//Limit the outgoing surge to a sensible value
 	nu.twist.linear.x = 0;
-	if (dist < 5*safetyRadius)
+	if ((dist < 5*safetyRadius) && (angleDiff < M_PI/2))
 	{
+		//distanceController.state = -dx*cos(state.orientation.yaw) - dy*sin(state.orientation.yaw);
 		PIFFExtController_step(&distanceController,Ts);
 		nu.twist.linear.x = distanceController.output;
 	}

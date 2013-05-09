@@ -36,11 +36,13 @@
 *********************************************************************/
 #ifndef HLMANAGER_HPP_
 #define HLMANAGER_HPP_
-
 #include <cart2/SetHLMode.h>
+
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
 #include <auv_msgs/NavSts.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <tf/transform_broadcaster.h>
 
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
@@ -93,6 +95,10 @@ namespace labust
 			 */
 			void onLaunch(const std_msgs::Bool::ConstPtr& isLaunched);
 			/**
+			 * On GPS data.
+			 */
+			void onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix);
+			/**
 			 * The safety test.
 			 */
 			void safetyTest();
@@ -117,7 +123,7 @@ namespace labust
 			/**
 			 * Last message times.
 			 */
-			ros::Time lastEst, launchTime;
+			ros::Time lastEst, launchTime, lastFix;
 			/**
 			 * Launch detected flag.
 			 */
@@ -138,6 +144,14 @@ namespace labust
 			 * The last vehicle state and trajectory specs.
 			 */
 			auv_msgs::NavSts stateHat, trackPoint;
+			/**
+			 * The last GPS fix.
+			 */
+			sensor_msgs::NavSatFix fix;
+			/**
+			 * GPS fix validated.
+			 */
+			bool fixValidated;
 
 			/**
 			 * The safety radius, distance and time for B-Art.
@@ -148,9 +162,14 @@ namespace labust
 			 */
 			double circleRadius, turnDir, lookAhead;
 			/**
-			 * Spinner mutex.
+			 * Local origin.
 			 */
-			boost::mutex dataMux;
+			tf::TransformBroadcaster worldLatLon;
+			/**
+			 * Lat-Lon origin position.
+			 */
+			double originLat, originLon;
+
 			/**
 			 * The publisher of the TAU message.
 			 */
@@ -158,7 +177,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber state, launch;
+			ros::Subscriber state, launch, gpsData;
 			/**
 			 * Mode selector service server.
 			 */

@@ -38,6 +38,7 @@
 #include <labust_uvapp/ConfigureVelocityController.h>
 #include <labust_uvapp/EnableControl.h>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/GeoUtilities.hpp>
 
 using labust::control::HLManager;
 
@@ -55,7 +56,8 @@ HLManager::HLManager():
 			safetyTime(30),
 			circleRadius(10),
 			turnDir(1),
-			lookAhead(1)
+			lookAhead(1),
+			fixValidated(false)
 {this->onInit();}
 
 void HLManager::onInit()
@@ -73,24 +75,47 @@ void HLManager::onInit()
 			&HLManager::onVehicleEstimates,this);
 	launch = nh.subscribe<std_msgs::Bool>("launched", 1,
 			&HLManager::onLaunch,this);
+	gpsData = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1,
+			&HLManager::onGPSData,this);
 
 	//Configure service
 	modeServer = nh.advertiseService("SetHLMode",
 			&HLManager::setHLMode, this);
-
+	bool isBart(true);
 	nh.param("hl_manager/timeout",timeout,timeout);
 	nh.param("hl_manager/radius",safetyRadius,safetyRadius);
+	nh.param("hl_manager/lookAhead",lookAhead,lookAhead);
 	nh.param("hl_manager/safetyDistance",safetyDistance,safetyDistance);
 	nh.param("hl_manager/safetyTime",safetyTime,safetyTime);
 	nh.param("hl_manager/circleRadius", circleRadius, circleRadius);
+	nh.param("hl_manager/isBart",originLon,originLon);
+	nh.param("LocalOriginLat",originLat,originLat);
+	nh.param("LocalOriginLon",originLon,originLon);
+	ph.param("LocalFixSim",fixValidated, fixValidated);
 }
 
 bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		cart2::SetHLMode::Response& resp)
 {
-	//Check if the mode is already active
-	this->point = req.ref_point;
+	//If in latitude/longitude convert to meters
+	if (req.ref_point.header.frame_id == "worldLatLon")
+	{
+		std::pair<double, double> location = labust::tools::deg2meter(req.ref_point.point.x,
+				req.ref_point.point.y,
+				originLat);
+		this->point.point.x = location.first;
+		this->point.point.y = location.second;
+	}
+	else
+	{
+		this->point = req.ref_point;
+	}
 
+	this->point.header.frame_id = "local";
+	point.header.stamp = ros::Time::now();
+	refPoint.publish(point);
+
+	//Check if the mode is already active
 	if (this->mode == req.mode) return true;
 	//Else handle the mode change
 	mode = req.mode;
@@ -105,9 +130,6 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 
 	srv.request.desired_mode[srv.request.u] = srv.request.ControlAxis;
 	srv.request.desired_mode[srv.request.r] = srv.request.ControlAxis;
-	point.header.frame_id = "local";
-	point.header.stamp = ros::Time::now();
-	refPoint.publish(point);
 
 	switch (mode)
 	{
@@ -187,14 +209,26 @@ bool HLManager::configureControllers()
 
 void HLManager::onVehicleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
-	boost::mutex::scoped_lock l(dataMux);
 	this->stateHat = *estimate;
 	lastEst = ros::Time::now();
 };
 
+void HLManager::onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix)
+{
+	this->fix = *fix;
+	this->fix.header.stamp = ros::Time::now();
+
+	//In case we didn't have a fix on launch, but now we get one.
+	if (!fixValidated)
+	{
+		originLat = fix->latitude;
+		originLon = fix->longitude;
+		fixValidated = true;
+	}
+};
+
 void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 {
-	boost::mutex::scoped_lock l(dataMux);
 	launchDetected = isLaunched->data;
 	launchTime = ros::Time::now();
 
@@ -204,8 +238,14 @@ void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 		point.point.x = stateHat.position.north + safetyDistance*cos(stateHat.orientation.yaw);
 		point.point.y = stateHat.position.east + safetyDistance*sin(stateHat.orientation.yaw);
 		point.point.z = 0;
+		point.header.frame_id = "local";
 
-		//Set the world and local coordinate frames from this point on
+		//Check if fix is valid
+		if ((fixValidated = (fix.header.stamp - ros::Time::now()).sec < safetyTime))
+		{
+			originLat = fix.latitude;
+			originLon = fix.longitude;
+		}
 	}
 }
 
@@ -219,12 +259,12 @@ void HLManager::safetyTest()
 
 		//Some action
 		//Turn off all control, switch to manual ?
+		this->fullStop();
 	}
 }
 
 void HLManager::step()
 {
-	boost::mutex::scoped_lock l(dataMux);
 	if ((type == bArt) && (mode==stop) && (launchDetected))
 	{
 		//Check that enough time has passed
@@ -249,7 +289,7 @@ void HLManager::step()
 	if (mode == gotoPoint)
 	{
 		//If distance to point is OK or the vehicle missed the point
-		if (dist < safetyRadius || (angleDiff > M_PI/2))
+		if (dist < safetyRadius || ((dist < 2*safetyRadius) && (angleDiff > M_PI/2)))
 		{
 			//Switch to station keeping
 			cart2::SetHLMode srv;
@@ -269,7 +309,6 @@ void HLManager::step()
 		trackPoint.position.east = point.point.y +
 				circleRadius*sin(relAngle) +
 				lookAhead*sin(relAngle + M_PI/2);
-
 		refTrack.publish(trackPoint);
 	}
 }
@@ -278,13 +317,19 @@ void HLManager::start()
 {
 	ros::Rate rate(10);
 
-	ros::AsyncSpinner spinner(1);
-	spinner.start();
 	while (nh.ok())
 	{
+		if (fixValidated)
+		{
+			tf::Transform transform;
+			transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+			transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+			worldLatLon.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+		}
+
 		this->safetyTest();
 		this->step();
 		rate.sleep();
-		//ros::spinOnce();
+		ros::spinOnce();
 	}
 }
