@@ -1,7 +1,7 @@
 <launch>
   <include file="$(find caddy_uwsim)/data/config/$(env ROBOT).machine" /> 
     
-  <!-- <include file="$(find caddy_uwsim)/data/config/uwsim.xml" /> -->
+  <include file="$(find caddy_uwsim)/data/config/uwsim.xml" />
   
   <group ns="pladypos">
   	<rosparam command="load" file="$(find caddy_uwsim)/data/config/$(env LOCATION).yaml" />  	
