@@ -39,6 +39,7 @@
 #include <labust_uvapp/EnableControl.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
+#include <labust/tools/rosutils.hpp>
 
 using labust::control::HLManager;
 
@@ -55,8 +56,7 @@ HLManager::HLManager():
 			safetyDistance(50),
 			safetyTime(30),
 			circleRadius(10),
-			turnDir(1),
-			lookAhead(1),
+			s(0),
 			fixValidated(false)
 {this->onInit();}
 
@@ -65,6 +65,7 @@ void HLManager::onInit()
 	//Fill controller names
 	controllers.insert(std::make_pair("LF",false));
 	controllers.insert(std::make_pair("DP",false));
+	controllers.insert(std::make_pair("VT",false));
 
 	//Initialize publishers
 	refPoint = nh.advertise<geometry_msgs::PointStamped>("ref_point", 1);
@@ -77,6 +78,8 @@ void HLManager::onInit()
 			&HLManager::onLaunch,this);
 	gpsData = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1,
 			&HLManager::onGPSData,this);
+	virtualTargetTwist = nh.subscribe<geometry_msgs::TwistStamped>("virtual_target_twist", 1,
+			&HLManager::onVTTwist,this);
 
 	//Configure service
 	modeServer = nh.advertiseService("SetHLMode",
@@ -84,7 +87,6 @@ void HLManager::onInit()
 	bool isBart(true);
 	nh.param("hl_manager/timeout",timeout,timeout);
 	nh.param("hl_manager/radius",safetyRadius,safetyRadius);
-	nh.param("hl_manager/lookAhead",lookAhead,lookAhead);
 	nh.param("hl_manager/safetyDistance",safetyDistance,safetyDistance);
 	nh.param("hl_manager/safetyTime",safetyTime,safetyTime);
 	nh.param("hl_manager/circleRadius", circleRadius, circleRadius);
@@ -131,6 +133,8 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	srv.request.desired_mode[srv.request.u] = srv.request.ControlAxis;
 	srv.request.desired_mode[srv.request.r] = srv.request.ControlAxis;
 
+	geometry_msgs::TwistStampedPtr fakeTwist(new geometry_msgs::TwistStamped());
+	disableControllerMap();
 	switch (mode)
 	{
 	case manual:
@@ -142,16 +146,20 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	case gotoPoint:
 		ROS_INFO("Set to GoTo mode.");
 		controllers["LF"] = true;
-		controllers["DP"] = false;
 		return client.call(srv) && configureControllers();
 		break;
 	case stationKeeping:
 		ROS_INFO("Set to Station keeping mode.");
-	case circle:
-		if (mode == circle) ROS_INFO("Set to Circle mode.");
-		controllers["LF"] = false;
 		controllers["DP"] = true;
 		return client.call(srv) && configureControllers();
+		break;
+	case circle:
+	  ROS_INFO("Set to Circle mode.");
+		controllers["VT"] = true;
+		s = 0;
+		this->onVTTwist(fakeTwist);
+		return client.call(srv) && configureControllers();
+		break;
 	case stop:
 		ROS_INFO("Stopping.");
 		return this->fullStop();
@@ -162,6 +170,15 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	}
 
 	return true;
+}
+
+void HLManager::disableControllerMap()
+{
+	for (ControllerMap::iterator it=controllers.begin();
+			it != controllers.end(); ++it)
+	{
+		it->second = false;
+	}
 }
 
 bool HLManager::fullStop()
@@ -176,11 +193,7 @@ bool HLManager::fullStop()
 	  return false;
 	}
 
-	for (ControllerMap::iterator it=controllers.begin();
-			it != controllers.end(); ++it)
-	{
-		it->second = false;
-	}
+	disableControllerMap();
 
 	if (!configureControllers()) return false;
 
@@ -205,6 +218,27 @@ bool HLManager::configureControllers()
 	}
 
 	return success;
+}
+
+void HLManager::onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist)
+{
+  //\todo Generalize this 0.1 with Ts.
+	s +=twist->twist.linear.x*0.1;
+
+	//Circle
+	if (s>=2*circleRadius*M_PI) s=s-2*circleRadius*M_PI;
+	else if (s<0) s=2*circleRadius*M_PI-s;
+
+	double xRabbit = point.point.x + circleRadius*cos(s/circleRadius);
+	double yRabbit = point.point.y + circleRadius*sin(s/circleRadius);
+  double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
+
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
+  Eigen::Quaternion<float> q;
+  labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
+  transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+  broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
 }
 
 void HLManager::onVehicleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -299,18 +333,19 @@ void HLManager::step()
 		}
 	}
 
-	if (mode == circle)
-	{
-		//Handle modes that need timing
-		relAngle = atan2(-dy,-dx);
-		trackPoint.position.north = point.point.x +
-				circleRadius*cos(relAngle) +
-				lookAhead*cos(relAngle + M_PI/2);
-		trackPoint.position.east = point.point.y +
-				circleRadius*sin(relAngle) +
-				lookAhead*sin(relAngle + M_PI/2);
-		refTrack.publish(trackPoint);
-	}
+//	if (mode == circle)
+//	{
+//		double xRabbit = trackPoint.position.north + circleRadius*cos(s/circleRadius);
+//		double yRabbit = trackPoint.position.east + circleRadius*sin(s/circleRadius);
+//	  double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
+//
+//	  tf::Transform transform;
+//	  transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
+//	  Eigen::Quaternion<float> q;
+//	  labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
+//	  transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+//	  broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+//	}
 }
 
 void HLManager::start()
@@ -324,7 +359,7 @@ void HLManager::start()
 			tf::Transform transform;
 			transform.setOrigin(tf::Vector3(originLon, originLat, 0));
 			transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-			worldLatLon.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
 		}
 
 		this->safetyTest();

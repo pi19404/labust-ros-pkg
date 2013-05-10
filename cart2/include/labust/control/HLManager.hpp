@@ -58,6 +58,9 @@ namespace labust
 		 * \todo Look into ROS actionlib to replace this in a more generic resuable way ?
 		 * \todo Add controller registration and checking that neccessary controllers run.
 		 * \todo Consider making everything async ?
+		 * \todo Extract and generalize the path generation (Bezier curves from NURC)
+		 * \todo Add support for external surge selection
+		 * \todo Add support for external radius selection
 		 */
 		class HLManager
 		{
@@ -99,6 +102,10 @@ namespace labust
 			 */
 			void onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix);
 			/**
+			 * Update the virutal target twist.
+			 */
+			void onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist);
+			/**
 			 * The safety test.
 			 */
 			void safetyTest();
@@ -107,6 +114,10 @@ namespace labust
 			 */
 			void step();
 
+			/**
+			 * Set all controller enable signals to false.
+			 */
+			void disableControllerMap();
 			/**
 			 * The full stop mode.
 			 */
@@ -160,11 +171,11 @@ namespace labust
 			/**
 			 * Circle parameters
 			 */
-			double circleRadius, turnDir, lookAhead;
+			double circleRadius, turnDir, s;
 			/**
 			 * Local origin.
 			 */
-			tf::TransformBroadcaster worldLatLon;
+			tf::TransformBroadcaster broadcaster;
 			/**
 			 * Lat-Lon origin position.
 			 */
@@ -177,7 +188,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber state, launch, gpsData;
+			ros::Subscriber state, launch, gpsData, virtualTargetTwist;
 			/**
 			 * Mode selector service server.
 			 */

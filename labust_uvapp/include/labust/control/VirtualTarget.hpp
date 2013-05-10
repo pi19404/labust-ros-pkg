@@ -34,8 +34,8 @@
 *  Created on: 03.05.2013.
 *  Author: Dula Nad
 *********************************************************************/
-#ifndef DPCONTROL_HPP_
-#define DPCONTROL_HPP_
+#ifndef VIRTUALTARGET_HPP_
+#define VIRTUALTARGET_HPP_
 #include <labust/control/PIDController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust_uvapp/EnableControl.h>
@@ -44,6 +44,7 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
+#include <tf/transform_listener.h>
 #include <ros/ros.h>
 
 namespace labust
@@ -51,18 +52,15 @@ namespace labust
 	namespace control
 	{
 		/**
-		 * The class contains the implementation of the station keeping controller for a
-		 * non-holonomic surface vehicle.
-		 *
-		 * \todo Split into policies 2D/3D non-holonomic, 2D/3D holonomic, station keep, tracking, PID, backstepping
+		 * The class contains the implementation of the virtual target path following.
 		 */
-		class DPControl
+		class VirtualTarget
 		{
 		public:
 			/**
 			 * Main constructor
 			 */
-			DPControl();
+			VirtualTarget();
 			/**
 			 * Initialize and setup controller.
 			 */
@@ -80,15 +78,19 @@ namespace labust
 			/**
 			 * Handle the new point.
 			 */
-			void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point);
+			//void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point);
 			/**
 			 * Handle the new tracking point.
 			 */
-			void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref);
+			//void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref);
 			/**
 			 * Handle incoming estimates message.
 			 */
 			void onEstimate(const auv_msgs::NavSts::ConstPtr& estimate);
+			/**
+			 * Handle incoming flow frame twist estimates.
+			 */
+			void onFlowTwist(const geometry_msgs::TwistStamped::ConstPtr& flowtwist);
 			/**
 			 * Handle windup occurence.
 			 */
@@ -132,28 +134,32 @@ namespace labust
 			 * The horizontal distance PD controller. It has a
 			 * limit on the P output value.
 			 */
-			PIDController headingController, distanceController;
+			PIDController headingController;
 			/**
 			 * The sampling time.
 			 */
-			double Ts, safetyRadius, surge;
+			double Ts, safetyRadius, surge, flowSurgeEstimate, K1, K2, gammaARad;
 			/**
 			 * Last received vehicle state.
 			 */
-			auv_msgs::NavSts state, trackPoint;
+			auv_msgs::NavSts state;//, trackPoint;
 			/**
 			 * Enabled.
 			 */
-			bool enable, inRegion;
+			bool enable;
+			/**
+			 * Mutex to sync updates.
+			 */
+			boost::mutex dataMux;
 
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher nuRef;
+			ros::Publisher nuRef, vtTwist;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint, refTrack, enableFlag, windup;
+			ros::Subscriber stateHat, enableFlag, windup, flowTwist;
 			/**
 			 * The heading unwrapper.
 			 */
@@ -170,9 +176,13 @@ namespace labust
 			 * The dynamic reconfigure server.
 			 */
 		  //dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
+			/**
+			 * The transform listener for frame conversions.
+			 */
+			tf::TransformListener listener;
 		};
 	}
 }
 
-/* VELOCITYCONTROL_HPP_ */
+/* VIRTUALTARGET_HPP_ */
 #endif

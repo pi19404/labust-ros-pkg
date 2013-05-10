@@ -177,6 +177,17 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	  	modelLon = fix->longitude = originLon + diffAngle.second;
 	    fix->header.stamp = ros::Time::now();
 	    fix->header.frame_id = "worldLatLon";
+
+			tf::Transform transform;
+			Eigen::Quaternion<float> q;
+			transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
+					eta(VehicleModel6DOF::y),
+					eta(VehicleModel6DOF::z)));
+			labust::tools::quaternionFromEulerZYX(eta(VehicleModel6DOF::phi),
+					eta(VehicleModel6DOF::theta),
+					eta(VehicleModel6DOF::psi), q);
+			transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+			gpsBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_noisy"));
 	}
 	catch (tf::TransformException& ex)
 	{
@@ -404,16 +415,6 @@ int main(int argc, char* argv[])
 				eta(VehicleModel6DOF::psi), q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
-
-		//tf::Transform transform;
-		transform.setOrigin(tf::Vector3(Eta(VehicleModel6DOF::x),
-				Eta(VehicleModel6DOF::y),
-				Eta(VehicleModel6DOF::z)));
-		labust::tools::quaternionFromEulerZYX(Eta(VehicleModel6DOF::phi),
-				Eta(VehicleModel6DOF::theta),
-				Eta(VehicleModel6DOF::psi), q);
-		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_noisy"));
 
 		tf::Transform transform2;
 		transform2.setOrigin(tf::Vector3(0, 0, -0.25));
