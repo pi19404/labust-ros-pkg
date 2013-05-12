@@ -57,7 +57,6 @@
 
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
-double originLat(0), originLon(0);
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -70,15 +69,16 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	enum {x,y,newMsg};
 	//Calculate to X-Y tangent plane
-	tf::StampedTransform transformInternal, transformLocal;
+	tf::StampedTransform transformDeg, transformLocal;
 	try
 	{
 		listener->lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
+		listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
 
 		std::pair<double,double> posxy =
-				labust::tools::deg2meter(data->latitude - originLat,
-						data->longitude - originLon,
-						data->latitude);
+				labust::tools::deg2meter(data->latitude - transformDeg.getOrigin().y(),
+						data->longitude - transformDeg.getOrigin().x(),
+						transformDeg.getOrigin().y());
 
 		//correct for lever arm shift during pitch and roll
 		tf::Vector3 pos = tf::Vector3(posxy.first, posxy.second,0);
@@ -176,21 +176,30 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 
 	nav.setParameters(surge,sway,yaw);
 
-	std::string sQ,sW,sV,sR;
+	std::string sQ,sW,sV,sR,sP,sx0;
 	nh.getParam(modelName+"/navigation/Q", sQ);
 	nh.getParam(modelName+"/navigation/W", sW);
 	nh.getParam(modelName+"/navigation/V", sV);
 	nh.getParam(modelName+"/navigation/R", sR);
-	KFNav::matrix Q,W,V,R;
+	nh.getParam(modelName+"/navigation/P", sP);
+	nh.getParam(modelName+"/navigation/x0", sx0);
+	KFNav::matrix Q,W,V,R,P;
+	KFNav::vector x0;
 	boost::numeric::ublas::matrixFromString(sQ,Q);
 	boost::numeric::ublas::matrixFromString(sW,W);
 	boost::numeric::ublas::matrixFromString(sV,V);
 	boost::numeric::ublas::matrixFromString(sR,R);
+	boost::numeric::ublas::matrixFromString(sP,P);
+	std::stringstream ss(sx0);
+	boost::numeric::ublas::operator >>(ss,x0);
 
-	std::cout<<"Matrices:"<<Q<<"\n"<<W<<"\n"<<V<<"\n"<<R<<std::endl;
+	std::cout<<P<<std::endl;
 
-	//nav.setState(KFNav::zeros(KFNav::stateNum));
-	//nav.setStateCovariance(10*KFNav::eye(KFNav::stateNum));
+	nav.setStateParameters(W,Q);
+	nav.setMeasurementParameters(V,R);
+	nav.setStateCovariance(P);
+	nav.initModel();
+	nav.setState(x0);
 }
 
 //consider making 2 corrections based on arrived measurements (async)
@@ -202,12 +211,13 @@ int main(int argc, char* argv[])
 	//Configure the navigation
 	configureNav(nav,nh);
 
-	nh.param("LocalOriginLat",originLat,originLat);
-	nh.param("LocalOriginLon",originLon,originLon);
+	double outlierR;
+	nh.param("outlier_radius",outlierR,1.0);
 
 	//Publishers
 	ros::Publisher stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 	ros::Publisher stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
+	ros::Publisher currentTwist = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
 	//Subscribers
 	KFNav::vector tau(KFNav::zeros(KFNav::inputSize)),xy(KFNav::zeros(2+1)),rpy(KFNav::zeros(3+1));
 
@@ -221,6 +231,11 @@ int main(int argc, char* argv[])
 	ros::Rate rate(10);
 
 	auv_msgs::NavSts meas,state;
+	geometry_msgs::TwistStamped current;
+	meas.header.frame_id = "local";
+	state.header.frame_id = "local";
+	current.header.frame_id = "local";
+
 	labust::math::unwrap unwrap;
 
 	while (ros::ok())
@@ -230,10 +245,24 @@ int main(int argc, char* argv[])
 		if (rpy(3))
 		{
 			double yaw = unwrap(rpy(2));
+
 			if (xy(2) == 1)
 			{
-				ROS_INFO("XY correction:%f, %f",xy(0),xy(1));
-				nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+				bool outlier = false;
+				double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+				double inx(0),iny(0);
+				nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+				outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+
+				if (!outlier)
+				{
+					ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
+					nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+				}
+				else
+				{
+					ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
+				}
 				xy(2) = 0;
 			}
 			else
@@ -255,25 +284,34 @@ int main(int argc, char* argv[])
 		state.orientation_rate.yaw = estimate(KFNav::r);
 		state.position.north = estimate(KFNav::xp);
 		state.position.east = estimate(KFNav::yp);
-		try
-			{
-				tf::StampedTransform transformDeg;
-				listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+		current.twist.linear.x = estimate(KFNav::xc);
+		current.twist.linear.y = estimate(KFNav::yc);
 
-				std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
-			  		state.position.east,
-			  		//The latitude angle
-			  		transformDeg.getOrigin().y());
-				state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
-				state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
-			}
-			catch(tf::TransformException& ex)
-			{
-				ROS_ERROR("%s",ex.what());
-			}
+		const KFNav::matrix& covariance = nav.getStateCovariance();
+		state.position_variance.north = covariance(KFNav::xp, KFNav::xp);
+		state.position_variance.east = covariance(KFNav::yp, KFNav::yp);
+		state.orientation_variance.yaw =  covariance(KFNav::psi, KFNav::psi);
+
+		try
+		{
+			tf::StampedTransform transformDeg;
+			listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+
+			std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
+					state.position.east,
+					//The latitude angle
+					transformDeg.getOrigin().y());
+			state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
+			state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+		}
+		catch(tf::TransformException& ex)
+		{
+			ROS_ERROR("%s",ex.what());
+		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
 		stateHat.publish(state);
+		currentTwist.publish(current);
 
 		tf::StampedTransform transform;
 		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
