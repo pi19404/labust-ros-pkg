@@ -16,7 +16,7 @@ cart2/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
 cart2/navigation/Q: "diag([10](0.001,0.001,0.0001,0.0,0.0,0.0,0.001,0.001,0.01,0.00))"
 cart2/navigation/W: "diag([10](1,1,1,1,1,1,1,1,1,1))"
 #Parameters: 			      x  y  psi 
-cart2/navigation/R: "diag([3](9,9,0.003))"
+cart2/navigation/R: "diag([3](16,16,0.003))"
 cart2/navigation/V: "diag([3](1,1,1))"
 cart2/navigation/P: "diag([10](100,100,100,100,100,100,100,100,100,100))"
 cart2/navigation/x0: "[10](0,0,0,0,0,0,0,0,0,0)"
