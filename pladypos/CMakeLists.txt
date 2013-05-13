@@ -4,7 +4,7 @@ project(pladypos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs orocos_kdl tf dynamic_reconfigure)
+find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs orocos_kdl tf dynamic_reconfigure labust_uvapp)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -42,7 +42,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 ###################################################
 ## Dynamic reconfigure
 ###################################################
-generate_dynamic_reconfigure_options(cfg/ThrusterMapping.cfg)
+generate_dynamic_reconfigure_options(cfg/ThrusterMapping.cfg cfg/DPSettings.cfg)
 
 ###################################################
 ## Declare things to be passed to other projects ##

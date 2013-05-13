@@ -1,4 +1,4 @@
 <launch>
-  <rosparam command="load" file="$(find caddy_uwsim)/launch/model.yaml" />
+  <rosparam command="load" file="$(find caddy_uwsim)/data/config/model.yaml" />
   <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="pladypos" />
 </launch>

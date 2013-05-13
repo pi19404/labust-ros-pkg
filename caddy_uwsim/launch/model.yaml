@@ -1,7 +1,7 @@
 model_name: falcon
 
 falcon/dynamics/period: 0.1
-falcon/dynamics/mass: 20.0
+falcon/dynamics/mass: 24.8
 falcon/dynamics/rg: [0.0, 0.0, 0.0]
 falcon/dynamics/rb: [0.0, 0.0, 0.0]
 falcon/dynamics/g: 9.81
@@ -10,7 +10,7 @@ falcon/dynamics/g: 9.81
 
 falcon/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 12.274219]
 falcon/dynamics/added_mass: [6.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
-falcon/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 2.351080]
+falcon/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 26.0]
 falcon/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
 
 falcon/navigation/Q: "diag([10](0.01,0.003,0.01,0.01,0.001,0.001,0.001)"
