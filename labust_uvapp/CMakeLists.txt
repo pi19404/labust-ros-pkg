@@ -112,7 +112,10 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
 ## Add dependencies to the executable
 add_dependencies(velocity_control ${PROJECT_NAME}_gencfg)
-add_dependencies(velocity_control ${PROJECT_NAME}_genmsg)
+add_dependencies(dp_control ${PROJECT_NAME}_gencpp)
+add_dependencies(vt_control ${PROJECT_NAME}_gencpp)
+add_dependencies(lf_control ${PROJECT_NAME}_gencpp)
+add_dependencies(velocity_control ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(labust_uvapp_node

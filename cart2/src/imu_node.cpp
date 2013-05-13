@@ -134,7 +134,11 @@ void handleIncoming(SharedData& shared,
 		imu->angular_velocity.x = data[gyro_x];
 		imu->angular_velocity.y = data[gyro_y];
 		imu->angular_velocity.z = data[gyro_z];
-		tf::Quaternion quat = tf::createQuaternionFromRPY(data[roll],data[pitch],data[yaw] + shared.magnetic_declination);
+
+		Eigen::Quaternion<float> quat;
+		labust::tools::quaternionFromEulerZYX(data[roll],
+				data[pitch],
+				data[yaw] + shared.magnetic_declination, quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
