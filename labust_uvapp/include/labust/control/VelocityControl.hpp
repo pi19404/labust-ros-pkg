@@ -164,6 +164,10 @@ namespace labust
 			 * Enable/disable controllers, external windup flag.
 			 */
 			int axis_control[r+1];
+			/**
+			 * Timeout management.
+			 */
+			bool suspend_axis[r+1];
 
 			/**
 			 * The publisher of the TAU message.

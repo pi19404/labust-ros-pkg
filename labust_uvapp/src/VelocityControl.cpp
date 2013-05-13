@@ -42,6 +42,7 @@
 
 #include <cmath>
 #include <vector>
+#include <string>
 
 using labust::control::VelocityControl;
 
@@ -76,7 +77,7 @@ void VelocityControl::onInit()
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
 			&VelocityControl::handleWindup,this);
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
-			&VelocityControl::handleManual,this);
+			&VelocityControl::handleManual,this, ros::TransportHints().unreliable());
 
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
@@ -214,15 +215,11 @@ void VelocityControl::safetyTest()
 		bool manChannel = manTimeout && (axis_control[i] == manualAxis);
 		if (manChannel) ROS_WARN("Timeout on the manual channel. Manual axes will be disabled.");
 
-		if (cntChannel || measChannel || manChannel)
-		{
-			changed = true;
-			axis_control[i] = disableAxis;
-		}
+		suspend_axis[i] = (cntChannel || measChannel || manChannel);
 	}
 
 	//Update only on change.
-	if (changed) this->updateDynRecConfig();
+	//if (changed) this->updateDynRecConfig();
 }
 
 double VelocityControl::doIdentification(int i)
@@ -283,6 +280,13 @@ void VelocityControl::step()
 
 	for (int i=u; i<=r;++i)
 	{
+		//If some of the axis are timed-out just ignore
+		if (suspend_axis[i])
+		{
+			controller[i].output = 0;
+			continue;
+		}
+
 		switch (axis_control[i])
 		{
 		case manualAxis:
@@ -360,8 +364,10 @@ void VelocityControl::initialize_controller()
 		PIFFController_tune(&controller[i]);
 		controller[i].autoTracking = autoTracking;
 
+		if (!manAxis(i)) axis_control[i] = controlAxis;
 		if (manAxis(i)) axis_control[i] = manualAxis;
 		if (disAxis(i)) axis_control[i] = disableAxis;
+		suspend_axis[i]=false;
 
 		ph.setParam(dofName[i]+"_Kp",controller[i].gains[Kp]);
 		ph.setParam(dofName[i]+"_Ki",controller[i].gains[Ki]);

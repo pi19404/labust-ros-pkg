@@ -4,7 +4,7 @@ project(ldtravocean)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp labust_base auv_msgs tf)
+find_package(catkin REQUIRED COMPONENTS roscpp labust_base auv_msgs tf labust_uvapp)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)

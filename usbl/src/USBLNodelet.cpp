@@ -62,13 +62,13 @@ void USBLNodelet::onInit()
 	ph.param("ip",address,address);
 	ph.param("port",port,port);
 	//Connect to the TCPDevice
-	//usbl.reset(new TCPDevice(address,port));
+	usbl.reset(new TCPDevice(address,port));
 	//Register handlers
 	TCPDevice::HandlerMap map;
 	map[MTMsg::mtAlive] = boost::bind(&USBLNodelet::onTCONMsg,this,_1);
 	map[MTMsg::mtAMNavDataV2] = boost::bind(&USBLNodelet::onNavMsg,this, _1);
 	//map[MTMsg::mtAMNavDataV2] = map[MTMsg::mtAMNavData];
-	//usbl->registerHandlers(map);
+	usbl->registerHandlers(map);
 
 	ros::NodeHandle nh = this->getNodeHandle();
 	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	1, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));
@@ -151,7 +151,7 @@ void USBLNodelet::run()
 	while (ros::ok())
 	{
 		boost::mutex::scoped_lock lock(pingLock);
-		//while (usblBusy) 	usblCondition.wait(lock);
+		while (usblBusy) 	usblCondition.wait(lock);
 
 		TCONMsgPtr tmsg(new TCONMsg());
 		tmsg->txNode = 255;
@@ -174,7 +174,7 @@ void USBLNodelet::run()
 
 		boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
 		ar<<mmsg;
-		//usbl->send(tmsg);
+		usbl->send(tmsg);
 		usblBusy = true;
 
 		//Broadcast frame

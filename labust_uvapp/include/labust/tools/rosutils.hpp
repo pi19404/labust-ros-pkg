@@ -147,6 +147,18 @@ namespace labust
 			Eigen::Vector6d added_mass, damping, qdamping;
 			Eigen::Matrix3d inertia_matrix;
 		};
+
+		template <class T>
+		void quaternionFromEuler(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
+		{
+			using namespace Eigen;
+			Matrix3f m;
+			m = AngleAxisf(yaw, Vector3f::UnitZ())
+			* AngleAxisf(pitch, Vector3f::UnitY())
+			* AngleAxisf(roll, Vector3f::UnitX());
+			q = Quaternion<T>(m);
+		}
+
 	}
 }
 
