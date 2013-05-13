@@ -218,6 +218,7 @@ int main(int argc, char* argv[])
 	ros::Publisher stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 	ros::Publisher stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
 	ros::Publisher currentTwist = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
+	ros::Publisher bodyFlowFrame = nh.advertise<geometry_msgs::TwistStamped>("body_flow_frame_twist",1);
 	//Subscribers
 	KFNav::vector tau(KFNav::zeros(KFNav::inputSize)),xy(KFNav::zeros(2+1)),rpy(KFNav::zeros(3+1));
 
@@ -231,7 +232,7 @@ int main(int argc, char* argv[])
 	ros::Rate rate(10);
 
 	auv_msgs::NavSts meas,state;
-	geometry_msgs::TwistStamped current;
+	geometry_msgs::TwistStamped current, flowspeed;
 	meas.header.frame_id = "local";
 	state.header.frame_id = "local";
 	current.header.frame_id = "local";
@@ -310,8 +311,6 @@ int main(int argc, char* argv[])
 		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
-		stateHat.publish(state);
-		currentTwist.publish(current);
 
 		tf::StampedTransform transform;
 		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
@@ -319,6 +318,19 @@ int main(int argc, char* argv[])
 		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),estimate(KFNav::psi),q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+
+		//Calculate the flow frame (instead of heading use course)
+		double xdot,ydot;
+		nav.getNEDSpeed(xdot,ydot);
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),atan2(ydot,xdot),q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_flow"));
+
+		flowspeed.twist.linear.x = xdot;
+		flowspeed.twist.linear.y = ydot;
+		bodyFlowFrame.publish(flowspeed);
+		currentTwist.publish(current);
+		stateHat.publish(state);
 
 		rate.sleep();
 		ros::spinOnce();
