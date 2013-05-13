@@ -79,13 +79,11 @@ void VelocityControl::onInit()
 			&VelocityControl::handleWindup,this);
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
 			&VelocityControl::handleManual,this, ros::TransportHints().unreliable());
-
 	//Configure service
 	highLevelSelect = nh.advertiseService("ConfigureVelocityController",
 			&VelocityControl::handleServerConfig, this);
 	enableControl = nh.advertiseService("VelCon_enable",
 			&VelocityControl::handleEnableControl, this);
-
 
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
