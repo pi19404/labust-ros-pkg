@@ -34,14 +34,12 @@
 *  Created on: 03.05.2013.
 *  Author: Dula Nad
 *********************************************************************/
-#ifndef DPCONTROL_HPP_
-#define DPCONTROL_HPP_
-#include <labust/control/PIDController.h>
-#include <labust/math/NumberManipulation.hpp>
+#ifndef HEADINGCONTROL_HPP_
+#define HEADINGCONTROL_HPP_
+#include <labust/control/PIDController.hpp>
 #include <labust_uvapp/EnableControl.h>
 
 #include <auv_msgs/NavSts.h>
-#include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
@@ -51,18 +49,15 @@ namespace labust
 	namespace control
 	{
 		/**
-		 * The class contains the implementation of the station keeping controller for a
-		 * non-holonomic surface vehicle.
-		 *
-		 * \todo Split into policies 2D/3D non-holonomic, 2D/3D holonomic, station keep, tracking, PID, backstepping
+		 * The class contains the implementation of the heading state controller.
 		 */
-		class DPControl
+		class LFControl
 		{
 		public:
 			/**
 			 * Main constructor
 			 */
-			DPControl();
+			LFControl();
 			/**
 			 * Initialize and setup controller.
 			 */
@@ -80,19 +75,11 @@ namespace labust
 			/**
 			 * Handle the new point.
 			 */
-			void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point);
-			/**
-			 * Handle the new tracking point.
-			 */
-			void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref);
+			void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& ref);
 			/**
 			 * Handle incoming estimates message.
 			 */
 			void onEstimate(const auv_msgs::NavSts::ConstPtr& estimate);
-			/**
-			 * Handle windup occurence.
-			 */
-			void onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch);
 			/**
 			 * Handle the enable control request.
 			 */
@@ -127,24 +114,33 @@ namespace labust
 			 * Initialize the controller parameters etc.
 			 */
 			void initialize_controller();
+			/**
+			 * Adjust the controller based on surge speed.
+			 */
+			void adjustDH();
 
 			/**
 			 * The horizontal distance PD controller. It has a
 			 * limit on the P output value.
 			 */
-			PIDController headingController, distanceController;
+			lfPD dh_controller;
 			/**
 			 * The sampling time.
 			 */
-			double Ts, safetyRadius, surge;
+			double Ts, surge, currSurge, wh, currYaw;
+			/**
+			 * The line description.
+			 */
+			labust::navigation::LFModel::Line line;
 			/**
 			 * Last received vehicle state.
 			 */
-			auv_msgs::NavSts state, trackPoint;
+			labust::navigation::LFModel::vector T0;
 			/**
 			 * Enabled.
 			 */
-			bool enable, inRegion;
+			bool enable;
+
 
 			/**
 			 * The publisher of the TAU message.
@@ -153,11 +149,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint, refTrack, enableFlag, windup;
-			/**
-			 * The heading unwrapper.
-			 */
-			labust::math::unwrap yaw_ref;
+			ros::Subscriber stateHat, refPoint;
 			/**
 			 * High level controller service.
 			 */

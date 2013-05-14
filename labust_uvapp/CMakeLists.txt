@@ -5,7 +5,7 @@ project(labust_uvapp)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp dynamic_reconfigure sensor_msgs
-	message_generation)
+	message_generation tf orocos_kdl)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -53,7 +53,7 @@ generate_dynamic_reconfigure_options(cfg/VelCon.cfg)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES labust_uvapp
-   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs
+   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs tf orocos_kdl
 #  DEPENDS system_lib
 )
 
@@ -97,6 +97,13 @@ add_executable(${PR_NAME}
 	include/labust/control/DPControl.hpp)
 target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
+set(PR_NAME vt_control)
+add_executable(${PR_NAME} 
+	src/vt_control.cpp 
+	src/VirtualTarget.cpp
+	include/labust/control/VirtualTarget.hpp)
+target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
+
 #set(PR_NAME labust-uvapp)
 #add_library(${PR_NAME} 
 #	src/VelocityControl.cpp
@@ -105,7 +112,10 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
 ## Add dependencies to the executable
 add_dependencies(velocity_control ${PROJECT_NAME}_gencfg)
-add_dependencies(velocity_control ${PROJECT_NAME}_genmsg)
+add_dependencies(dp_control ${PROJECT_NAME}_gencpp)
+add_dependencies(vt_control ${PROJECT_NAME}_gencpp)
+add_dependencies(lf_control ${PROJECT_NAME}_gencpp)
+add_dependencies(velocity_control ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(labust_uvapp_node

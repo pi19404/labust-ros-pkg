@@ -36,11 +36,13 @@
 *********************************************************************/
 #ifndef HLMANAGER_HPP_
 #define HLMANAGER_HPP_
-
 #include <cart2/SetHLMode.h>
+
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
 #include <auv_msgs/NavSts.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <tf/transform_broadcaster.h>
 
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
@@ -56,6 +58,9 @@ namespace labust
 		 * \todo Look into ROS actionlib to replace this in a more generic resuable way ?
 		 * \todo Add controller registration and checking that neccessary controllers run.
 		 * \todo Consider making everything async ?
+		 * \todo Extract and generalize the path generation (Bezier curves from NURC)
+		 * \todo Add support for external surge selection
+		 * \todo Add support for external radius selection
 		 */
 		class HLManager
 		{
@@ -93,6 +98,14 @@ namespace labust
 			 */
 			void onLaunch(const std_msgs::Bool::ConstPtr& isLaunched);
 			/**
+			 * On GPS data.
+			 */
+			void onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix);
+			/**
+			 * Update the virutal target twist.
+			 */
+			void onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist);
+			/**
 			 * The safety test.
 			 */
 			void safetyTest();
@@ -101,6 +114,10 @@ namespace labust
 			 */
 			void step();
 
+			/**
+			 * Set all controller enable signals to false.
+			 */
+			void disableControllerMap();
 			/**
 			 * The full stop mode.
 			 */
@@ -117,7 +134,7 @@ namespace labust
 			/**
 			 * Last message times.
 			 */
-			ros::Time lastEst, launchTime;
+			ros::Time lastEst, launchTime, lastFix;
 			/**
 			 * Launch detected flag.
 			 */
@@ -138,6 +155,14 @@ namespace labust
 			 * The last vehicle state and trajectory specs.
 			 */
 			auv_msgs::NavSts stateHat, trackPoint;
+			/**
+			 * The last GPS fix.
+			 */
+			sensor_msgs::NavSatFix fix;
+			/**
+			 * GPS fix validated.
+			 */
+			bool fixValidated;
 
 			/**
 			 * The safety radius, distance and time for B-Art.
@@ -146,11 +171,16 @@ namespace labust
 			/**
 			 * Circle parameters
 			 */
-			double circleRadius, turnDir, lookAhead;
+			double circleRadius, turnDir, s;
 			/**
-			 * Spinner mutex.
+			 * Local origin.
 			 */
-			boost::mutex dataMux;
+			tf::TransformBroadcaster broadcaster;
+			/**
+			 * Lat-Lon origin position.
+			 */
+			double originLat, originLon;
+
 			/**
 			 * The publisher of the TAU message.
 			 */
@@ -158,7 +188,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber state, launch;
+			ros::Subscriber state, launch, gpsData, virtualTargetTwist;
 			/**
 			 * Mode selector service server.
 			 */

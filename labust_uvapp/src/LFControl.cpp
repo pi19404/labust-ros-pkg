@@ -183,7 +183,7 @@ void LFControl::step()
 	auv_msgs::BodyVelocityReq nu;
 	//this->safetyTest();
 	nu.goal.requester = "lf_control";
-	nu.twist.linear.x = 0.5;
+	nu.twist.linear.x = surge;
 	if (fabs(currYaw - line.gamma()) < M_PI/2)
 	{
 		double dd = currSurge*sin(currYaw - line.gamma());
@@ -223,7 +223,7 @@ void LFControl::initialize_controller()
 {
 	ROS_INFO("Initializing line following controller...");
 
-	nh.param("lf_controller/closed_loop_freq",wh,0.2);
+	nh.param("lf_controller/closed_loop_freq",wh,1.0);
 	nh.param("lf_controller/default_surge",surge,surge);
 	nh.param("lf_controller/sampling",Ts,Ts);
 	dh_controller.setTs(Ts);

@@ -1,0 +1,6 @@
+<launch>
+  <rosparam command="load" file="$(find cart2)/data/config/model.yaml" />
+  <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="controlled" />
+  
+  <node pkg="cart2" type="imu_node" name="imu" machine="controller" unless="$(env IS_SIM)" /> 
+</launch>

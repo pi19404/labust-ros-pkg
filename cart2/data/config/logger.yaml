@@ -1,0 +1,3 @@
+logger/stateNames: ['stateHat', 'meas']
+logger/bodyVelReqNames: ['nuRef', 'currentsHat', 'flowTwist']
+logger/bodyForceReqNames: ['tauOut', 'tauAch']

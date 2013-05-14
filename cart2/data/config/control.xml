@@ -1,0 +1,8 @@
+<launch>
+    <rosparam command="load" file="$(find cart2)/data/config/velocity_control.yaml" />
+    <rosparam command="load" file="$(find cart2)/data/config/dp_control.yaml" /> 	    
+    <node pkg="labust_uvapp" type="velocity_control" name="velcon" machine="controlled" />
+    <node pkg="labust_uvapp" type="dp_control" name="station_keeping" machine="controlled" />
+    <node pkg="labust_uvapp" type="lf_control" name="line_following" machine="controlled" />
+    <node pkg="labust_uvapp" type="vt_control" name="virtual_target" machine="controlled" />
+</launch>

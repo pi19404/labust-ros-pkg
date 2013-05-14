@@ -38,6 +38,8 @@
 #include <labust_uvapp/ConfigureVelocityController.h>
 #include <labust_uvapp/EnableControl.h>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/GeoUtilities.hpp>
+#include <labust/tools/rosutils.hpp>
 
 using labust::control::HLManager;
 
@@ -54,8 +56,8 @@ HLManager::HLManager():
 			safetyDistance(50),
 			safetyTime(30),
 			circleRadius(10),
-			turnDir(1),
-			lookAhead(1)
+			s(0),
+			fixValidated(false)
 {this->onInit();}
 
 void HLManager::onInit()
@@ -63,6 +65,7 @@ void HLManager::onInit()
 	//Fill controller names
 	controllers.insert(std::make_pair("LF",false));
 	controllers.insert(std::make_pair("DP",false));
+	controllers.insert(std::make_pair("VT",false));
 
 	//Initialize publishers
 	refPoint = nh.advertise<geometry_msgs::PointStamped>("ref_point", 1);
@@ -73,24 +76,48 @@ void HLManager::onInit()
 			&HLManager::onVehicleEstimates,this);
 	launch = nh.subscribe<std_msgs::Bool>("launched", 1,
 			&HLManager::onLaunch,this);
+	gpsData = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1,
+			&HLManager::onGPSData,this);
+	virtualTargetTwist = nh.subscribe<geometry_msgs::TwistStamped>("virtual_target_twist", 1,
+			&HLManager::onVTTwist,this);
 
 	//Configure service
 	modeServer = nh.advertiseService("SetHLMode",
 			&HLManager::setHLMode, this);
-
+	bool isBart(true);
 	nh.param("hl_manager/timeout",timeout,timeout);
 	nh.param("hl_manager/radius",safetyRadius,safetyRadius);
 	nh.param("hl_manager/safetyDistance",safetyDistance,safetyDistance);
 	nh.param("hl_manager/safetyTime",safetyTime,safetyTime);
 	nh.param("hl_manager/circleRadius", circleRadius, circleRadius);
+	nh.param("hl_manager/isBart",originLon,originLon);
+	nh.param("LocalOriginLat",originLat,originLat);
+	nh.param("LocalOriginLon",originLon,originLon);
+	ph.param("LocalFixSim",fixValidated, fixValidated);
 }
 
 bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		cart2::SetHLMode::Response& resp)
 {
-	//Check if the mode is already active
-	this->point = req.ref_point;
+	//If in latitude/longitude convert to meters
+	if (req.ref_point.header.frame_id == "worldLatLon")
+	{
+		std::pair<double, double> location = labust::tools::deg2meter(req.ref_point.point.x,
+				req.ref_point.point.y,
+				originLat);
+		this->point.point.x = location.first;
+		this->point.point.y = location.second;
+	}
+	else
+	{
+		this->point = req.ref_point;
+	}
 
+	this->point.header.frame_id = "local";
+	point.header.stamp = ros::Time::now();
+	refPoint.publish(point);
+
+	//Check if the mode is already active
 	if (this->mode == req.mode) return true;
 	//Else handle the mode change
 	mode = req.mode;
@@ -105,10 +132,9 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 
 	srv.request.desired_mode[srv.request.u] = srv.request.ControlAxis;
 	srv.request.desired_mode[srv.request.r] = srv.request.ControlAxis;
-	point.header.frame_id = "local";
-	point.header.stamp = ros::Time::now();
-	refPoint.publish(point);
 
+	geometry_msgs::TwistStampedPtr fakeTwist(new geometry_msgs::TwistStamped());
+	disableControllerMap();
 	switch (mode)
 	{
 	case manual:
@@ -120,16 +146,20 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	case gotoPoint:
 		ROS_INFO("Set to GoTo mode.");
 		controllers["LF"] = true;
-		controllers["DP"] = false;
 		return client.call(srv) && configureControllers();
 		break;
 	case stationKeeping:
 		ROS_INFO("Set to Station keeping mode.");
-	case circle:
-		if (mode == circle) ROS_INFO("Set to Circle mode.");
-		controllers["LF"] = false;
 		controllers["DP"] = true;
 		return client.call(srv) && configureControllers();
+		break;
+	case circle:
+	  ROS_INFO("Set to Circle mode.");
+		controllers["VT"] = true;
+		s = 0;
+		this->onVTTwist(fakeTwist);
+		return client.call(srv) && configureControllers();
+		break;
 	case stop:
 		ROS_INFO("Stopping.");
 		return this->fullStop();
@@ -140,6 +170,15 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	}
 
 	return true;
+}
+
+void HLManager::disableControllerMap()
+{
+	for (ControllerMap::iterator it=controllers.begin();
+			it != controllers.end(); ++it)
+	{
+		it->second = false;
+	}
 }
 
 bool HLManager::fullStop()
@@ -154,11 +193,7 @@ bool HLManager::fullStop()
 	  return false;
 	}
 
-	for (ControllerMap::iterator it=controllers.begin();
-			it != controllers.end(); ++it)
-	{
-		it->second = false;
-	}
+	disableControllerMap();
 
 	if (!configureControllers()) return false;
 
@@ -185,16 +220,49 @@ bool HLManager::configureControllers()
 	return success;
 }
 
+void HLManager::onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist)
+{
+  //\todo Generalize this 0.1 with Ts.
+	s +=twist->twist.linear.x*0.1;
+
+	//Circle
+	if (s>=2*circleRadius*M_PI) s=s-2*circleRadius*M_PI;
+	else if (s<0) s=2*circleRadius*M_PI-s;
+
+	double xRabbit = point.point.x + circleRadius*cos(s/circleRadius);
+	double yRabbit = point.point.y + circleRadius*sin(s/circleRadius);
+  double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
+
+  tf::Transform transform;
+  transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
+  Eigen::Quaternion<float> q;
+  labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
+  transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+  broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+}
+
 void HLManager::onVehicleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
-	boost::mutex::scoped_lock l(dataMux);
 	this->stateHat = *estimate;
 	lastEst = ros::Time::now();
 };
 
+void HLManager::onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix)
+{
+	this->fix = *fix;
+	this->fix.header.stamp = ros::Time::now();
+
+	//In case we didn't have a fix on launch, but now we get one.
+	if (!fixValidated)
+	{
+		originLat = fix->latitude;
+		originLon = fix->longitude;
+		fixValidated = true;
+	}
+};
+
 void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 {
-	boost::mutex::scoped_lock l(dataMux);
 	launchDetected = isLaunched->data;
 	launchTime = ros::Time::now();
 
@@ -204,8 +272,14 @@ void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 		point.point.x = stateHat.position.north + safetyDistance*cos(stateHat.orientation.yaw);
 		point.point.y = stateHat.position.east + safetyDistance*sin(stateHat.orientation.yaw);
 		point.point.z = 0;
+		point.header.frame_id = "local";
 
-		//Set the world and local coordinate frames from this point on
+		//Check if fix is valid
+		if ((fixValidated = (fix.header.stamp - ros::Time::now()).sec < safetyTime))
+		{
+			originLat = fix.latitude;
+			originLon = fix.longitude;
+		}
 	}
 }
 
@@ -219,12 +293,12 @@ void HLManager::safetyTest()
 
 		//Some action
 		//Turn off all control, switch to manual ?
+		this->fullStop();
 	}
 }
 
 void HLManager::step()
 {
-	boost::mutex::scoped_lock l(dataMux);
 	if ((type == bArt) && (mode==stop) && (launchDetected))
 	{
 		//Check that enough time has passed
@@ -249,7 +323,7 @@ void HLManager::step()
 	if (mode == gotoPoint)
 	{
 		//If distance to point is OK or the vehicle missed the point
-		if (dist < safetyRadius || (angleDiff > M_PI/2))
+		if (dist < safetyRadius || ((dist < 2*safetyRadius) && (angleDiff > M_PI/2)))
 		{
 			//Switch to station keeping
 			cart2::SetHLMode srv;
@@ -259,32 +333,38 @@ void HLManager::step()
 		}
 	}
 
-	if (mode == circle)
-	{
-		//Handle modes that need timing
-		relAngle = atan2(-dy,-dx);
-		trackPoint.position.north = point.point.x +
-				circleRadius*cos(relAngle) +
-				lookAhead*cos(relAngle + M_PI/2);
-		trackPoint.position.east = point.point.y +
-				circleRadius*sin(relAngle) +
-				lookAhead*sin(relAngle + M_PI/2);
-
-		refTrack.publish(trackPoint);
-	}
+//	if (mode == circle)
+//	{
+//		double xRabbit = trackPoint.position.north + circleRadius*cos(s/circleRadius);
+//		double yRabbit = trackPoint.position.east + circleRadius*sin(s/circleRadius);
+//	  double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
+//
+//	  tf::Transform transform;
+//	  transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
+//	  Eigen::Quaternion<float> q;
+//	  labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
+//	  transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+//	  broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+//	}
 }
 
 void HLManager::start()
 {
 	ros::Rate rate(10);
 
-	ros::AsyncSpinner spinner(1);
-	spinner.start();
 	while (nh.ok())
 	{
+		if (fixValidated)
+		{
+			tf::Transform transform;
+			transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+			transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+		}
+
 		this->safetyTest();
 		this->step();
 		rate.sleep();
-		//ros::spinOnce();
+		ros::spinOnce();
 	}
 }

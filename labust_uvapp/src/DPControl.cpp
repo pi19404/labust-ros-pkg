@@ -53,7 +53,9 @@ DPControl::DPControl():
 			timeout(0.5),
 			Ts(0.1),
 			safetyRadius(0.5),
-			enable(false)
+			surge(1),
+			enable(false),
+			inRegion(false)
 {this->onInit();}
 
 void DPControl::onInit()
@@ -186,12 +188,16 @@ void DPControl::step()
 	//For 2D non-holonomic case
 	double dy(trackPoint.position.east - state.position.east);
 	double dx(trackPoint.position.north - state.position.north);
-	double angleDiff(labust::math::wrapRad(fabs(atan2(dy,dx) - labust::math::wrapRad(state.orientation.yaw))));
+	//double angle = state.orientation.yaw;
+	//dy += safetyRadius*sin(angle);
+	//dx += safetyRadius*cos(angle);
 	double dist(sqrt(dy*dy+dx*dx));
+	double angleDiff(labust::math::wrapRad(fabs(atan2(dy,dx) - labust::math::wrapRad(state.orientation.yaw))));
 
-	distanceController.desired = -safetyRadius;
+	distanceController.desired = -0.5*safetyRadius;
 	distanceController.state = -dist;
 	headingController.state = state.orientation.yaw;
+
 	headingController.desired = atan2(dy,dx);
 	headingController.feedforward = trackPoint.orientation_rate.yaw;
 	distanceController.feedforward = sqrt(pow(trackPoint.body_velocity.x,2) + pow(trackPoint.body_velocity.y,2));
@@ -203,16 +209,24 @@ void DPControl::step()
 	nu.twist.angular.z = headingController.output;
 	//Limit the outgoing surge to a sensible value
 	nu.twist.linear.x = 0;
-	if (dist < 5*safetyRadius)
+	if ((dist < 5*safetyRadius) && (angleDiff < M_PI/2))
 	{
+		//distanceController.state = -dx*cos(state.orientation.yaw) - dy*sin(state.orientation.yaw);
 		PIFFExtController_step(&distanceController,Ts);
 		nu.twist.linear.x = distanceController.output;
 	}
 	else if (angleDiff < M_PI/2)
 	{
-		nu.twist.linear.x = 2;
+		nu.twist.linear.x = surge;
 	}
 
+	inRegion = (dist < safetyRadius) || (inRegion && (dist < 2*safetyRadius));
+
+	if (inRegion)
+	{
+		nu.twist.linear.x = 0;
+		nu.twist.angular.z = 0;
+	}
 
 	nuRef.publish(nu);
 }
@@ -230,6 +244,7 @@ void DPControl::initialize_controller()
 	labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
 	nh.param("dp_controller/sampling",Ts,Ts);
 	nh.param("dp_controller/safetyRadius",safetyRadius, safetyRadius);
+	nh.param("dp_controller/openLoopSurge",surge, surge);
 
 	enum {Kp=0, Ki, Kd, Kt};
 	PIDController_init(&headingController);

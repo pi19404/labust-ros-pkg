@@ -57,6 +57,7 @@ struct SharedData
 	ros::Publisher imuPub, gpsPub;
 	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
+	double magnetic_declination;
 	unsigned char buffer[msg_size];
 };
 
@@ -133,7 +134,11 @@ void handleIncoming(SharedData& shared,
 		imu->angular_velocity.x = data[gyro_x];
 		imu->angular_velocity.y = data[gyro_y];
 		imu->angular_velocity.z = data[gyro_z];
-		tf::Quaternion quat = tf::createQuaternionFromRPY(data[roll],data[pitch],data[yaw]);
+
+		Eigen::Quaternion<float> quat;
+		labust::tools::quaternionFromEulerZYX(data[roll],
+				data[pitch],
+				data[yaw] + shared.magnetic_declination, quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
@@ -208,6 +213,7 @@ int main(int argc, char* argv[])
 	}
 
 	SharedData shared;
+	ph.param("magnetic_declination",shared.magnetic_declination,0.0);
 	shared.imuPub = nh.advertise<sensor_msgs::Imu>("imu",1);
 	shared.gpsPub = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
 
