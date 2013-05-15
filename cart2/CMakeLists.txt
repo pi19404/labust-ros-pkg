@@ -5,7 +5,7 @@ project(cart2)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp
-	message_generation)
+	message_generation dynamic_reconfigure)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -23,11 +23,10 @@ include_directories(${Eigen_INCLUDE_DIRS})
 #######################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  HLMessage.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -41,6 +40,11 @@ generate_messages(
   auv_msgs sensor_msgs std_msgs
 )
 
+###################################################
+## Dynamic reconfigure
+###################################################
+generate_dynamic_reconfigure_options(cfg/RemoteCommand.cfg)
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -52,7 +56,7 @@ generate_messages(
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES cart2
-   CATKIN_DEPENDS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs message_runtime
+   CATKIN_DEPENDS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs message_runtime dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -74,19 +78,26 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
-add_executable(radio_node src/radio_node.cpp)
+#add_executable(radio_node src/radio_node.cpp)
 add_executable(cart2_node src/cart2_main.cpp)
 add_executable(imu_node src/imu_node.cpp)
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
 add_executable(vr_node src/vr_node.cpp)
 
+add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp
+	include/labust/control/TopsideRadio.hpp)
+
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(hlmanager cart2_generate_messages_cpp)
+add_dependencies(topside_radio cart2_generate_messages_cpp)
+add_dependencies(topside_radio cart2_gencfg)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(radio_node
+target_link_libraries(topside_radio
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${Boost_REGEX_LIBRARY}
    ${catkin_LIBRARIES}
 )
 

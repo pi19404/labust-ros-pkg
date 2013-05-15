@@ -53,8 +53,12 @@ BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec2d , boost::serialization::primit
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN(,ModemData,
 			(float, surgeForce)
 			(float, torqueForce)
-	    (vec2d, latlon)
-			(int32_t, mode))
+	    (double, lat)
+	    (double, lon)
+	    (float, radius)
+	    (float, surge)
+			(int32_t, mode)
+			(uint8_t, launch))
 
 struct SharedData
 {

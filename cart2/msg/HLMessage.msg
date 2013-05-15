@@ -10,4 +10,3 @@ geometry_msgs/PointStamped ref_point
 #Circle info
 float32 radius
 float32 surge
----

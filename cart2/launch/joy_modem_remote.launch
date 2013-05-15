@@ -1,16 +1,16 @@
 <launch>
   <group ns="remote"> 	
     <node pkg="joy" name="joystick" type="joy_node">
-      <param name="dev" value="/dev/input/js1" />
+      <param name="dev" value="/dev/input/js0" />
       <param name="coalesce_interval" value="0.1" />
       <param name="autorepeat_rate" value="10" />
       <param name="deadzone" value="0.05" />
     </node>
     
-    <node pkg="cart2" name="radio_node" type="radio_node">
+    <!-- <node pkg="cart2" name="radio_node" type="radio_node">
       <param name="PortName" value="/dev/ttyUSB1" />
       <param name="Baud" value="9600" />
       <remap from="joy_in" to="joy" />
-    </node>
+    </node> -->
   </group>
 </launch>
