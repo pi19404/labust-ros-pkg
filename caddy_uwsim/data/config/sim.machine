@@ -2,6 +2,6 @@
   <machine name="shoreside" address="localhost" 
   	env-loader="$(env HOME)/Development/catkin_ws/devel/env.sh" 
   	default="true" /> 
-  <machine name="pladypos" address="localhost" 
+  <machine name="pladypos" address="pladypos" 
 	env-loader="$(env HOME)/Development/catkin_ws/devel/env.sh" /> 
 </launch>

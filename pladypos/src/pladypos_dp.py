@@ -35,6 +35,8 @@ class DynamicPositioning:
         self.Ki = numpy.array([[w[0]*w[0], 0], [0, w[1]*w[1]]], 
                                dtype=numpy.float32);                     
         self.Ts = rospy.get_param("dynamic_positioning/Ts");
+        self.Kyaw = 2*w[2];
+        self.Ki = w[2]*w[2];
                
         self.internalState = numpy.array([0,0], numpy.float32);
         self.state = numpy.array([0,0], numpy.float32);
@@ -46,7 +48,6 @@ class DynamicPositioning:
         self.lastI = numpy.array([0,0], numpy.float32);
         self.lastYawI = 0;
         self.yawInternalState = 0;
-        
         
         self.R = numpy.identity(2, numpy.float32);
         self.uk_1 = 0;
@@ -117,11 +118,20 @@ class DynamicPositioning:
         self.lastW = 1*self.windup;
         
         u = numpy.dot(numpy.transpose(self.R),self.internalState);
-                          
+            
         pub = BodyVelocityReq();
         pub.twist.linear.x = u[0];
         pub.twist.linear.y = u[1];
-        pub.twist.angular.z = 2*(self.config['Heading'] - self.yaw);
+        error = self.config['Heading'] - self.yaw;
+        
+        if error > numpy.pi:
+            error = error - 2.0*numpy.pi;
+        if error < -numpy.pi:
+            error = 2.0*numpy.pi + error;
+             
+        if not self.windup[2]:
+            self.yawInternalState += self.Ki*error*self.Ts;
+        pub.twist.angular.z = self.Kyaw*error + self.yawInternalState;
         pub.goal.priority = pub.goal.PRIORITY_NORMAL;
         self.out.publish(pub); 
                      
@@ -135,9 +145,10 @@ if __name__ == "__main__":
 
     rate = rospy.Rate(10.0);
         
-    while not rospy.is_shutdown():
-        dp.step();
-        rate.sleep();
+    rospy.spin();
+    #while not rospy.is_shutdown():
+        #dp.step();
+        #rate.sleep();
         
         
         

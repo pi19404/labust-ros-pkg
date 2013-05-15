@@ -58,6 +58,8 @@
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
 
+ros::Time t;
+
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	tauIn(KFNav::X) = tau->wrench.force.x;
@@ -103,6 +105,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	tf::StampedTransform transform;
 	try
 	{
+		t = data->header.stamp;
 		listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
 		tf::Quaternion meas(data->orientation.x,data->orientation.y,
 				data->orientation.z,data->orientation.w);
@@ -330,6 +333,7 @@ int main(int argc, char* argv[])
 		flowspeed.twist.linear.y = ydot;
 		bodyFlowFrame.publish(flowspeed);
 		currentTwist.publish(current);
+		state.header.stamp = t;
 		stateHat.publish(state);
 
 		rate.sleep();
