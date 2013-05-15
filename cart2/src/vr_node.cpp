@@ -44,6 +44,7 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/FluidPressure.h>
+#include <tf/transform_broadcaster.h>
 
 #include <string>
 
@@ -71,6 +72,8 @@ struct SharedData
 
 	ros::Publisher tauAch, imu, depth;
 	auv_msgs::BodyForceReq tau;
+	tf::TransformBroadcaster broadcast;
+	tf::Transform imuPos;
 	/**
 	 * Thruster affine mappings.
 	 */
@@ -106,6 +109,8 @@ void onTau(SharedData& shared, const auv_msgs::BodyForceReq::ConstPtr tau)
 			shared.Tnn,
 			shared._Tnn), -SharedData::revLimit, SharedData::revLimit);
 
+	ROS_INFO("Full time estimate:%f",(ros::Time::now() - tau->header.stamp).toSec());
+
 	double scale(1);
 	if (port/SharedData::revLimit > scale) scale = port/SharedData::revLimit;
 	if (stbd/SharedData::revLimit > scale) scale = stbd/SharedData::revLimit;
@@ -119,8 +124,10 @@ void onTau(SharedData& shared, const auv_msgs::BodyForceReq::ConstPtr tau)
 		shared.tau.disable_axis.z = 1;
 	}
 
-	shared.tau.wrench.force.x = port+stbd;
-	shared.tau.wrench.torque.z = port-stbd;
+	double portMux(port>0?shared.Tnn:shared._Tnn);
+	double stbdMux(stbd>0?shared.Tnn:shared._Tnn);
+	shared.tau.wrench.force.x = portMux*fabs(port)*port+stbdMux*fabs(stbd)*stbd;
+	shared.tau.wrench.torque.z = portMux*fabs(port)*port-stbdMux*fabs(stbd)*stbd;
 
 	//Publish achieved tau
 	shared.tauAch.publish(shared.tau);
@@ -131,6 +138,8 @@ void onTau(SharedData& shared, const auv_msgs::BodyForceReq::ConstPtr tau)
 			-SharedData::revLimit, SharedData::revLimit);
 	shared.thrusters[VRComms::light] = 0;
 
+	std::cout<<"Test propulsion:"<<shared.thrusters[VRComms::port]<<","<<shared.thrusters[VRComms::stbd]<<","<<shared.thrusters[VRComms::vert]<<std::endl;
+
 	shared.comms.encode(shared.thrusters);
 	boost::asio::write(shared.port, boost::asio::buffer(shared.comms.outputBuffer));
 	boost::asio::read(shared.port, boost::asio::buffer(shared.comms.inputBuffer));
@@ -139,8 +148,8 @@ void onTau(SharedData& shared, const auv_msgs::BodyForceReq::ConstPtr tau)
 
 	sensor_msgs::FluidPressure pressure;
 	pressure.header.frame_id = "local";
-
 	pressure.fluid_pressure = ((*states)[labust::vehicles::state::depthPressure]);
+	shared.depth.publish(pressure);
 
 	sensor_msgs::Imu imu;
 	Eigen::Quaternion<float> quat;
@@ -150,6 +159,8 @@ void onTau(SharedData& shared, const auv_msgs::BodyForceReq::ConstPtr tau)
 	imu.orientation.y = quat.y();
 	imu.orientation.z = quat.z();
 	imu.orientation.w = quat.w();
+	imu.header.stamp = ros::Time::now();
+	shared.broadcast.sendTransform(tf::StampedTransform(shared.imuPos, ros::Time::now(), "base_link", "imu_frame"));
 	shared.imu.publish(imu);
 }
 
@@ -165,8 +176,8 @@ int main(int argc, char* argv[])
 	shared.depth = nh.advertise<sensor_msgs::FluidPressure>("vr_depth",1);
 
 	//Get thruster configuration
-	ph.param("Tnn", shared.Tnn,1.0);
-	ph.param("_Tnn", shared._Tnn,1.0);
+	ph.param("an", shared.Tnn,1.0);
+	ph.param("bn", shared._Tnn,1.0);
 
 	//Get port name from configuration and open.
 	std::string portName("/dev/ttyUSB0");
@@ -174,6 +185,16 @@ int main(int argc, char* argv[])
 	ph.param("PortName", portName,portName);
 	ph.param("BaudRate", baud, baud);
 	shared.portOpen(portName, baud);
+
+	//Configure Imu and GPS position relative to vehicle center of mass
+	Eigen::Vector3d origin(Eigen::Vector3d::Zero()),
+			orientation(Eigen::Vector3d::Zero());
+
+	labust::tools::getMatrixParam(nh, "imu_origin", origin);
+	labust::tools::getMatrixParam(nh, "imu_orientation", orientation);
+	shared.imuPos.setOrigin(tf::Vector3(origin(0),origin(1),origin(2)));
+	shared.imuPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
+			orientation(1),orientation(2)));
 
 	ros::spin();
 	return 0;

@@ -36,6 +36,7 @@
  *********************************************************************/
 #include <labust/control/VelocityControl.hpp>
 #include <labust/tools/rosutils.hpp>
+#include <labust/math/NumberManipulation.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
 #include <boost/bind.hpp>
@@ -58,8 +59,8 @@ VelocityControl::VelocityControl():
 			lastMeas(ros::Time::now()),
 			timeout(0.5),
 			joy_scale(1),
-			Ts(0.1),
-			server(serverMux)
+			Ts(0.1)
+			//server(serverMux)
 {this->onInit();}
 
 void VelocityControl::onInit()
@@ -164,7 +165,6 @@ void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 
 void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
 {
-	boost::recursive_mutex::scoped_lock l(serverMux);
 	this->config = config;
 
 	for(size_t i=u; i<=r; ++i)
@@ -208,6 +208,8 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 	controller[r].state = estimate->orientation_rate.yaw;
 
 	lastEst = ros::Time::now();
+	ROS_INFO("Semi-travel time:%f",(lastEst - estimate->header.stamp).toSec());
+	lastEst = estimate->header.stamp;
 	//newEstimate = true;
 	//if (newReference) step();
 };
@@ -299,6 +301,11 @@ double VelocityControl::doIdentification(int i)
 		return 0;
 	}
 
+	if (i>=3)
+	{
+		return ident[i]->step(labust::math::wrapRad(labust::math::wrapRad(ident[i]->Ref())-labust::math::wrapRad(measurement[i])),Ts);
+	}
+
 	return ident[i]->step(ident[i]->Ref()-measurement[i],Ts);
 }
 
@@ -343,6 +350,7 @@ void VelocityControl::step()
 
 	//Restart values
 	//newReference = newEstimate = false;
+	tau.header.stamp = lastEst;
 	tauOut.publish(tau);
 }
 

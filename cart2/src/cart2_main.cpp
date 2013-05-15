@@ -131,6 +131,8 @@ char GetCurrent1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x3C, 0x1B
 char GetCurrent2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x3C, 0x2B}; //get current from Axis2
 char ReadISR1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x03, 0x06, 0xE6};
 char ReadISR2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x03, 0x06, 0xF6};
+char GetPosition1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0xBC, 0x9B}; //get current from Axis1
+char GetPosition2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0xBC, 0xAB}; //get current from Axis2
 
 int StateDO[] = {0,1,1,1};
 
@@ -277,7 +279,8 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 
 			Mode = "OK";
 			Mode1 = "Data_C1";
-			os.write(GetCurrent1,sizeof(GetCurrent1));
+			//os.write(GetCurrent1,sizeof(GetCurrent1));
+			os.write(GetPosition1,sizeof(GetPosition1));
 			write(port,outputBuffer);
 			break;
 		}
@@ -287,11 +290,13 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 			MessageLength = 1;
 			CommsOkFlag= true;
 
-			Motor_Current[0] = (parsData()-32736) * 2.5 * 4 / 65472;		
+			//Motor_Current[0] = (parsData()-32736) * 2.5 * 4 / 65472;
+			Motor_Current[0] = parsData();
 
 			Mode = "OK";
 			Mode1 = "Data_C2";
-			os.write(GetCurrent2,sizeof(GetCurrent2));
+			//os.write(GetCurrent2,sizeof(GetCurrent2));
+			os.write(GetPosition2,sizeof(GetPosition2));
 			write(port,outputBuffer);
 			break;
 		}
@@ -301,7 +306,8 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 			MessageLength = 1;
 			CommsOkFlag= true;
 			// IF current
-			Motor_Current[1] = (parsData()-32736) * 2.5 * 4 / 65472;
+			//Motor_Current[1] = (parsData()-32736) * 2.5 * 4 / 65472;
+			Motor_Current[1] = parsData();
 
 			Mode = "OK";
 			Mode1 = "DigOut";

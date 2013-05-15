@@ -360,6 +360,11 @@ void HLManager::start()
 			transform.setOrigin(tf::Vector3(originLon, originLat, 0));
 			transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
 			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+			transform.setOrigin(tf::Vector3(0, 0, 0));
+			Eigen::Quaternion<float> q;
+			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
+			transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
 		}
 
 		this->safetyTest();

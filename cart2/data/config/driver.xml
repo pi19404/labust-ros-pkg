@@ -1,6 +1,6 @@
 <launch>
 	<node pkg="ldtravocean" type="model_node" name="cart2_node"
-		args="$(find cart2)/data/config/cart2_model.xml" if="$(env IS_SIM)">
+		args="$(env SIM_MODEL)" if="$(env IS_SIM)">
 		<!-- This will also adjust the model sampling time -->
 		<param name="Rate" value="10" />
 		<param name="ModelWrap" value="10" />
@@ -15,5 +15,14 @@
 		<remap from="fix" to="gps" />
 	</node>
 
-	<node pkg="cart2" type="cart2_node" name="cart2_node" unless="$(env IS_SIM)" />
+	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled"/>
+	<node pkg="cart2" type="vr_node" name="vr_node" if="$(env USE_VR)" machine="controlled">
+	    <param name="PortName" value="/dev/ttyUSB1" />
+	    <param name="BaudRate" value="9600" />
+	    <param name="an" value="0.0003" />
+	    <param name="bn" value="0.0001389" />
+	    
+	    <remap from="vr_imu" to="imu" />
+	    <remap from="tauIn" to="tauOut" />	        
+	</node>
 </launch>

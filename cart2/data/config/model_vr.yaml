@@ -1,0 +1,24 @@
+model_name: vr
+
+vr/dynamics/period: 0.1
+vr/dynamics/mass: 5
+vr/dynamics/rg: [0.0, 0.0, 0.0]
+vr/dynamics/rb: [0.0, 0.0, 0.0]
+vr/dynamics/g: 9.81
+
+#Add some parameters for the buoyancy calculations 
+vr/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 0.25]
+vr/dynamics/added_mass: [6.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
+vr/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 0.32]
+vr/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, 0.0]
+
+#Parameters:			   	    u   v   r    xp    yp    psi   xc  yc    b1   b2
+vr/navigation/Q: "diag([10](0.001,0.001,0.001,0.0,0.0,0.002,0.001,0.001,0.01,0.00))"
+vr/navigation/W: "diag([10](1,1,1,1,1,1,1,1,1,1))"
+#Parameters: 			      x  y  psi 
+vr/navigation/R: "diag([3](9,9,0.03))"
+vr/navigation/V: "diag([3](1,1,1))"
+vr/navigation/P: "diag([10](100,100,100,100,100,100,100,100,100,100))"
+vr/navigation/x0: "[10](0,0,0,0,0,0,0,0,0,0)"
+
+
