@@ -93,8 +93,9 @@ class MatLogger:
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder)];
                              
         from datetime import datetime;
-        name = rospy.get_param("~filename","log");             
-        self.logFile = open(name + "_" + datetime.today().isoformat() + ".csv",'w');
+        name = rospy.get_param("~filename","log");
+        dir = rospy.get_param("~dir",".");             
+        self.logFile = open(dir + "/" + name + "_" + datetime.today().isoformat() + ".csv",'w');
                             
         for logger in self.loggers: 
             logger.subscribe();
@@ -117,6 +118,10 @@ class MatLogger:
             
             self.logFile.write("\n");            
             rate.sleep();
+            
+    def stop(self):
+        self.logFile.close();
+        
                            
 if __name__ == "__main__":
     rospy.init_node("logger");
@@ -124,7 +129,7 @@ if __name__ == "__main__":
     log.start();
     while not rospy.is_shutdown():
         rospy.spin();
-        
+    log.stop();
         
         
         
