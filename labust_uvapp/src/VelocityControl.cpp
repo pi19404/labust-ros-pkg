@@ -59,8 +59,8 @@ VelocityControl::VelocityControl():
 			lastMeas(ros::Time::now()),
 			timeout(0.5),
 			joy_scale(1),
-			Ts(0.1)
-			//server(serverMux)
+			Ts(0.1),
+			server(serverMux)
 {this->onInit();}
 
 void VelocityControl::onInit()
@@ -112,9 +112,8 @@ bool VelocityControl::handleEnableControl(labust_uvapp::EnableControl::Request& 
 
 void VelocityControl::updateDynRecConfig()
 {
-	ROS_INFO("Updating the dynamic reconfigure parameters.");
+	ROS_INFO("Updating the dynamic reconfigure parameters. %d");
 
-	config.__fromServer__(ph);
 	config.Surge_mode = axis_control[u];
 	config.Sway_mode = axis_control[v];
 	config.Heave_mode = axis_control[w];
@@ -165,6 +164,7 @@ void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t lev
 {
 	this->config = config;
 
+	config.__toServer__(ph);
 	for(size_t i=u; i<=r; ++i)
 	{
 		int newMode(0);
