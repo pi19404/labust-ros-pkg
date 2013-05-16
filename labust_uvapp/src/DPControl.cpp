@@ -74,6 +74,8 @@ void DPControl::onInit()
 			&DPControl::onWindup,this);
 	enableControl = nh.advertiseService("DP_enable",
 			&DPControl::onEnableControl, this);
+	openLoopSurge = nh.subscribe<std_msgs::Float32>("open_loop_surge", 1,
+			&DPControl::onOpenLoopSurge,this);
 
 	nh.param("dp_controller/timeout",timeout,timeout);
 
@@ -132,6 +134,11 @@ bool DPControl::onEnableControl(labust_uvapp::EnableControl::Request& req,
 {
 	this->enable = req.enable;
 	return true;
+}
+
+void DPControl::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
+{
+	this->surge = surge->data;
 }
 
 void DPControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)

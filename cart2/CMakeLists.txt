@@ -78,7 +78,7 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
-#add_executable(radio_node src/radio_node.cpp)
+add_executable(radio_node src/radio_node.cpp)
 add_executable(cart2_node src/cart2_main.cpp)
 add_executable(imu_node src/imu_node.cpp)
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
@@ -96,6 +96,12 @@ add_dependencies(topside_radio cart2_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(topside_radio
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${Boost_REGEX_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(radio_node
    ${Boost_SERIALIZATION_LIBRARY}
    ${Boost_REGEX_LIBRARY}
    ${catkin_LIBRARIES}

@@ -10,10 +10,10 @@
 			<rb>[3](0,0,0)</rb>
 			<rho>1025</rho>
 			<lift-force>200</lift-force>
-			<bounding-ellipsoid>[3](0.2,0.17,0.17)</bounding-ellipsoid>
+			<bounding-ellipsoid>[3](0.2,0.17,0.25)</bounding-ellipsoid>
 			<added-mass>diag([6](6,6,20,15,30,0))</added-mass>
-			<linear-damping>diag([6](13,13,15,400,300,0))</linear-damping>
-			<quadratic-damping>diag([6](0,0,0,0,0,0.12))</quadratic-damping>
+			<linear-damping>diag([6](13,13,15,400,300,0.32))</linear-damping>
+			<quadratic-damping>diag([6](0,0,0,0,0,0.0))</quadratic-damping>
 			<eta0>[6](0,0,0.2,0,0,0)</eta0>
 			<nu0>[6](0,0,0,0,0,0)</nu0>
 			<coupled>0</coupled>

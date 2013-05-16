@@ -70,7 +70,8 @@ void LFControl::onInit()
 			&LFControl::onNewPoint,this);
 	enableControl = nh.advertiseService("LF_enable",
 			&LFControl::onEnableControl, this);
-
+	openLoopSurge = nh.subscribe<std_msgs::Float32>("open_loop_surge", 1,
+					&LFControl::onOpenLoopSurge,this);
 	nh.param("lf_controller/timeout",timeout,timeout);
 
 	//Configure the dynamic reconfigure server
@@ -132,6 +133,11 @@ bool LFControl::onEnableControl(labust_uvapp::EnableControl::Request& req,
 {
 	this->enable = req.enable;
 	return true;
+}
+
+void LFControl::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
+{
+	this->surge = surge->data;
 }
 
 void LFControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)

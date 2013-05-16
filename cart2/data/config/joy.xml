@@ -7,9 +7,12 @@
 		<param name="deadzone" value="0.05" />
 	</node>
 
-	<node pkg="cart2" type="radio_node" name="radio_modem" if="$(env IS_REMOTE)">
-		<param name="PortName" value="/dev/ttyUSB0" />
+	<node pkg="cart2" type="topside_radio" name="radio_modem" if="$(env IS_REMOTE)">
+		<!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
+		<param name="PortName" value="/dev/pts/3" />
 		<param name="Baud" value="9600" />
+		<param name="IsTopside" value="false" />
+		<param name="TwoWay" value="true" />
 		<remap from="joy_out" to="joy" />
 	</node>
 </launch>

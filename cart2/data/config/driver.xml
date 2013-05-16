@@ -16,6 +16,7 @@
 	</node>
 
 	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled"/>
+	
 	<node pkg="cart2" type="vr_node" name="vr_node" if="$(env USE_VR)" machine="controlled">
 	    <param name="PortName" value="/dev/ttyUSB1" />
 	    <param name="BaudRate" value="9600" />

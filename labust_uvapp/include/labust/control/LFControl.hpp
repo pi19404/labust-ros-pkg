@@ -43,6 +43,7 @@
 #include <auv_msgs/NavSts.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
 #include <ros/ros.h>
 
 namespace labust
@@ -91,6 +92,10 @@ namespace labust
 			 */
 			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
 					labust_uvapp::EnableControl::Response& resp);
+			/**
+			 * The open loop surge specification.
+			 */
+			void onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge);
 			/**
 			 * Dynamic reconfigure callback.
 			 */
@@ -155,7 +160,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint;
+			ros::Subscriber stateHat, refPoint, openLoopSurge;
 			/**
 			 * High level controller service.
 			 */

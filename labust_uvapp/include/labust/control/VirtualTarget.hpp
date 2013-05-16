@@ -44,6 +44,7 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
 
@@ -100,6 +101,10 @@ namespace labust
 			 */
 			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
 					labust_uvapp::EnableControl::Response& resp);
+			/**
+			 * The open loop surge specification.
+			 */
+			void onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge);
 			/**
 			 * Dynamic reconfigure callback.
 			 */
@@ -159,7 +164,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, enableFlag, windup, flowTwist;
+			ros::Subscriber stateHat, enableFlag, windup, flowTwist, openLoopSurge;
 			/**
 			 * The heading unwrapper.
 			 */

@@ -161,6 +161,19 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	using namespace Eigen;
 
 	tf::StampedTransform transformLocal, transformDeg;
+
+	try
+	{
+		//In case the origin changes
+		lisWorld.lookupTransform("worldLatLon", "world", ros::Time(0), transformDeg);
+		originLat = transformDeg.getOrigin().y();
+		originLon = transformDeg.getOrigin().x();
+	}
+	catch (tf::TransformException& ex)
+	{
+	   ROS_ERROR("%s",ex.what());
+	}
+
 	try
 	{
 	    lisWorld.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);

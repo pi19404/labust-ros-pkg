@@ -40,6 +40,8 @@
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/rosutils.hpp>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 
 using labust::control::HLManager;
 
@@ -70,6 +72,8 @@ void HLManager::onInit()
 	//Initialize publishers
 	refPoint = nh.advertise<geometry_msgs::PointStamped>("ref_point", 1);
 	refTrack = nh.advertise<auv_msgs::NavSts>("ref_track", 1);
+	openLoopSurge = nh.advertise<std_msgs::Float32>("open_loop_surge", 1);
+	curMode = nh.advertise<std_msgs::Int32>("current_mode", 1);
 
 	//Initialze subscribers
 	state = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
@@ -102,8 +106,8 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	//If in latitude/longitude convert to meters
 	if (req.ref_point.header.frame_id == "worldLatLon")
 	{
-		std::pair<double, double> location = labust::tools::deg2meter(req.ref_point.point.x,
-				req.ref_point.point.y,
+		std::pair<double, double> location = labust::tools::deg2meter(req.ref_point.point.x-originLat,
+				req.ref_point.point.y-originLon,
 				originLat);
 		this->point.point.x = location.first;
 		this->point.point.y = location.second;
@@ -116,6 +120,16 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	this->point.header.frame_id = "local";
 	point.header.stamp = ros::Time::now();
 	refPoint.publish(point);
+
+	if (req.radius)	circleRadius = req.radius;
+
+	std_msgs::Float32 surge;
+	surge.data = req.surge;
+	openLoopSurge.publish(surge);
+
+	std_msgs::Int32 cmode;
+	cmode.data = req.mode;
+	curMode.publish(cmode);
 
 	//Check if the mode is already active
 	if (this->mode == req.mode) return true;
@@ -141,24 +155,20 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		ROS_INFO("Set to manual mode.");
 		srv.request.desired_mode[srv.request.u] = srv.request.ManualAxis;
 		srv.request.desired_mode[srv.request.r] = srv.request.ManualAxis;
-		return client.call(srv);
 		break;
 	case gotoPoint:
 		ROS_INFO("Set to GoTo mode.");
 		controllers["LF"] = true;
-		return client.call(srv) && configureControllers();
 		break;
 	case stationKeeping:
 		ROS_INFO("Set to Station keeping mode.");
 		controllers["DP"] = true;
-		return client.call(srv) && configureControllers();
 		break;
 	case circle:
 	  ROS_INFO("Set to Circle mode.");
 		controllers["VT"] = true;
 		s = 0;
 		this->onVTTwist(fakeTwist);
-		return client.call(srv) && configureControllers();
 		break;
 	case stop:
 		ROS_INFO("Stopping.");
@@ -169,7 +179,7 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	  break;
 	}
 
-	return true;
+	return client.call(srv) && configureControllers();
 }
 
 void HLManager::disableControllerMap()
@@ -222,23 +232,26 @@ bool HLManager::configureControllers()
 
 void HLManager::onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist)
 {
-  //\todo Generalize this 0.1 with Ts.
-	s +=twist->twist.linear.x*0.1;
+	if (mode == circle)
+	{
+		//\todo Generalize this 0.1 with Ts.
+		s +=twist->twist.linear.x*0.1;
 
-	//Circle
-	if (s>=2*circleRadius*M_PI) s=s-2*circleRadius*M_PI;
-	else if (s<0) s=2*circleRadius*M_PI-s;
+		//Circle
+		if (s>=2*circleRadius*M_PI) s=s-2*circleRadius*M_PI;
+		else if (s<0) s=2*circleRadius*M_PI-s;
 
-	double xRabbit = point.point.x + circleRadius*cos(s/circleRadius);
-	double yRabbit = point.point.y + circleRadius*sin(s/circleRadius);
-  double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
+		double xRabbit = point.point.x + circleRadius*cos(s/circleRadius);
+		double yRabbit = point.point.y + circleRadius*sin(s/circleRadius);
+		double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
 
-  tf::Transform transform;
-  transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
-  Eigen::Quaternion<float> q;
-  labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
-  transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-  broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
+		Eigen::Quaternion<float> q;
+		labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+	}
 }
 
 void HLManager::onVehicleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -263,11 +276,11 @@ void HLManager::onGPSData(const sensor_msgs::NavSatFix::ConstPtr& fix)
 
 void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 {
-	launchDetected = isLaunched->data;
-	launchTime = ros::Time::now();
-
-	if (launchDetected)
+	if ((type== bArt) && (mode==stop) && (!launchDetected && isLaunched->data))
 	{
+		ROS_INFO("Launch detected");
+		launchDetected = isLaunched->data;
+		launchTime = ros::Time::now();
 		//Get current heading and calculate the desired point
 		point.point.x = stateHat.position.north + safetyDistance*cos(stateHat.orientation.yaw);
 		point.point.y = stateHat.position.east + safetyDistance*sin(stateHat.orientation.yaw);
@@ -280,6 +293,10 @@ void HLManager::onLaunch(const std_msgs::Bool::ConstPtr& isLaunched)
 			originLat = fix.latitude;
 			originLon = fix.longitude;
 		}
+	}
+	else
+	{
+		ROS_INFO("Ignoring launch while in %d mode.", mode);
 	}
 }
 
@@ -309,6 +326,7 @@ void HLManager::step()
 			cart2::SetHLMode srv;
 			srv.request.mode = srv.request.GoToPoint;
 			srv.request.ref_point = point;
+			srv.request.surge = 1.0;
 			this->setHLMode(srv.request, srv.response);
 		}
 	};

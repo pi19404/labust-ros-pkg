@@ -206,8 +206,8 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 	controller[r].state = estimate->orientation_rate.yaw;
 
 	lastEst = ros::Time::now();
-	ROS_INFO("Semi-travel time:%f",(lastEst - estimate->header.stamp).toSec());
-	lastEst = estimate->header.stamp;
+	//ROS_INFO("Semi-travel time:%f",(lastEst - estimate->header.stamp).toSec());
+	//lastEst = estimate->header.stamp;
 	//newEstimate = true;
 	//if (newReference) step();
 };

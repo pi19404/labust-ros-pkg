@@ -46,7 +46,11 @@
 #include <boost/thread.hpp>
 
 #include <sensor_msgs/Joy.h>
+#include <std_msgs/Int32.h>
 #include <geometry_msgs/PointStamped.h>
+#include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
+#include <auv_msgs/NavSts.h>
 #include <ros/ros.h>
 
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
@@ -57,20 +61,41 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 		(float, radius)
 		(float, surge)
 		(int32_t, mode)
-		(uint8_t, launch))
+		(uint8_t, launch)
+		(uint8_t, mode_update))
 
+namespace labust
+{
+	namespace radio
+	{
+		typedef boost::array<float,5> stateVec;
+	}
+}
+BOOST_CLASS_IMPLEMENTATION(labust::radio::stateVec , boost::serialization::primitive_type)
 
-		namespace labust
-		{
+PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),CARTModemData,
+		(double, origin_lat)
+		(double, origin_lon)
+		(uint8_t, mode)
+		(stateVec, state_meas)
+		(stateVec, state_hat))
+
+namespace labust
+{
 	namespace control
 	{
 		/**
 		 * The class implements the topside radio modem node.
 		 * \todo Split into two policies.
+		 * \todo Add in ros utils a generic conversion of different message, i.e. NavSts,
+		 * to a vector or named map.
+		 * \todo Replace synchonization with read_until
 		 */
 		class TopsideRadio
 		{
-			enum {sync_length=6};
+			enum {sync_length=6, topside_package_length=38, cart_package_length=57};
+			//Estimates
+			enum {u=0,r,x,y,psi};
 		public:
 			/**
 			 * Main constructor
@@ -103,13 +128,29 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 			 */
 			void onExtPoint(const geometry_msgs::PointStamped::ConstPtr& isLaunched);
 			/**
+			 * Handle the estimates.
+			 */
+			void onStateHat(const auv_msgs::NavSts::ConstPtr& estimate);
+			/**
+			 * Handle the measurements.
+			 */
+			void onStateMeas(const auv_msgs::NavSts::ConstPtr& meas);
+			/**
+			 * Handle the measurements.
+			 */
+			void onCurrentMode(const std_msgs::Int32::ConstPtr& mode);
+			/**
 			 * Helper function.
 			 */
 			void populateDataFromConfig();
 			/**
-			 * Helper function
+			 * Helper function.
 			 */
 			void local2LatLon(double x, double y);
+			/**
+			 * Helper function.
+			 */
+			void sendCData();
 			/**
 			 * Start the receiving thread.
 			 */
@@ -130,12 +171,19 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg;
+			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber extPoint, joyIn;
-
+			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode;
+			/**
+			 * The transform listener.
+			 */
+			tf::TransformListener listener;
+			/**
+			 * The transform broadcaster.
+			 */
+			tf::TransformBroadcaster broadcaster;
 			/**
 			 * The io service.
 			 */
@@ -161,9 +209,13 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 			 */
 			labust::radio::TopsideModemData data;
 			/**
+			 * The return data.
+			 */
+			labust::radio::CARTModemData cdata;
+			/**
 			 * The data protector.
 			 */
-			boost::mutex dataMux;
+			boost::mutex dataMux, cdataMux;
 			/**
 			 * The asio streambuffer.
 			 */
@@ -175,7 +227,7 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 			/**
 			 * Location flag.
 			 */
-			bool isTopside;
+			bool isTopside, twoWayComms;
 			/**
 			 * The service client.
 			 */

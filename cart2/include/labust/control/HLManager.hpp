@@ -184,7 +184,7 @@ namespace labust
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher refPoint, refTrack;
+			ros::Publisher refPoint, refTrack, openLoopSurge, curMode;
 			/**
 			 * The subscribed topics.
 			 */

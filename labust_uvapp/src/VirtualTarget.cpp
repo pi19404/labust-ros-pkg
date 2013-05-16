@@ -79,6 +79,8 @@ void VirtualTarget::onInit()
 	//			&VirtualTarget::onTrackPoint,this);
 	windup = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
 			&VirtualTarget::onWindup,this);
+	openLoopSurge = nh.subscribe<std_msgs::Float32>("open_loop_surge", 1,
+			&VirtualTarget::onOpenLoopSurge,this);
 	enableControl = nh.advertiseService("VT_enable",
 			&VirtualTarget::onEnableControl, this);
 
@@ -139,6 +141,11 @@ bool VirtualTarget::onEnableControl(labust_uvapp::EnableControl::Request& req,
 {
 	this->enable = req.enable;
 	return true;
+}
+
+void VirtualTarget::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
+{
+	this->surge = surge->data;
 }
 
 void VirtualTarget::onFlowTwist(const geometry_msgs::TwistStamped::ConstPtr& flowtwist)
