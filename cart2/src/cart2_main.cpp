@@ -1,39 +1,39 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2010, LABUST, UNIZG-FER
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the LABUST nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Antonio Vasilijevic
-*  Created: 01.02.2013.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2010, LABUST, UNIZG-FER
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the LABUST nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  Author: Antonio Vasilijevic
+ *  Created: 01.02.2013.
+ *********************************************************************/
 #include <iostream>
 #include <math.h>
 #include <time.h>
@@ -98,7 +98,8 @@ float TauFrwold = 0;
 float TauYawold = 0;
 
 int intMax = 32767;
-double Supply_Voltage, Vehicle_Current, Temperature, Motor_Current[2], Supply_Voltage_Previous, Vehicle_Current_Previous, Motor_Current_Previous[2];
+double Supply_Voltage, Vehicle_Current, Temperature, Motor_Current[2], Supply_Voltage_Previous, Vehicle_Current_Previous, Motor_Current_Previous[2], Load_Position[2],
+Load_Position_Previous[2], RPM[2];
 double currentAvg[2] = {0,0};
 
 //time_t cur_time;
@@ -131,10 +132,10 @@ char GetCurrent1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x3C, 0x1B
 char GetCurrent2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x3C, 0x2B}; //get current from Axis2
 char ReadISR1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x03, 0x06, 0xE6};
 char ReadISR2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x03, 0x06, 0xF6};
-char GetPosition1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0xBC, 0x9B}; //get current from Axis1
-char GetPosition2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0xBC, 0xAB}; //get current from Axis2
+char GetPosition1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x28, 0x07}; //get current from Axis1
+char GetPosition2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x28, 0x17}; //get current from Axis2
 
-int StateDO[] = {0,1,1,1};
+int StateDO[] = {0,0,0,0};
 
 float parsData()
 {
@@ -162,19 +163,19 @@ void SetDigiOut() // only for general purpose dig.out 0 & 1.
 	switch (DigOutNumber)
 	{
 	case(1):
-				ID = 1;
+						ID = 1;
 	DO = 0;
 	break;
 	case(2):
-				ID = 1;
+						ID = 1;
 	DO = 1;
 	break;
 	case(3):
-				ID = 2;
+						ID = 2;
 	DO = 0;
 	break;
 	case(4):
-				ID = 2;
+						ID = 2;
 	DO = 1;
 	break;
 	}
@@ -291,7 +292,7 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 			CommsOkFlag= true;
 
 			//Motor_Current[0] = (parsData()-32736) * 2.5 * 4 / 65472;
-			Motor_Current[0] = parsData();
+			Load_Position[0] = parsData();
 
 			Mode = "OK";
 			Mode1 = "Data_C2";
@@ -307,7 +308,7 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 			CommsOkFlag= true;
 			// IF current
 			//Motor_Current[1] = (parsData()-32736) * 2.5 * 4 / 65472;
-			Motor_Current[1] = parsData();
+			Load_Position[1] = parsData();
 
 			Mode = "OK";
 			Mode1 = "DigOut";
@@ -591,14 +592,14 @@ void sendDiagnostics(ros::Publisher& diag, bool CommsOkFlag)
 	status.values.push_back(data);
 
 	out.str("");
-	out<<currentAvg[0];
-	data.key = "MotorCurrent1";
+	out<<RPM[0];
+	data.key = "RPM1";
 	data.value = out.str();
 	status.values.push_back(data);
 
 	out.str("");
-	out<<currentAvg[1];
-	data.key = "MotorCurrent2";
+	out<<RPM[1];
+	data.key = "RPM2";
 	data.value = out.str();
 	status.values.push_back(data);
 
@@ -826,10 +827,12 @@ int main(int argc, char* argv[])
 
 			if (AverCount == 40)
 			{AverCount = 0;}
- 			for(int i=0; i<2; ++i) currentAvg[i] = (currentAvg[i] + 0.01*Motor_Current[i])/1.01;
+			//for(int i=0; i<2; ++i) currentAvg[i] = (currentAvg[i] + 0.01*Motor_Current[i])/1.01;
 			Supply_Voltage_Previous = Supply_Voltage;
-			Motor_Current_Previous[0] = Motor_Current[0];
-			Motor_Current_Previous[1] = Motor_Current[1];
+			//Motor_Current_Previous[0] = Motor_Current[0];
+			//Motor_Current_Previous[1] = Motor_Current[1];
+			Load_Position_Previous[0] = Load_Position[0];
+			Load_Position_Previous[1] = Load_Position[1];
 			ReadData();
 			//GetMotorCurrent(2);
 			/*if (!CommsOkFlag)
@@ -841,17 +844,22 @@ int main(int argc, char* argv[])
 				{CommsOkFlag = true;
 				CommsAll++;}*/
 
+			RPM[0] = (Load_Position_Previous[0] - Load_Position[0])*75;
+			RPM[1] = (Load_Position_Previous[1] - Load_Position[1])*75;
+
 			if ((AverCount == 5) || (AverCount == 15))
 				//{printf("%f\n",Motor_Current[0]);
 				//printf("%f\n",abs(Motor_Current[1])*100);
 			{printf("%f\n",Supply_Voltage);
 			printf("%f\n",Vehicle_Current);
-			printf("%f\n",currentAvg[0]);
-			printf("%f\n",currentAvg[1]);
-			printf("%f\n",Temperature);}
+			printf("%f\n",Load_Position[0]);
+			printf("%f\n",Load_Position[1]);
+			printf("%f\n",Temperature);
+			printf("%f\n",RPM[0]);
+			printf("%f\n",RPM[1]);
+			}
 
 			//WD.reset();}
-
 			///////////ADDED ROS STUFF/////////////
 			sendDiagnostics(diagnostic, CommsOkFlag);
 			//This we exchange with ros rate
@@ -860,7 +868,12 @@ int main(int argc, char* argv[])
 			ros::spinOnce();
 
 			CommsOkFlag = true;
-			if ((fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0001) && (fabs(Motor_Current_Previous[0] - Motor_Current[0])<0.0001) && (fabs(Motor_Current_Previous[1] - Motor_Current[1])<0.0001))
+
+			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0001;
+			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
+			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
+
+			if (VoltageTest || portTest || stbdTest)
 			{
 				CommsCount++;
 				if (CommsCount == 20)
