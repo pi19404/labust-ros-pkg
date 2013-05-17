@@ -52,6 +52,7 @@
 #include <boost/thread.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <labust/tools/TimingTools.hpp>
+#include <std_msgs/Bool.h>
 
 #include <ros/ros.h>
 #include <auv_msgs/BodyForceReq.h>
@@ -77,7 +78,7 @@ struct TauT
 		{ScaleThrust = 1 / (fabs(Tau.Frw) + fabs(Tau.Yaw));}
 		else
 		{ScaleThrust = 1;}
-		Port = Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
+		Port = -Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
 		Stb = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
 	}
 
@@ -612,6 +613,68 @@ void sendDiagnostics(ros::Publisher& diag, bool CommsOkFlag)
 	diag.publish(status);
 }
 
+double wrapRPM(double value)
+{
+  if (value > 30000)
+  { 
+     return value - 65536;
+  }
+  else if (value < -30000)
+  {
+     return value + 65536;
+  }
+  return value;  
+}  
+
+struct CalibrationData
+{
+  CalibrationData():
+  	state(stop),
+  	cycleWait(0),
+  	trigger(false){}
+
+  enum {stop=0,start,xy,xz,mag};
+  enum {cyclesMax = 120};
+  enum {cyclesMin = 20};
+  enum {calibrationPin = 1};
+  int state;
+  int cycleWait;
+  bool trigger;
+};
+
+void onCalibration(CalibrationData& data, const std_msgs::Bool::ConstPtr& calibration)
+{
+  if (calibration->data)
+  {
+     std::cout<<"Change state."<<std::endl;
+     switch (data.state)
+     {
+       case CalibrationData::stop:
+          data.state = data.start;
+          data.cycleWait = 0;
+          data.trigger = true;
+          break;
+       case CalibrationData::start:
+      	 data.state = CalibrationData::xz;
+         data.cycleWait = 0;
+      	 data.trigger = true;
+      	 break;
+       case CalibrationData::xz:
+      	 data.state = CalibrationData::mag;
+         data.cycleWait = 0;
+      	 data.trigger = true;
+      	 break;
+       case CalibrationData::mag:
+         data.cycleWait = 0;
+	 data.trigger = true;
+     }
+  }
+}
+
+void onLights(const std_msgs::Bool::ConstPtr& lights)
+{
+}  
+
 ///////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
@@ -628,6 +691,7 @@ int main(int argc, char* argv[])
 	TauControlOld.Frw = 0;
 	TauControlOld.Yaw = 0;
 	std::string path, configToUse;
+	CalibrationData calibration;
 	//std::cout<<"Please enter path to config file"<<std::endl;
 	//std::cin>>path;ž
 
@@ -654,6 +718,7 @@ int main(int argc, char* argv[])
 	ros::NodeHandle nh,ph("~");
 	//Setup subscribers
 	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn",1,boost::bind(&handleTau,&TauControl,_1));
+	ros::Subscriber cflag = nh.subscribe<std_msgs::Bool>("calibration_on",1,boost::bind(&onCalibration, boost::ref(calibration),_1));
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
@@ -804,6 +869,27 @@ int main(int argc, char* argv[])
 			tau.wrench.force.x = achTau.Frw;
 			tau.wrench.torque.z = achTau.Yaw;
 			tauAch.publish(tau);
+
+			StateDO[CalibrationData::calibrationPin] = calibration.trigger;
+			printf("DIO state: %d\n", StateDO[CalibrationData::calibrationPin]);
+			if (calibration.state != CalibrationData::stop)
+			{
+				++calibration.cycleWait;
+
+				if (calibration.state == CalibrationData::start) 
+				{
+					if (calibration.cycleWait > calibration.cyclesMax)
+					{
+					  calibration.trigger = false;
+					}
+				}
+				else if (calibration.cycleWait > calibration.cyclesMin)
+				{
+					calibration.trigger = false;
+					if (calibration.state == CalibrationData::mag) calibration.state = CalibrationData::stop;
+				}
+			}
+
 			////////////////////////////////////////////////////
 			// (TauC TauControl, float Limit)*/
 			//thrust.Port = 0;
@@ -842,10 +928,9 @@ int main(int argc, char* argv[])
 			/*GetSupplyVoltage();
 			if (!CommsOkFlag)
 				{CommsOkFlag = true;
-				CommsAll++;}*/
-
-			RPM[0] = (Load_Position_Previous[0] - Load_Position[0])*75;
-			RPM[1] = (Load_Position_Previous[1] - Load_Position[1])*75;
+				CommsAll++;}*/	
+			RPM[0] = wrapRPM(Load_Position[0] - Load_Position_Previous[0])*75;
+			RPM[1] = wrapRPM(Load_Position[1] - Load_Position_Previous[1])*75;
 
 			if ((AverCount == 5) || (AverCount == 15))
 				//{printf("%f\n",Motor_Current[0]);
