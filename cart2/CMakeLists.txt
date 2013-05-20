@@ -95,6 +95,7 @@ add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(hlmanager cart2_generate_messages_cpp)
+add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(topside_radio cart2_gencfg)
 add_dependencies(topside_radio cart2_generate_messages_cpp)
 

@@ -73,7 +73,7 @@ void BenchRadio::onInit()
 	port.open(portName);
 	port.set_option(boost::asio::serial_port::baud_rate(baud));
 	port.set_option(boost::asio::serial_port::flow_control(
-			boost::asio::serial_port::flow_control::hardware));
+			boost::asio::serial_port::flow_control::none));
 
 	if (!port.is_open())
 	{
@@ -104,6 +104,7 @@ void BenchRadio::onInit()
 
 void BenchRadio::onTauIn(const auv_msgs::BodyForceReq::ConstPtr& tauIn)
 {
+	assert(isBench && "Only the radio on the bench/topside should receive tau.");
 	data.surgeForce = tauIn->wrench.force.x;
 	data.torqueForce = tauIn->wrench.torque.z;
 
@@ -115,7 +116,8 @@ void BenchRadio::onTauIn(const auv_msgs::BodyForceReq::ConstPtr& tauIn)
 	dataSer << data;
 
 	//write data
-	boost::asio::write(port, output.data());
+	int n = boost::asio::write(port, output.data());
+	ROS_INFO("Bench transferred:%d",n);
 }
 
 void BenchRadio::onImu(const sensor_msgs::Imu::ConstPtr& imu)
@@ -168,10 +170,12 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 
 		if (ringBuffer == "@ONTOP")
 		{
+			ROS_INFO("Synced on @ONTOP");
 			boost::asio::async_read(port,sbuffer.prepare(Bench_package_length),boost::bind(&BenchRadio::onIncomingData,this,_1,_2));
 		}
 		else if (ringBuffer == "@CART2")
 		{
+			ROS_INFO("Synced on @CART2");
 			boost::asio::async_read(port,sbuffer.prepare(cart_package_length),boost::bind(&BenchRadio::onIncomingData,this,_1,_2));
 		}
 		else
@@ -202,7 +206,8 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 			dataSer << cdata;
 			l.unlock();
 			//write data
-			boost::asio::write(port, output.data());
+			int n=boost::asio::write(port, output.data());
+			ROS_INFO("Cart transferred:%d",n);
 
 			auv_msgs::BodyForceReq tau;
 			tau.wrench.force.x = data.surgeForce;
