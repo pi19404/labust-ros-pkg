@@ -32,164 +32,329 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  *  Author : Dula Nad
- *  Created: 05.03.2013.
+ *  Created: 26.03.2013.
  *********************************************************************/
-#include <labust/xml/XMLReader.hpp>
-#include <labust/simulation/VehicleModel6DOF.hpp>
-#include <labust/vehicles/ScaleAllocation.hpp>
+#include <labust/navigation/KFCore.hpp>
+#include <labust/navigation/LDTravModel.hpp>
+#include <labust/math/uBlasOperations.hpp>
+#include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/GeoUtilities.hpp>
+#include <labust/tools/rosutils.hpp>
 
+#include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
-#include <nav_msgs/Odometry.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/Imu.h>
+#include <geometry_msgs/TwistStamped.h>
+
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+
 #include <ros/ros.h>
 
-#include <Eigen/Dense>
-
 #include <boost/bind.hpp>
+#include <sstream>
 
-nav_msgs::Odometry* mapToOdometry(const labust::simulation::vector& eta, const labust::simulation::vector& nu, nav_msgs::Odometry* odom)
+typedef labust::navigation::KFCore<labust::navigation::LDTravModel> KFNav;
+tf::TransformListener* listener;
+
+ros::Time t;
+
+void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
-	using namespace labust::simulation;
-	using namespace Eigen;
-
-	odom->pose.pose.position.x = eta(VehicleModel6DOF::x);
-	odom->pose.pose.position.y = eta(VehicleModel6DOF::y);
-	odom->pose.pose.position.z = eta(VehicleModel6DOF::z);
-	Matrix3f m;
-	m = AngleAxisf(eta(VehicleModel6DOF::psi), Vector3f::UnitZ())*
-		AngleAxisf(eta(VehicleModel6DOF::theta), Vector3f::UnitY())*
-		AngleAxisf(eta(VehicleModel6DOF::phi), Vector3f::UnitX());
-
-	Quaternion<float> q(m);
-
-	odom->pose.pose.orientation.x = q.x();
-	odom->pose.pose.orientation.y = q.y();
-	odom->pose.pose.orientation.z = q.z();
-	odom->pose.pose.orientation.w = q.w();
-
-	odom->twist.twist.linear.x = nu(VehicleModel6DOF::u);
-	odom->twist.twist.linear.y = nu(VehicleModel6DOF::v);
-	odom->twist.twist.linear.z = nu(VehicleModel6DOF::w);
-
-	odom->twist.twist.angular.x = nu(VehicleModel6DOF::p);
-	odom->twist.twist.angular.y = nu(VehicleModel6DOF::q);
-	odom->twist.twist.angular.z = nu(VehicleModel6DOF::r);
-
-	odom->header.stamp = ros::Time::now();
-
-	return odom;
-}
-
-auv_msgs::NavSts* mapToNavSts(const labust::simulation::vector& eta, const labust::simulation::vector& nu, auv_msgs::NavSts* nav)
-{
-	using namespace labust::simulation;
-	using namespace Eigen;
-	nav->global_position.latitude = 0;
-	nav->global_position.longitude = 0;
-
-	nav->position.north = eta(VehicleModel6DOF::x);
-	nav->position.east = eta(VehicleModel6DOF::y);
-	nav->position.depth = eta(VehicleModel6DOF::z);
-	nav->orientation.roll = eta(VehicleModel6DOF::phi);
-	nav->orientation.pitch = eta(VehicleModel6DOF::theta);
-	nav->orientation.yaw = eta(VehicleModel6DOF::psi);
-
-	nav->body_velocity.x = nu(VehicleModel6DOF::u);
-	nav->body_velocity.y = nu(VehicleModel6DOF::v);
-	nav->body_velocity.z = nu(VehicleModel6DOF::w);
-	nav->orientation_rate.roll = nu(VehicleModel6DOF::p);
-	nav->orientation_rate.pitch = nu(VehicleModel6DOF::q);
-	nav->orientation_rate.yaw = nu(VehicleModel6DOF::r);
-
-	nav->header.stamp = ros::Time::now();
-
-	return nav;
-}
-
-void handleTau(labust::simulation::vector* tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
-{
-	using namespace labust::simulation;
-	(*tauIn)(VehicleModel6DOF::X) = tau->wrench.force.x;
-	(*tauIn)(VehicleModel6DOF::Y) = tau->wrench.force.y;
-	(*tauIn)(VehicleModel6DOF::Z) = tau->wrench.force.z;
-	(*tauIn)(VehicleModel6DOF::K) = tau->wrench.torque.x;
-	(*tauIn)(VehicleModel6DOF::M) = tau->wrench.torque.y;
-	(*tauIn)(VehicleModel6DOF::N) = tau->wrench.torque.z;
+	tauIn(KFNav::X) = tau->wrench.force.x;
+	tauIn(KFNav::Y) = tau->wrench.force.y;
+	tauIn(KFNav::Z) = tau->wrench.force.z;
+	tauIn(KFNav::N) = tau->wrench.torque.z;
 };
 
-//Simple dynamics simulation only ROS node
-//\todo Add allocation algorithm
-//\todo Add thruster nonlinearity ?
+void handleGPS(KFNav::vector& measurement, KFNav::vector& newFlag, const sensor_msgs::NavSatFix::ConstPtr& data)
+{
+	//Calculate to X-Y tangent plane
+	tf::StampedTransform transformDeg, transformLocal;
+	try
+	{
+		listener->lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
+		listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+
+		std::pair<double,double> posxy =
+				labust::tools::deg2meter(data->latitude - transformDeg.getOrigin().y(),
+						data->longitude - transformDeg.getOrigin().x(),
+						transformDeg.getOrigin().y());
+
+		//correct for lever arm shift during pitch and roll
+		tf::Vector3 pos = tf::Vector3(posxy.first, posxy.second,0);
+
+		//xy(x) = pos.x();
+		//xy(y) = pos.y();
+		measurement(KFNav::x_m) = posxy.first;
+		newFlag(KFNav::x_m) = 1;
+		measurement(KFNav::y_m) = posxy.second;
+		newFlag(KFNav::y_m) = 1;
+	}
+	catch(tf::TransformException& ex)
+	{
+		ROS_ERROR("%s",ex.what());
+	}
+};
+
+void handleImu(KFNav::vector& rpy,  const sensor_msgs::Imu::ConstPtr& data)
+{
+	enum {r,p,y,newMsg};
+	double roll,pitch,yaw;
+
+	tf::StampedTransform transform;
+	try
+	{
+		t = data->header.stamp;
+		listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
+		tf::Quaternion meas(data->orientation.x,data->orientation.y,
+				data->orientation.z,data->orientation.w);
+		tf::Quaternion result = meas*transform.getRotation();
+
+		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		/*labust::tools::eulerZYXFromQuaternion(
+				Eigen::Quaternion<float>(result.x(),result.y(),
+						result.z(),result.w()),
+				roll,pitch,yaw);*/
+		ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
+
+		rpy(r) = roll;
+		rpy(p) = pitch;
+		rpy(y) = yaw;
+		rpy[newMsg] = 1;
+	}
+	catch (tf::TransformException& ex)
+	{
+		ROS_ERROR("%s",ex.what());
+	}
+};
+
+void handleDvl(KFNav::vector& measurement, KFNav::vector& newFlag,
+		const geometry_msgs::TwistStamped::ConstPtr& data)
+{
+	enum {u,v,w,newMsg};
+
+	measurement(KFNav::u_m) = data->twist.linear.x;
+	newFlag(KFNav::u_m)=1;
+	measurement(KFNav::v_m) = data->twist.linear.y;
+	newFlag(KFNav::v_m)=1;
+	measurement(KFNav::w_m) = data->twist.linear.z;
+	newFlag(KFNav::w_m)=1;
+};
+
+void configureNav(KFNav& nav, ros::NodeHandle& nh)
+{
+	ROS_INFO("Configure navigation.");
+
+	KFNav::ModelParams surge,sway,heave,yaw;
+
+	//Get model parameters
+	std::string modelName("default");
+	nh.param("model_name",modelName,modelName);
+
+	//Inertia and added mass
+	double mass(1);
+	nh.param(modelName+"/dynamics/mass",mass,mass);
+	surge.alpha = mass;
+	sway.alpha = mass;
+	heave.alpha = mass;
+
+	double Ts(0.1);
+	nh.param(modelName+"/dynamics/period",Ts,Ts);
+	nav.setTs(Ts);
+
+	XmlRpc::XmlRpcValue modelParams;
+	nh.getParam(modelName+"/dynamics/inertia_matrix", modelParams);
+	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
+	yaw.alpha = static_cast<double>(modelParams[8]);
+
+	modelParams.clear();
+	nh.getParam(modelName+"/dynamics/added_mass", modelParams);
+	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
+	surge.alpha += static_cast<double>(modelParams[0]);
+	sway.alpha += static_cast<double>(modelParams[1]);
+	heave.alpha += static_cast<double>(modelParams[2]);
+	yaw.alpha += static_cast<double>(modelParams[5]);
+
+	//Linear damping
+	modelParams.clear();
+	nh.getParam(modelName+"/dynamics/damping", modelParams);
+	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
+	surge.beta = static_cast<double>(modelParams[0]);
+	sway.beta = static_cast<double>(modelParams[1]);
+	heave.beta = static_cast<double>(modelParams[2]);
+	yaw.beta = static_cast<double>(modelParams[5]);
+
+	//Quadratic damping
+	modelParams.clear();
+	nh.getParam(modelName+"/dynamics/quadratic_damping", modelParams);
+	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
+	surge.betaa = static_cast<double>(modelParams[0]);
+	sway.betaa = static_cast<double>(modelParams[1]);
+	heave.betaa = static_cast<double>(modelParams[2]);
+	yaw.betaa = static_cast<double>(modelParams[5]);
+
+	nav.setParameters(surge,sway,heave,yaw);
+
+	std::string sQ,sW,sV,sR,sP,sx0;
+	nh.getParam(modelName+"/navigation/Q", sQ);
+	nh.getParam(modelName+"/navigation/W", sW);
+	nh.getParam(modelName+"/navigation/V", sV);
+	nh.getParam(modelName+"/navigation/R", sR);
+	nh.getParam(modelName+"/navigation/P", sP);
+	nh.getParam(modelName+"/navigation/x0", sx0);
+	KFNav::matrix Q,W,V,R,P;
+	KFNav::vector x0;
+	boost::numeric::ublas::matrixFromString(sQ,Q);
+	boost::numeric::ublas::matrixFromString(sW,W);
+	boost::numeric::ublas::matrixFromString(sV,V);
+	boost::numeric::ublas::matrixFromString(sR,R);
+	boost::numeric::ublas::matrixFromString(sP,P);
+	std::stringstream ss(sx0);
+	boost::numeric::ublas::operator >>(ss,x0);
+
+	std::cout<<P<<std::endl;
+
+	nav.setStateParameters(W,Q);
+	nav.setMeasurementParameters(V,R);
+	nav.setStateCovariance(P);
+	nav.initModel();
+	nav.setState(x0);
+}
+
+//consider making 2 corrections based on arrived measurements (async)
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"model_node");
+	ros::init(argc,argv,"rov_nav");
+	ros::NodeHandle nh;
+	KFNav nav;
+	//Configure the navigation
+	configureNav(nav,nh);
 
-	//Initialize the simulator
-	labust::xml::ReaderPtr reader(new labust::xml::Reader(argv[1],true));
-	reader->useNode(reader->value<_xmlNode*>("//configurations"));
-	labust::simulation::VehicleModel6DOF model(reader);
-
-	ros::NodeHandle nh,ph("~");
+	double outlierR;
+	nh.param("outlier_radius",outlierR,1.0);
 
 	//Publishers
-	ros::Publisher state = nh.advertise<auv_msgs::NavSts>("meas",1);
-	ros::Publisher stateNoisy = nh.advertise<auv_msgs::NavSts>("noisy_meas",1);
-	ros::Publisher uwsim = nh.advertise<nav_msgs::Odometry>("uwsim_hook",1);
-	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
+	ros::Publisher stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
+	ros::Publisher stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
+	ros::Publisher currentTwist = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
+	ros::Publisher bodyFlowFrame = nh.advertise<geometry_msgs::TwistStamped>("body_flow_frame_twist",1);
 	//Subscribers
-	labust::simulation::vector tau(labust::simulation::zero_v(6));
-	ros::Subscriber tauSub = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&tau,_1));
+	KFNav::vector tau(KFNav::zeros(KFNav::inputSize)),
+			measurements(KFNav::zeros(KFNav::stateNum)),
+			newMeasFlag(KFNav::zeros(KFNav::stateNum));
+	KFNav::vector rpy(KFNav::zeros(3+1));
 
-	auv_msgs::NavSts nav,navNoisy;
-	nav_msgs::Odometry odom;
+	tf::TransformBroadcaster broadcast;
+	listener = new tf::TransformListener();
 
-	double fs(10);
-	ph.param("Rate",fs,fs);
-	ros::Rate rate(fs);
-	model.setTs(1/fs);
+	ros::Subscriber tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
+			boost::bind(&handleTau,boost::ref(tau),_1));
+	ros::Subscriber navFix = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1,
+			boost::bind(&handleGPS,boost::ref(measurements),boost::ref(newMeasFlag),_1));
+	ros::Subscriber imu = nh.subscribe<sensor_msgs::Imu>("imu", 1,
+			boost::bind(&handleImu,boost::ref(rpy),_1));
+	ros::Subscriber dvl = nh.subscribe<geometry_msgs::TwistStamped>("dvl", 1,
+			boost::bind(&handleDvl,boost::ref(measurements),boost::ref(newMeasFlag),_1));
 
-	//Construct the allocation matrix for the vehicle.
-	//We can have it fixed here since this is a specific application.
-	//\todo Use real thruster angles instead of 45 degree
-	Eigen::Matrix<float, 3,4> B;
-	float cp(cos(M_PI/4)),sp(sin(M_PI/4));
-	B<<cp,cp,cp,cp,
-	   sp,-sp,-sp,sp,
-	   1,-1,1,-1;
+	ros::Rate rate(10);
 
-	double maxThrust(100/(2*cp)),minThrust(-maxThrust);
-	ph.param("maxThrust",maxThrust,maxThrust);
-	ph.param("minThrust",minThrust,minThrust);
+	auv_msgs::NavSts meas,state;
+	geometry_msgs::TwistStamped current, flowspeed;
+	meas.header.frame_id = "local";
+	state.header.frame_id = "local";
+	current.header.frame_id = "local";
 
-	//Scaling allocation only for XYN
-	labust::vehicles::ScaleAllocation allocator(B,maxThrust,minThrust);
+	labust::math::unwrap unwrap;
 
 	while (ros::ok())
 	{
-		using namespace labust::simulation;
-		Eigen::Vector3f tauXYN,tauXYNsc;
-		tauXYN<<tau(VehicleModel6DOF::X),tau(VehicleModel6DOF::Y),tau(VehicleModel6DOF::N);
-		double scale = allocator.scale(tauXYN,&tauXYNsc);
-
-		//Publish the scaled values if scaling occured
-		if (scale>1)
+		nav.predict(tau);
+		if (rpy(3))
 		{
-			auv_msgs::BodyForceReq t;
-			tau(VehicleModel6DOF::X) = t.wrench.force.x = tauXYNsc(0);
-			tau(VehicleModel6DOF::Y) = t.wrench.force.y = tauXYNsc(1);
-			t.wrench.force.z = tau(VehicleModel6DOF::Z);
-			t.wrench.torque.x = tau(VehicleModel6DOF::K);
-			t.wrench.torque.y = tau(VehicleModel6DOF::M);
-			tau(VehicleModel6DOF::N) = t.wrench.torque.z = tauXYNsc(2);
-			t.header.stamp = ros::Time::now();
-			tauAch.publish(t);
+			double yaw = unwrap(rpy(2));
+			measurements(KFNav::psi_m) = yaw;
+			newMeasFlag(KFNav::psi_m) = 1;
 		}
 
-		model.step(tau);
+		bool anyNew = false;
+		for (size_t i=0; i<newMeasFlag.size(); ++i) if ((anyNew = (newMeasFlag(i)))) break;
 
-		uwsim.publish(*mapToOdometry(model.Eta(),model.Nu(),&odom));
-		state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));
-		stateNoisy.publish(*mapToNavSts(model.EtaNoisy(),model.NuNoisy(),&navNoisy));
+		if (anyNew)
+		{
+			nav.correct(nav.update(measurements, newMeasFlag));
+			ROS_INFO("Correctiion step.");
+		}
+
+		meas.orientation.roll = rpy(0);
+		meas.orientation.pitch = rpy(1);
+		meas.orientation.yaw = rpy(2);
+		meas.position.north = measurements(KFNav::x_m);
+		meas.position.east = measurements(KFNav::y_m);
+		meas.body_velocity.x = measurements(KFNav::u_m);;
+		meas.body_velocity.y = measurements(KFNav::v_m);;
+		meas.body_velocity.z = measurements(KFNav::w_m);;
+		stateMeas.publish(meas);
+
+		const KFNav::vector& estimate = nav.getState();
+		state.body_velocity.x = estimate(KFNav::u);
+		state.body_velocity.y = estimate(KFNav::v);
+		state.body_velocity.z = estimate(KFNav::w);
+		state.orientation_rate.yaw = estimate(KFNav::r);
+		state.position.north = estimate(KFNav::xp);
+		state.position.east = estimate(KFNav::yp);
+		state.position.depth = estimate(KFNav::zp);
+		current.twist.linear.x = estimate(KFNav::xc);
+		current.twist.linear.y = estimate(KFNav::yc);
+
+		const KFNav::matrix& covariance = nav.getStateCovariance();
+		state.position_variance.north = covariance(KFNav::xp, KFNav::xp);
+		state.position_variance.east = covariance(KFNav::yp, KFNav::yp);
+		state.position_variance.depth = covariance(KFNav::zp,KFNav::zp);
+		state.orientation_variance.yaw =  covariance(KFNav::psi, KFNav::psi);
+
+		try
+		{
+			tf::StampedTransform transformDeg;
+			listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+
+			std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
+					state.position.east,
+					//The latitude angle
+					transformDeg.getOrigin().y());
+			state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
+			state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+		}
+		catch(tf::TransformException& ex)
+		{
+			ROS_ERROR("%s",ex.what());
+		}
+
+		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
+
+		tf::StampedTransform transform;
+		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
+		Eigen::Quaternion<float> q;
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),estimate(KFNav::psi),q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+
+		//Calculate the flow frame (instead of heading use course)
+		double xdot,ydot;
+		nav.getNEDSpeed(xdot,ydot);
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),atan2(ydot,xdot),q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_flow"));
+
+		flowspeed.twist.linear.x = xdot;
+		flowspeed.twist.linear.y = ydot;
+		bodyFlowFrame.publish(flowspeed);
+		currentTwist.publish(current);
+		state.header.stamp = t;
+		stateHat.publish(state);
+
 		rate.sleep();
 		ros::spinOnce();
 	}
