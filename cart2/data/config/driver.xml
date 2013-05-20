@@ -19,7 +19,7 @@
 	
 	<node pkg="cart2" type="bench_radio" name="cart2_node" if="$(env USE_BENCH_RADIO)" machine="controlled">
 	    <!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
-		<param name="PortName" value="/dev/pts/4" />
+		<param name="PortName" value="/dev/pts/5" />
 		<param name="Baud" value="9600" />
 		<param name="IsBench" value="true" />
 		<remap from="tauIn" to="tauOut" />

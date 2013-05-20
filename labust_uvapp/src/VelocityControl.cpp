@@ -277,11 +277,12 @@ double VelocityControl::doIdentification(int i)
 		PIFFController_tune(&controller[i]);
 		//Write parameters to server
 		XmlRpc::XmlRpcValue vparam;
-		vparam.setSize(4);
+		vparam.setSize(SOIdentification::numParams);
 		vparam[0] = params[SOIdentification::alpha];
 		vparam[1] = params[SOIdentification::kx];
 		vparam[2] = params[SOIdentification::kxx];
 		vparam[3] = params[SOIdentification::delta];
+		vparam[4] = params[SOIdentification::wn];
 		nh.setParam(dofName[i]+"_identified_params", vparam);
 		//Stop identification
 		axis_control[i] = disableAxis;
@@ -292,7 +293,8 @@ double VelocityControl::doIdentification(int i)
 				params[SOIdentification::alpha],
 				params[SOIdentification::kx],
 				params[SOIdentification::kxx],
-				params[SOIdentification::delta]);
+				params[SOIdentification::delta],
+				params[SOIdentification::wn]);
 		//Update dynamic parameters
 		this->updateDynRecConfig();
 

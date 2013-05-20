@@ -3,7 +3,7 @@
     <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)"/>     
     
     <node pkg="cart2" name="radio_modem" type="bench_radio">
-      <param name="PortName" value="/dev/pts/2" />
+      <param name="PortName" value="/dev/pts/3" />
       <param name="Baud" value="9600" />
       <param name="IsBench" value="false" />
     </node>

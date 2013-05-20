@@ -61,6 +61,7 @@ namespace labust
 BOOST_CLASS_IMPLEMENTATION(labust::radio::quat , boost::serialization::primitive_type)
 
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),BenchModemDataRet,
+		(double, time)
 		(float, surgeAch)
 		(float, torqueAch)
 		(char, windupS)
@@ -82,7 +83,7 @@ namespace labust
 		 */
 		class BenchRadio
 		{
-			enum {sync_length=6, Bench_package_length=8, cart_package_length=42};
+			enum {sync_length=6, Bench_package_length=8, cart_package_length=50};
 		public:
 			/**
 			 * Main constructor
