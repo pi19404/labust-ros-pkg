@@ -122,7 +122,7 @@ void handleIncoming(SharedData& shared,
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
-		//std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
+		std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
 		//Send Imu stuff
 		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
