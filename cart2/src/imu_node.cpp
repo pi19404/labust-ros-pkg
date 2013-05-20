@@ -35,6 +35,7 @@
  *  Created: 23.01.2013.
  *********************************************************************/
 #include <labust/tools/rosutils.hpp>
+#include <cart2/ImuInfo.h>
 
 #include <std_msgs/String.h>
 #include <sensor_msgs/Imu.h>
@@ -54,7 +55,7 @@ struct SharedData
 	enum {msg_size = 85,
 		data_offset=4,
 		checksum = 84};
-	ros::Publisher imuPub, gpsPub;
+	ros::Publisher imuPub, gpsPub, imuinfo;
 	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
 	double magnetic_declination;
@@ -119,6 +120,11 @@ void handleIncoming(SharedData& shared,
 			mag_x, mag_y, mag_z,
 			roll,pitch,yaw,
 			modul,ry,mmm,mm};
+
+		cart2::ImuInfo info;
+		info.data.resize(mm+1);
+		for (size_t i=0; i<mm+1; ++i) info.data[i] = data[i];
+		shared.imuinfo.publish(info);
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
@@ -216,6 +222,7 @@ int main(int argc, char* argv[])
 	ph.param("magnetic_declination",shared.magnetic_declination,0.0);
 	shared.imuPub = nh.advertise<sensor_msgs::Imu>("imu",1);
 	shared.gpsPub = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
+	shared.imuinfo= nh.advertise<cart2::ImuInfo>("imu_info",1);
 
 	//Configure Imu and GPS position relative to vehicle center of mass
 	Eigen::Vector3d origin(Eigen::Vector3d::Zero()),

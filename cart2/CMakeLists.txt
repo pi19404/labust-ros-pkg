@@ -26,6 +26,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 add_message_files(
   FILES
   HLMessage.msg
+  ImuInfo.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -37,7 +38,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
-  auv_msgs sensor_msgs std_msgs
+  geometry_msgs std_msgs
 )
 
 ###################################################
@@ -94,8 +95,8 @@ add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(hlmanager cart2_generate_messages_cpp)
+#add_dependencies(topside_radio cart2_gencfg)
 add_dependencies(topside_radio cart2_generate_messages_cpp)
-add_dependencies(topside_radio cart2_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(topside_radio

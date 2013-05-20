@@ -192,25 +192,28 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 	{
 			dataSer >> data;
 
-			auv_msgs::BodyForceReq tau;
-			tau.wrench.force.x = data.surgeForce;
-			tau.wrench.torque.z = data.torqueForce;
-			tauOut.publish(tau);
-
 			boost::asio::streambuf output;
 			std::ostream out(&output);
 			//Prepare sync header
 			out<<"@CART2";
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(cdataMux);
+			cdata.time = ros::Time::now().toSec();
 			dataSer << cdata;
 			l.unlock();
 			//write data
 			boost::asio::write(port, output.data());
+
+			auv_msgs::BodyForceReq tau;
+			tau.wrench.force.x = data.surgeForce;
+			tau.wrench.torque.z = data.torqueForce;
+			tauOut.publish(tau);
 	}
 	else
 	{
 		dataSer >> cdata;
+
+		ROS_INFO("Time diff:%f",ros::Time::now().toSec() - cdata.time);
 
 		auv_msgs::BodyForceReq tau;
 		tau.wrench.force.x = cdata.surgeAch;
