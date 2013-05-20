@@ -250,26 +250,22 @@ int main(int argc, char* argv[])
 		{
 			double yaw = unwrap(rpy(2));
 
-			if (xy(2) == 1 && false)
+			bool outlier = false;
+			double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+			double inx(0),iny(0);
+			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+			if (outlier)
+			{ 
+			   ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);	
+			   xy(2) = 0;
+			}
+
+			if (xy(2) == 1 && !outlier)
 			{
-				bool outlier = false;
-				double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
-				double inx(0),iny(0);
-				nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
-				outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
-
-				outlier = false;
-
-				if (!outlier)
-				{
-					ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
-					nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
-				}
-				else
-				{
-					ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
-				}
-				xy(2) = 0;
+			   ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
+			   nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+			   xy(2) = 0;
 			}
 			else
 			{
