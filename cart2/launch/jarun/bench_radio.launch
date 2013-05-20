@@ -1,0 +1,29 @@
+<launch> 
+  <group ns="cart">
+    <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)"/>     
+    
+    <node pkg="cart2" name="radio_modem" type="bench_radio">
+      <param name="PortName" value="/dev/pts/2" />
+      <param name="Baud" value="9600" />
+      <param name="IsBench" value="false" />
+    </node>
+    
+    <node pkg="ldtravocean" type="model_node" name="cart2_node"
+		args="$(env SIM_MODEL)" unless="$(env USE_CART)">
+		<!-- This will also adjust the model sampling time -->
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<remap from="tauIn" to="tauOut" />
+		<remap from="meas" to="meas_sim" />
+		<param name="maxThrust" value="9.2" />
+		<param name="minThrust" value="-9.2" />
+		<param name="publish_world" value="false" />
+		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
+
+		<remap from="imu_model" to="imu" />
+		<remap from="fix" to="gps" />
+	</node>
+
+	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled"/>
+  </group>
+</launch>

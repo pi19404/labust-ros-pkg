@@ -5,8 +5,9 @@ export JOYSTICK=/dev/input/js1
 export PACKAGE=cart2
 export USE_UWSIM=0
 export USE_RVIZ=1
-export IS_SIM=1
-export IS_REMOTE=1
+export IS_SIM=0
+export IS_REMOTE=0
+export USE_BENCH_RADIO=1
 export NO_NOISE=1
 export LOGDIR=`pwd`/logs/
 mkdir -p ${LOGDIR}
