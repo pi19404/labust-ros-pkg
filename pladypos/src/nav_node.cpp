@@ -250,13 +250,15 @@ int main(int argc, char* argv[])
 		{
 			double yaw = unwrap(rpy(2));
 
-			if (xy(2) == 1)
+			if (xy(2) == 1 && false)
 			{
 				bool outlier = false;
 				double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
 				double inx(0),iny(0);
 				nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
 				outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+
+				outlier = false;
 
 				if (!outlier)
 				{
@@ -277,6 +279,8 @@ int main(int argc, char* argv[])
 			rpy(3) = 0;
 		}
 
+		meas.orientation.roll = rpy(0);
+		meas.orientation.pitch = rpy(1);
 		meas.orientation.yaw = rpy(2);
 		meas.position.north = xy(0);
 		meas.position.east = xy(1);

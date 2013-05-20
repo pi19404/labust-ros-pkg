@@ -131,7 +131,10 @@ class DynamicPositioning:
              
         if not self.windup[2]:
             self.yawInternalState += self.Ki*error*self.Ts;
-        pub.twist.angular.z = self.Kyaw*error + self.yawInternalState;
+            pub.twist.angular.z = self.Kyaw*error + self.yawInternalState;
+	else:
+            pub.twist.angular.z = self.Kyaw*error;
+		
         pub.goal.priority = pub.goal.PRIORITY_NORMAL;
         self.out.publish(pub); 
                      
