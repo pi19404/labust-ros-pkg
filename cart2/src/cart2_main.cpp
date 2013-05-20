@@ -85,8 +85,8 @@ struct TauT
 	TauC getTauC()
 	{
 		TauC tau;
-		tau.Frw = (Port+Stb)/2;
-		tau.Yaw = (Port-Stb)/2;
+		tau.Frw = (-Port+Stb)/2;
+		tau.Yaw = (-Port-Stb)/2;
 
 		return tau;
 	}
@@ -786,11 +786,11 @@ int main(int argc, char* argv[])
 			os.write(AxisOFFID2,sizeof(AxisOFFID2));
 			write(port,outputBuffer);
 
-			/*os.write(ResetID2,sizeof(ResetID2));
+			os.write(ResetID2,sizeof(ResetID2));
 		write(port,outputBuffer);
 
 		os.write(ResetID1,sizeof(ResetID1));
-		write(port,outputBuffer);*/
+		write(port,outputBuffer);
 
 			os.write(AxisONID1,sizeof(AxisONID1));
 			write(port,outputBuffer);
@@ -868,6 +868,9 @@ int main(int argc, char* argv[])
 			auv_msgs::BodyForceReq tau;
 			tau.wrench.force.x = achTau.Frw;
 			tau.wrench.torque.z = achTau.Yaw;
+			bool windup = (TauControl.Yaw != achTau.Yaw);
+			tau.disable_axis.x = windup;
+			tau.disable_axis.yaw = windup;
 			tauAch.publish(tau);
 
 			StateDO[CalibrationData::calibrationPin] = calibration.trigger;
@@ -929,8 +932,6 @@ int main(int argc, char* argv[])
 			if (!CommsOkFlag)
 				{CommsOkFlag = true;
 				CommsAll++;}*/	
-			RPM[0] = wrapRPM(Load_Position[0] - Load_Position_Previous[0])*75;
-			RPM[1] = wrapRPM(Load_Position[1] - Load_Position_Previous[1])*75;
 
 			if ((AverCount == 5) || (AverCount == 15))
 				//{printf("%f\n",Motor_Current[0]);
@@ -951,10 +952,14 @@ int main(int argc, char* argv[])
 			//rate.sleep();
 			usleep(1000*90);
 			ros::spinOnce();
+			
+
+			RPM[0] = wrapRPM(Load_Position[0] - Load_Position_Previous[0])*75;
+			RPM[1] = wrapRPM(Load_Position[1] - Load_Position_Previous[1])*75;
 
 			CommsOkFlag = true;
 
-			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0001;
+			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
 			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
 			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
 

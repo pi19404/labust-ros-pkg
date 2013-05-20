@@ -17,12 +17,13 @@
 
 	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled" >	
 		<param name="PortName" value="/dev/ttyS0" />
+		<remap from="tauIn" to="tauOut" />
         </node>
 	
 
 	<node pkg="cart2" type="bench_radio" name="cart2_node" if="$(env USE_BENCH_RADIO)" machine="controlled">
-	    <!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
-		<param name="PortName" value="/dev/pts/5" />
+	        <param name="PortName" value="/dev/ttyUSB0" />
+		<!-- <param name="PortName" value="/dev/pts/5" /> -->
 		<param name="Baud" value="9600" />
 		<param name="IsBench" value="true" />
 		<remap from="tauIn" to="tauOut" />
