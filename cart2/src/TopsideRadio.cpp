@@ -72,14 +72,12 @@ void TopsideRadio::onInit()
 	std::string portName("/dev/ttyUSB0");
 	int baud(9600);
 	ph.param("PortName",portName,portName);
-	ph.param("Baud",baud,baud);
+	ph.param("BaudRate",baud,baud);
 	ph.param("IsTopside",isTopside,isTopside);
 	ph.param("TwoWay",twoWayComms,twoWayComms);
 
 	port.open(portName);
 	port.set_option(boost::asio::serial_port::baud_rate(baud));
-	port.set_option(boost::asio::serial_port::flow_control(
-			boost::asio::serial_port::flow_control::hardware));
 
 	if (!port.is_open())
 	{
@@ -241,7 +239,6 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 	if (!error)
 	{
 		sbuffer.commit(transferred);
-		if (ringBuffer.size()>sync_length) ringBuffer.erase(ringBuffer.begin());
 
 		if (transferred == 1)
 		{
@@ -250,6 +247,7 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 		else
 		{
 			std::istream is(&sbuffer);
+			ringBuffer.clear();
 			is >> ringBuffer;
 		}
 
@@ -267,6 +265,8 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			boost::asio::async_read(port, sbuffer.prepare(1),
 					boost::bind(&TopsideRadio::onSync,this,_1,_2));
 		}
+
+		ringBuffer.erase(ringBuffer.begin());
 	}
 }
 
@@ -393,7 +393,9 @@ void TopsideRadio::start()
 	}
 	else
 	{
-		ros::Rate rate(10);
+		double transmitRate(10);
+		nh.param("TransmitRate",transmitRate,transmitRate);
+		ros::Rate rate(transmitRate);
 		while (nh.ok())
 		{
 			boost::asio::streambuf output;

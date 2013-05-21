@@ -1,12 +1,13 @@
 <launch> 
-  <group ns="cart2">
+  <group ns="cart">
     <node pkg="cart2" type="imu_node" name="imu" if="$(env USE_CART)">     
       <param name="PortName" value="/dev/ttyS1" />
       <param name="BaudRate" value="115200" />
     </node>
 
     <node pkg="cart2" name="radio_modem" type="bench_radio">
-      <param name="PortName" value="/dev/ttyUSB0" />
+      <!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
+      <param name="PortName" value="/dev/pts/5" />
       <param name="BaudRate" value="9600" />
       <param name="IsBench" value="false" />
     </node>

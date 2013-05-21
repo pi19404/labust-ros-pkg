@@ -50,7 +50,6 @@ using labust::control::BenchRadio;
 
 BenchRadio::BenchRadio():
 				port(io),
-				ringBuffer('0',6),
 				isBench(true)
 	{this->onInit();}
 
@@ -67,13 +66,11 @@ void BenchRadio::onInit()
 	std::string portName("/dev/ttyUSB0");
 	int baud(9600);
 	ph.param("PortName",portName,portName);
-	ph.param("Baud",baud,baud);
+	ph.param("BaudRate",baud,baud);
 	ph.param("IsBench",isBench,isBench);
 
 	port.open(portName);
 	port.set_option(boost::asio::serial_port::baud_rate(baud));
-	port.set_option(boost::asio::serial_port::flow_control(
-			boost::asio::serial_port::flow_control::none));
 
 	if (!port.is_open())
 	{
@@ -156,7 +153,6 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 	if (!error)
 	{
 		sbuffer.commit(transferred);
-		if (ringBuffer.size()>sync_length) ringBuffer.erase(ringBuffer.begin());
 
 		if (transferred == 1)
 		{
@@ -165,10 +161,11 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 		else
 		{
 			std::istream is(&sbuffer);
+			ringBuffer.clear();
 			is >> ringBuffer;
 		}
 
-		if (ringBuffer == "@ONTOP")
+		if (ringBuffer.substr() == "@ONTOP")
 		{
 			ROS_INFO("Synced on @ONTOP");
 			boost::asio::async_read(port,sbuffer.prepare(Bench_package_length),boost::bind(&BenchRadio::onIncomingData,this,_1,_2));
@@ -184,6 +181,8 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 			boost::asio::async_read(port, sbuffer.prepare(1),
 					boost::bind(&BenchRadio::onSync,this,_1,_2));
 		}
+
+		ringBuffer.erase(ringBuffer.begin());
 	}
 }
 
@@ -191,6 +190,8 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 {
 	sbuffer.commit(transferred);
 	boost::archive::binary_iarchive dataSer(sbuffer, boost::archive::no_header);
+
+	ROS_INFO("Received data: %d",transferred);
 
 	if (!isBench)
 	{
@@ -218,7 +219,7 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 	{
 		dataSer >> cdata;
 
-		ROS_INFO("Time diff:%f",ros::Time::now().toSec() - cdata.time);
+		//ROS_INFO("Time diff:%f",ros::Time::now().toSec() - cdata.time);
 
 		auv_msgs::BodyForceReq tau;
 		tau.wrench.force.x = cdata.surgeAch;
@@ -229,10 +230,12 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 
 		sensor_msgs::Imu imu;
 		imu.header.stamp = ros::Time::now();
-		imu.orientation.x = cdata.orientation[0];
-		imu.orientation.y = cdata.orientation[1];
-		imu.orientation.z = cdata.orientation[2];
-		imu.orientation.w = cdata.orientation[3];
+		Eigen::Quaternion<float> q;
+		labust::tools::quaternionFromEulerZYX(0,0,cdata.yaw,q);
+		imu.orientation.x = q.x();
+		imu.orientation.y = q.y();
+		imu.orientation.z = q.z();
+		imu.orientation.w = q.w();
 		imuOut.publish(imu);
 
 		sensor_msgs::NavSatFix gps;
