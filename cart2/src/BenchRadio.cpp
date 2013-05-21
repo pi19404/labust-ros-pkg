@@ -120,10 +120,11 @@ void BenchRadio::onTauIn(const auv_msgs::BodyForceReq::ConstPtr& tauIn)
 void BenchRadio::onImu(const sensor_msgs::Imu::ConstPtr& imu)
 {
 	boost::mutex::scoped_lock l(cdataMux);
-	cdata.orientation[0] = imu->orientation.x;
-	cdata.orientation[1] = imu->orientation.y;
-	cdata.orientation[2] = imu->orientation.z;
-	cdata.orientation[3] = imu->orientation.w;
+	cdata.yaw = 0;
+	//cdata.orientation[0] = imu->orientation.x;
+	//cdata.orientation[1] = imu->orientation.y;
+	//cdata.orientation[2] = imu->orientation.z;
+	//cdata.orientation[3] = imu->orientation.w;
 }
 
 void BenchRadio::onGps(const sensor_msgs::NavSatFix::ConstPtr& gps)
@@ -203,7 +204,7 @@ void BenchRadio::onIncomingData(const boost::system::error_code& error, const si
 			out<<"@CART2";
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(cdataMux);
-			cdata.time = ros::Time::now().toSec();
+			//cdata.time = ros::Time::now().toSec();
 			dataSer << cdata;
 			l.unlock();
 			//write data

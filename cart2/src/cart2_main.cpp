@@ -210,9 +210,10 @@ void SetReference(int ID, float REF) //REF from 0 to 1. 1 represents full thrust
 	SetRef[3] = SetRefID1[3];
 	SetRef[4] = SetRefID1[4];
 
+	double max = 22276;
 	// Motors are 3,4A max. Value of ext. reference (3272) corresponds to 1A. Full thrust (3.4A) is then ext. reference of 11138
-	SetRef[5] = floor(REF*11138/256);
-	SetRef[6] = floor(REF*11138) - SetRef[5]*256;
+	SetRef[5] = floor(REF*max/256.);
+	SetRef[6] = floor(REF*max) - SetRef[5]*256;
 	SetRef[7] = SetRef[0] + SetRef[1] + SetRef[2] + SetRef[3] + SetRef[4] + SetRef[5] + SetRef[6];
 
 	Mode = "OK";

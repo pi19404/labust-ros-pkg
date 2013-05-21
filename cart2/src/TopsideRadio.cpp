@@ -53,7 +53,6 @@ using labust::control::TopsideRadio;
 
 TopsideRadio::TopsideRadio():
 				port(io),
-				ringBuffer('0',6),
 				isTopside(true),
 				twoWayComms(false)
 	{this->onInit();}
@@ -243,6 +242,11 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 		if (transferred == 1)
 		{
 			ringBuffer.push_back(sbuffer.sbumpc());
+			if (ringBuffer.size() > sync_length)
+			{
+			   ringBuffer.erase(ringBuffer.begin());
+			}
+			
 		}
 		else
 		{
@@ -251,12 +255,14 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			is >> ringBuffer;
 		}
 
-		if (ringBuffer == "@ONTOP")
+		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@ONTOP"))
 		{
+			ROS_INFO("Synced on @TOP");
 			boost::asio::async_read(port,sbuffer.prepare(topside_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
-		else if (ringBuffer == "@CART2")
+		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@CART2"))
 		{
+			ROS_INFO("Synced on @CART");
 			boost::asio::async_read(port,sbuffer.prepare(cart_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
 		else
@@ -266,7 +272,6 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 					boost::bind(&TopsideRadio::onSync,this,_1,_2));
 		}
 
-		ringBuffer.erase(ringBuffer.begin());
 	}
 }
 
@@ -274,6 +279,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 {
 	sbuffer.commit(transferred);
 	boost::archive::binary_iarchive dataSer(sbuffer, boost::archive::no_header);
+	ROS_INFO("Received:%d", transferred);
 
 	if (!isTopside)
 	{
@@ -282,12 +288,32 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 
 			sensor_msgs::Joy joy;
 			joy.axes.assign(6,0);
+			//Sanity check
+			if (fabs(data.SurgeForce) > 1) 
+			{
+			  ROS_ERROR("Remote joystick force is above 1.");
+			  data.SurgeForce = 0;
+                        }
+			
+			if (fabs(data.torqueForce) > 1) 
+			{
+			  ROS_ERROR("Remote joystick force is above 1.");
+			  data.torqueForce = 0;
+			}
+
 			joy.axes[1] = data.surgeForce;
 			joy.axes[2] = data.torqueForce;
 
 			std_msgs::Bool launcher;
 			launcher.data = data.launch;
 
+
+			//\todo Update this to some real constant
+			if (data.mode > 4)
+			{
+			   data.mode = 0;
+			   ROS_ERROR("Wrong mode.");
+			}
 			cart2::HLMessagePtr msg(new cart2::HLMessage());
 			bool update = data.mode_update;
 			msg->mode = data.mode;
@@ -337,7 +363,8 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 				dataSer << cdata;
 				l.unlock();
 				//write data
-				boost::asio::write(port, output.data());
+				int n = boost::asio::write(port, output.data());
+				ROS_INFO("Transferred:%d",n);
 			}
 	}
 	else

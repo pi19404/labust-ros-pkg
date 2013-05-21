@@ -103,6 +103,12 @@ void HLManager::onInit()
 bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		cart2::SetHLMode::Response& resp)
 {
+	if (req.mode >= lastMode)
+	{
+		ROS_ERROR("Faulty mode reuqest.");
+		this->fullStop();
+		return false;
+	}
 	//If in latitude/longitude convert to meters
 	if (req.ref_point.header.frame_id == "worldLatLon")
 	{
