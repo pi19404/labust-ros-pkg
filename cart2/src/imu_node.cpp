@@ -164,7 +164,7 @@ void handleIncoming(SharedData& shared,
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
-		shared.gpsPub.publish(gps);
+		if (data[hdop]) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));

@@ -37,6 +37,7 @@
 #ifndef TOPSIDERADIO_HPP_
 #define TOPSIDERADIO_HPP_
 #include <labust/preprocessor/mem_serialized_struct.hpp>
+#include <labust/tools/StringUtilities.hpp>
 #include <cart2/RadioModemConfig.h>
 
 #include <dynamic_reconfigure/server.h>
@@ -44,6 +45,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Int32.h>
@@ -53,6 +55,8 @@
 #include <auv_msgs/NavSts.h>
 #include <ros/ros.h>
 
+#include <sstream>
+
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 		(float, surgeForce)
 		(float, torqueForce)
@@ -60,7 +64,7 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 		(double, lon)
 		(float, radius)
 		(float, surge)
-		(int32_t, mode)
+		(uint8_t, mode)
 		(uint8_t, launch)
 		(uint8_t, mode_update))
 
@@ -93,7 +97,7 @@ namespace labust
 		 */
 		class TopsideRadio
 		{
-			enum {sync_length=6, topside_package_length=38, cart_package_length=57};
+			enum {sync_length=6, chksum_size = 1, topside_package_length=35+chksum_size, cart_package_length=57+chksum_size};
 			//Estimates
 			enum {u=0,r,x,y,psi};
 		public:
@@ -163,11 +167,35 @@ namespace labust
 			 * Handle incoming modem data.
 			 */
 			void onIncomingData(const boost::system::error_code& error, const size_t& transferred);
+			/**
+			 * Helper function for checksum calculation.
+			 */
+			template <class MsgType>
+			uint8_t calculateChecksum(MsgType& chdata)
+			{
+				std::ostringstream chk;
+				boost::archive::binary_oarchive chkSer(chk, boost::archive::no_header);
+				chkSer << chdata;
+				return labust::tools::getChecksum(
+						reinterpret_cast<const uint8_t*>(chk.str().data()), chk.str().size());
+			}
+			/**
+			 * Modem timeout detection.
+			 */
+			void onTimeout();
 
 			/**
 			 * The ROS node handles.
 			 */
 			ros::NodeHandle nh,ph;
+			/**
+			 * The last arrived message.
+			 */
+			ros::Time lastModemMsg;
+			/**
+			 * The timeout length.
+			 */
+			double timeout;
 			/**
 			 * The publishers.
 			 */
@@ -215,7 +243,7 @@ namespace labust
 			/**
 			 * The data protector.
 			 */
-			boost::mutex dataMux, cdataMux;
+			boost::mutex dataMux, cdataMux,clientMux;
 			/**
 			 * The asio streambuffer.
 			 */

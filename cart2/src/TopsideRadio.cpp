@@ -52,10 +52,12 @@
 using labust::control::TopsideRadio;
 
 TopsideRadio::TopsideRadio():
-				port(io),
-				isTopside(true),
-				twoWayComms(false)
-	{this->onInit();}
+		lastModemMsg(ros::Time::now()),
+		timeout(10),
+		port(io),
+		isTopside(true),
+		twoWayComms(false)
+{this->onInit();}
 
 TopsideRadio::~TopsideRadio()
 {
@@ -74,6 +76,7 @@ void TopsideRadio::onInit()
 	ph.param("BaudRate",baud,baud);
 	ph.param("IsTopside",isTopside,isTopside);
 	ph.param("TwoWay",twoWayComms,twoWayComms);
+	ph.param("Timeout",timeout,timeout);
 
 	port.open(portName);
 	port.set_option(boost::asio::serial_port::baud_rate(baud));
@@ -242,10 +245,10 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 		if (transferred == 1)
 		{
 			ringBuffer.push_back(sbuffer.sbumpc());
-      if (ringBuffer.size() > sync_length)
-      {
-         ringBuffer.erase(ringBuffer.begin());
-      }
+			if (ringBuffer.size() > sync_length)
+			{
+				ringBuffer.erase(ringBuffer.begin());
+			}
 		}
 		else
 		{
@@ -254,15 +257,16 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			is >> ringBuffer;
 		}
 
-
 		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@ONTOP"))
 		{
 			ROS_INFO("Synced on @ONTOP");
+			assert(!isTopside && "Cannot receive topside messages if on topside.");
 			boost::asio::async_read(port,sbuffer.prepare(topside_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
 		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@CART2"))
 		{
 			ROS_INFO("Synced on @CART2");
+			assert(isTopside && "Cannot receive CART messages if on cart.");
 			boost::asio::async_read(port,sbuffer.prepare(cart_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
 		else
@@ -278,78 +282,117 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 {
 	sbuffer.commit(transferred);
 	boost::archive::binary_iarchive dataSer(sbuffer, boost::archive::no_header);
+	ROS_INFO("Received:%d", transferred);
 
 	ROS_INFO("Received %d bytes.",transferred);
 
 	if (!isTopside)
 	{
+		boost::mutex::scoped_lock l(dataMux);
+		uint8_t chksum(0);
+		dataSer >> data >> chksum;
+
+		uint8_t chksum_calc = calculateChecksum(data);
+		if (chksum_calc != chksum)
+		{
+			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+		}
+
+		sensor_msgs::Joy joy;
+		joy.axes.assign(6,0);
+		//Sanity check
+		if (fabs(data.surgeForce) > 1)
+		{
+			ROS_ERROR("Remote joystick force is above 1.");
+			data.surgeForce = 0;
+		}
+
+		if (fabs(data.torqueForce) > 1)
+		{
+			ROS_ERROR("Remote joystick force is above 1.");
+			data.torqueForce = 0;
+		}
+
+		joy.axes[1] = data.surgeForce;
+		joy.axes[2] = data.torqueForce;
+
+		std_msgs::Bool launcher;
+		launcher.data = data.launch;
+
+
+		//\todo Update this to some real constant
+		if (data.mode > 4)
+		{
+			data.mode = 0;
+			ROS_ERROR("Wrong mode.");
+		}
+		cart2::HLMessagePtr msg(new cart2::HLMessage());
+		bool update = data.mode_update;
+		msg->mode = data.mode;
+		msg->radius = data.radius;
+		msg->ref_point.header.stamp=ros::Time::now();
+		msg->ref_point.header.frame_id="worldLatLon";
+		msg->ref_point.point.x = data.lat;
+		msg->ref_point.point.y = data.lon;
+		msg->surge = data.surge;
+		l.unlock();
+
+		joyOut.publish(joy);
+		if (update)
+		{
+			hlMsg.publish(msg);
+			launched.publish(launcher);
+		}
+
+		boost::mutex::scoped_lock l2(clientMux);
+		lastModemMsg = ros::Time::now();
+		if (!client)
+		{
+			ROS_ERROR("HLManager client not connected. Trying reset.");
+			client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+		}
+		else if (update)
+		{
 			boost::mutex::scoped_lock l(dataMux);
-			dataSer >> data;
-
-			sensor_msgs::Joy joy;
-			joy.axes.assign(6,0);
-			joy.axes[1] = data.surgeForce;
-			joy.axes[2] = data.torqueForce;
-
-			std_msgs::Bool launcher;
-			launcher.data = data.launch;
-
-			cart2::HLMessagePtr msg(new cart2::HLMessage());
-			bool update = data.mode_update;
-			msg->mode = data.mode;
-			msg->radius = data.radius;
-			msg->ref_point.header.stamp=ros::Time::now();
-			msg->ref_point.header.frame_id="worldLatLon";
-			msg->ref_point.point.x = data.lat;
-			msg->ref_point.point.y = data.lon;
-			msg->surge = data.surge;
+			cart2::SetHLMode mode;
+			mode.request.mode = data.mode;
+			mode.request.ref_point.header.stamp=ros::Time::now();
+			mode.request.ref_point.header.frame_id="worldLatLon";
+			mode.request.ref_point.point.x = data.lat;
+			mode.request.ref_point.point.y = data.lon;
+			mode.request.radius = data.radius;
+			mode.request.surge = data.surge;
 			l.unlock();
+			client.call(mode);
+		}
+		l2.unlock();
 
-			joyOut.publish(joy);
-			if (update)
-			{
-				hlMsg.publish(msg);
-				launched.publish(launcher);
-			}
-
-			if (!client)
-			{
-				ROS_ERROR("HLManager client not connected. Trying reset.");
-				client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
-			}
-			else if (update)
-			{
-				boost::mutex::scoped_lock l(dataMux);
-				cart2::SetHLMode mode;
-				mode.request.mode = data.mode;
-				mode.request.ref_point.header.stamp=ros::Time::now();
-				mode.request.ref_point.header.frame_id="worldLatLon";
-				mode.request.ref_point.point.x = data.lat;
-				mode.request.ref_point.point.y = data.lon;
-				mode.request.radius = data.radius;
-				mode.request.surge = data.surge;
-				l.unlock();
-				client.call(mode);
-			}
-
-			if (twoWayComms)
-			{
-				boost::asio::streambuf output;
-				std::ostream out(&output);
-				//Prepare sync header
-				out<<"@CART2";
-				boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
-				boost::mutex::scoped_lock l(cdataMux);
-				dataSer << cdata;
-				l.unlock();
-				//write data
-				boost::asio::write(port, output.data());
-			}
+		if (twoWayComms)
+		{
+			boost::asio::streambuf output;
+			std::ostream out(&output);
+			//Prepare sync header
+			out<<"@CART2";
+			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
+			boost::mutex::scoped_lock l(cdataMux);
+			uint8_t chksum_calc = calculateChecksum(cdata);
+			dataSer << cdata << chksum_calc;
+			l.unlock();
+			//write data
+			int n = boost::asio::write(port, output.data());
+			ROS_INFO("Transferred:%d",n);
+		}
 	}
 	else
 	{
 		boost::mutex::scoped_lock l(cdataMux);
-		dataSer >> cdata;
+		uint8_t chksum(0);
+		dataSer >> cdata >> chksum;
+		uint8_t chksum_calc = calculateChecksum(cdata);
+		if (chksum_calc != chksum)
+		{
+			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+		}
 
 		auv_msgs::NavStsPtr state(new auv_msgs::NavSts());
 		auv_msgs::NavStsPtr meas(new auv_msgs::NavSts());
@@ -363,6 +406,8 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		meas->position.north = cdata.state_meas[x];
 		meas->position.east = cdata.state_meas[y];
 		meas->orientation.yaw = cdata.state_meas[psi];
+
+		ROS_INFO("Current CART2 mode:%d",cdata.mode);
 
 		tf::Transform transform;
 		transform.setOrigin(tf::Vector3(cdata.origin_lon, cdata.origin_lat, 0));
@@ -391,11 +436,37 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 	start_receive();
 }
 
+void TopsideRadio::onTimeout()
+{
+	if (!client)
+	{
+		ROS_ERROR("HLManager client not connected. Trying reset.");
+		client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+	}
+	else
+	{
+		cart2::SetHLMode mode;
+		mode.request.mode = 0;
+		client.call(mode);
+	}
+}
+
 void TopsideRadio::start()
 {
 	if (!isTopside)
 	{
-		ros::spin();
+		ros::Rate rate(20);
+
+		while (ros::ok())
+		{
+			rate.sleep();
+			ros::spinOnce();
+			boost::mutex::scoped_lock l(clientMux);
+			if ((ros::Time::now()-lastModemMsg).toSec() > timeout )
+			{
+				this->onTimeout();
+			}
+		}
 	}
 	else
 	{
@@ -407,11 +478,13 @@ void TopsideRadio::start()
 		{
 			boost::asio::streambuf output;
 			std::ostream out(&output);
+			std::ostringstream chk;
 			//Prepare sync header
 			out<<"@ONTOP";
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(dataMux);
-			dataSer << data;
+			uint8_t chksum_calc = calculateChecksum(data);
+			dataSer << data << chksum_calc;
 			data.mode_update = 0;
 			l.unlock();
 

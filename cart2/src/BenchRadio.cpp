@@ -120,11 +120,11 @@ void BenchRadio::onTauIn(const auv_msgs::BodyForceReq::ConstPtr& tauIn)
 void BenchRadio::onImu(const sensor_msgs::Imu::ConstPtr& imu)
 {
 	boost::mutex::scoped_lock l(cdataMux);
-	cdata.yaw = 0;
-//	cdata.orientation[0] = imu->orientation.x;
-//	cdata.orientation[1] = imu->orientation.y;
-//	cdata.orientation[2] = imu->orientation.z;
-//	cdata.orientation[3] = imu->orientation.w;
+	double roll, pitch, yaw;
+	Eigen::Quaternion<double> q(imu->orientation.x,
+			imu->orientation.y, imu->orientation.z, imu->orientation.w);
+	labust::tools::eulerZYXFromQuaternion(q, roll, pitch,yaw);
+	cdata.yaw = yaw;
 }
 
 void BenchRadio::onGps(const sensor_msgs::NavSatFix::ConstPtr& gps)
@@ -158,6 +158,10 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 		if (transferred == 1)
 		{
 			ringBuffer.push_back(sbuffer.sbumpc());
+      if (ringBuffer.size() > sync_length)
+      {
+         ringBuffer.erase(ringBuffer.begin());
+      }
 		}
 		else
 		{
@@ -166,12 +170,12 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 			is >> ringBuffer;
 		}
 
-		if (ringBuffer.substr() == "@ONTOP")
+		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@ONTOP"))
 		{
 			ROS_INFO("Synced on @ONTOP");
 			boost::asio::async_read(port,sbuffer.prepare(Bench_package_length),boost::bind(&BenchRadio::onIncomingData,this,_1,_2));
 		}
-		else if (ringBuffer == "@CART2")
+		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@CART2"))
 		{
 			ROS_INFO("Synced on @CART2");
 			boost::asio::async_read(port,sbuffer.prepare(cart_package_length),boost::bind(&BenchRadio::onIncomingData,this,_1,_2));
@@ -182,8 +186,6 @@ void BenchRadio::onSync(const boost::system::error_code& error, const size_t& tr
 			boost::asio::async_read(port, sbuffer.prepare(1),
 					boost::bind(&BenchRadio::onSync,this,_1,_2));
 		}
-
-		ringBuffer.erase(ringBuffer.begin());
 	}
 }
 

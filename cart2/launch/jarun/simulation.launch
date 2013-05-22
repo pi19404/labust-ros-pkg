@@ -8,7 +8,7 @@
   	<rosparam command="load" file="$(find cart2)/data/config/$(env LOCATION).yaml" />  	
   	<include file="$(find cart2)/data/config/navigation.xml" />
   	<include file="$(find cart2)/data/config/control.xml" />
-   	<!-- <include file="$(find cart2)/data/config/joy.xml" /> -->
+   	<include file="$(find cart2)/data/config/joy.xml" />
   	<include file="$(find cart2)/data/config/driver.xml" />
   	<include file="$(find cart2)/data/config/manager.xml" />
   	<include file="$(find cart2)/data/config/logging.xml" if="$(env ENABLE_LOGGING)" />
