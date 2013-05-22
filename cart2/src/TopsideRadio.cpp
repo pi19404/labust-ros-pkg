@@ -53,7 +53,6 @@ using labust::control::TopsideRadio;
 
 TopsideRadio::TopsideRadio():
 				port(io),
-				ringBuffer('0',6),
 				isTopside(true),
 				twoWayComms(false)
 	{this->onInit();}
@@ -243,6 +242,10 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 		if (transferred == 1)
 		{
 			ringBuffer.push_back(sbuffer.sbumpc());
+      if (ringBuffer.size() > sync_length)
+      {
+         ringBuffer.erase(ringBuffer.begin());
+      }
 		}
 		else
 		{
@@ -251,12 +254,15 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			is >> ringBuffer;
 		}
 
-		if (ringBuffer == "@ONTOP")
+
+		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@ONTOP"))
 		{
+			ROS_INFO("Synced on @ONTOP");
 			boost::asio::async_read(port,sbuffer.prepare(topside_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
-		else if (ringBuffer == "@CART2")
+		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@CART2"))
 		{
+			ROS_INFO("Synced on @CART2");
 			boost::asio::async_read(port,sbuffer.prepare(cart_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
 		else
@@ -265,8 +271,6 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			boost::asio::async_read(port, sbuffer.prepare(1),
 					boost::bind(&TopsideRadio::onSync,this,_1,_2));
 		}
-
-		ringBuffer.erase(ringBuffer.begin());
 	}
 }
 
@@ -274,6 +278,8 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 {
 	sbuffer.commit(transferred);
 	boost::archive::binary_iarchive dataSer(sbuffer, boost::archive::no_header);
+
+	ROS_INFO("Received %d bytes.",transferred);
 
 	if (!isTopside)
 	{
@@ -394,7 +400,8 @@ void TopsideRadio::start()
 	else
 	{
 		double transmitRate(10);
-		nh.param("TransmitRate",transmitRate,transmitRate);
+		ros::NodeHandle ph("~");
+		ph.param("TransmitRate",transmitRate,transmitRate);
 		ros::Rate rate(transmitRate);
 		while (nh.ok())
 		{
@@ -409,7 +416,9 @@ void TopsideRadio::start()
 			l.unlock();
 
 			//write data
-			boost::asio::write(port, output.data());
+			int n = boost::asio::write(port, output.data());
+			ROS_INFO("Transferred %d bytes.",n);
+
 			rate.sleep();
 			ros::spinOnce();
 		}
