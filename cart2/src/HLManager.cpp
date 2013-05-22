@@ -68,12 +68,14 @@ void HLManager::onInit()
 	controllers.insert(std::make_pair("LF",false));
 	controllers.insert(std::make_pair("DP",false));
 	controllers.insert(std::make_pair("VT",false));
+	controllers.insert(std::make_pair("HDG",false));
 
 	//Initialize publishers
 	refPoint = nh.advertise<geometry_msgs::PointStamped>("ref_point", 1);
 	refTrack = nh.advertise<auv_msgs::NavSts>("ref_track", 1);
 	openLoopSurge = nh.advertise<std_msgs::Float32>("open_loop_surge", 1);
 	curMode = nh.advertise<std_msgs::Int32>("current_mode", 1);
+	refHeading = nh.advertise<std_msgs::Float32>("heading_ref", 1);
 
 	//Initialze subscribers
 	state = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
@@ -137,6 +139,10 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	cmode.data = req.mode;
 	curMode.publish(cmode);
 
+	std_msgs::Float32 deshdg;
+	deshdg.data = req.yaw;
+	refHeading.publish(deshdg);
+
 	//Check if the mode is already active
 	if (this->mode == req.mode) return true;
 	//Else handle the mode change
@@ -155,6 +161,7 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 
 	geometry_msgs::TwistStampedPtr fakeTwist(new geometry_msgs::TwistStamped());
 	disableControllerMap();
+
 	switch (mode)
 	{
 	case manual:
@@ -175,6 +182,11 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		controllers["VT"] = true;
 		s = 0;
 		this->onVTTwist(fakeTwist);
+		break;
+	case heading:
+		ROS_INFO("Set to Heading mode.");
+		srv.request.desired_mode[srv.request.u] = srv.request.ManualAxis;
+		controllers["HDG"] = true;
 		break;
 	case stop:
 		ROS_INFO("Stopping.");

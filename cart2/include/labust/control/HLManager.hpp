@@ -66,7 +66,7 @@ namespace labust
 		{
 			enum {bArt=0, cArt};
 			enum {stop=0, manual,
-				gotoPoint, stationKeeping, circle, lastMode};
+				gotoPoint, stationKeeping, circle, heading, lastMode};
 
 			typedef std::map<std::string,bool> ControllerMap;
 
@@ -184,7 +184,7 @@ namespace labust
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher refPoint, refTrack, openLoopSurge, curMode;
+			ros::Publisher refPoint, refTrack, openLoopSurge, curMode, refHeading;
 			/**
 			 * The subscribed topics.
 			 */

@@ -64,6 +64,7 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
 		(double, lon)
 		(float, radius)
 		(float, surge)
+		(float, yaw)
 		(uint8_t, mode)
 		(uint8_t, launch)
 		(uint8_t, mode_update))
@@ -97,7 +98,7 @@ namespace labust
 		 */
 		class TopsideRadio
 		{
-			enum {sync_length=6, chksum_size = 1, topside_package_length=35+chksum_size, cart_package_length=57+chksum_size};
+			enum {sync_length=6, chksum_size = 1, topside_package_length=39+chksum_size, cart_package_length=57+chksum_size};
 			//Estimates
 			enum {u=0,r,x,y,psi};
 		public:
