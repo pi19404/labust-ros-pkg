@@ -451,6 +451,32 @@ void TopsideRadio::onTimeout()
 		mode.request.mode = 0;
 		client.call(mode);
 	}
+
+	ROS_ERROR("Lost connection with topside!");
+
+	io.stop();
+	iorunner.join();
+	port.close();
+
+	ros::Rate rate(1);
+	for(int i=0;i<3;++i) rate.sleep();
+
+	std::string portName;
+	int baud;
+	ph.param("PortName",portName,portName);
+        ph.param("BaudRate",baud,baud);
+
+        port.open(portName);
+        port.set_option(boost::asio::serial_port::baud_rate(baud));
+
+        if (!port.is_open())
+        {
+                ROS_ERROR("Cannot open port.");
+                throw std::runtime_error("Unable to open the port.");
+        }
+	
+	this->start_receive();
+	iorunner = boost::thread(boost::bind(&boost::asio::io_service::run,&io));
 }
 
 void TopsideRadio::start()
