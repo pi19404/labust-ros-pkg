@@ -215,6 +215,7 @@ void TopsideRadio::populateDataFromConfig()
 	}
 	data.radius = config.Radius;
 	data.surge = config.Surge;
+	data.yaw = config.Yaw;
 }
 
 void TopsideRadio::dynrec_cb(cart2::RadioModemConfig& config, uint32_t level)
@@ -321,7 +322,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 
 
 		//\todo Update this to some real constant
-		if (data.mode > 4)
+		if (data.mode > 5)
 		{
 			data.mode = 0;
 			ROS_ERROR("Wrong mode.");
@@ -362,6 +363,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			mode.request.ref_point.point.y = data.lon;
 			mode.request.radius = data.radius;
 			mode.request.surge = data.surge;
+			mode.request.yaw = data.yaw;
 			l.unlock();
 			client.call(mode);
 		}

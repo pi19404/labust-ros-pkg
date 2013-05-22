@@ -36,12 +36,16 @@
 *********************************************************************/
 #ifndef HEADINGCONTROL_HPP_
 #define HEADINGCONTROL_HPP_
-#include <labust/control/PIDController.hpp>
+#include <labust/control/PIDController.h>
+#include <labust/math/NumberManipulation.hpp>
 #include <labust_uvapp/EnableControl.h>
 
 #include <auv_msgs/NavSts.h>
+#include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
+#include <tf/transform_listener.h>
 #include <ros/ros.h>
 
 namespace labust
@@ -49,15 +53,15 @@ namespace labust
 	namespace control
 	{
 		/**
-		 * The class contains the implementation of the heading state controller.
+		 * The class contains the implementation of the virtual target path following.
 		 */
-		class LFControl
+		class HeadingControl
 		{
 		public:
 			/**
 			 * Main constructor
 			 */
-			LFControl();
+			HeadingControl();
 			/**
 			 * Initialize and setup controller.
 			 */
@@ -75,16 +79,32 @@ namespace labust
 			/**
 			 * Handle the new point.
 			 */
-			void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& ref);
+			void onHeadingRef(const std_msgs::Float32::ConstPtr& ref);
+			/**
+			 * Handle the new tracking point.
+			 */
+			//void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref);
 			/**
 			 * Handle incoming estimates message.
 			 */
 			void onEstimate(const auv_msgs::NavSts::ConstPtr& estimate);
 			/**
+			 * Handle incoming flow frame twist estimates.
+			 */
+			//void onFlowTwist(const geometry_msgs::TwistStamped::ConstPtr& flowtwist);
+			/**
+			 * Handle windup occurence.
+			 */
+			void onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch);
+			/**
 			 * Handle the enable control request.
 			 */
 			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
 					labust_uvapp::EnableControl::Response& resp);
+			/**
+			 * The open loop surge specification.
+			 */
+			void onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge);
 			/**
 			 * Dynamic reconfigure callback.
 			 */
@@ -114,42 +134,41 @@ namespace labust
 			 * Initialize the controller parameters etc.
 			 */
 			void initialize_controller();
-			/**
-			 * Adjust the controller based on surge speed.
-			 */
-			void adjustDH();
 
 			/**
 			 * The horizontal distance PD controller. It has a
 			 * limit on the P output value.
 			 */
-			lfPD dh_controller;
+			PIDController headingController;
 			/**
 			 * The sampling time.
 			 */
-			double Ts, surge, currSurge, wh, currYaw;
-			/**
-			 * The line description.
-			 */
-			labust::navigation::LFModel::Line line;
+			double Ts, safetyRadius, surge, flowSurgeEstimate, K1, K2, gammaARad;
 			/**
 			 * Last received vehicle state.
 			 */
-			labust::navigation::LFModel::vector T0;
+			auv_msgs::NavSts state;//, trackPoint;
 			/**
 			 * Enabled.
 			 */
 			bool enable;
-
+			/**
+			 * Mutex to sync updates.
+			 */
+			boost::mutex dataMux;
 
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher nuRef;
+			ros::Publisher nuRef, vtTwist;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint;
+			ros::Subscriber stateHat, enableFlag, windup, flowTwist, openLoopSurge, headingRef;
+			/**
+			 * The heading unwrapper.
+			 */
+			labust::math::unwrap yaw_ref;
 			/**
 			 * High level controller service.
 			 */
@@ -162,9 +181,13 @@ namespace labust
 			 * The dynamic reconfigure server.
 			 */
 		  //dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
+			/**
+			 * The transform listener for frame conversions.
+			 */
+			tf::TransformListener listener;
 		};
 	}
 }
 
-/* VELOCITYCONTROL_HPP_ */
+/* HEADINGCONTROL_HPP_ */
 #endif
