@@ -190,17 +190,18 @@ void LFControl::step()
 	//this->safetyTest();
 	nu.goal.requester = "lf_control";
 	nu.twist.linear.x = surge;
-	if (fabs(currYaw - line.gamma()) < M_PI/2)
+	//if (fabs(labust::math::wrapRad(currYaw - line.gamma())) < M_PI/2)
 	{
 		double dd = currSurge*sin(currYaw - line.gamma());
 		nu.twist.angular.z = dh_controller.step(0,-line.calculatedH(T0(0),T0(1),T0(2)));
+		nu.twist.angular.z = labust::math::coerce(nu.twist.angular.z,-0.5,0.5);
 		std::cout<<nu.twist.angular.z<<", dH:"<<line.calculatedH(T0(0),T0(1),T0(2))<<std::endl;
 	}
-	else
-	{
-		nu.twist.angular.z = fabs(line.gamma() - currYaw);
-		std::cout<<"Direct turn control"<<std::endl;
-	}
+	//else
+	//{
+//		nu.twist.angular.z = 0.1*fabs(line.gamma() - currYaw);
+//		std::cout<<"Direct turn control"<<std::endl;
+//	}
 
 	nuRef.publish(nu);
 }
@@ -214,10 +215,11 @@ void LFControl::adjustDH()
 {
 	//Check for zero surge
 	if (fabs(currSurge) < 0.1) currSurge=0.1;
+	currSurge=0.3;
 
 	double Kph = wh*wh/currSurge;
 	double Kdh = 2*wh/currSurge;
-	double aAngle = M_PI/4;
+	double aAngle = M_PI/8;
 	this->dh_controller.setGains(Kph,0, Kdh,0);
 	double dsat(Kdh/Kph*currSurge*sin(aAngle));
 
