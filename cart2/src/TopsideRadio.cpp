@@ -52,6 +52,7 @@
 using labust::control::TopsideRadio;
 
 TopsideRadio::TopsideRadio():
+		ph("~"),
 		lastModemMsg(ros::Time::now()),
 		timeout(10),
 		port(io),
@@ -297,6 +298,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+			return;
 		}
 
 		sensor_msgs::Joy joy;
@@ -326,6 +328,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		{
 			data.mode = 0;
 			ROS_ERROR("Wrong mode.");
+			return;
 		}
 		cart2::HLMessagePtr msg(new cart2::HLMessage());
 		bool update = data.mode_update;
@@ -394,6 +397,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+			return;
 		}
 
 		auv_msgs::NavStsPtr state(new auv_msgs::NavSts());
@@ -458,6 +462,8 @@ void TopsideRadio::onTimeout()
 	iorunner.join();
 	port.close();
 
+	io.reset();
+	lastModemMsg = ros::Time::now();
 	ros::Rate rate(1);
 	for(int i=0;i<3;++i) rate.sleep();
 
