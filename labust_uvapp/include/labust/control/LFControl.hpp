@@ -37,6 +37,7 @@
 #ifndef LFCONTROL_HPP_
 #define LFCONTROL_HPP_
 #include <labust/control/PIDController.hpp>
+#include <labust/control/PIDController.h>
 #include <labust/navigation/LFModel.hpp>
 #include <labust_uvapp/EnableControl.h>
 
@@ -44,6 +45,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
+#include <auv_msgs/BodyForceReq.h>
 #include <ros/ros.h>
 
 namespace labust
@@ -119,7 +121,7 @@ namespace labust
 			/**
 			 * Timeout
 			 */
-			double timeout;
+			double timeout, LFKp;
 
 			/**
 			 * Initialize the controller parameters etc.
@@ -146,12 +148,15 @@ namespace labust
 			/**
 			 * Last received vehicle state.
 			 */
-			labust::navigation::LFModel::vector T0;
+			labust::navigation::LFModel::vector T0,Tt;
 			/**
 			 * Enabled.
 			 */
-			bool enable;
-
+			bool enable, useHeadingCnt;
+			/**
+			 * Handle windup occurence.
+			 */
+			void onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch);
 
 			/**
 			 * The publisher of the TAU message.
@@ -160,7 +165,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber stateHat, refPoint, openLoopSurge;
+			ros::Subscriber stateHat, refPoint, openLoopSurge, windup;
 			/**
 			 * High level controller service.
 			 */
@@ -173,6 +178,11 @@ namespace labust
 			 * The dynamic reconfigure server.
 			 */
 		  //dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
+			/**
+			 * The horizontal distance PD controller. It has a
+			 * limit on the P output value.
+			 */
+			::PIDController headingController;
 		};
 	}
 }

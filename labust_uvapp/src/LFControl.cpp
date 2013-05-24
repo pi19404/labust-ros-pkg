@@ -51,11 +51,14 @@ LFControl::LFControl():
 			ph(ros::NodeHandle("~")),
 			lastEst(ros::Time::now()),
 			timeout(0.5),
+			LFKp(0.1),
 			Ts(0.1),
 			surge(0.5),
 			currSurge(0.5),
 			T0(labust::navigation::LFModel::zeros(3)),
-			enable(false)
+			Tt(labust::navigation::LFModel::zeros(3)),
+			enable(false),
+			useHeadingCnt(true)
 {this->onInit();}
 
 void LFControl::onInit()
@@ -72,7 +75,10 @@ void LFControl::onInit()
 			&LFControl::onEnableControl, this);
 	openLoopSurge = nh.subscribe<std_msgs::Float32>("open_loop_surge", 1,
 					&LFControl::onOpenLoopSurge,this);
+	windup = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
+			&LFControl::onWindup,this);
 	nh.param("lf_controller/timeout",timeout,timeout);
+	nh.param("lf_controller/use_heading",useHeadingCnt,useHeadingCnt);
 
 	//Configure the dynamic reconfigure server
 	//server.setCallback(boost::bind(&VelocityControl::dynrec_cb, this, _1, _2));
@@ -120,7 +126,7 @@ void LFControl::onInit()
 void LFControl::onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 {
 	using labust::navigation::LFModel;
-	LFModel::vector Tt(labust::navigation::LFModel::zeros(3));
+	//LFModel::vector Tt(labust::navigation::LFModel::zeros(3));
 	Tt(0) = point->point.x;
 	Tt(1) = point->point.y;
 	Tt(2) = point->point.z;
@@ -139,6 +145,12 @@ void LFControl::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
 {
 	this->surge = surge->data;
 }
+
+void LFControl::onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch)
+{
+	//Copy into controller
+	headingController.windup = tauAch->disable_axis.yaw;
+};
 
 void LFControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)
 {
@@ -190,18 +202,37 @@ void LFControl::step()
 	//this->safetyTest();
 	nu.goal.requester = "lf_control";
 	nu.twist.linear.x = surge;
-	//if (fabs(labust::math::wrapRad(currYaw - line.gamma())) < M_PI/2)
+//	if (fabs(currYaw - line.gamma()) < M_PI/2)
+//	{
+//		double dd = currSurge*sin(currYaw - line.gamma());
+//		nu.twist.angular.z = dh_controller.step(0,-line.calculatedH(T0(0),T0(1),T0(2)));
+//		std::cout<<nu.twist.angular.z<<", dH:"<<line.calculatedH(T0(0),T0(1),T0(2))<<std::endl;
+//	}
+//	else
+//	{
+//		nu.twist.angular.z = fabs(line.gamma() - currYaw);
+//		std::cout<<"Direct turn control"<<std::endl;
+//	}
+
+	if (!useHeadingCnt)
 	{
-		double dd = currSurge*sin(currYaw - line.gamma());
+		double dd = -currSurge*sin(currYaw - line.gamma());
 		nu.twist.angular.z = dh_controller.step(0,-line.calculatedH(T0(0),T0(1),T0(2)));
 		nu.twist.angular.z = labust::math::coerce(nu.twist.angular.z,-0.5,0.5);
 		std::cout<<nu.twist.angular.z<<", dH:"<<line.calculatedH(T0(0),T0(1),T0(2))<<std::endl;
 	}
-	//else
-	//{
-//		nu.twist.angular.z = 0.1*fabs(line.gamma() - currYaw);
-//		std::cout<<"Direct turn control"<<std::endl;
-//	}
+	else
+	{
+	   double dh = line.calculatedH(T0(0),T0(1),T0(2));
+	   double d=sin(line.gamma())*(Tt(0)-T0(0))-cos(line.gamma())*(Tt(1)-T0(1));
+	   double z=labust::math::coerce(LFKp*dh,-0.7,0.7);
+	   std::cout<<"Distance to line:"<<d<<","<<dh<<", correction:"<<z<<","<<asin(z)<<std::endl;
+	   headingController.desired = labust::math::wrapRad(line.gamma() + asin(z));
+	   headingController.state = labust::math::wrapRad(currYaw);
+		 float errorWrap = labust::math::wrapRad(headingController.desired - headingController.state);
+		 PIFFExtController_stepWrap(&headingController,Ts, errorWrap);
+		 nu.twist.angular.z = headingController.output;
+	}
 
 	nuRef.publish(nu);
 }
@@ -215,7 +246,7 @@ void LFControl::adjustDH()
 {
 	//Check for zero surge
 	if (fabs(currSurge) < 0.1) currSurge=0.1;
-	currSurge=0.3;
+	//currSurge=0.3;
 
 	double Kph = wh*wh/currSurge;
 	double Kdh = 2*wh/currSurge;
@@ -234,8 +265,17 @@ void LFControl::initialize_controller()
 	nh.param("lf_controller/closed_loop_freq",wh,1.0);
 	nh.param("lf_controller/default_surge",surge,surge);
 	nh.param("lf_controller/sampling",Ts,Ts);
+	double w(0.3);
+	nh.param("lf_controller/heading_closed_loop_freq", w,w);
+	nh.param("lf_controller/heading_LFKp", LFKp,LFKp);
 	dh_controller.setTs(Ts);
 	adjustDH();
+
+	enum {Kp=0, Ki, Kd, Kt};
+	PIDController_init(&headingController);
+	headingController.gains[Kp] = 2*w;
+	headingController.gains[Ki] = w*w;
+	headingController.autoTracking = 0;
 
 	ROS_INFO("Line following controller initialized.");
 }
