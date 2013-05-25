@@ -59,7 +59,8 @@ VirtualTarget::VirtualTarget():
 		K1(0.2),
 		K2(1),
 		gammaARad(45),
-		enable(false)
+		enable(false),
+		use_flow_frame(false)
 {this->onInit();}
 
 void VirtualTarget::onInit()
@@ -84,7 +85,8 @@ void VirtualTarget::onInit()
 	enableControl = nh.advertiseService("VT_enable",
 			&VirtualTarget::onEnableControl, this);
 
-	nh.param("dp_controller/timeout",timeout,timeout);
+	nh.param("virtual_target/timeout",timeout,timeout);
+	nh.param("virtual_target/use_flow_frame",use_flow_frame,use_flow_frame);
 
 	//Configure the dynamic reconfigure server
 	//server.setCallback(boost::bind(&VelocityControl::dynrec_cb, this, _1, _2));
@@ -222,7 +224,7 @@ void VirtualTarget::step()
 		//double UvecYaw = state.orientation.yaw;
 		//For slow movements prefer the body frame instead of the flow frame.
 		boost::mutex::scoped_lock l(dataMux);
-		if (flowSurgeEstimate < (surge/10))
+		if (!use_flow_frame || (flowSurgeEstimate < (surge/10)))
 		{
 			gamma = labust::math::wrapRad(state.orientation.yaw-gammaRabbit);
 			flowSurgeEstimate = state.body_velocity.x;
