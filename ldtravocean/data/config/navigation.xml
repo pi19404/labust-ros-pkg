@@ -1,6 +1,4 @@
 <launch>
   <rosparam command="load" file="$(env YAML_MODEL)" />
-  <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="controlled" />
-  
-  <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)"/> 
+  <node pkg="ldtravocean" type="ldnav_node" name="ekf_nav" machine="controlled" />
 </launch>
