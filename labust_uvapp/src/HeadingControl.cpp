@@ -34,7 +34,7 @@
  *  Author: Dula Nad
  *  Created: 03.05.2013.
  *********************************************************************/
-#include <labust/control/VirtualTarget.hpp>
+#include <labust/control/HeadingControl.hpp>
 #include <labust/tools/rosutils.hpp>
 
 #include <auv_msgs/BodyVelocityReq.h>
@@ -45,9 +45,9 @@
 #include <vector>
 #include <string>
 
-using labust::control::VirtualTarget;
+using labust::control::HeadingControl;
 
-VirtualTarget::VirtualTarget():
+HeadingControl::HeadingControl():
 		nh(ros::NodeHandle()),
 		ph(ros::NodeHandle("~")),
 		lastEst(ros::Time::now()),
@@ -59,11 +59,10 @@ VirtualTarget::VirtualTarget():
 		K1(0.2),
 		K2(1),
 		gammaARad(45),
-		enable(false),
-		use_flow_frame(false)
+		enable(false)
 {this->onInit();}
 
-void VirtualTarget::onInit()
+void HeadingControl::onInit()
 {
 	//Initialize publishers
 	nuRef = nh.advertise<auv_msgs::BodyVelocityReq>("nuRef", 1);
@@ -71,22 +70,21 @@ void VirtualTarget::onInit()
 
 	//Initialze subscribers
 	stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
-			&VirtualTarget::onEstimate,this);
-	flowTwist = nh.subscribe<geometry_msgs::TwistStamped>("body_flow_frame_twist", 1,
-			&VirtualTarget::onFlowTwist,this);
-	//	refPoint = nh.subscribe<geometry_msgs::PointStamped>("LFPoint", 1,
-	//			&VirtualTarget::onNewPoint,this);
+			&HeadingControl::onEstimate,this);
+//	flowTwist = nh.subscribe<geometry_msgs::TwistStamped>("body_flow_frame_twist", 1,
+//			&HeadingControl::onFlowTwist,this);
+	headingRef = nh.subscribe<std_msgs::Float32>("heading_ref", 1,
+				&HeadingControl::onHeadingRef,this);
 	//	refTrack = nh.subscribe<auv_msgs::NavSts>("TrackPoint", 1,
-	//			&VirtualTarget::onTrackPoint,this);
+	//			&HeadingControl::onTrackPoint,this);
 	windup = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
-			&VirtualTarget::onWindup,this);
+			&HeadingControl::onWindup,this);
 	openLoopSurge = nh.subscribe<std_msgs::Float32>("open_loop_surge", 1,
-			&VirtualTarget::onOpenLoopSurge,this);
-	enableControl = nh.advertiseService("VT_enable",
-			&VirtualTarget::onEnableControl, this);
+			&HeadingControl::onOpenLoopSurge,this);
+	enableControl = nh.advertiseService("HDG_enable",
+			&HeadingControl::onEnableControl, this);
 
-	nh.param("virtual_target/timeout",timeout,timeout);
-	nh.param("virtual_target/use_flow_frame",use_flow_frame,use_flow_frame);
+	nh.param("dp_controller/timeout",timeout,timeout);
 
 	//Configure the dynamic reconfigure server
 	//server.setCallback(boost::bind(&VelocityControl::dynrec_cb, this, _1, _2));
@@ -97,7 +95,7 @@ void VirtualTarget::onInit()
 	//this->updateDynRecConfig();
 }
 
-//void VirtualTarget::updateDynRecConfig()
+//void HeadingControl::updateDynRecConfig()
 //{
 //	ROS_INFO("Updating the dynamic reconfigure parameters.");
 //
@@ -114,7 +112,7 @@ void VirtualTarget::onInit()
 //	server.updateConfig(config);
 //}
 
-//void VirtualTarget::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
+//void HeadingControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
 //{
 //	this->config = config;
 //
@@ -131,34 +129,32 @@ void VirtualTarget::onInit()
 //	}
 //}
 
-//void VirtualTarget::onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
-//{
-//	trackPoint.position.north = point->point.x;
-//	trackPoint.position.east = point->point.y;
-//	trackPoint.position.depth = point->point.z;
-//};
+void HeadingControl::onHeadingRef(const std_msgs::Float32::ConstPtr& ref)
+{
+	headingController.desired = ref->data;
+};
 
-bool VirtualTarget::onEnableControl(labust_uvapp::EnableControl::Request& req,
+bool HeadingControl::onEnableControl(labust_uvapp::EnableControl::Request& req,
 		labust_uvapp::EnableControl::Response& resp)
 {
 	this->enable = req.enable;
 	return true;
 }
 
-void VirtualTarget::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
+void HeadingControl::onOpenLoopSurge(const std_msgs::Float32::ConstPtr& surge)
 {
 	this->surge = surge->data;
 }
 
-void VirtualTarget::onFlowTwist(const geometry_msgs::TwistStamped::ConstPtr& flowtwist)
-{
-	boost::mutex::scoped_lock l(dataMux);
-	flowSurgeEstimate = flowtwist->twist.linear.x*flowtwist->twist.linear.x;
-	flowSurgeEstimate += flowtwist->twist.linear.y*flowtwist->twist.linear.y;
-	flowSurgeEstimate = sqrt(flowSurgeEstimate);
-}
+//void HeadingControl::onFlowTwist(const geometry_msgs::TwistStamped::ConstPtr& flowtwist)
+//{
+//	boost::mutex::scoped_lock l(dataMux);
+//	flowSurgeEstimate = flowtwist->twist.linear.x*flowtwist->twist.linear.x;
+//	flowSurgeEstimate += flowtwist->twist.linear.y*flowtwist->twist.linear.y;
+//	flowSurgeEstimate = sqrt(flowSurgeEstimate);
+//}
 
-void VirtualTarget::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)
+void HeadingControl::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	//Copy into controller
 	state = *estimate;
@@ -166,19 +162,19 @@ void VirtualTarget::onEstimate(const auv_msgs::NavSts::ConstPtr& estimate)
 	if (enable) this->step();
 };
 
-//void VirtualTarget::onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref)
+//void HeadingControl::onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref)
 //{
 //	//Copy into controller
 //	trackPoint = *ref;
 //};
 
-void VirtualTarget::onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch)
+void HeadingControl::onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch)
 {
 	//Copy into controller
 	headingController.windup = tauAch->disable_axis.yaw;
 };
 
-//void VirtualTarget::safetyTest()
+//void HeadingControl::safetyTest()
 //{
 //	bool refTimeout = (ros::Time::now() - lastRef).toSec() > timeout;
 //	bool estTimeout = (ros::Time::now() - lastEst).toSec() > timeout;
@@ -202,103 +198,37 @@ void VirtualTarget::onWindup(const auv_msgs::BodyForceReq::ConstPtr& tauAch)
 //	//if (changed) this->updateDynRecConfig();
 //}
 
-void VirtualTarget::step()
+void HeadingControl::step()
 {
 	if (!enable) return;
 	//this->safetyTest();
 
-	tf::StampedTransform sfTransform, sfLocal, flowLocal;
-	try
-	{
-		listener.lookupTransform("serret_frenet_frame", "base_link_flow", ros::Time(0), sfTransform);
-		listener.lookupTransform("local", "base_link_flow", ros::Time(0), flowLocal);
-		listener.lookupTransform("local", "serret_frenet_frame", ros::Time(0), sfLocal);
-		tf::Quaternion q = sfTransform.getRotation();
-		double gamma,gammaRabbit,flow_yaw,pitch,roll;
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gamma,pitch,roll);
-		q = sfLocal.getRotation();
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gammaRabbit,pitch,roll);
-		q = flowLocal.getRotation();
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(flow_yaw,pitch,roll);
+	headingController.state = labust::math::wrapRad(state.orientation.yaw);
+	float errorWrap = labust::math::wrapRad(headingController.desired - headingController.state);
+	PIFFExtController_stepWrap(&headingController,Ts, errorWrap);
 
-		//double UvecYaw = state.orientation.yaw;
-		//For slow movements prefer the body frame instead of the flow frame.
-		boost::mutex::scoped_lock l(dataMux);
-		if (!use_flow_frame || (flowSurgeEstimate < (surge/10)))
-		{
-			gamma = labust::math::wrapRad(state.orientation.yaw-gammaRabbit);
-			flowSurgeEstimate = state.body_velocity.x;
-			headingController.state = labust::math::wrapRad(state.orientation.yaw);
-		}
-		else
-		{
-			headingController.state = labust::math::wrapRad(flow_yaw);
-		}
-		l.unlock();
+	auv_msgs::BodyVelocityReq nu;
+	nu.header.stamp = ros::Time::now();
+	nu.goal.requester = "heading_controller";
+	nu.twist.angular.z = headingController.output;
+	nu.twist.linear.x = surge;
 
-		gamma=labust::math::wrapRad(gamma);
-
-		double distance(pow(sfTransform.getOrigin().y(),2) + pow(sfTransform.getOrigin().x(),2));
-		double angleDiff(atan2(sfTransform.getOrigin().y(),sfTransform.getOrigin().x()));
-		if (false && distance > 0.5 && fabs(angleDiff) > M_PI/2)
-		{
-			headingController.desired = angleDiff;
-		}
-		else
-		{
-			//Just for readability
-			double s1(sfTransform.getOrigin().x()),y1(sfTransform.getOrigin().y());
-
-			geometry_msgs::TwistStamped sTwist;
-			//double flowSurgeEstimate = state.body_velocity.x;
-			//sDot
-			boost::mutex::scoped_lock l(dataMux);
-			sTwist.twist.linear.x = flowSurgeEstimate*cos(gamma) + K1*s1;
-			sTwist.twist.linear.y = flowSurgeEstimate;
-			l.unlock();
-			vtTwist.publish(sTwist);
-
-			double gammaRef=-gammaARad*tanh(K2*y1);
-
-			headingController.desired = labust::math::wrapRad(gammaRabbit+gammaRef);
-		}
-
-		float errorWrap = labust::math::wrapRad(headingController.desired - headingController.state);
-		PIFFExtController_stepWrap(&headingController,Ts, errorWrap);
-
-		auv_msgs::BodyVelocityReq nu;
-		nu.header.stamp = ros::Time::now();
-		nu.goal.requester = "virtual_target";
-		nu.twist.angular.z = headingController.output;
-		nu.twist.linear.x = surge;
-
-		nuRef.publish(nu);
-	}
-	catch (tf::TransformException& ex)
-	{
-		ROS_ERROR("%s",ex.what());
-	}
+	nuRef.publish(nu);
 }
 
-void VirtualTarget::start()
+void HeadingControl::start()
 {
 	ros::spin();
 }
 
-void VirtualTarget::initialize_controller()
+void HeadingControl::initialize_controller()
 {
-	ROS_INFO("Initializing dynamic positioning controller...");
+	ROS_INFO("Initializing heading controller...");
 
 	double w(1);
-	nh.param("virtual_target/heading_closed_loop_freq", w,w);
-	nh.param("virtual_target/sampling",Ts,Ts);
-	nh.param("virtual_target/approach_angle",gammaARad,gammaARad);
-	nh.param("virtual_target/openLoopSurge",surge,surge);
-	gammaARad = gammaARad*M_PI/180;
-	Eigen::Vector2d gains(Eigen::Vector2d::Ones());
-	labust::tools::getMatrixParam(nh,"virtual_target/outer_loop_gains", gains);
-	K1 = gains(0);
-	K2 = gains(1);
+	nh.param("heading_control/heading_closed_loop_freq", w,w);
+	nh.param("heading_control/sampling",Ts,Ts);
+	nh.param("heading_control/openLoopSurge",surge,surge);
 
 	enum {Kp=0, Ki, Kd, Kt};
 	PIDController_init(&headingController);
@@ -306,5 +236,5 @@ void VirtualTarget::initialize_controller()
 	headingController.gains[Ki] = w*w;
 	headingController.autoTracking = 0;
 
-	ROS_INFO("Line following controller initialized.");
+	ROS_INFO("Heading controller initialized.");
 }

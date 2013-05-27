@@ -15,7 +15,19 @@
 		<remap from="fix" to="gps" />
 	</node>
 
-	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled"/>
+	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled" >	
+		<param name="PortName" value="/dev/ttyS0" />
+		<remap from="tauIn" to="tauOut" />
+        </node>
+	
+
+	<node pkg="cart2" type="bench_radio" name="cart2_node" if="$(env USE_BENCH_RADIO)" machine="controlled">
+	    <param name="PortName" value="/dev/ttyUSB0" />
+		<!--  <param name="PortName" value="/dev/pts/6" /> -->
+		<param name="BaudRate" value="19200" />
+		<param name="IsBench" value="true" />
+		<remap from="tauIn" to="tauOut" />
+	</node>
 	
 	<node pkg="cart2" type="vr_node" name="vr_node" if="$(env USE_VR)" machine="controlled">
 	    <param name="PortName" value="/dev/ttyUSB1" />

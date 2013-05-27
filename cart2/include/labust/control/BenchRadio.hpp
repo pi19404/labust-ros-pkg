@@ -34,82 +34,64 @@
  *  Created on: 06.05.2013.
  *  Author: Dula Nad
  *********************************************************************/
-#ifndef TOPSIDERADIO_HPP_
-#define TOPSIDERADIO_HPP_
+#ifndef BENCHRADIO_HPP_
+#define BENCHRADIO_HPP_
 #include <labust/preprocessor/mem_serialized_struct.hpp>
-#include <labust/tools/StringUtilities.hpp>
-#include <cart2/RadioModemConfig.h>
-
-#include <dynamic_reconfigure/server.h>
 
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread.hpp>
-#include <boost/archive/binary_oarchive.hpp>
 
-#include <sensor_msgs/Joy.h>
-#include <std_msgs/Int32.h>
-#include <geometry_msgs/PointStamped.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
-#include <auv_msgs/NavSts.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <auv_msgs/BodyForceReq.h>
 #include <ros/ros.h>
 
-#include <sstream>
-
-PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
+PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),BenchModemData,
 		(float, surgeForce)
-		(float, torqueForce)
-		(double, lat)
-		(double, lon)
-		(float, radius)
-		(float, surge)
-		(float, yaw)
-		(uint8_t, mode)
-		(uint8_t, launch)
-		(uint8_t, mode_update))
+		(float, torqueForce))
 
 namespace labust
 {
 	namespace radio
 	{
-		typedef boost::array<float,5> stateVec;
+		typedef boost::array<float,4> quat;
 	}
 }
-BOOST_CLASS_IMPLEMENTATION(labust::radio::stateVec , boost::serialization::primitive_type)
+BOOST_CLASS_IMPLEMENTATION(labust::radio::quat , boost::serialization::primitive_type)
 
-PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),CARTModemData,
-		(double, origin_lat)
-		(double, origin_lon)
-		(uint8_t, mode)
-		(stateVec, state_meas)
-		(stateVec, state_hat))
+PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),BenchModemDataRet,
+		(float, surgeAch)
+		(float, torqueAch)
+		(char, windupS)
+		(char, windupT)
+		(float, yaw)
+		(float, lat)
+		(float, lon))
 
 namespace labust
 {
 	namespace control
 	{
 		/**
-		 * The class implements the topside radio modem node.
+		 * The class implements the bench radio modem node. For testing without WLAN.
 		 * \todo Split into two policies.
 		 * \todo Add in ros utils a generic conversion of different message, i.e. NavSts,
 		 * to a vector or named map.
 		 * \todo Replace synchonization with read_until
 		 */
-		class TopsideRadio
+		class BenchRadio
 		{
-			enum {sync_length=6, chksum_size = 1, topside_package_length=39+chksum_size, cart_package_length=57+chksum_size};
-			//Estimates
-			enum {u=0,r,x,y,psi};
+			enum {sync_length=6, Bench_package_length=8, cart_package_length=22};
 		public:
 			/**
 			 * Main constructor
 			 */
-			TopsideRadio();
+			BenchRadio();
 			/**
 			 * Main deconstructor
 			 */
-			~TopsideRadio();
+			~BenchRadio();
 			/**
 			 * Initialize and setup the manager.
 			 */
@@ -121,41 +103,18 @@ namespace labust
 
 		private:
 			/**
-			 * Dynamic reconfigure callback.
+			 * Handle the tau in.
 			 */
-			void dynrec_cb(cart2::RadioModemConfig& config, uint32_t level);
-			/**
-			 * Handle the joystick input.
-			 */
-			void onJoy(const sensor_msgs::Joy::ConstPtr& joy);
+			void onTauIn(const auv_msgs::BodyForceReq::ConstPtr& tauIn);
 			/**
 			 * Handle the external target point.
 			 */
-			void onExtPoint(const geometry_msgs::PointStamped::ConstPtr& isLaunched);
+			void onImu(const sensor_msgs::Imu::ConstPtr& imu);
+			void onGps(const sensor_msgs::NavSatFix::ConstPtr& gps);
 			/**
 			 * Handle the estimates.
 			 */
-			void onStateHat(const auv_msgs::NavSts::ConstPtr& estimate);
-			/**
-			 * Handle the measurements.
-			 */
-			void onStateMeas(const auv_msgs::NavSts::ConstPtr& meas);
-			/**
-			 * Handle the measurements.
-			 */
-			void onCurrentMode(const std_msgs::Int32::ConstPtr& mode);
-			/**
-			 * Helper function.
-			 */
-			void populateDataFromConfig();
-			/**
-			 * Helper function.
-			 */
-			void local2LatLon(double x, double y);
-			/**
-			 * Helper function.
-			 */
-			void sendCData();
+			void onTauAchIn(const auv_msgs::BodyForceReq::ConstPtr& tau);
 			/**
 			 * Start the receiving thread.
 			 */
@@ -168,51 +127,15 @@ namespace labust
 			 * Handle incoming modem data.
 			 */
 			void onIncomingData(const boost::system::error_code& error, const size_t& transferred);
-			/**
-			 * Helper function for checksum calculation.
-			 */
-			template <class MsgType>
-			uint8_t calculateChecksum(MsgType& chdata)
-			{
-				std::ostringstream chk;
-				boost::archive::binary_oarchive chkSer(chk, boost::archive::no_header);
-				chkSer << chdata;
-				return labust::tools::getChecksum(
-						reinterpret_cast<const uint8_t*>(chk.str().data()), chk.str().size());
-			}
-			/**
-			 * Modem timeout detection.
-			 */
-			void onTimeout();
 
-			/**
-			 * The ROS node handles.
-			 */
-			ros::NodeHandle nh,ph;
-			/**
-			 * The last arrived message.
-			 */
-			ros::Time lastModemMsg;
-			/**
-			 * The timeout length.
-			 */
-			double timeout;
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub;
+			ros::Publisher tauOut, imuOut, tauAch,gpsOut;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode;
-			/**
-			 * The transform listener.
-			 */
-			tf::TransformListener listener;
-			/**
-			 * The transform broadcaster.
-			 */
-			tf::TransformBroadcaster broadcaster;
+			ros::Subscriber tauIn, imuIn, tauAchIn, gpsIn;
 			/**
 			 * The io service.
 			 */
@@ -226,25 +149,17 @@ namespace labust
 			 */
 			boost::thread iorunner;
 			/**
-			 * The dynamic reconfigure server.
-			 */
-			dynamic_reconfigure::Server<cart2::RadioModemConfig> server;
-			/**
-			 * The last dynamic reconfiguration.
-			 */
-			cart2::RadioModemConfig config;
-			/**
 			 * Exchanged data.
 			 */
-			labust::radio::TopsideModemData data;
+			labust::radio::BenchModemData data;
 			/**
 			 * The return data.
 			 */
-			labust::radio::CARTModemData cdata;
+			labust::radio::BenchModemDataRet cdata;
 			/**
 			 * The data protector.
 			 */
-			boost::mutex dataMux, cdataMux,clientMux;
+			boost::mutex cdataMux;
 			/**
 			 * The asio streambuffer.
 			 */
@@ -256,17 +171,9 @@ namespace labust
 			/**
 			 * Location flag.
 			 */
-			bool isTopside, twoWayComms;
-			/**
-			 * The service client.
-			 */
-			ros::ServiceClient client;
-			/**
-			 * The frame transformer.
-			 */
-			double originLat, originLon;
+			bool isBench;
 		};
 	}
 }
-/* TOPSIDERADIO_HPP_ */
+/* BENCHRADIO_HPP_ */
 #endif

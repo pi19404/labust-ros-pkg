@@ -2,5 +2,9 @@
   <rosparam command="load" file="$(env YAML_MODEL)" />
   <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="controlled" />
   
-  <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)"/> 
+  <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)" >
+    <param name="PortName" value="/dev/ttyS1" />
+    <param name="Baud" value="115200" />
+    <remap from="fix" to="gps" />
+  </node> 
 </launch>
