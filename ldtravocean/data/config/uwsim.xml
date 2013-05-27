@@ -4,7 +4,7 @@
   --dataPath $(find ldtravocean)/data/scenes"  machine="shoreside"/>
     
     <node pkg="pladypos" type="NavSts2Odom.py" name="stateHat2uwsim" machine="shoreside" >
-        <remap from="stateHat" to="rov/meas_sim" />
+        <remap from="stateHat" to="ldrov/meas_sim" />
         <remap from="uwsim_hook" to="uwsim_hook" />
     </node>
 </launch>

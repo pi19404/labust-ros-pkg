@@ -102,6 +102,13 @@ add_executable(${PR_NAME}
 	include/labust/control/VirtualTarget.hpp)
 target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
+set(PR_NAME hdg_control)
+add_executable(${PR_NAME} 
+	src/hdg_control.cpp 
+	src/HeadingControl.cpp
+	include/labust/control/HeadingControl.hpp)
+target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
+
 #set(PR_NAME labust-uvapp)
 #add_library(${PR_NAME} 
 #	src/VelocityControl.cpp

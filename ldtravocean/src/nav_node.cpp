@@ -44,8 +44,10 @@
 #include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
+#include <nav_msgs/Odometry.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <geometry_msgs/TwistStamped.h>
 
 #include <tf/transform_broadcaster.h>
@@ -60,6 +62,7 @@ typedef labust::navigation::KFCore<labust::navigation::LDTravModel> KFNav;
 tf::TransformListener* listener;
 
 ros::Time t;
+double g_acc(9.81), rho(1025);
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -88,10 +91,10 @@ void handleGPS(KFNav::vector& measurement, KFNav::vector& newFlag, const sensor_
 
 		//xy(x) = pos.x();
 		//xy(y) = pos.y();
-		measurement(KFNav::x_m) = posxy.first;
-		newFlag(KFNav::x_m) = 1;
-		measurement(KFNav::y_m) = posxy.second;
-		newFlag(KFNav::y_m) = 1;
+		measurement(KFNav::xp) = posxy.first;
+		newFlag(KFNav::xp) = 1;
+		measurement(KFNav::yp) = posxy.second;
+		newFlag(KFNav::yp) = 1;
 	}
 	catch(tf::TransformException& ex)
 	{
@@ -134,14 +137,19 @@ void handleImu(KFNav::vector& rpy,  const sensor_msgs::Imu::ConstPtr& data)
 void handleDvl(KFNav::vector& measurement, KFNav::vector& newFlag,
 		const geometry_msgs::TwistStamped::ConstPtr& data)
 {
-	enum {u,v,w,newMsg};
+	measurement(KFNav::u) = data->twist.linear.x;
+	newFlag(KFNav::u)=1;
+	measurement(KFNav::v) = data->twist.linear.y;
+	newFlag(KFNav::v)=1;
+	//measurement(KFNav::w) = data->twist.linear.z;
+	//newFlag(KFNav::w)=1;
+};
 
-	measurement(KFNav::u_m) = data->twist.linear.x;
-	newFlag(KFNav::u_m)=1;
-	measurement(KFNav::v_m) = data->twist.linear.y;
-	newFlag(KFNav::v_m)=1;
-	measurement(KFNav::w_m) = data->twist.linear.z;
-	newFlag(KFNav::w_m)=1;
+void handlePressure(KFNav::vector& measurement, KFNav::vector& newFlag,
+		const sensor_msgs::FluidPressure::ConstPtr& data)
+{
+	measurement(KFNav::zp) = data->fluid_pressure/(g_acc*rho);
+	newFlag(KFNav::zp)=1;
 };
 
 void configureNav(KFNav& nav, ros::NodeHandle& nh)
@@ -215,6 +223,9 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 	std::stringstream ss(sx0);
 	boost::numeric::ublas::operator >>(ss,x0);
 
+	nh.getParam(modelName+"/dynamics/gravity", g_acc);
+	nh.getParam(modelName+"/dynamics/density", rho);
+
 	std::cout<<P<<std::endl;
 
 	nav.setStateParameters(W,Q);
@@ -258,9 +269,12 @@ int main(int argc, char* argv[])
 			boost::bind(&handleImu,boost::ref(rpy),_1));
 	ros::Subscriber dvl = nh.subscribe<geometry_msgs::TwistStamped>("dvl", 1,
 			boost::bind(&handleDvl,boost::ref(measurements),boost::ref(newMeasFlag),_1));
+	ros::Subscriber pressure = nh.subscribe<sensor_msgs::FluidPressure>("pressure", 1,
+			boost::bind(&handlePressure,boost::ref(measurements),boost::ref(newMeasFlag),_1));
 
 	ros::Rate rate(10);
 
+	nav_msgs::Odometry odom;
 	auv_msgs::NavSts meas,state;
 	geometry_msgs::TwistStamped current, flowspeed;
 	meas.header.frame_id = "local";
@@ -274,9 +288,10 @@ int main(int argc, char* argv[])
 		nav.predict(tau);
 		if (rpy(3))
 		{
+			ROS_INFO("Set the yaw.");
 			double yaw = unwrap(rpy(2));
-			measurements(KFNav::psi_m) = yaw;
-			newMeasFlag(KFNav::psi_m) = 1;
+			measurements(KFNav::psi) = yaw;
+			newMeasFlag(KFNav::psi) = 1;
 		}
 
 		bool anyNew = false;
@@ -284,18 +299,19 @@ int main(int argc, char* argv[])
 
 		if (anyNew)
 		{
+			ROS_INFO("Do update.");
 			nav.correct(nav.update(measurements, newMeasFlag));
-			ROS_INFO("Correctiion step.");
+			ROS_INFO("Correction step.");
 		}
 
 		meas.orientation.roll = rpy(0);
 		meas.orientation.pitch = rpy(1);
 		meas.orientation.yaw = rpy(2);
-		meas.position.north = measurements(KFNav::x_m);
-		meas.position.east = measurements(KFNav::y_m);
-		meas.body_velocity.x = measurements(KFNav::u_m);;
-		meas.body_velocity.y = measurements(KFNav::v_m);;
-		meas.body_velocity.z = measurements(KFNav::w_m);;
+		meas.position.north = measurements(KFNav::xp);
+		meas.position.east = measurements(KFNav::yp);
+		meas.body_velocity.x = measurements(KFNav::u);
+		meas.body_velocity.y = measurements(KFNav::v);
+		meas.body_velocity.z = measurements(KFNav::w);
 		stateMeas.publish(meas);
 
 		const KFNav::vector& estimate = nav.getState();
@@ -361,4 +377,5 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+
 

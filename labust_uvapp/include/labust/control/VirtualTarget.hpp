@@ -151,7 +151,7 @@ namespace labust
 			/**
 			 * Enabled.
 			 */
-			bool enable;
+			bool enable, use_flow_frame;
 			/**
 			 * Mutex to sync updates.
 			 */

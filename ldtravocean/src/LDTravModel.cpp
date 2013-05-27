@@ -62,59 +62,10 @@ void LDTravModel::initModel()
   std::cout<<"R:"<<R<<"\n"<<V<<std::endl;
 }
 
-//const LDTravModel::output_type& LDTravModel::yawUpdate(double yaw)
-//{
-//	derivativeHV(1);
-//	measurement(psiOnly_m) = yaw;
-//	return measurement;
-//}
-//
-//const LDTravModel::output_type& LDTravModel::yawSpeedUpdate(double u,
-//		double v,
-//		double w,
-//		double yaw)
-//{
-//	derivativeHV(4);
-//	measurement(upsi_m) = u;
-//	measurement(wpsi_m) = v;
-//	measurement(wpsi_m) = w;
-//	measurement(psipsi_m) = yaw;
-//	return measurement;
-//}
-
-//const LDTravModel::output_type& LDTravModel::fullUpdate(double u,
-//				double v,
-//				double w,
-//				double x,
-//  		  double y,
-//  		  double yaw)
-//{
-//	derivativeHV(6);
-//	measurement(u_m) = u;
-//	measurement(v_m) = v;
-//	measurement(w_m) = w;
-//	measurement(x_m) = x;
-//	measurement(y_m) = y;
-//	measurement(psi_m) = yaw;
-//
-//	return measurement;
-//}
-
-//const LDTravModel::output_type& LDTravModel::yawPositionUpdate(double x,
-//  		  double y, double yaw)
-//{
-//	derivativeHV(3);
-//	measurement(xpsi_m) = x;
-//	measurement(ypsi_m) = y;
-//	measurement(xypsipsi_m) = yaw;
-//
-//	return measurement;
-//}
-
 void LDTravModel::calculateXYInovationVariance(const LDTravModel::matrix& P, double& xin,double &yin)
 {
-	xin = sqrt(P(xp,xp)) + sqrt(R0(x_m,x_m));
-	yin = sqrt(P(yp,yp)) + sqrt(R0(y_m,y_m));
+	xin = sqrt(P(xp,xp)) + sqrt(R0(xp,xp));
+	yin = sqrt(P(yp,yp)) + sqrt(R0(yp,yp));
 }
 
 void LDTravModel::step(const input_type& input)
@@ -166,6 +117,7 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 {
 	std::vector<size_t> arrived;
 	std::vector<double> dataVec;
+
 	for (size_t i=0; i<newMeas.size(); ++i)
 	{
 		if (newMeas(i))
@@ -176,6 +128,8 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 		}
 	}
 
+	measurement.resize(arrived.size());
+	H = mzeros(arrived.size(),stateNum);
 	R = mzeros(arrived.size(),arrived.size());
 	V = mzeros(arrived.size(),arrived.size());
 
@@ -190,56 +144,12 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 		}
 	}
 
+	//std::cout<<"Setup H:"<<H<<std::endl;
+	//std::cout<<"Setup R:"<<R<<std::endl;
+	//std::cout<<"Setup V:"<<V<<std::endl;
+
 	return measurement;
 }
-
-//void LDTravModel::derivativeHV(int numMeas)
-//{
-//	H = mzeros(numMeas,stateNum);
-//
-//	if (numMeas == 1)
-//	{
-//		H(psiOnly_m,psi) = 1;
-//		R = V = mzeros(1,1);
-//		R(0,0) = R0(psi_m,psi_m);
-//		V(0,0) = V0(psi_m,psi_m);
-//	}
-//	else if (numMeas == 3)
-//	{
-//		using namespace boost::numeric::ublas;
-//		H(xpsi_m,xp) = H(ypsi_m,yp) = H(wpsi_m,w) = H(psipsi_m,psi) = 1;
-//		R = mzeros(numMeas,numMeas);
-//		V = mzeros(numMeas,numMeas);
-//		subrange(R, u_m,w_m, u_m,w_m) = subrange(R0, u_m,w_m, u_m,w_m);
-//		subrange(V, u_m,w_m, u_m,w_m) = subrange(V0, u_m,w_m, u_m,w_m);
-//		R(psipsi_m, u_m) = R0(psi_m,u_m);
-//		R(psipsi_m, v_m) = R0(psi_m,v_m);
-//		R(psipsi_m, w_m) = R0(psi_m,w_m);
-//		R(psipsi_m, psipsi_m) = R0(psi_m,psi_m);
-//	}
-//	else if (numMeas == 4)
-//	{
-//		using namespace boost::numeric::ublas;
-//		H(upsi_m,u) = H(vpsi_m,v) = H(wpsi_m,w) = H(psipsi_m,psi) = 1;
-//		R = mzeros(numMeas,numMeas);
-//		V = mzeros(numMeas,numMeas);
-//		subrange(R, u_m,w_m, u_m,w_m) = subrange(R0, u_m,w_m, u_m,w_m);
-//		subrange(V, u_m,w_m, u_m,w_m) = subrange(V0, u_m,w_m, u_m,w_m);
-//		R(psipsi_m, u_m) = R0(psi_m,u_m);
-//		R(psipsi_m, v_m) = R0(psi_m,v_m);
-//		R(psipsi_m, w_m) = R0(psi_m,w_m);
-//		R(psipsi_m, psipsi_m) = R0(psi_m,psi_m);
-//	}
-//	else
-//	{
-//		H(upsi_m,u) = H(vpsi_m,v) = H(wpsi_m,w) = 1;
-//		H(x_m,xp) = H(y_m,yp) = H(psi_m,psi) = 1;
-//		R = R0;
-//		V = V0;
-//	}
-//
-//	measurement.resize(numMeas);
-//}
 
 void LDTravModel::estimate_y(output_type& y)
 {

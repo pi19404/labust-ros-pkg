@@ -1,6 +1,8 @@
 #The model parameters for the controller
 model_name: falcon
 falcon/dynamics/mass: 536
+falcon/dynamics/gravity: 9.81
+falcon/dynamics/density: 1025
 falcon/dynamics/inertia_matrix: [25.0, 0.0, 0.0, 0.0, 50.0, 0.0, 0.0, 0.0, 50.0]
 falcon/dynamics/added_mass: [30.0,80.0,80.0,15.0,30.0,30.0]
 falcon/dynamics/damping: [100.0,100.0,100.0,400.0,300.0,300.0]
@@ -11,12 +13,12 @@ falcon/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
 falcon/virtual_scaling: [300,300,300,0,0,300]
 
 #Parameters:			   	    u      v     w     r     xp  yp zp  psi  xc    yc    b   buoyancy 
-cart2/navigation/Q: "diag([12](0.001,0.001,0.001,0.0001,0.0,0.0,0.0,0.0,0.001,0.001,0.01,0.00))"
-cart2/navigation/W: "diag([12](1,1,1,1,1,1,1,1,1,1,1,1))"
-#Parameters: 			       u  v   w    x   y  z    psi 
-cart2/navigation/R: "diag([7](0.1,0.1,0.01,16,16,0.1, 0.003))"
-cart2/navigation/V: "diag([7](1,1,1,1,1,1,1))"
-cart2/navigation/P: "diag([12](100,100,100,100,100,100,100,100,100,100,100,100))"
-cart2/navigation/x0: "[12](0,0,0,0,0,0,0,0,0,0,0,0)"
+falcon/navigation/Q: "diag([12](0.001,0.001,0.001,0.0001,0.0,0.0,0.0,0.0,0.001,0.001,0.01,0.00))"
+falcon/navigation/W: "diag([12](1,1,1,1,1,1,1,1,1,1,1,1))"
+#Parameters: 			              u      v     w     r     xp  yp zp  psi  xc    yc    b   buoyancy 
+falcon/navigation/R: "diag([12](0.1,0.1,0.01,0.01,16,16,0.1,0.003,9999,9999,9999,9999))"
+falcon/navigation/V: "diag([12](1,1,1,1,1,1,1,1,1,1,1,1))"
+falcon/navigation/P: "diag([12](100,100,100,100,100,100,100,100,100,100,100,100))"
+falcon/navigation/x0: "[12](0,0,0,0,0,0,0,0,0,0,0,0)"
 
 

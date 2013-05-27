@@ -85,8 +85,8 @@ struct TauT
 	TauC getTauC()
 	{
 		TauC tau;
-		tau.Frw = (Port+Stb)/2;
-		tau.Yaw = (Port-Stb)/2;
+		tau.Frw = (-Port+Stb)/2;
+		tau.Yaw = (-Port-Stb)/2;
 
 		return tau;
 	}
@@ -210,9 +210,12 @@ void SetReference(int ID, float REF) //REF from 0 to 1. 1 represents full thrust
 	SetRef[3] = SetRefID1[3];
 	SetRef[4] = SetRefID1[4];
 
+	double max = 11138;
 	// Motors are 3,4A max. Value of ext. reference (3272) corresponds to 1A. Full thrust (3.4A) is then ext. reference of 11138
-	SetRef[5] = floor(REF*11138/256);
-	SetRef[6] = floor(REF*11138) - SetRef[5]*256;
+	int16_t ref_current = int16_t(REF*max);
+	const char* p=reinterpret_cast<const char*>(&ref_current);
+	SetRef[5] = p[1];
+	SetRef[6] = p[0];;
 	SetRef[7] = SetRef[0] + SetRef[1] + SetRef[2] + SetRef[3] + SetRef[4] + SetRef[5] + SetRef[6];
 
 	Mode = "OK";
@@ -786,11 +789,11 @@ int main(int argc, char* argv[])
 			os.write(AxisOFFID2,sizeof(AxisOFFID2));
 			write(port,outputBuffer);
 
-			/*os.write(ResetID2,sizeof(ResetID2));
+			os.write(ResetID2,sizeof(ResetID2));
 		write(port,outputBuffer);
 
 		os.write(ResetID1,sizeof(ResetID1));
-		write(port,outputBuffer);*/
+		write(port,outputBuffer);
 
 			os.write(AxisONID1,sizeof(AxisONID1));
 			write(port,outputBuffer);
@@ -868,6 +871,9 @@ int main(int argc, char* argv[])
 			auv_msgs::BodyForceReq tau;
 			tau.wrench.force.x = achTau.Frw;
 			tau.wrench.torque.z = achTau.Yaw;
+			bool windup = (TauControl.Yaw != achTau.Yaw);
+			tau.disable_axis.x = windup;
+			tau.disable_axis.yaw = windup;
 			tauAch.publish(tau);
 
 			StateDO[CalibrationData::calibrationPin] = calibration.trigger;
@@ -929,8 +935,6 @@ int main(int argc, char* argv[])
 			if (!CommsOkFlag)
 				{CommsOkFlag = true;
 				CommsAll++;}*/	
-			RPM[0] = wrapRPM(Load_Position[0] - Load_Position_Previous[0])*75;
-			RPM[1] = wrapRPM(Load_Position[1] - Load_Position_Previous[1])*75;
 
 			if ((AverCount == 5) || (AverCount == 15))
 				//{printf("%f\n",Motor_Current[0]);
@@ -951,18 +955,33 @@ int main(int argc, char* argv[])
 			//rate.sleep();
 			usleep(1000*90);
 			ros::spinOnce();
+			
+
+			RPM[0] = wrapRPM(Load_Position[0] - Load_Position_Previous[0])*75;
+			RPM[1] = wrapRPM(Load_Position[1] - Load_Position_Previous[1])*75;
 
 			CommsOkFlag = true;
 
-			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0001;
+			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
 			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
 			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
 
 			if (VoltageTest || portTest || stbdTest)
 			{
+				std::cout<<"Voltage:"<<Supply_Voltage<<", "<<Supply_Voltage_Previous<<std::endl; 
+				std::cout<<"Thust:"<<thrust.Port<<", "<<thrust.Stb<<std::endl; 
+				std::cout<<"RPM:"<<RPM[0]<<", "<<RPM[1]<<std::endl; 
 				CommsCount++;
 				if (CommsCount == 20)
 				{CommsOkFlag = false;}
+				if (CommsCount == 19)
+				{
+					std::cout<<"Going to reset."<<std::endl;
+				}
+			}
+			else
+			{
+				CommsCount = 0;
 			}
 			/////////////////////////////////////////
 

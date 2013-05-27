@@ -1,0 +1,36 @@
+<launch> 
+  <group ns="cart">
+    <node pkg="cart2" type="imu_node" name="imu" if="$(env USE_CART)">     
+      <param name="PortName" value="/dev/ttyS1" />
+      <param name="BaudRate" value="115200" />
+    </node>
+
+    <node pkg="cart2" name="radio_modem" type="bench_radio">
+      <!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
+      <param name="PortName" value="/dev/pts/5" />
+      <param name="BaudRate" value="9600" />
+      <param name="IsBench" value="false" />
+    </node>
+    
+    <node pkg="ldtravocean" type="model_node" name="cart2_node"
+		args="$(env SIM_MODEL)" unless="$(env USE_CART)">
+		<!-- This will also adjust the model sampling time -->
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<remap from="tauIn" to="tauOut" />
+		<remap from="meas" to="meas_sim" />
+		<param name="maxThrust" value="9.2" />
+		<param name="minThrust" value="-9.2" />
+		<param name="publish_world" value="false" />
+		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
+
+		<remap from="imu_model" to="imu" />
+		<remap from="fix" to="gps" />
+	</node>
+
+	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)">
+          <param name="PortName" value="/dev/ttyS0" />
+          <remap from="tauIn" to="tauOut" />
+        </node>
+  </group>
+</launch>
