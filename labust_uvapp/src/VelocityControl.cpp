@@ -344,7 +344,7 @@ void VelocityControl::step()
 	//tau.wrench.force.x = controller[u].output;
 	if (axis_control[u] == controlAxis)
 	{
-		if (fabs(controller[u].desired > 0.3)) controller[u].desired = 0.3;
+		if (fabs(controller[u].desired > 1.0)) controller[u].desired = controller[u].desired/fabs(controller[u].desired);
 		tau.wrench.force.x = controller[u].desired;
 	}
 	else
