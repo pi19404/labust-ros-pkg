@@ -280,7 +280,7 @@ void ReadHandler(const boost::system::error_code& e, std::size_t size)
 			MessageLength = 1;
 			CommsOkFlag= true;
 
-			Vehicle_Current = parsData() * 18 / 65472;		
+			Vehicle_Current = parsData() * 18 / 65472 * 1.25;		
 
 			Mode = "OK";
 			Mode1 = "Data_C1";
@@ -965,7 +965,7 @@ int main(int argc, char* argv[])
 			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
 			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
 			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
-
+			//stbdTest = portTest = false;
 			if (VoltageTest || portTest || stbdTest)
 			{
 				std::cout<<"Voltage:"<<Supply_Voltage<<", "<<Supply_Voltage_Previous<<std::endl; 

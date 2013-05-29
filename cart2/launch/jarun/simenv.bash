@@ -1,6 +1,6 @@
 #!/bin/bash
 export ROBOT=sim
-export LOCATION=jarun
+export LOCATION=genova_pra
 export JOYSTICK=/dev/input/js1
 export PACKAGE=cart2
 export USE_UWSIM=0
