@@ -68,8 +68,9 @@ namespace labust
 		{
 			enum {sync_length=3, chksum_size = 2};
 			//Estimates
-			enum {id_field = 3, data1_field = 4, data2_field=8, mode_field = 12, chksum_field};
+			enum {id_field = 3, data1_field = 4, data2_field=8, mode_field = 12, launch_field=4};
 			enum {stopbit, startbit, manualbit, automaticbit, remotebit};
+			enum {cart =0, bart=1, station=2};
 		public:
 			/**
 			 * Main constructor
@@ -117,6 +118,10 @@ namespace labust
 			 * Send the reply message.
 			 */
 			void reply();
+			/**
+			 * Send the buoy reply message.
+			 */
+			void replyBuoy();
 
 			/**
 			 * The ROS node handles.
@@ -129,11 +134,11 @@ namespace labust
 			/**
 			 * The timeout length.
 			 */
-			double timeout, currYaw, yawInc;
+			double timeout, currYaw, yawInc, currLat, currLon;
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, hlMsg;
+			ros::Publisher joyOut, launched, hlMsg;
 			/**
 			 * The subscribed topics.
 			 */

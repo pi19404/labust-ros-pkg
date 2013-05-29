@@ -55,15 +55,17 @@
 using labust::control::CNRRemoteRadio;
 
 CNRRemoteRadio::CNRRemoteRadio():
-		ph("~"),
-		lastModemMsg(ros::Time::now()),
-		timeout(10),
-		currYaw(0),
-		yawInc(0.1),
-		port(io),
-		buffer(sync_length,0),
-		id(3),
-		lastmode(1)
+				ph("~"),
+				lastModemMsg(ros::Time::now()),
+				timeout(10),
+				currYaw(0),
+				currLat(0),
+				currLon(0),
+				yawInc(0.5),
+				port(io),
+				buffer(sync_length,0),
+				id(bart),
+				lastmode(1)
 {this->onInit();}
 
 CNRRemoteRadio::~CNRRemoteRadio()
@@ -95,6 +97,7 @@ void CNRRemoteRadio::onInit()
 	}
 
 	joyOut = nh.advertise<sensor_msgs::Joy>("joy_out",1);
+	launched = nh.advertise<std_msgs::Bool>("launched",1);
 	hlMsg = nh.advertise<cart2::HLMessage>("hl_message",1);
 	client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
 	stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&CNRRemoteRadio::onStateHat,this);
@@ -112,6 +115,8 @@ void CNRRemoteRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	boost::mutex::scoped_lock l(cdataMux);
 	currYaw = estimate->orientation.yaw;
+	currLat = estimate->global_position.latitude;
+	currLon = estimate->global_position.longitude;
 }
 
 void CNRRemoteRadio::start_receive()
@@ -159,13 +164,31 @@ void CNRRemoteRadio::onSync(const boost::system::error_code& error, const size_t
 
 void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, const size_t& transferred)
 {
-	uint16_t chksum = compute_crc16(reinterpret_cast<const char*>(&buffer[0]),sync_length + transferred - chksum_size);
-	uint16_t rcvchksum = 256*buffer[chksum_field] + buffer[chksum_field+1];
+	int dataLen = sync_length + transferred - chksum_size;
+	uint16_t chksum = compute_crc16(reinterpret_cast<const char*>(&buffer[0]),dataLen);
+	uint16_t rcvchksum = 256*buffer[dataLen] + buffer[dataLen+1];
 
 	if (chksum == rcvchksum)
 	{
-		int32_t recv = (buffer[id_field] & 0x0F);
-		if (this->id == recv)
+		int32_t recv = (buffer[id_field] & 0xF0) >> 4;
+
+		ROS_INFO("Message from %d to %d.",buffer[id_field] & 0x0F,recv);
+
+		if ((this->id == bart) && (recv == bart))
+		{
+			if (buffer[launch_field] == 1)
+			{
+				ROS_INFO("The vehicle will be launched.");
+				std_msgs::Bool launcher;
+				launcher.data = true;
+				launched.publish(launcher);
+			}
+			boost::mutex::scoped_lock l2(clientMux);
+			lastModemMsg = ros::Time::now();
+			this->replyBuoy();
+		}
+
+		if ((this->id == cart) && (recv == cart))
 		{
 			lastmode = buffer[mode_field];
 			std::bitset<8> modes(buffer[mode_field]);
@@ -190,7 +213,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					sensor_msgs::Joy joy;
 					joy.axes.assign(6,0);
 					joy.axes[1] = data2/10000.;
-					joy.axes[2] = data1/10000.;
+					joy.axes[2] = -data1/10000.;
 					//Sanity check
 					if (fabs(joy.axes[1]) > 1)
 					{
@@ -224,7 +247,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 
 					boost::mutex::scoped_lock l(cdataMux);
 					mode.request.yaw = labust::math::wrapRad(currYaw +
-							data1/10000.*yawInc);
+							data1/100.*yawInc);
 
 					ROS_INFO("Switch to automatic mode: %f %f",
 							joy.axes[1],
@@ -234,32 +257,31 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 				if (modes[remotebit])
 				{
 					mode.request.mode = mode.request.CirclePoint;
+					mode.request.surge = 0.5;
 
 					mode.request.ref_point.header.frame_id = "worldLatLon";
-					mode.request.ref_point.point.x = data2/1000000.;
-					mode.request.ref_point.point.y = data1/1000000.;
+					mode.request.ref_point.point.x = data1/1000000.;
+					mode.request.ref_point.point.y = data2/1000000.;
 
 					ROS_INFO("Switch to remote mode: %f %f.",
 							mode.request.ref_point.point.x,
 							mode.request.ref_point.point.y);
 				}
-
-				boost::mutex::scoped_lock l2(clientMux);
-				lastModemMsg = ros::Time::now();
-				if (!client)
-				{
-					ROS_ERROR("HLManager client not connected. Trying reset.");
-					client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
-				}
-				else
-				{
-					client.call(mode);
-				}
 			}
-		}
-		else
-		{
-			ROS_INFO("Message for receiver %d dismissed.", recv);
+
+			boost::mutex::scoped_lock l2(clientMux);
+			lastModemMsg = ros::Time::now();
+			if (!client)
+			{
+				ROS_ERROR("HLManager client not connected. Trying reset.");
+				client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+			}
+			else
+			{
+				client.call(mode);
+			}
+
+			this->reply();
 		}
 	}
 	else
@@ -267,20 +289,40 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 		ROS_ERROR("Wrong CRC.");
 	}
 
-	this->reply();
 	start_receive();
 }
 
 void CNRRemoteRadio::reply()
 {
-	char ret[6];
+	char ret[7];
 	ret[0] = 'C';
 	ret[1] = 'P';
-	ret[2] = 1;
-	ret[3] = lastmode;
-	int crc = compute_crc16(&ret[0], 4);
-	ret[4] = crc%256;
+	ret[2] = 2;
+	ret[3] = (station<<4) + cart;
+	ret[4] = lastmode;
+	int crc = compute_crc16(&ret[0], 5);
 	ret[5] = crc/256;
+	ret[6] = crc%256;
+	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
+}
+
+void CNRRemoteRadio::replyBuoy()
+{
+	char ret[14];
+	ret[0] = 'C';
+	ret[1] = 'P';
+	ret[2] = 9;
+	ret[3] = (station<<4) + bart;
+	boost::mutex::scoped_lock l(cdataMux);
+	uint32_t lat = htonl(currLat*1000000);
+	uint32_t lon = htonl(currLon*1000000);
+	l.unlock();
+	ROS_INFO("The buoy reply: %d, %d",htonl(lat), htonl(lon));
+	memcpy(&ret[4],&lat,sizeof(uint32_t));
+	memcpy(&ret[8],&lon,sizeof(uint32_t));
+	int crc = compute_crc16(&ret[0], 12);
+	ret[12] = crc/256;
+	ret[13] = crc%256;
 	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
 }
 
@@ -312,17 +354,17 @@ void CNRRemoteRadio::onTimeout()
 	std::string portName;
 	int baud;
 	ph.param("PortName",portName,portName);
-        ph.param("BaudRate",baud,baud);
+	ph.param("BaudRate",baud,baud);
 
-        port.open(portName);
-        port.set_option(boost::asio::serial_port::baud_rate(baud));
+	port.open(portName);
+	port.set_option(boost::asio::serial_port::baud_rate(baud));
 
-        if (!port.is_open())
-        {
-                ROS_ERROR("Cannot open port.");
-                throw std::runtime_error("Unable to open the port.");
-        }
-	
+	if (!port.is_open())
+	{
+		ROS_ERROR("Cannot open port.");
+		throw std::runtime_error("Unable to open the port.");
+	}
+
 	this->start_receive();
 	iorunner = boost::thread(boost::bind(&boost::asio::io_service::run,&io));
 }

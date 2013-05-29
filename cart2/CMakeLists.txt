@@ -105,6 +105,7 @@ add_dependencies(hlmanager cart2_generate_messages_cpp)
 add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(topside_radio cart2_gencfg)
 add_dependencies(topside_radio cart2_generate_messages_cpp)
+add_dependencies(cnr_radio cart2_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(topside_radio
