@@ -218,14 +218,13 @@ void LFControl::step()
 	{
 		double dd = -currSurge*sin(currYaw - line.gamma());
 		nu.twist.angular.z = dh_controller.step(0,-line.calculatedH(T0(0),T0(1),T0(2)));
-		//nu.twist.angular.z = dh_controller.stepdd(0,-line.calculatedH(T0(0),T0(1),T0(2)),dd);
 		nu.twist.angular.z = labust::math::coerce(nu.twist.angular.z,-0.5,0.5);
 		std::cout<<nu.twist.angular.z<<", dH:"<<line.calculatedH(T0(0),T0(1),T0(2))<<std::endl;
 	}
 	else
 	{
 	   double dh = line.calculatedH(T0(0),T0(1),T0(2));
-		 double d=sin(line.gamma())*(Tt(0)-T0(0))-cos(line.gamma())*(Tt(1)-T0(1));
+	   double d=sin(line.gamma())*(Tt(0)-T0(0))-cos(line.gamma())*(Tt(1)-T0(1));
 	   double z=labust::math::coerce(LFKp*dh,-0.7,0.7);
 	   std::cout<<"Distance to line:"<<d<<","<<dh<<", correction:"<<z<<","<<asin(z)<<std::endl;
 	   headingController.desired = labust::math::wrapRad(line.gamma() + asin(z));
@@ -247,7 +246,7 @@ void LFControl::adjustDH()
 {
 	//Check for zero surge
 	if (fabs(currSurge) < 0.1) currSurge=0.1;
-	currSurge = 0.3;
+	//currSurge=0.3;
 
 	double Kph = wh*wh/currSurge;
 	double Kdh = 2*wh/currSurge;

@@ -89,8 +89,15 @@ add_executable(vr_node src/vr_node.cpp)
 add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp
 	include/labust/control/TopsideRadio.hpp)
 	
+add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
+	src/crc16.cpp
+	include/labust/control/CNRRemoteRadio.hpp
+	include/labust/control/crc16.h)
+	
 add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
 	include/labust/control/BenchRadio.hpp)
+	
+add_executable(coop_node src/coop_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -98,11 +105,22 @@ add_dependencies(hlmanager cart2_generate_messages_cpp)
 add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(topside_radio cart2_gencfg)
 add_dependencies(topside_radio cart2_generate_messages_cpp)
+add_dependencies(cnr_radio cart2_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(topside_radio
    ${Boost_SERIALIZATION_LIBRARY}
    ${Boost_REGEX_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(cnr_radio
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(coop_node
+   ${Boost_SYSTEM_LIBRARY}
    ${catkin_LIBRARIES}
 )
 

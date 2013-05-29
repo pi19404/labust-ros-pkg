@@ -60,6 +60,7 @@ struct SharedData
 	tf::TransformBroadcaster broadcast;
 	double magnetic_declination;
 	unsigned char buffer[msg_size];
+	int gps_pub;
 };
 
 void start_receive(SharedData& shared,
@@ -100,6 +101,7 @@ void handleIncoming(SharedData& shared,
 		boost::asio::serial_port& port,
 		const boost::system::error_code& error, const size_t& transferred)
 {
+	static int i=0;
 	std::cout<<"Got stuff."<<std::endl;
 	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
@@ -164,7 +166,8 @@ void handleIncoming(SharedData& shared,
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
-		if (data[hdop]) shared.gpsPub.publish(gps);
+		++i;
+		if (data[hdop] && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
@@ -220,6 +223,7 @@ int main(int argc, char* argv[])
 
 	SharedData shared;
 	ph.param("magnetic_declination",shared.magnetic_declination,0.0);
+	ph.param("gps_pub",shared.gps_pub,1);
 	shared.imuPub = nh.advertise<sensor_msgs::Imu>("imu",1);
 	shared.gpsPub = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
 	shared.imuinfo= nh.advertise<cart2::ImuInfo>("imu_info",1);

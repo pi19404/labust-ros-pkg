@@ -402,11 +402,15 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 
 		auv_msgs::NavStsPtr state(new auv_msgs::NavSts());
 		auv_msgs::NavStsPtr meas(new auv_msgs::NavSts());
+		state->origin.latitude = cdata.origin_lat;
+		state->origin.longitude = cdata.origin_lon;
 		state->body_velocity.x = cdata.state_hat[u];
 		state->orientation_rate.yaw = cdata.state_hat[r];
 		state->position.north = cdata.state_hat[x];
 		state->position.east = cdata.state_hat[y];
 		state->orientation.yaw = cdata.state_hat[psi];
+		meas->origin.latitude = cdata.origin_lat;
+		meas->origin.longitude = cdata.origin_lon;
 		meas->body_velocity.x = cdata.state_meas[u];
 		meas->orientation_rate.yaw = cdata.state_meas[r];
 		meas->position.north = cdata.state_meas[x];

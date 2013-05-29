@@ -16,4 +16,13 @@
 		<param name="TwoWay" value="true" />
 		<remap from="joy_out" to="joy" />
 	</node>
+	
+	<node pkg="cart2" type="cnr_radio" name="radio_modem" if="$(env USE_CNR_RADIO)">
+		<param name="PortName" value="/dev/ttyUSB1" />
+		<!-- <param name="PortName" value="/dev/pts/3" /> -->
+		<param name="BaudRate" value="9600" />
+		<!-- cart=0, bart=1 -->
+		<param name="ID" value="0" />
+		<remap from="joy_out" to="joy" />
+	</node>
 </launch>

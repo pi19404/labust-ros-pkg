@@ -341,7 +341,16 @@ void VelocityControl::step()
 		}
 	}
 	//Copy to tau
-	tau.wrench.force.x = controller[u].output;
+	//tau.wrench.force.x = controller[u].output;
+	if (axis_control[u] == controlAxis)
+	{
+		if (fabs(controller[u].desired > 1.0)) controller[u].desired = controller[u].desired/fabs(controller[u].desired);
+		tau.wrench.force.x = controller[u].desired;
+	}
+	else
+	{
+		tau.wrench.force.x = controller[u].output;
+	}
 	tau.wrench.force.y = controller[v].output;
 	tau.wrench.force.z = controller[w].output;
 	tau.wrench.torque.x = controller[p].output;
