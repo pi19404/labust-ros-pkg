@@ -53,6 +53,8 @@
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <labust/tools/TimingTools.hpp>
 #include <std_msgs/Bool.h>
+#include <labust/math/NumberManipulation.hpp>
+#include <cart2/ImuInfo.h>
 
 #include <ros/ros.h>
 #include <auv_msgs/BodyForceReq.h>
@@ -118,7 +120,6 @@ std::string Mode, Mode1;
 bool CommsOkFlag = true;
 io_service io;
 serial_port port(io);//, GPS2port(io,"/dev/ttyS1"), modem(io,"/dev/ttyS0");
-
 
 char AxisONID1[] = {0x04, 0x00, 0x10,0x01, 0x02, 0x17}; //turn Axis1 ON
 char AxisONID2[] = {0x04, 0x00, 0x20,0x01, 0x02, 0x27}; //turn Axis2 ON
@@ -731,11 +732,17 @@ int main(int argc, char* argv[])
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
+	ros::Publisher rpm_info = nh.advertise<cart2::ImuInfo>("rpm_info",1);
 
 	//Get port name from configuration and open.
 	std::string portName("/dev/ttyUSB0");
 	ph.param("PortName", portName,portName);
 	port.open(portName);
+	bool useRPMControl(false);
+	ph.param("UseRPMControl", useRPMControl, useRPMControl);
+	cart2::ImuInfo cart2_info;
+	cart2_info.data.resize(9);
+	float rpm_port(0), rpm_stbd(0), curr_port(0), curr_stbd(0);
 
 	ros::Rate rate(10);
 	////////////////////////////////////////
@@ -910,18 +917,65 @@ int main(int argc, char* argv[])
 			//if (AverCount < 20)
 			//{thrust.Port = 0;
 			//thrust.Stb = 0.15;}
-			SetReference(1,thrust.Port);
-			usleep(1000*5);
-			if (!CommsOkFlag)
-			{break;}
-			SetReference(2,thrust.Stb);
-			usleep(1000*5);
-			if (!CommsOkFlag)
-			{break;}
+			double an=0.045315881, wn=	0.0002496019;
+			double ann=0.0419426925, wnn=	0.0002506513;
 
+			double rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
+			double rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
+
+			if (useRPMControl)
+			{
+				rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
+				rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
+				double Kp = 0.01;
+				double max_current = 3.5;
+				curr_port=labust::math::coerce(Kp*(rpm_port - RPM[0]),-max_current,max_current);
+				curr_stbd=labust::math::coerce(Kp*(rpm_stbd - RPM[1]),-max_current,max_current);
+				SetReference(1,curr_port);
+				usleep(1000*5);
+				if (!CommsOkFlag)
+				{break;}
+				SetReference(1,curr_stbd);
+				usleep(1000*5);
+				if (!CommsOkFlag)
+				{break;}
+			}
+			else
+			{
+				curr_port = thrust.Port;
+				SetReference(1,thrust.Port);
+				usleep(1000*5);
+				if (!CommsOkFlag)
+				{break;}
+				curr_stbd = thrust.Stb;
+				SetReference(2,thrust.Stb);
+				usleep(1000*5);
+				if (!CommsOkFlag)
+				{break;}
+			}
 			std::cout<<thrust.Port<<" "<<thrust.Stb<<" "<<TauControl.Frw<<" "<<TauControl.Yaw<<" "<<std::endl;
 			//}
+			enum {port_rpm_desired=0,
+				stbd_rpm_desired,
+				port_rpm_meas,
+				stbd_rpm_meas,
+				port_curr_desired,
+				stbd_curr_desired,
+				current,
+				temp,
+				voltage
+			};
 
+			cart2_info.data[port_rpm_desired] = rpm_port;
+			cart2_info.data[stbd_rpm_desired] = rpm_stbd;
+			cart2_info.data[port_curr_desired] = curr_port;
+			cart2_info.data[stbd_curr_desired] = curr_stbd;
+			cart2_info.data[port_rpm_meas] = RPM[0];
+			cart2_info.data[stbd_rpm_meas] = RPM[1];
+			cart2_info.data[voltage] = Supply_Voltage;
+			cart2_info.data[current] = Vehicle_Current;
+			cart2_info.data[temp] = Temperature;
+			rpm_info.publish(cart2_info);
 
 			if (AverCount == 40)
 			{AverCount = 0;}

@@ -18,6 +18,7 @@
 	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled" >	
 		<param name="PortName" value="/dev/ttyS0" />
 		<remap from="tauIn" to="tauOut" />
+		<param name="UseRPMControl" value="true" />
         </node>
 	
 

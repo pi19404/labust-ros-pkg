@@ -58,8 +58,8 @@ void onData(SharedData& shared, const auv_msgs::NavSts::ConstPtr data)
 	std::pair<double, double> location = labust::tools::meter2deg(data->position.north, data->position.east,
 			data->origin.latitude);
 	std::vector<int32_t> buffer(2);
-	int32_t latdeg = int32_t((data->origin.latitude + location.first)*10000);
-	int32_t londeg = int32_t((data->origin.longitude + location.second)*10000);
+	int32_t latdeg = int32_t((data->origin.latitude + location.first)*1000000);
+	int32_t londeg = int32_t((data->origin.longitude + location.second)*1000000);
 	buffer[0] = htonl(latdeg);
 	//buffer[1] = htonl(int32_t((data->origin.latitude-latdeg)*10000));
 	buffer[1] = htonl(londeg);

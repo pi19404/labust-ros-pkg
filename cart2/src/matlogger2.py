@@ -8,6 +8,7 @@ import rospy;
 from auv_msgs.msg import BodyVelocityReq;
 from auv_msgs.msg import BodyForceReq;
 from auv_msgs.msg import NavSts;
+from cart2.msg import ImuInfo
 from threading import Lock
 from collections import OrderedDict
 import functools
@@ -53,6 +54,38 @@ class MessageLogger:
         retval = ["," + ",".join(dataToStrList(self.states[name], self.logOrder))  for name in self.names];
         self.stateMux.release();
         return retval;
+    
+class ListLogger:
+    def __init__(self, names, Type, logOrder):
+        self.names = rospy.get_param(names);
+        self.states = OrderedDict.fromkeys(self.names, []);
+        self.Type = Type;
+        self.stateMux = Lock();
+        self.logOrder=logOrder;
+           
+    def subscribe(self):
+        for key in self.states.keys():
+            rospy.Subscriber(key, self.Type,
+                             functools.partial(self.onState,key));
+    
+    def onState(self,name,data):
+        self.stateMux.acquire();
+        self.states[name] = data.data;
+        self.stateMux.release();
+        
+    def getHeader(self):
+        retval=[];
+        for name in self.names:
+            retval.append("%element: "+name+" \n");
+            retval.extend(["% " + elem + "\n" for elem in self.logOrder]);
+
+        return retval;
+                
+    def getLogLine(self):
+        self.stateMux.acquire();
+        retval = ["," + ",".join([str(elem) for elem in self.states[name]]) for name in self.names];
+        self.stateMux.release();
+        return retval;
       
 class MatLogger:
     def __init__(self):    
@@ -87,10 +120,28 @@ class MatLogger:
                             'wrench.torque.x',
                             'wrench.torque.y',
                             'wrench.torque.z');
-                
+        self.cart2LogOrder = ('port_rpm_desired',
+                'stbd_rpm_desired',
+                'port_rpm_meas',
+                'stbd_rpm_meas',
+                'port_curr_desired',
+                'stbd_curr_desired',
+                'current',
+                'temp',
+                'voltage');
+        self.imuLogOrder = ('time',
+            'lat', 'lon', 'hdop',
+            'accel_x', 'accel_y', 'accel_z',
+            'gyro_x', 'gyro_y', 'gyro_z',
+            'mag_x', 'mag_y', 'mag_z',
+            'roll','pitch','yaw',
+            'modul','ry','mmm','mm');        
+        
         self.loggers=[MessageLogger("logger/stateNames", NavSts, self.navStsLogOrder),
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
-                      MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder)];
+                      MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
+                      ListLogger("logger/cart2_info", ImuInfo, self.cart2LogOrder),
+                      ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              
         from datetime import datetime;
         name = rospy.get_param("~filename","log");
