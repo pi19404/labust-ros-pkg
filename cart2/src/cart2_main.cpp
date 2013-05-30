@@ -136,7 +136,7 @@ char ReadISR2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x03, 0x06, 0xF6};
 char GetPosition1[] = {0x08, 0x00, 0x10, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x28, 0x07}; //get current from Axis1
 char GetPosition2[] = {0x08, 0x00, 0x20, 0xB0, 0x04, 0x00, 0x11, 0x02, 0x28, 0x17}; //get current from Axis2
 
-int StateDO[] = {0,0,0,0};
+int StateDO[] = {1,0,0,0};
 
 float parsData()
 {
@@ -674,6 +674,11 @@ void onCalibration(CalibrationData& data, const std_msgs::Bool::ConstPtr& calibr
   }
 }
 
+void onResetPin(const std_msgs::Bool::ConstPtr& resetPin)
+{
+  StateDO[0] = resetPin->data;
+}
+
 void onLights(const std_msgs::Bool::ConstPtr& lights)
 {
 }  
@@ -722,6 +727,7 @@ int main(int argc, char* argv[])
 	//Setup subscribers
 	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn",1,boost::bind(&handleTau,&TauControl,_1));
 	ros::Subscriber cflag = nh.subscribe<std_msgs::Bool>("calibration_on",1,boost::bind(&onCalibration, boost::ref(calibration),_1));
+	ros::Subscriber rflag = nh.subscribe<std_msgs::Bool>("reset_pin",1,boost::bind(&onResetPin, _1));
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
