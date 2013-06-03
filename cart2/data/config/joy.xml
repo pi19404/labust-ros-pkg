@@ -18,11 +18,11 @@
 	</node>
 	
 	<node pkg="cart2" type="cnr_radio" name="radio_modem" if="$(env USE_CNR_RADIO)">
-		<param name="PortName" value="/dev/ttyUSB1" />
+		<param name="PortName" value="/dev/ttyUSB0" />
 		<!-- <param name="PortName" value="/dev/pts/3" /> -->
-		<param name="BaudRate" value="9600" />
+		<param name="BaudRate" value="19200" />
 		<!-- cart=0, bart=1 -->
-		<param name="ID" value="0" />
+		<param name="ID" value="1" />
 		<remap from="joy_out" to="joy" />
 	</node>
 </launch>

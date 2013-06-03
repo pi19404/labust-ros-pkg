@@ -55,6 +55,7 @@
 #include <std_msgs/Bool.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <cart2/ImuInfo.h>
+#include <labust/control/PIDController.hpp>
 
 #include <ros/ros.h>
 #include <auv_msgs/BodyForceReq.h>
@@ -99,10 +100,11 @@ struct TauT
 
 float TauFrwold = 0;
 float TauYawold = 0;
+double integralRPM[2] = {0,0};
 
 int intMax = 32767;
 double Supply_Voltage, Vehicle_Current, Temperature, Motor_Current[2], Supply_Voltage_Previous, Vehicle_Current_Previous, Motor_Current_Previous[2], Load_Position[2],
-Load_Position_Previous[2], RPM[2];
+Load_Position_Previous[2], RPM[2]={0};
 double currentAvg[2] = {0,0};
 
 //time_t cur_time;
@@ -732,7 +734,7 @@ int main(int argc, char* argv[])
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
-	ros::Publisher rpm_info = nh.advertise<cart2::ImuInfo>("rpm_info",1);
+	ros::Publisher rpm_info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
 
 	//Get port name from configuration and open.
 	std::string portName("/dev/ttyUSB0");
@@ -741,9 +743,15 @@ int main(int argc, char* argv[])
 	bool useRPMControl(false);
 	ph.param("UseRPMControl", useRPMControl, useRPMControl);
 	cart2::ImuInfo cart2_info;
-	cart2_info.data.resize(9);
+	cart2_info.data.resize(9);;
 	float rpm_port(0), rpm_stbd(0), curr_port(0), curr_stbd(0);
-
+	double Kp(0.0001),Ki(0.001);
+	ph.param("Kp_rpm", Kp, Kp);
+	ph.param("Ki_rpm", Ki, Ki);
+	labust::control::PIDController<labust::control::details::PID,labust::control::UseLimits> cport(Kp,Ki,0,0), cstbd(Kp,Ki,0,0);
+	labust::math::Limit<double> limits(-1,1);
+	cport.setLimits(limits);
+	cstbd.setLimits(limits);
 	ros::Rate rate(10);
 	////////////////////////////////////////
 
@@ -917,25 +925,37 @@ int main(int argc, char* argv[])
 			//if (AverCount < 20)
 			//{thrust.Port = 0;
 			//thrust.Stb = 0.15;}
-			double an=0.045315881, wn=	0.0002496019;
-			double ann=0.0419426925, wnn=	0.0002506513;
+			double an=0.045315881, wn= 0.0002496019;
+			double ann=0.0419426925, wnn= 0.0002506513;
 
 			double rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
 			double rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
 
 			if (useRPMControl)
 			{
+				thrust.Port = -thrust.Port;
+				if ((thrust.Port>=0) && (thrust.Port/an <= 1)) thrust.Port = an;
+				if ((thrust.Port<0) && (-thrust.Port/ann <= 1)) thrust.Port = -ann;
+				if ((thrust.Stb >=0) && (thrust.Stb/an <= 1)) thrust.Stb = an;
+				if ((thrust.Stb <0) && (-thrust.Stb/ann <= 1)) thrust.Stb = -ann;
 				rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
 				rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
-				double Kp = 0.01;
-				double max_current = 3.5;
-				curr_port=labust::math::coerce(Kp*(rpm_port - RPM[0]),-max_current,max_current);
-				curr_stbd=labust::math::coerce(Kp*(rpm_stbd - RPM[1]),-max_current,max_current);
+				double max_current = 1;
+				rpm_port = int(rpm_port);
+				rpm_stbd = int(rpm_stbd);
+				double error[]={rpm_port-RPM[0],rpm_stbd-RPM[1]};
+				integralRPM[0]+=-Ki*error[0]*0.1;
+				integralRPM[1]+=Ki*error[1]*0.1;
+
+				//curr_port=labust::math::coerce(-Kp*error[0] + integralRPM[0],-max_current,max_current);
+				curr_port=cport.step(rpm_port, RPM[0]);
+				//curr_stbd=labust::math::coerce(Kp*error[1] + integralRPM[1],-max_current,max_current);
+				curr_stbd=cstbd.step(rpm_stbd, RPM[1]);
 				SetReference(1,curr_port);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
-				SetReference(1,curr_stbd);
+				SetReference(2,curr_stbd);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
@@ -1025,7 +1045,7 @@ int main(int argc, char* argv[])
 			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
 			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
 			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
-			//stbdTest = portTest = false;
+			stbdTest = portTest = false;
 			if (VoltageTest || portTest || stbdTest)
 			{
 				std::cout<<"Voltage:"<<Supply_Voltage<<", "<<Supply_Voltage_Previous<<std::endl; 

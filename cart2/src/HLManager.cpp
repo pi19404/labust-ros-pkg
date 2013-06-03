@@ -55,7 +55,7 @@ HLManager::HLManager():
 			mode(HLManager::stop),
 			type(HLManager::bArt),
 			safetyRadius(2),
-			safetyDistance(50),
+			safetyDistance(20),
 			safetyTime(30),
 			circleRadius(10),
 			s(0),
@@ -342,9 +342,9 @@ void HLManager::step()
 			launchDetected = false;
 			//Switch to station keeping
 			cart2::SetHLMode srv;
-			srv.request.mode = srv.request.GoToPoint;
+			srv.request.mode = srv.request.StationKeeping;
 			srv.request.ref_point = point;
-			srv.request.surge = 1.0;
+			srv.request.surge = 0.5;
 			this->setHLMode(srv.request, srv.response);
 		}
 	};

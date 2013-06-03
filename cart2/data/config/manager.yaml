@@ -3,6 +3,6 @@ hl_manager/radius: 2.0
 #Circle radius for C-art
 hl_manager/circleRadius: 20.0
 #Distance and time to wait for B-art vehicle
-hl_manager/safetyDistance: 30.0
-hl_manager/safetyTime: 10.0
+hl_manager/safetyDistance: 20.0
+hl_manager/safetyTime: 30.0
 hl_manager/lookAhead: 5.0

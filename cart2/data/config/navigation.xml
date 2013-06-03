@@ -5,6 +5,7 @@
   <node pkg="cart2" type="imu_node" name="imu" machine="controlled" if="$(env USE_CART)" >
     <param name="PortName" value="/dev/ttyS1" />
     <param name="Baud" value="115200" />
+    <param name="gps_pub" value="10" />
     <remap from="fix" to="gps" />
   </node> 
 </launch>
