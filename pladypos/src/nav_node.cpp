@@ -58,6 +58,8 @@
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
 
+ros::Time t;
+
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	tauIn(KFNav::X) = tau->wrench.force.x;
@@ -103,6 +105,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	tf::StampedTransform transform;
 	try
 	{
+		t = data->header.stamp;
 		listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
 		tf::Quaternion meas(data->orientation.x,data->orientation.y,
 				data->orientation.z,data->orientation.w);
@@ -247,24 +250,22 @@ int main(int argc, char* argv[])
 		{
 			double yaw = unwrap(rpy(2));
 
-			if (xy(2) == 1)
-			{
-				bool outlier = false;
-				double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
-				double inx(0),iny(0);
-				nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
-				outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+			bool outlier = false;
+			double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+			double inx(0),iny(0);
+			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+			if (outlier)
+			{ 
+			   ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);	
+			   xy(2) = 0;
+			}
 
-				if (!outlier)
-				{
-					ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
-					nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
-				}
-				else
-				{
-					ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
-				}
-				xy(2) = 0;
+			if (xy(2) == 1 && !outlier)
+			{
+			   ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
+			   nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+			   xy(2) = 0;
 			}
 			else
 			{
@@ -274,6 +275,8 @@ int main(int argc, char* argv[])
 			rpy(3) = 0;
 		}
 
+		meas.orientation.roll = rpy(0);
+		meas.orientation.pitch = rpy(1);
 		meas.orientation.yaw = rpy(2);
 		meas.position.north = xy(0);
 		meas.position.east = xy(1);
@@ -330,6 +333,7 @@ int main(int argc, char* argv[])
 		flowspeed.twist.linear.y = ydot;
 		bodyFlowFrame.publish(flowspeed);
 		currentTwist.publish(current);
+		state.header.stamp = t;
 		stateHat.publish(state);
 
 		rate.sleep();
