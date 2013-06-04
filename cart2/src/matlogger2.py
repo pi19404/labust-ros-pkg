@@ -58,7 +58,7 @@ class MessageLogger:
 class ListLogger:
     def __init__(self, names, Type, logOrder):
         self.names = rospy.get_param(names);
-        self.states = OrderedDict.fromkeys(self.names, []);
+        self.states = OrderedDict.fromkeys(self.names, [0.0 for elem in logOrder]);
         self.Type = Type;
         self.stateMux = Lock();
         self.logOrder=logOrder;

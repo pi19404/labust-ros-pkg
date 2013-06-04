@@ -188,7 +188,7 @@ namespace labust
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher tauOut;
+			ros::Publisher tauOut, tauAchW;
 			/**
 			 * The subscribed topics.
 			 */

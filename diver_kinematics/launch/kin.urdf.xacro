@@ -1,0 +1,378 @@
+<?xml version="1.0"?>
+
+<robot xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+	xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+	xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+	xmlns:xacro="http://ros.org/wiki/xacro" name="kin">
+
+	<xacro:property name="pi" value="3.1415" />
+
+	<xacro:macro name="default_inertial" params="mass">
+		<inertial>
+			<mass value="${mass}" />
+			<inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0"
+				izz="1.0" />
+		</inertial>
+	</xacro:macro>
+
+	<xacro:macro name="up" params="prefix suffix reflect">
+		<link name="${prefix}_${suffix}_up">
+			<visual>
+				<origin xyz="0 0 ${reflect*0.25}" rpy="0 0 0" />
+
+				<geometry>
+					<cylinder radius="0.05" length="0.4" />
+				</geometry>
+
+			</visual>
+			<collision>
+				<geometry>
+					<cylinder radius="0.05" length="0.4" />
+				</geometry>
+			</collision>
+			<xacro:default_inertial mass="5" />
+		</link>
+
+	</xacro:macro>
+
+	<xacro:macro name="down" params="prefix suffix reflect">
+		<link name="${prefix}_${suffix}_down">
+			<visual>
+				<origin xyz="0 ${reflect*0.25} 0" rpy="${pi/2} 0 0" />
+
+				<geometry>
+					<cylinder radius="0.05" length="0.4" />
+				</geometry>
+
+			</visual>
+			<collision>
+
+				<geometry>
+					<cylinder radius="0.05" length="0.4" />
+				</geometry>
+			</collision>
+			<xacro:default_inertial mass="5" />
+		</link>
+
+	</xacro:macro>
+
+
+
+
+
+	<xacro:macro name="joint_up" params="prefix suffix reflect reflect1 reflect2">
+		<link name="${prefix}_${suffix}_joint1">
+			<visual>
+				<origin xyz="-0.05 0 0" rpy="0 0 0" />
+
+
+				<geometry>
+					<sphere radius="0.05" />
+				</geometry>
+
+			</visual>
+			<collision>
+				<geometry>
+					<sphere radius="0.05" />
+				</geometry>
+			</collision>
+			<xacro:default_inertial mass="1" />
+		</link>
+
+		<joint name="${prefix}_${suffix}_joint1" type="fixed">
+
+			<parent link="torso" />
+			<child link="${prefix}_${suffix}_joint1" />
+			<origin xyz="${0.75*reflect1} 0 ${0.3*reflect+0.2*reflect2}"
+				rpy="0 0 0" />
+		</joint>
+
+	</xacro:macro>
+
+
+	<xacro:macro name="joint_down" params="prefix suffix reflect">
+		<link name="${prefix}_${suffix}_joint2">
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+
+
+				<geometry>
+					<sphere radius="0.05" />
+				</geometry>
+
+			</visual>
+			<collision>
+				<geometry>
+					<sphere radius="0.05" />
+				</geometry>
+			</collision>
+			<xacro:default_inertial mass="1" />
+		</link>
+
+		<joint name="${prefix}_${suffix}_joint2" type="fixed">
+
+			<parent link="${prefix}_${suffix}_up" />
+			<child link="${prefix}_${suffix}_joint2" />
+			<origin xyz="0 0 ${0.5*reflect}" rpy="0 0 0" />
+		</joint>
+
+	</xacro:macro>
+
+
+
+
+
+	<xacro:macro name="up_Z" params="prefix suffix reflect reflect1 reflect2">
+		<joint name="${prefix}_${suffix}_Z" type="continuous">
+			<axis xyz="0 0 ${1-2*reflect}" />
+			<parent link="torso" />
+			<child link="${prefix}_${suffix}_1" />
+			<origin
+				xyz="${0.75*reflect1-0.05} 0 ${0.2-0.6*reflect+0.1*reflect1+0.2*reflect2}"
+				rpy="${reflect*pi} 0 ${pi/2}" />
+
+		</joint>
+
+	</xacro:macro>
+
+
+	<xacro:macro name="up_Y" params="prefix suffix reflect">
+		<joint name="${prefix}_${suffix}_Y" type="continuous">
+			<axis xyz="0 0 ${1*reflect}" />
+			<parent link="${prefix}_${suffix}_1" />
+			<child link="${prefix}_${suffix}_2" />
+			<origin xyz="0 0 0" rpy="-${pi/2} 0 ${pi/2}" />
+
+		</joint>
+
+	</xacro:macro>
+
+
+	<xacro:macro name="up_X" params="prefix suffix reflect">
+		<joint name="${prefix}_${suffix}_X" type="continuous">
+			<axis xyz="0 0 ${1*reflect}" />
+			<parent link="${prefix}_${suffix}_2" />
+			<child link="${prefix}_${suffix}_up" />
+			<origin xyz="0 0 0" rpy="-${pi/2} 0 -${pi/2} " />
+		</joint>
+
+	</xacro:macro>
+
+
+	<xacro:macro name="downZ" params="prefix suffix reflect suffix1">
+		<joint name="${prefix}_${suffix}" type="continuous">
+			<axis xyz="0 0 ${1*reflect}" />
+			<parent link="${prefix}_${suffix1}_up" />
+			<child link="${prefix}_${suffix1}_down" />
+			<origin xyz="0 0 ${0.5*reflect}" rpy="${pi/2} 0 ${pi/2}" />
+		</joint>
+
+	</xacro:macro>
+
+
+
+	<xacro:macro name="end" params="prefix suffix reflect">
+		<joint name="${prefix}_${suffix}_end" type="fixed">
+
+			<parent link="${prefix}_${suffix}_down" />
+			<child link="${prefix}_${suffix}_end" />
+			<origin xyz="0 ${reflect*0.45} 0" rpy="0 0 ${pi/2}" />
+		</joint>
+
+	</xacro:macro>
+
+
+
+
+	<link name="base_link" />
+	<link name="torso_1" />
+	<link name="torso_2" />
+
+	<link name="left_shoulder_1" />
+	<link name="left_shoulder_2" />
+	<link name="left_shoulder_end" />
+
+
+
+
+
+
+
+	<link name="right_shoulder_1" />
+	<link name="right_shoulder_2" />
+	<link name="right_shoulder_end" />
+
+
+	<link name="left_hip_1" />
+	<link name="left_hip_2" />
+	<link name="left_hip_end" />
+
+	<link name="right_hip_1" />
+	<link name="right_hip_2" />
+	<link name="right_hip_end" />
+
+
+	<link name="neck">
+		<visual>
+
+			<origin xyz="0.075 0 0" rpy="0 1.57 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.15" />
+			</geometry>
+
+		</visual>
+		<collision>
+			<geometry>
+				<cylinder radius="0.05" length="0.15" />
+			</geometry>
+		</collision>
+		<xacro:default_inertial mass="2" />
+	</link>
+
+
+
+
+
+
+
+
+	<link name="head">
+		<visual>
+			<origin xyz="0.075 0 0" rpy="0 0 0" />
+			<geometry>
+				<sphere radius="0.15" />
+			</geometry>
+
+		</visual>
+		<collision>
+			<geometry>
+				<sphere radius="0.15" />
+			</geometry>
+		</collision>
+		<xacro:default_inertial mass="5" />
+	</link>
+
+
+
+
+	<link name="torso">
+
+		<visual>
+
+			<origin xyz="0.375 0 0" rpy="0 0 0" />
+			<geometry>
+				<box size="0.75 0.1 0.5" />
+			</geometry>
+		</visual>
+
+		<collision>
+			<geometry>
+				<box size="0.75 0.1 0.5" />
+			</geometry>
+		</collision>
+		<xacro:default_inertial mass="20" />
+
+	</link>
+
+
+	<joint name="torsoZ" type="continuous">
+		<parent link="base_link" />
+		<child link="torso_1" />
+		<origin xyz="0 0 0" rpy="0 0 0" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+
+	<joint name="torsoY" type="continuous">
+		<parent link="torso_1" />
+		<child link="torso_2" />
+		<origin xyz="0 0 0" rpy="-${pi/2} 0 0" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+
+	<joint name="torsoX" type="continuous">
+
+		<parent link="torso_2" />
+		<child link="torso" />
+		<origin xyz="0 0 0" rpy="-${pi/2} 0 -${pi/2}" />
+		<axis xyz="0 0 1" />
+	</joint>
+
+
+
+	<joint name="torso_neck" type="fixed">
+		<parent link="torso" />
+		<child link="neck" />
+		<origin xyz="0.75 0 0" rpy="0 0 0" />
+
+	</joint>
+
+	<joint name="neck_head" type="fixed">
+		<parent link="neck" />
+		<child link="head" />
+		<origin xyz="0.15 0 0" rpy="0 0 0" />
+
+	</joint>
+
+	<xacro:up_Z prefix="left" suffix="shoulder" reflect="0"
+		reflect1="1" reflect2="0" />
+	<xacro:up_Z prefix="left" suffix="hip" reflect="0" reflect1="0"
+		reflect2="0" />
+	<xacro:up_Z prefix="right" suffix="shoulder" reflect="1"
+		reflect1="1" reflect2="0" />
+	<xacro:up_Z prefix="right" suffix="hip" reflect="1"
+		reflect1="0" reflect2="1" />
+
+	<xacro:up_Y prefix="left" suffix="shoulder" reflect="1" />
+	<xacro:up_Y prefix="left" suffix="hip" reflect="1" />
+	<xacro:up_Y prefix="right" suffix="shoulder" reflect="-1" />
+	<xacro:up_Y prefix="right" suffix="hip" reflect="-1" />
+
+	<xacro:up_X prefix="left" suffix="shoulder" reflect="1" />
+	<xacro:up_X prefix="left" suffix="hip" reflect="1" />
+	<xacro:up_X prefix="right" suffix="shoulder" reflect="1" />
+	<xacro:up_X prefix="right" suffix="hip" reflect="1" />
+
+	<xacro:down prefix="left" suffix="shoulder" reflect="1" />
+	<xacro:down prefix="left" suffix="hip" reflect="1" />
+	<xacro:down prefix="right" suffix="shoulder" reflect="-1" />
+	<xacro:down prefix="right" suffix="hip" reflect="-1" />
+
+	<xacro:up prefix="left" suffix="shoulder" reflect="1" />
+	<xacro:up prefix="left" suffix="hip" reflect="1" />
+	<xacro:up prefix="right" suffix="shoulder" reflect="-1" />
+	<xacro:up prefix="right" suffix="hip" reflect="-1" />
+
+	<xacro:downZ prefix="left" suffix="elbow" reflect="1"
+		suffix1="shoulder" />
+	<xacro:downZ prefix="left" suffix="knee" reflect="1"
+		suffix1="hip" />
+	<xacro:downZ prefix="right" suffix="elbow" reflect="-1"
+		suffix1="shoulder" />
+	<xacro:downZ prefix="right" suffix="knee" reflect="-1"
+		suffix1="hip" />
+
+	<xacro:end prefix="left" suffix="shoulder" reflect="1" />
+	<xacro:end prefix="left" suffix="hip" reflect="1" />
+	<xacro:end prefix="right" suffix="shoulder" reflect="-1" />
+	<xacro:end prefix="right" suffix="hip" reflect="-1" />
+
+
+	<xacro:joint_up prefix="left" suffix="shoulder" reflect="1"
+		reflect1="1" reflect2="0" />
+
+	<xacro:joint_up prefix="left" suffix="hip" reflect="0"
+		reflect1="0" reflect2="1" />
+	<xacro:joint_up prefix="right" suffix="shoulder"
+		reflect="-1" reflect1="1" reflect2="0" />
+	<xacro:joint_up prefix="right" suffix="hip" reflect="0"
+		reflect1="0" reflect2="-1" />
+
+	<xacro:joint_down prefix="left" suffix="shoulder"
+		reflect="1" />
+	<xacro:joint_down prefix="left" suffix="hip" reflect="1" />
+	<xacro:joint_down prefix="right" suffix="shoulder"
+		reflect="-1" />
+	<xacro:joint_down prefix="right" suffix="hip" reflect="-1" />
+</robot>

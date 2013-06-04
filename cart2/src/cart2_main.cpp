@@ -690,6 +690,7 @@ void onLights(const std_msgs::Bool::ConstPtr& lights)
 
 int main(int argc, char* argv[])
 {
+	std::vector<int> medianPort, medianStbd;
 	float AverCurrent[10], AC;
 	int CommsCount = 0, AverCount, Count = 0;
 	size_t tSum = 10000;
@@ -746,8 +747,12 @@ int main(int argc, char* argv[])
 	cart2_info.data.resize(9);;
 	float rpm_port(0), rpm_stbd(0), curr_port(0), curr_stbd(0);
 	double Kp(0.0001),Ki(0.001);
+	int median_size(5);
 	ph.param("Kp_rpm", Kp, Kp);
 	ph.param("Ki_rpm", Ki, Ki);
+	ph.param("MedianSize", median_size, median_size);
+	medianPort.assign(5,0);
+	medianStbd.assign(5,0);
 	labust::control::PIDController<labust::control::details::PID,labust::control::UseLimits> cport(Kp,Ki,0,0), cstbd(Kp,Ki,0,0);
 	labust::math::Limit<double> limits(-1,1);
 	cport.setLimits(limits);
@@ -930,9 +935,22 @@ int main(int argc, char* argv[])
 
 			double rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
 			double rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
+			int rpm_port_meas(0), rpm_stbd_meas(0);
 
 			if (useRPMControl)
 			{
+				medianPort.push_back(RPM[0]);
+				medianStbd.push_back(RPM[1]);
+				if (medianPort.size()>median_size) medianPort.erase(medianPort.begin());
+				if (medianStbd.size()>median_size) medianStbd.erase(medianStbd.begin());
+
+				std::vector<int> med(medianPort);
+				std::sort(med.begin(),med.end());
+				int rpm_port_meas = med[median_size/2];
+				med.assign(medianStbd.begin(), medianStbd.end());
+				std::sort(med.begin(),med.end());
+				int rpm_stbd_meas = med[median_size/2];
+
 				thrust.Port = -thrust.Port;
 				if ((thrust.Port>=0) && (thrust.Port/an <= 1)) thrust.Port = an;
 				if ((thrust.Port<0) && (-thrust.Port/ann <= 1)) thrust.Port = -ann;
@@ -943,7 +961,7 @@ int main(int argc, char* argv[])
 				double max_current = 1;
 				rpm_port = int(rpm_port);
 				rpm_stbd = int(rpm_stbd);
-				double error[]={rpm_port-RPM[0],rpm_stbd-RPM[1]};
+				double error[]={rpm_port-rpm_port_meas,rpm_stbd-rpm_stbd_meas};
 				integralRPM[0]+=-Ki*error[0]*0.1;
 				integralRPM[1]+=Ki*error[1]*0.1;
 
@@ -990,8 +1008,8 @@ int main(int argc, char* argv[])
 			cart2_info.data[stbd_rpm_desired] = rpm_stbd;
 			cart2_info.data[port_curr_desired] = curr_port;
 			cart2_info.data[stbd_curr_desired] = curr_stbd;
-			cart2_info.data[port_rpm_meas] = RPM[0];
-			cart2_info.data[stbd_rpm_meas] = RPM[1];
+			cart2_info.data[port_rpm_meas] = rpm_port_meas;
+			cart2_info.data[stbd_rpm_meas] = rpm_stbd_meas;
 			cart2_info.data[voltage] = Supply_Voltage;
 			cart2_info.data[current] = Vehicle_Current;
 			cart2_info.data[temp] = Temperature;
@@ -1080,6 +1098,7 @@ int main(int argc, char* argv[])
 	std::cout<<"Exited."<<std::endl;
 	return 0;
 }
+
 
 
 

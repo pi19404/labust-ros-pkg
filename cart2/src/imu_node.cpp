@@ -35,6 +35,7 @@
  *  Created: 23.01.2013.
  *********************************************************************/
 #include <labust/tools/rosutils.hpp>
+#include <labust/math/NumberManipulation.hpp>
 #include <cart2/ImuInfo.h>
 
 #include <std_msgs/String.h>
@@ -101,7 +102,6 @@ void handleIncoming(SharedData& shared,
 		boost::asio::serial_port& port,
 		const boost::system::error_code& error, const size_t& transferred)
 {
-	static int i=0;
 	std::cout<<"Got stuff."<<std::endl;
 	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
@@ -111,7 +111,7 @@ void handleIncoming(SharedData& shared,
 		if (calc != shared.buffer[SharedData::checksum])
 		{
 			ROS_ERROR("Wrong checksum for imu data.");
-			//return;
+			return;
 		}
 
 		float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
@@ -146,7 +146,7 @@ void handleIncoming(SharedData& shared,
 		Eigen::Quaternion<float> quat;
 		labust::tools::quaternionFromEulerZYX(data[roll],
 				data[pitch],
-				data[yaw] + shared.magnetic_declination, quat);
+				labust::math::wrapRad(data[yaw] + shared.magnetic_declination), quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
@@ -166,8 +166,9 @@ void handleIncoming(SharedData& shared,
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
+		static int i=0;
 		++i;
-		if (data[hdop] && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+		if ((data[hdop]<0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));

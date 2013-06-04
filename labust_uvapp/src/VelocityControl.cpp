@@ -68,6 +68,7 @@ void VelocityControl::onInit()
 	std::string name;
 	//Initialize publishers
 	tauOut = nh.advertise<auv_msgs::BodyForceReq>("tauOut", 1);
+	tauAchW = nh.advertise<auv_msgs::BodyForceReq>("tauAchVelCon", 1);
 
 	//Initialze subscribers
 	velocityRef = nh.subscribe<auv_msgs::BodyVelocityReq>("nuRef", 1,
@@ -180,19 +181,19 @@ void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t lev
 
 void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
-	controller[u].tracking = tau->wrench.force.x;
-	controller[v].tracking = tau->wrench.force.y;
-	controller[w].tracking = tau->wrench.force.z;
-	controller[p].tracking = tau->wrench.torque.x;
-	controller[q].tracking = tau->wrench.torque.y;
-	controller[r].tracking = tau->wrench.torque.z;
+	if (!controller[u].autoTracking) controller[u].tracking = tau->wrench.force.x;
+	if (!controller[v].autoTracking) controller[v].tracking = tau->wrench.force.y;
+	if (!controller[w].autoTracking) controller[w].tracking = tau->wrench.force.z;
+	if (!controller[p].autoTracking) controller[p].tracking = tau->wrench.torque.x;
+	if (!controller[q].autoTracking) controller[q].tracking = tau->wrench.torque.y;
+	if (!controller[r].autoTracking) controller[r].tracking = tau->wrench.torque.z;
 
-	controller[u].windup = tau->disable_axis.x;
-	controller[v].windup = tau->disable_axis.y;
-	controller[w].windup = tau->disable_axis.z;
-	controller[p].windup = tau->disable_axis.roll;
-	controller[q].windup = tau->disable_axis.pitch;
-	controller[r].windup = tau->disable_axis.yaw;
+	if (!controller[u].autoTracking) controller[u].windup = tau->disable_axis.x;
+	if (!controller[v].autoTracking) controller[v].windup = tau->disable_axis.y;
+	if (!controller[w].autoTracking) controller[w].windup = tau->disable_axis.z;
+	if (!controller[p].autoTracking) controller[p].windup = tau->disable_axis.roll;
+	if (!controller[q].autoTracking) controller[q].windup = tau->disable_axis.pitch;
+	if (!controller[r].autoTracking) controller[r].windup = tau->disable_axis.yaw;
 };
 
 void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -311,7 +312,7 @@ double VelocityControl::doIdentification(int i)
 
 void VelocityControl::step()
 {
-	auv_msgs::BodyForceReq tau;
+	auv_msgs::BodyForceReq tau, tauach;
 	this->safetyTest();
 
 	for (int i=u; i<=r;++i)
@@ -357,9 +358,17 @@ void VelocityControl::step()
 	tau.wrench.torque.y = controller[q].output;
 	tau.wrench.torque.z = controller[r].output;
 
+	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
+	if (controller[v].autoTracking) tauach.disable_axis.y = controller[v].windup;
+	if (controller[w].autoTracking) tauach.disable_axis.z = controller[w].windup;
+	if (controller[p].autoTracking) tauach.disable_axis.roll = controller[p].windup;
+	if (controller[q].autoTracking) tauach.disable_axis.pitch = controller[q].windup;
+	if (controller[r].autoTracking) tauach.disable_axis.yaw = controller[r].windup;
+
 	//Restart values
 	//newReference = newEstimate = false;
-	tau.header.stamp = lastEst;
+	tauach.header.stamp = tau.header.stamp = lastEst;
+	tauAchW.publish(tauach);
 	tauOut.publish(tau);
 }
 
@@ -382,11 +391,13 @@ void VelocityControl::initialize_controller()
 	Eigen::Vector6d closedLoopFreq(Eigen::Vector6d::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/closed_loop_freq", closedLoopFreq);
 	Eigen::Vector6d outputLimit(Eigen::Vector6d::Zero());
-	//labust::tools::getMatrixParam(nh,"velocity_controller/output_limits", outputLimit);
+	labust::tools::getMatrixParam(nh,"velocity_controller/output_limits", outputLimit);
 	Eigen::Vector6d disAxis(Eigen::Vector6d::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/disable_axis", disAxis);
 	Eigen::Vector6d manAxis(Eigen::Vector6d::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/manual_axis", manAxis);
+	Eigen::Vector6d autoTracking(Eigen::Vector6d::Zero());
+	labust::tools::getMatrixParam(nh,"velocity_controller/auto_tracking", autoTracking);
 
 	labust::tools::DynamicsModel model(nh);
 	Eigen::Vector6d alphas(model.added_mass);
@@ -395,20 +406,18 @@ void VelocityControl::initialize_controller()
 			model.inertia_matrix.diagonal();
 	alphas += alpha_mass;
 
-	bool autoTracking(0);
-	//nh.param("velocity_controller/auto_tracking",autoTracking,autoTracking);
 	nh.param("velocity_controller/period",Ts,Ts);
 
 	for (int32_t i = u; i <=r; ++i)
 	{
 		PIDController_init(&controller[i]);
 		controller[i].closedLoopFreq = closedLoopFreq(i);
-		//controller[i].outputLimit = outputLimit(i);
+		controller[i].outputLimit = outputLimit(i);
 		controller[i].modelParams[alpha] = alphas(i);
 		controller[i].modelParams[beta] = model.damping(i);
 		controller[i].modelParams[betaa] = model.qdamping(i);
 		PIFFController_tune(&controller[i]);
-		controller[i].autoTracking = autoTracking;
+		controller[i].autoTracking = autoTracking(i);
 
 		if (!manAxis(i)) axis_control[i] = controlAxis;
 		if (manAxis(i)) axis_control[i] = manualAxis;
