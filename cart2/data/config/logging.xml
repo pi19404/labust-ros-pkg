@@ -4,6 +4,6 @@
       <param name="dir" value="$(env LOGDIR)" />
     </node>
     
-    <node pkg="rosbag" type="record" name="rosbag"
-       args="-a -o $(env LOGDIR)/rosmsgs --bz2" />
+    <!-- <node pkg="rosbag" type="record" name="rosbag"
+       args="-a -o $(env LOGDIR)/rosmsgs" /> -->
 </launch>

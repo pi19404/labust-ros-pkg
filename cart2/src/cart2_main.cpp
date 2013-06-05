@@ -751,8 +751,8 @@ int main(int argc, char* argv[])
 	ph.param("Kp_rpm", Kp, Kp);
 	ph.param("Ki_rpm", Ki, Ki);
 	ph.param("MedianSize", median_size, median_size);
-	medianPort.assign(5,0);
-	medianStbd.assign(5,0);
+	medianPort.assign(median_size,0);
+	medianStbd.assign(median_size,0);
 	labust::control::PIDController<labust::control::details::PID,labust::control::UseLimits> cport(Kp,Ki,0,0), cstbd(Kp,Ki,0,0);
 	labust::math::Limit<double> limits(-1,1);
 	cport.setLimits(limits);
@@ -933,8 +933,9 @@ int main(int argc, char* argv[])
 			double an=0.045315881, wn= 0.0002496019;
 			double ann=0.0419426925, wnn= 0.0002506513;
 
-			double rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
-			double rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
+			//double rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
+			//double rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
+			double rpm_port(0), rpm_stbd(0);
 			int rpm_port_meas(0), rpm_stbd_meas(0);
 
 			if (useRPMControl)
@@ -946,10 +947,10 @@ int main(int argc, char* argv[])
 
 				std::vector<int> med(medianPort);
 				std::sort(med.begin(),med.end());
-				int rpm_port_meas = med[median_size/2];
+				rpm_port_meas = med[median_size/2];
 				med.assign(medianStbd.begin(), medianStbd.end());
 				std::sort(med.begin(),med.end());
-				int rpm_stbd_meas = med[median_size/2];
+				rpm_stbd_meas = med[median_size/2];
 
 				thrust.Port = -thrust.Port;
 				if ((thrust.Port>=0) && (thrust.Port/an <= 1)) thrust.Port = an;
@@ -959,16 +960,18 @@ int main(int argc, char* argv[])
 				rpm_port = (thrust.Port>=0)?log(thrust.Port/an)/wn:-log(-thrust.Port/ann)/wnn;
 				rpm_stbd = (thrust.Stb>=0)?log(thrust.Stb/an)/wn:-log(-thrust.Stb/ann)/wnn;
 				double max_current = 1;
-				rpm_port = int(rpm_port);
-				rpm_stbd = int(rpm_stbd);
+				//rpm_port = int(rpm_port);
+				//rpm_stbd = int(rpm_stbd);
+				rpm_port = int(rpm_port/75)*75;
+				rpm_stbd = int(rpm_stbd/75)*75;
 				double error[]={rpm_port-rpm_port_meas,rpm_stbd-rpm_stbd_meas};
 				integralRPM[0]+=-Ki*error[0]*0.1;
 				integralRPM[1]+=Ki*error[1]*0.1;
 
 				//curr_port=labust::math::coerce(-Kp*error[0] + integralRPM[0],-max_current,max_current);
-				curr_port=cport.step(rpm_port, RPM[0]);
+				curr_port=-cport.step(rpm_port, rpm_port_meas);
 				//curr_stbd=labust::math::coerce(Kp*error[1] + integralRPM[1],-max_current,max_current);
-				curr_stbd=cstbd.step(rpm_stbd, RPM[1]);
+				curr_stbd=cstbd.step(rpm_stbd, rpm_stbd_meas);
 				SetReference(1,curr_port);
 				usleep(1000*5);
 				if (!CommsOkFlag)
@@ -982,11 +985,13 @@ int main(int argc, char* argv[])
 			{
 				curr_port = thrust.Port;
 				SetReference(1,thrust.Port);
+				//SetReference(1,0.5);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
 				curr_stbd = thrust.Stb;
 				SetReference(2,thrust.Stb);
+				//SetReference(2,0.5);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
@@ -1063,7 +1068,7 @@ int main(int argc, char* argv[])
 			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
 			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
 			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
-			stbdTest = portTest = false;
+			//stbdTest = portTest = false;
 			if (VoltageTest || portTest || stbdTest)
 			{
 				std::cout<<"Voltage:"<<Supply_Voltage<<", "<<Supply_Voltage_Previous<<std::endl; 
