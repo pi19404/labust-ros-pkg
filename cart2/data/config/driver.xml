@@ -13,6 +13,7 @@
 
 		<remap from="imu_model" to="imu" />
 		<remap from="fix" to="gps" />
+		<remap from="tauAch" to="tauAchSim" />
 	</node>
 
 	<node pkg="cart2" type="cart2_node" name="cart2_node" if="$(env USE_CART)" machine="controlled" >	
@@ -21,6 +22,7 @@
 		<param name="UseRPMControl" value="false" />
 		<param name="Kp_rpm" value="0.00005" />
 		<param name="Ki_rpm" value="0.0001" />
+		<remap from="tauAch" to="tauAchDriver" />
         </node>
 	
 

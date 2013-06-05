@@ -345,7 +345,9 @@ void VelocityControl::step()
 	//tau.wrench.force.x = controller[u].output;
 	if (axis_control[u] == controlAxis)
 	{
-		if (fabs(controller[u].desired > 1.0)) controller[u].desired = controller[u].desired/fabs(controller[u].desired);
+		double ulimit(1.0);
+		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
+		if (fabs(controller[u].desired) > ulimit) controller[u].desired = controller[u].desired/fabs(controller[u].desired)*ulimit;
 		tau.wrench.force.x = controller[u].desired;
 	}
 	else
@@ -357,6 +359,12 @@ void VelocityControl::step()
 	tau.wrench.torque.x = controller[p].output;
 	tau.wrench.torque.y = controller[q].output;
 	tau.wrench.torque.z = controller[r].output;
+
+	tauach.wrench.force.y = controller[v].output;
+	tauach.wrench.force.z = controller[w].output;
+	tauach.wrench.torque.x = controller[p].output;
+	tauach.wrench.torque.y = controller[q].output;
+	tauach.wrench.torque.z = controller[r].output;
 
 	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
 	if (controller[v].autoTracking) tauach.disable_axis.y = controller[v].windup;

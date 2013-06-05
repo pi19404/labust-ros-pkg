@@ -639,9 +639,10 @@ struct CalibrationData
   	cycleWait(0),
   	trigger(false){}
 
-  enum {stop=0,start,xy,xz,mag};
+  enum {stop=0,start,xy,xz,mag,gyrosOnly};
   enum {cyclesMax = 120};
   enum {cyclesMin = 20};
+  enum {cyclesGyro = 300};
   enum {calibrationPin = 1};
   int state;
   int cycleWait;
@@ -653,27 +654,41 @@ void onCalibration(CalibrationData& data, const std_msgs::Bool::ConstPtr& calibr
   if (calibration->data)
   {
      std::cout<<"Change state."<<std::endl;
+     data.cycleWait = 0;
+     data.trigger = true;
      switch (data.state)
      {
        case CalibrationData::stop:
           data.state = data.start;
-          data.cycleWait = 0;
-          data.trigger = true;
           break;
        case CalibrationData::start:
+      	 data.state = CalibrationData::xy;
+      	 break;
+       case CalibrationData::xy:
       	 data.state = CalibrationData::xz;
-         data.cycleWait = 0;
-      	 data.trigger = true;
       	 break;
        case CalibrationData::xz:
       	 data.state = CalibrationData::mag;
-         data.cycleWait = 0;
-      	 data.trigger = true;
       	 break;
        case CalibrationData::mag:
-         data.cycleWait = 0;
-	 data.trigger = true;
+         break;
      }
+  }
+}
+
+void onGyroCalibration(CalibrationData& data, const std_msgs::Bool::ConstPtr& calibration)
+{
+  if (calibration->data)
+  {
+  	data.state = CalibrationData::gyrosOnly;
+    data.cycleWait = 0;
+    data.trigger = true;
+  }
+  else
+  {
+  	data.state = CalibrationData::stop;
+    data.cycleWait = 0;
+    data.trigger = false;
   }
 }
 
@@ -731,6 +746,7 @@ int main(int argc, char* argv[])
 	//Setup subscribers
 	ros::Subscriber tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn",1,boost::bind(&handleTau,&TauControl,_1));
 	ros::Subscriber cflag = nh.subscribe<std_msgs::Bool>("calibration_on",1,boost::bind(&onCalibration, boost::ref(calibration),_1));
+	ros::Subscriber cgflag = nh.subscribe<std_msgs::Bool>("calibration_gyro_on",1,boost::bind(&onGyroCalibration, boost::ref(calibration),_1));
 	ros::Subscriber rflag = nh.subscribe<std_msgs::Bool>("reset_pin",1,boost::bind(&onResetPin, _1));
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
@@ -904,7 +920,7 @@ int main(int argc, char* argv[])
 
 			StateDO[CalibrationData::calibrationPin] = calibration.trigger;
 			printf("DIO state: %d\n", StateDO[CalibrationData::calibrationPin]);
-			if (calibration.state != CalibrationData::stop)
+			if (calibration.state != CalibrationData::stop && calibration.state != CalibrationData::gyrosOnly)
 			{
 				++calibration.cycleWait;
 
@@ -919,6 +935,16 @@ int main(int argc, char* argv[])
 				{
 					calibration.trigger = false;
 					if (calibration.state == CalibrationData::mag) calibration.state = CalibrationData::stop;
+				}
+			}
+
+			if (calibration.state == CalibrationData::gyrosOnly)
+			{
+				++calibration.cycleWait;
+				if (calibration.cycleWait > calibration.cyclesGyro)
+				{
+					calibration.trigger = false;
+					calibration.state = CalibrationData::stop;
 				}
 			}
 
