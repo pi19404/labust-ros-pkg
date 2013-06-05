@@ -283,6 +283,9 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 void TopsideRadio::onIncomingData(const boost::system::error_code& error, const size_t& transferred)
 {
 	sbuffer.commit(transferred);
+
+	if (!error)
+	{
 	boost::archive::binary_iarchive dataSer(sbuffer, boost::archive::no_header);
 	ROS_INFO("Received:%d", transferred);
 
@@ -292,7 +295,14 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 	{
 		boost::mutex::scoped_lock l(dataMux);
 		uint8_t chksum(0);
-		dataSer >> data >> chksum;
+		try
+		{
+			dataSer >> data >> chksum;
+		}
+		catch (std::exception& e)
+		{
+			ROS_ERROR("Exception while deserializing: %s",e.what());
+		}
 
 		uint8_t chksum_calc = calculateChecksum(data);
 		if (chksum_calc != chksum)
@@ -381,7 +391,14 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(cdataMux);
 			uint8_t chksum_calc = calculateChecksum(cdata);
-			dataSer << cdata << chksum_calc;
+			try
+			{
+				dataSer << cdata << chksum_calc;
+			}
+			catch (std::exception& e)
+			{
+				ROS_ERROR("Exception while serializing: %s",e.what());
+			}
 			l.unlock();
 			//write data
 			int n = boost::asio::write(port, output.data());
@@ -392,7 +409,15 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 	{
 		boost::mutex::scoped_lock l(cdataMux);
 		uint8_t chksum(0);
-		dataSer >> cdata >> chksum;
+		try
+		{
+			dataSer >> cdata >> chksum;
+		}
+		catch (std::exception& e)
+		{
+			ROS_ERROR("Exception while serializing: %s",e.what());
+		}
+
 		uint8_t chksum_calc = calculateChecksum(cdata);
 		if (chksum_calc != chksum)
 		{
@@ -441,6 +466,11 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 
 		stateHatPub.publish(state);
 		stateMeasPub.publish(meas);
+	}
+	}
+	else
+	{
+		ROS_ERROR("Communication failed.");
 	}
 
 	start_receive();
@@ -522,7 +552,14 @@ void TopsideRadio::start()
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(dataMux);
 			uint8_t chksum_calc = calculateChecksum(data);
-			dataSer << data << chksum_calc;
+			try
+			{
+				dataSer << data << chksum_calc;
+			}
+			catch (std::exception& e)
+			{
+				ROS_ERROR("Exception while serializing: %s",e.what());
+			}
 			data.mode_update = 0;
 			l.unlock();
 

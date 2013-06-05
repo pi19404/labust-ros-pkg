@@ -39,6 +39,7 @@
 #include <labust/preprocessor/mem_serialized_struct.hpp>
 #include <labust/tools/StringUtilities.hpp>
 #include <cart2/RadioModemConfig.h>
+#include <labust/control/crc16.h>
 
 #include <dynamic_reconfigure/server.h>
 
@@ -179,6 +180,17 @@ namespace labust
 				chkSer << chdata;
 				return labust::tools::getChecksum(
 						reinterpret_cast<const uint8_t*>(chk.str().data()), chk.str().size());
+			}
+			/**
+			 * Helper function for checksum calculation.
+			 */
+			template <class MsgType>
+			int calculateCRC16(MsgType& chdata)
+			{
+				std::ostringstream chk;
+				boost::archive::binary_oarchive chkSer(chk, boost::archive::no_header);
+				chkSer << chdata;
+				return compute_crc16(	reinterpret_cast<const char*>(chk.str().data()), chk.str().size());
 			}
 			/**
 			 * Modem timeout detection.

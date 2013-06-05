@@ -53,9 +53,9 @@
 
 struct SharedData
 {
-	enum {msg_size = 85,
+	enum {msg_size = 77,
 		data_offset=4,
-		checksum = 84};
+		checksum = 76};
 	ros::Publisher imuPub, gpsPub, imuinfo;
 	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
@@ -115,8 +115,7 @@ void handleIncoming(SharedData& shared,
 		}
 
 		float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
-		enum {time = 0,
-			lat, lon, hdop,
+		enum {hdop=2,
 			accel_x, accel_y, accel_z,
 			gyro_x, gyro_y, gyro_z,
 			mag_x, mag_y, mag_z,
@@ -157,9 +156,10 @@ void handleIncoming(SharedData& shared,
 		//Send GPS stuff
 		sensor_msgs::NavSatFix::Ptr gps(new sensor_msgs::NavSatFix());
 
-		int latDeg(data[lat]/100), lonDeg(data[lon]/100);
-		gps->latitude = latDeg + (data[lat]/100-latDeg)/0.6;
-		gps->longitude = lonDeg + (data[lon]/100-lonDeg)/0.6;
+		int16_t* latlon(reinterpret_cast<int16_t*>(&shared.buffer[SharedData::data_offset]));
+		enum{lat=0, fraclat,lon,fraclon};
+		gps->latitude = latlon[lat]/100 + (latlon[lat]%100 + latlon[fraclat]/10000.)/60. ;
+		gps->longitude = latlon[lon]/100 + (latlon[lon]%100 + latlon[fraclon]/10000.)/60.;
 		gps->position_covariance[0] = data[hdop];
 		gps->position_covariance[4] = data[hdop];
 		gps->position_covariance[8] = 9999;
