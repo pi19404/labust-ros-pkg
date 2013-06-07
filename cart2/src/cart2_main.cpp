@@ -81,15 +81,15 @@ struct TauT
 		{ScaleThrust = 1 / (fabs(Tau.Frw) + fabs(Tau.Yaw));}
 		else
 		{ScaleThrust = 1;}
-		Port = -Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
-		Stb = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
+		Port = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
+		Stb = Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
 	}
 
 	TauC getTauC()
 	{
 		TauC tau;
-		tau.Frw = (-Port+Stb)/2;
-		tau.Yaw = (-Port-Stb)/2;
+		tau.Frw = (Port+Stb)/2;
+		tau.Yaw = (-Port+Stb)/2;
 
 		return tau;
 	}
@@ -640,9 +640,9 @@ struct CalibrationData
   	trigger(false){}
 
   enum {stop=0,start,xy,xz,mag,gyrosOnly};
-  enum {cyclesMax = 120};
+  enum {cyclesMax = 500};
   enum {cyclesMin = 20};
-  enum {cyclesGyro = 300};
+  enum {cyclesGyro = 120};
   enum {calibrationPin = 1};
   int state;
   int cycleWait;
@@ -662,9 +662,6 @@ void onCalibration(CalibrationData& data, const std_msgs::Bool::ConstPtr& calibr
           data.state = data.start;
           break;
        case CalibrationData::start:
-      	 data.state = CalibrationData::xy;
-      	 break;
-       case CalibrationData::xy:
       	 data.state = CalibrationData::xz;
       	 break;
        case CalibrationData::xz:
@@ -920,7 +917,7 @@ int main(int argc, char* argv[])
 
 			StateDO[CalibrationData::calibrationPin] = calibration.trigger;
 			printf("DIO state: %d\n", StateDO[CalibrationData::calibrationPin]);
-			if (calibration.state != CalibrationData::stop && calibration.state != CalibrationData::gyrosOnly)
+			if ((calibration.state != CalibrationData::stop) && (calibration.state != CalibrationData::gyrosOnly))
 			{
 				++calibration.cycleWait;
 
@@ -964,10 +961,8 @@ int main(int argc, char* argv[])
 			double rpm_port(0), rpm_stbd(0);
 			int rpm_port_meas(0), rpm_stbd_meas(0);
 
-			if (useRPMControl)
-			{
-				medianPort.push_back(RPM[0]);
-				medianStbd.push_back(RPM[1]);
+				medianPort.push_back(RPM[1]);
+				medianStbd.push_back(RPM[0]);
 				if (medianPort.size()>median_size) medianPort.erase(medianPort.begin());
 				if (medianStbd.size()>median_size) medianStbd.erase(medianStbd.begin());
 
@@ -977,8 +972,9 @@ int main(int argc, char* argv[])
 				med.assign(medianStbd.begin(), medianStbd.end());
 				std::sort(med.begin(),med.end());
 				rpm_stbd_meas = med[median_size/2];
-
-				thrust.Port = -thrust.Port;
+			if (useRPMControl)
+			{
+				//thrust.Port = -thrust.Port;
 				if ((thrust.Port>=0) && (thrust.Port/an <= 1)) thrust.Port = an;
 				if ((thrust.Port<0) && (-thrust.Port/ann <= 1)) thrust.Port = -ann;
 				if ((thrust.Stb >=0) && (thrust.Stb/an <= 1)) thrust.Stb = an;
@@ -995,14 +991,14 @@ int main(int argc, char* argv[])
 				integralRPM[1]+=Ki*error[1]*0.1;
 
 				//curr_port=labust::math::coerce(-Kp*error[0] + integralRPM[0],-max_current,max_current);
-				curr_port=-cport.step(rpm_port, rpm_port_meas);
+				curr_port=cport.step(-rpm_port, rpm_port_meas);
 				//curr_stbd=labust::math::coerce(Kp*error[1] + integralRPM[1],-max_current,max_current);
-				curr_stbd=cstbd.step(rpm_stbd, rpm_stbd_meas);
-				SetReference(1,curr_port);
+				curr_stbd=cstbd.step(rpm_stbd, -rpm_stbd_meas);
+				SetReference(2,curr_port);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
-				SetReference(2,curr_stbd);
+				SetReference(1,curr_stbd);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
@@ -1010,13 +1006,13 @@ int main(int argc, char* argv[])
 			else
 			{
 				curr_port = thrust.Port;
-				SetReference(1,thrust.Port);
+				SetReference(2,-thrust.Port);
 				//SetReference(1,0.5);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
 				curr_stbd = thrust.Stb;
-				SetReference(2,thrust.Stb);
+				SetReference(1,thrust.Stb);
 				//SetReference(2,0.5);
 				usleep(1000*5);
 				if (!CommsOkFlag)
@@ -1092,8 +1088,8 @@ int main(int argc, char* argv[])
 			CommsOkFlag = true;
 
 			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
-			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
-			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
+			bool portTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[0])<10);
+			bool stbdTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[1])<10);
 			//stbdTest = portTest = false;
 			if (VoltageTest || portTest || stbdTest)
 			{

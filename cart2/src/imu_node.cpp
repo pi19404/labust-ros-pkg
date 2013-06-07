@@ -105,12 +105,14 @@ void handleIncoming(SharedData& shared,
 	std::cout<<"Got stuff."<<std::endl;
 	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
+		std::cout<<"Processing."<<std::endl;
 		unsigned char calc = 0;
 		for (size_t i=SharedData::data_offset; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
 
 		if (calc != shared.buffer[SharedData::checksum])
 		{
 			ROS_ERROR("Wrong checksum for imu data.");
+			start_receive(shared,port);
 			return;
 		}
 
@@ -120,16 +122,15 @@ void handleIncoming(SharedData& shared,
 			gyro_x, gyro_y, gyro_z,
 			mag_x, mag_y, mag_z,
 			roll,pitch,yaw,
-			modul,ry,mmm,mm};
+			ry,mmm,mm};
 
 		cart2::ImuInfo info;
-		info.data.resize(mm+1);
-		for (size_t i=0; i<mm+1; ++i) info.data[i] = data[i];
-		shared.imuinfo.publish(info);
+		info.data.resize(mm+3);
+		for (size_t i=0; i<mm+1; ++i) info.data[i+2] = data[i];
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
-		std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
+		//std::cout<<"Test:"<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
 		//Send Imu stuff
 		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
@@ -145,7 +146,7 @@ void handleIncoming(SharedData& shared,
 		Eigen::Quaternion<float> quat;
 		labust::tools::quaternionFromEulerZYX(data[roll],
 				data[pitch],
-				labust::math::wrapRad(data[yaw] + shared.magnetic_declination), quat);
+				labust::math::wrapRad(data[yaw] + shared.magnetic_declination + M_PI), quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
@@ -158,6 +159,11 @@ void handleIncoming(SharedData& shared,
 
 		int16_t* latlon(reinterpret_cast<int16_t*>(&shared.buffer[SharedData::data_offset]));
 		enum{lat=0, fraclat,lon,fraclon};
+		info.data[0] = latlon[lat];
+		info.data[1] = latlon[fraclat];
+		info.data[2] = latlon[lon];
+		info.data[3] = latlon[fraclon];
+		shared.imuinfo.publish(info);
 		gps->latitude = latlon[lat]/100 + (latlon[lat]%100 + latlon[fraclat]/10000.)/60. ;
 		gps->longitude = latlon[lon]/100 + (latlon[lon]%100 + latlon[fraclon]/10000.)/60.;
 		gps->position_covariance[0] = data[hdop];
@@ -168,7 +174,7 @@ void handleIncoming(SharedData& shared,
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
 		static int i=0;
 		++i;
-		if ((data[hdop]<0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+		if ((data[hdop]>0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
