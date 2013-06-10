@@ -119,17 +119,15 @@ void handleIncoming(SharedData& shared,
 			accel_x, accel_y, accel_z,
 			gyro_x, gyro_y, gyro_z,
 			mag_x, mag_y, mag_z,
-			roll,pitch,yaw,
-			modul,ry,mmm,mm};
+			roll,pitch,yaw,ry,mmm,mm};
 
 		cart2::ImuInfo info;
-		info.data.resize(mm+1);
-		for (size_t i=0; i<mm+1; ++i) info.data[i] = data[i];
-		shared.imuinfo.publish(info);
+		info.data.resize(mm+3);
+		for (size_t i=0; i<mm+1; ++i) info.data[i+2] = data[i];
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
-		std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
+		//std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
 		//Send Imu stuff
 		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
@@ -158,6 +156,11 @@ void handleIncoming(SharedData& shared,
 
 		int16_t* latlon(reinterpret_cast<int16_t*>(&shared.buffer[SharedData::data_offset]));
 		enum{lat=0, fraclat,lon,fraclon};
+		info.data[0] = latlon[lat];
+		info.data[1] = latlon[fraclat];
+		info.data[2] = latlon[lon];
+		info.data[3] = latlon[fraclon];
+		shared.imuinfo.publish(info);
 		gps->latitude = latlon[lat]/100 + (latlon[lat]%100 + latlon[fraclat]/10000.)/60. ;
 		gps->longitude = latlon[lon]/100 + (latlon[lon]%100 + latlon[fraclon]/10000.)/60.;
 		gps->position_covariance[0] = data[hdop];

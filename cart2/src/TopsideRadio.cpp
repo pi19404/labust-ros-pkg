@@ -308,6 +308,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+			start_receive();
 			return;
 		}
 
@@ -422,6 +423,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
+			start_receive();
 			return;
 		}
 

@@ -640,9 +640,9 @@ struct CalibrationData
   	trigger(false){}
 
   enum {stop=0,start,xy,xz,mag,gyrosOnly};
-  enum {cyclesMax = 120};
+  enum {cyclesMax = 500};
   enum {cyclesMin = 20};
-  enum {cyclesGyro = 300};
+  enum {cyclesGyro = 120};
   enum {calibrationPin = 1};
   int state;
   int cycleWait;
@@ -972,10 +972,10 @@ int main(int argc, char* argv[])
 
 				std::vector<int> med(medianPort);
 				std::sort(med.begin(),med.end());
-				int rpm_port_meas = med[median_size/2];
+				rpm_port_meas = med[median_size/2];
 				med.assign(medianStbd.begin(), medianStbd.end());
 				std::sort(med.begin(),med.end());
-				int rpm_stbd_meas = med[median_size/2];
+				rpm_stbd_meas = med[median_size/2];
 
 				thrust.Port = -thrust.Port;
 				if ((thrust.Port>=0) && (thrust.Port/an <= 1)) thrust.Port = an;
@@ -1007,6 +1007,8 @@ int main(int argc, char* argv[])
 			else
 			{
 				curr_port = thrust.Port;
+				rpm_port_meas = RPM[0];
+				rpm_stbd_meas = RPM[1];
 				SetReference(1,thrust.Port);
 				usleep(1000*5);
 				if (!CommsOkFlag)

@@ -129,13 +129,13 @@ class MatLogger:
                 'current',
                 'temp',
                 'voltage');
-        self.imuLogOrder = ('time',
-            'lat', 'lon', 'hdop',
+        self.imuLogOrder = ('latDeg'
+            'latFrac', 'lonDeg', 'lonFrac','hdop',
             'accel_x', 'accel_y', 'accel_z',
             'gyro_x', 'gyro_y', 'gyro_z',
             'mag_x', 'mag_y', 'mag_z',
             'roll','pitch','yaw',
-            'modul','ry','mmm','mm');        
+            'ry','mmm','mm');        
         
         self.loggers=[MessageLogger("logger/stateNames", NavSts, self.navStsLogOrder),
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
