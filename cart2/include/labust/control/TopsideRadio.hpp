@@ -39,6 +39,7 @@
 #include <labust/preprocessor/mem_serialized_struct.hpp>
 #include <labust/tools/StringUtilities.hpp>
 #include <cart2/RadioModemConfig.h>
+#include <cart2/ImuInfo.h>
 #include <labust/control/crc16.h>
 
 #include <dynamic_reconfigure/server.h>
@@ -57,15 +58,19 @@
 #include <ros/ros.h>
 
 #include <sstream>
-
+/**
+ * The topside transmitted message.
+ *
+ * force, torque - (-100,100)
+ */
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),TopsideModemData,
-		(float, surgeForce)
-		(float, torqueForce)
-		(double, lat)
-		(double, lon)
-		(float, radius)
-		(float, surge)
-		(float, yaw)
+		(int8_t, surgeForce)
+		(int8_t, torqueForce)
+		(int32_t, lat)
+		(int32_t, lon)
+		(uint8_t, radius)
+		(uint8_t, surge)
+		(int8_t, yaw)
 		(uint8_t, mode)
 		(uint8_t, launch)
 		(uint8_t, mode_update))
@@ -74,17 +79,24 @@ namespace labust
 {
 	namespace radio
 	{
-		typedef boost::array<float,5> stateVec;
+		typedef boost::array<int16_t,4> stateVec;
+		typedef boost::array<int16_t,3> measVec;
 	}
 }
 BOOST_CLASS_IMPLEMENTATION(labust::radio::stateVec , boost::serialization::primitive_type)
+BOOST_CLASS_IMPLEMENTATION(labust::radio::measVec , boost::serialization::primitive_type)
 
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(radio),CARTModemData,
-		(double, origin_lat)
-		(double, origin_lon)
+		(int32_t, origin_lat)
+		(int32_t, origin_lon)
 		(uint8_t, mode)
-		(stateVec, state_meas)
-		(stateVec, state_hat))
+		(measVec, state_meas)
+		(stateVec, state_hat)
+		(measVec, sf_state)
+		(int16_t, portRPM)
+		(int16_t, stbdRPM)
+		(uint8_t, voltage)
+		(uint8_t, temp))
 
 namespace labust
 {
@@ -99,9 +111,9 @@ namespace labust
 		 */
 		class TopsideRadio
 		{
-			enum {sync_length=6, chksum_size = 1, topside_package_length=39+chksum_size, cart_package_length=57+chksum_size};
+			enum {sync_length=2, chksum_size = 2, topside_package_length=16+chksum_size, cart_package_length=35+chksum_size};
 			//Estimates
-			enum {u=0,r,x,y,psi};
+			enum {x=0,y,psi,u};
 		public:
 			/**
 			 * Main constructor
@@ -141,6 +153,8 @@ namespace labust
 			 * Handle the measurements.
 			 */
 			void onStateMeas(const auv_msgs::NavSts::ConstPtr& meas);
+			void onSFMeas(const auv_msgs::NavSts::ConstPtr& meas);
+			void onCartInfo(const cart2::ImuInfo::ConstPtr& info);
 			/**
 			 * Handle the measurements.
 			 */
@@ -212,11 +226,11 @@ namespace labust
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub;
+			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub, info;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode;
+			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode, sfFrame, cartInfo;
 			/**
 			 * The transform listener.
 			 */

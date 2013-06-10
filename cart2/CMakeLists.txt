@@ -86,8 +86,9 @@ add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
 add_executable(vr_node src/vr_node.cpp)
 
-add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp
-	include/labust/control/TopsideRadio.hpp)
+add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
+	include/labust/control/TopsideRadio.hpp
+	include/labust/control/crc16.h)
 	
 add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
 	src/crc16.cpp

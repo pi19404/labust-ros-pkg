@@ -39,6 +39,7 @@
 #include <labust/tools/rosutils.hpp>
 #include <cart2/SetHLMode.h>
 #include <cart2/HLMessage.h>
+#include <cmath>
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -98,6 +99,7 @@ void TopsideRadio::onInit()
 
 		stateHatPub = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 		stateMeasPub = nh.advertise<auv_msgs::NavSts>("meas",1);
+		info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
 
 		nh.param("LocalOriginLat",originLat,originLat);
 		nh.param("LocalOriginLon",originLon,originLon);
@@ -110,12 +112,16 @@ void TopsideRadio::onInit()
 		client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
 		stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&TopsideRadio::onStateHat,this);
 		stateMeas = nh.subscribe<auv_msgs::NavSts>("meas",1,&TopsideRadio::onStateMeas,this);
+		sfFrame = nh.subscribe<auv_msgs::NavSts>("sf_diagnostics",1,&TopsideRadio::onSFMeas,this);
 		curMode = nh.subscribe<std_msgs::Int32>("current_mode",1,&TopsideRadio::onCurrentMode,this);
+		cartInfo = nh.subscribe<cart2::ImuInfo>("cart2_info",1,&TopsideRadio::onCartInfo,this);
 	}
 
 	populateDataFromConfig();
 	cdata.origin_lat = 0;
 	cdata.origin_lon = 0;
+	cdata.mode = 0;
+	cdata.sf_state[x]= cdata.sf_state[y]= cdata.sf_state[psi]= 0;
 
 	this->start_receive();
 	iorunner = boost::thread(boost::bind(&boost::asio::io_service::run,&io));
@@ -124,8 +130,8 @@ void TopsideRadio::onInit()
 void TopsideRadio::onJoy(const sensor_msgs::Joy::ConstPtr& joy)
 {
 	boost::mutex::scoped_lock l(dataMux);
-	data.surgeForce = joy->axes[1];
-	data.torqueForce = joy->axes[2];
+	data.surgeForce = joy->axes[1]*100;
+	data.torqueForce = joy->axes[2]*100;
 }
 
 void TopsideRadio::onExtPoint(const geometry_msgs::PointStamped::ConstPtr& extPoint)
@@ -135,8 +141,8 @@ void TopsideRadio::onExtPoint(const geometry_msgs::PointStamped::ConstPtr& extPo
 		boost::mutex::scoped_lock l(dataMux);
 		if (extPoint->header.frame_id == "worldLatLon")
 		{
-			data.lat = extPoint->point.x;
-			data.lon = extPoint->point.y;
+			data.lat = extPoint->point.x*10000000;
+			data.lon = extPoint->point.y*10000000;
 		}
 		else if (extPoint->header.frame_id == "local")
 		{
@@ -158,18 +164,18 @@ void TopsideRadio::onCurrentMode(const std_msgs::Int32::ConstPtr& mode)
 void TopsideRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	boost::mutex::scoped_lock l(cdataMux);
-	cdata.state_hat[u] = estimate->body_velocity.x;
-	cdata.state_hat[r] = estimate->orientation_rate.yaw;
-	cdata.state_hat[x] = estimate->position.north;
-	cdata.state_hat[y] = estimate->position.east;
-	cdata.state_hat[psi] = estimate->orientation.yaw;
+	cdata.state_hat[u] = estimate->body_velocity.x*100;
+	//cdata.state_hat[r] = estimate->orientation_rate.yaw*100;
+	cdata.state_hat[x] = estimate->position.north*100;
+	cdata.state_hat[y] = estimate->position.east*100;
+	cdata.state_hat[psi] = estimate->orientation.yaw*100;
 
 	try
 	{
 		tf::StampedTransform transformLocal;
 		listener.lookupTransform("worldLatLon", "local", ros::Time(0), transformLocal);
-		cdata.origin_lat = transformLocal.getOrigin().y();
-		cdata.origin_lon = transformLocal.getOrigin().x();
+		cdata.origin_lat = transformLocal.getOrigin().y()*10000000;
+		cdata.origin_lon = transformLocal.getOrigin().x()*10000000;
 	}
 	catch(tf::TransformException& ex)
 	{
@@ -180,11 +186,41 @@ void TopsideRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
 void TopsideRadio::onStateMeas(const auv_msgs::NavSts::ConstPtr& meas)
 {
 	boost::mutex::scoped_lock l(cdataMux);
-	cdata.state_meas[u] = meas->body_velocity.x;
-	cdata.state_meas[r] = meas->orientation_rate.yaw;
-	cdata.state_meas[x] = meas->position.north;
-	cdata.state_meas[y] = meas->position.east;
-	cdata.state_meas[psi] = meas->orientation.yaw;
+	//cdata.state_meas[u] = meas->body_velocity.x*100;
+	//cdata.state_meas[r] = meas->orientation_rate.yaw*100;
+	cdata.state_meas[x] = meas->position.north*100;
+	cdata.state_meas[y] = meas->position.east*100;
+	cdata.state_meas[psi] = meas->orientation.yaw*100;
+}
+
+void TopsideRadio::onSFMeas(const auv_msgs::NavSts::ConstPtr& meas)
+{
+	boost::mutex::scoped_lock l(cdataMux);
+	//cdata.state_meas[u] = meas->body_velocity.x*100;
+	//cdata.state_meas[r] = meas->orientation_rate.yaw*100;
+	cdata.sf_state[x] = meas->position.north*100;
+	cdata.sf_state[y] = meas->position.east*100;
+	cdata.sf_state[psi] = meas->orientation.yaw*100;
+}
+
+void TopsideRadio::onCartInfo(const cart2::ImuInfo::ConstPtr& info)
+{
+	boost::mutex::scoped_lock l(cdataMux);
+	enum {port_rpm_desired=0,
+		stbd_rpm_desired,
+		port_rpm_meas,
+		stbd_rpm_meas,
+		port_curr_desired,
+		stbd_curr_desired,
+		current,
+		temp,
+		voltage
+	};
+
+	cdata.portRPM = info->data[port_rpm_meas];
+	cdata.stbdRPM = info->data[stbd_rpm_meas];
+	cdata.voltage = info->data[voltage]/50*256;
+	cdata.temp = info->data[temp]/100*256;
 }
 
 void TopsideRadio::local2LatLon(double x, double y)
@@ -192,8 +228,8 @@ void TopsideRadio::local2LatLon(double x, double y)
 	std::pair<double, double> location = labust::tools::meter2deg(x,
 			y,
 			originLat);
-	data.lat = originLat + location.first;
-	data.lon = originLon + location.second;
+	data.lat = (originLat + location.first)*10000000;
+	data.lon = (originLon + location.second)*10000000;
 }
 
 void TopsideRadio::populateDataFromConfig()
@@ -210,13 +246,13 @@ void TopsideRadio::populateDataFromConfig()
 		}
 		else
 		{
-			data.lat = config.PointLat;
-			data.lon = config.PointLon;
+			data.lat = config.PointLat*10000000;
+			data.lon = config.PointLon*10000000;
 		}
 	}
 	data.radius = config.Radius;
-	data.surge = config.Surge;
-	data.yaw = config.Yaw;
+	data.surge = config.Surge*100;
+	data.yaw = std::floor(config.Yaw/M_PI*128+0.5);
 }
 
 void TopsideRadio::dynrec_cb(cart2::RadioModemConfig& config, uint32_t level)
@@ -259,13 +295,13 @@ void TopsideRadio::onSync(const boost::system::error_code& error, const size_t& 
 			is >> ringBuffer;
 		}
 
-		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@ONTOP"))
+		if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@T"))
 		{
 			ROS_INFO("Synced on @ONTOP");
 			assert(!isTopside && "Cannot receive topside messages if on topside.");
 			boost::asio::async_read(port,sbuffer.prepare(topside_package_length),boost::bind(&TopsideRadio::onIncomingData,this,_1,_2));
 		}
-		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@CART2"))
+		else if ((ringBuffer.size() >= sync_length) && (ringBuffer.substr(0,sync_length) == "@C"))
 		{
 			ROS_INFO("Synced on @CART2");
 			assert(isTopside && "Cannot receive CART messages if on cart.");
@@ -294,7 +330,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 	if (!isTopside)
 	{
 		boost::mutex::scoped_lock l(dataMux);
-		uint8_t chksum(0);
+		uint16_t chksum(0);
 		try
 		{
 			dataSer >> data >> chksum;
@@ -304,7 +340,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			ROS_ERROR("Exception while deserializing: %s",e.what());
 		}
 
-		uint8_t chksum_calc = calculateChecksum(data);
+		uint16_t chksum_calc = calculateCRC16(data);
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
@@ -315,20 +351,20 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		sensor_msgs::Joy joy;
 		joy.axes.assign(6,0);
 		//Sanity check
-		if (fabs(data.surgeForce) > 1)
+		if (fabs(data.surgeForce) > 100)
 		{
 			ROS_ERROR("Remote joystick force is above 1.");
 			data.surgeForce = 0;
 		}
 
-		if (fabs(data.torqueForce) > 1)
+		if (fabs(data.torqueForce) > 100)
 		{
 			ROS_ERROR("Remote joystick force is above 1.");
 			data.torqueForce = 0;
 		}
 
-		joy.axes[1] = data.surgeForce;
-		joy.axes[2] = data.torqueForce;
+		joy.axes[1] = data.surgeForce/100.;
+		joy.axes[2] = data.torqueForce/100.;
 
 		std_msgs::Bool launcher;
 		launcher.data = data.launch;
@@ -347,9 +383,9 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		msg->radius = data.radius;
 		msg->ref_point.header.stamp=ros::Time::now();
 		msg->ref_point.header.frame_id="worldLatLon";
-		msg->ref_point.point.x = data.lat;
-		msg->ref_point.point.y = data.lon;
-		msg->surge = data.surge;
+		msg->ref_point.point.x = data.lat/10000000.;
+		msg->ref_point.point.y = data.lon/10000000.;
+		msg->surge = data.surge/100.;
 		l.unlock();
 
 		joyOut.publish(joy);
@@ -373,11 +409,11 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			mode.request.mode = data.mode;
 			mode.request.ref_point.header.stamp=ros::Time::now();
 			mode.request.ref_point.header.frame_id="worldLatLon";
-			mode.request.ref_point.point.x = data.lat;
-			mode.request.ref_point.point.y = data.lon;
+			mode.request.ref_point.point.x = data.lat/10000000.;
+			mode.request.ref_point.point.y = data.lon/10000000.;
 			mode.request.radius = data.radius;
-			mode.request.surge = data.surge;
-			mode.request.yaw = data.yaw;
+			mode.request.surge = data.surge/100.;
+			mode.request.yaw = M_PI*data.yaw/128.;
 			l.unlock();
 			client.call(mode);
 		}
@@ -388,10 +424,10 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			boost::asio::streambuf output;
 			std::ostream out(&output);
 			//Prepare sync header
-			out<<"@CART2";
+			out<<"@C";
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(cdataMux);
-			uint8_t chksum_calc = calculateChecksum(cdata);
+			uint16_t chksum_calc = calculateCRC16(cdata);
 			try
 			{
 				dataSer << cdata << chksum_calc;
@@ -409,7 +445,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 	else
 	{
 		boost::mutex::scoped_lock l(cdataMux);
-		uint8_t chksum(0);
+		uint16_t chksum(0);
 		try
 		{
 			dataSer >> cdata >> chksum;
@@ -419,7 +455,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			ROS_ERROR("Exception while serializing: %s",e.what());
 		}
 
-		uint8_t chksum_calc = calculateChecksum(cdata);
+		uint16_t chksum_calc = calculateCRC16(cdata);
 		if (chksum_calc != chksum)
 		{
 			ROS_ERROR("Wrong checksum! Got: %d, expected: %d",chksum, chksum_calc);
@@ -429,25 +465,33 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 
 		auv_msgs::NavStsPtr state(new auv_msgs::NavSts());
 		auv_msgs::NavStsPtr meas(new auv_msgs::NavSts());
-		state->origin.latitude = cdata.origin_lat;
-		state->origin.longitude = cdata.origin_lon;
-		state->body_velocity.x = cdata.state_hat[u];
-		state->orientation_rate.yaw = cdata.state_hat[r];
-		state->position.north = cdata.state_hat[x];
-		state->position.east = cdata.state_hat[y];
-		state->orientation.yaw = cdata.state_hat[psi];
-		meas->origin.latitude = cdata.origin_lat;
-		meas->origin.longitude = cdata.origin_lon;
-		meas->body_velocity.x = cdata.state_meas[u];
-		meas->orientation_rate.yaw = cdata.state_meas[r];
-		meas->position.north = cdata.state_meas[x];
-		meas->position.east = cdata.state_meas[y];
-		meas->orientation.yaw = cdata.state_meas[psi];
+		state->origin.latitude = cdata.origin_lat/10000000.;
+		state->origin.longitude = cdata.origin_lon/10000000.;
+		state->body_velocity.x = cdata.state_hat[u]/100.;
+		//state->orientation_rate.yaw = cdata.state_hat[r]/100.;
+		state->position.north = cdata.state_hat[x]/100.;
+		state->position.east = cdata.state_hat[y]/100.;
+		state->orientation.yaw = cdata.state_hat[psi]/100.;
+		meas->origin.latitude = cdata.origin_lat/10000000.;
+		meas->origin.longitude = cdata.origin_lon/10000000.;
+		//meas->body_velocity.x = cdata.state_meas[u]/100.;
+		//meas->orientation_rate.yaw = cdata.state_meas[r]/100.;
+		meas->position.north = cdata.state_meas[x]/100.;
+		meas->position.east = cdata.state_meas[y]/100.;
+		meas->orientation.yaw = cdata.state_meas[psi]/100.;
+
+		cart2::ImuInfo cinfo;
+		cinfo.data.resize(4);
+		cinfo.data[0] = cdata.voltage/256.*50;
+		cinfo.data[1] = cdata.temp/256.*100;
+		cinfo.data[2] = cdata.portRPM;
+		cinfo.data[3] = cdata.stbdRPM;
+		info.publish(cinfo);
 
 		ROS_INFO("Current CART2 mode:%d",cdata.mode);
 
 		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(cdata.origin_lon, cdata.origin_lat, 0));
+		transform.setOrigin(tf::Vector3(cdata.origin_lon/10000000., cdata.origin_lat/10000000., 0));
 		l.unlock();
 
 		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
@@ -465,6 +509,10 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		labust::tools::quaternionFromEulerZYX(0,0,meas->orientation.yaw,q);
 		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
 		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_meas"));
+		transform.setOrigin(tf::Vector3(cdata.sf_state[x]/100.,cdata.sf_state[y]/100., 0));
+		labust::tools::quaternionFromEulerZYX(0,0,cdata.sf_state[psi]/100.,q);
+		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "sf_frame"));
 
 		stateHatPub.publish(state);
 		stateMeasPub.publish(meas);
@@ -550,10 +598,10 @@ void TopsideRadio::start()
 			std::ostream out(&output);
 			std::ostringstream chk;
 			//Prepare sync header
-			out<<"@ONTOP";
+			out<<"@T";
 			boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
 			boost::mutex::scoped_lock l(dataMux);
-			uint8_t chksum_calc = calculateChecksum(data);
+			uint16_t chksum_calc = calculateCRC16(data);
 			try
 			{
 				dataSer << data << chksum_calc;
