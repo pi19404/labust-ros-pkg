@@ -105,12 +105,14 @@ void handleIncoming(SharedData& shared,
 	std::cout<<"Got stuff."<<std::endl;
 	if (!error && (transferred == (SharedData::msg_size-SharedData::data_offset)))
 	{
+		std::cout<<"Processing."<<std::endl;
 		unsigned char calc = 0;
 		for (size_t i=SharedData::data_offset; i<SharedData::msg_size-1; ++i){calc^=shared.buffer[i];};
 
 		if (calc != shared.buffer[SharedData::checksum])
 		{
 			ROS_ERROR("Wrong checksum for imu data.");
+			start_receive(shared,port);
 			return;
 		}
 
@@ -127,7 +129,7 @@ void handleIncoming(SharedData& shared,
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
-		//std::cout<<"Test:"<<data[modul]<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
+		//std::cout<<"Test:"<<","<<data[ry]<<","<<data[mmm]<<","<<data[mm]<<std::endl;
 
 		//Send Imu stuff
 		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
@@ -143,7 +145,7 @@ void handleIncoming(SharedData& shared,
 		Eigen::Quaternion<float> quat;
 		labust::tools::quaternionFromEulerZYX(data[roll],
 				data[pitch],
-				labust::math::wrapRad(data[yaw] + shared.magnetic_declination), quat);
+				labust::math::wrapRad(data[yaw] + shared.magnetic_declination + M_PI), quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
@@ -171,7 +173,7 @@ void handleIncoming(SharedData& shared,
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
 		static int i=0;
 		++i;
-		if ((data[hdop]<0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+		if ((data[hdop]>0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
