@@ -12,9 +12,9 @@ lf_controller/use_heading: true
 
 virtual_target/heading_closed_loop_freq: 0.1
 virtual_target/sampling: 0.1
-virtual_target/approach_angle: 30.0
+virtual_target/approach_angle: 45
 virtual_target/openLoopSurge: 0
-virtual_target/outer_loop_gains: [0.2, 0.1]
+virtual_target/outer_loop_gains: [0.2, 0.5]
 
 heading_control/heading_closed_loop_freq: 0.3
 heading_control/sampling: 0.1

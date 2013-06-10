@@ -37,11 +37,13 @@
 #ifndef HLMANAGER_HPP_
 #define HLMANAGER_HPP_
 #include <cart2/SetHLMode.h>
+#include <cart2/HLMessage.h>
 
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
 #include <auv_msgs/NavSts.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/Imu.h>
 #include <tf/transform_broadcaster.h>
 
 #include <ros/ros.h>
@@ -66,7 +68,7 @@ namespace labust
 		{
 			enum {bArt=0, cArt};
 			enum {stop=0, manual,
-				gotoPoint, stationKeeping, circle, heading, lastMode};
+				gotoPoint, stationKeeping, circle, heading, headingSurge, lastMode};
 
 			typedef std::map<std::string,bool> ControllerMap;
 
@@ -106,14 +108,25 @@ namespace labust
 			 */
 			void onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist);
 			/**
+			 * Update the virutal target twist.
+			 */
+			void onImuMeas(const sensor_msgs::Imu::ConstPtr& imu);
+			/**
 			 * The safety test.
 			 */
 			void safetyTest();
 			/**
+			 * The B-art behaviour.
+			 */
+			void bArtStep();
+			/**
 			 * Make one action step.
 			 */
 			void step();
-
+			/**
+			 * Helper method for point calculation.
+			 */
+			void calculateBArtPoint(double heading);
 			/**
 			 * Set all controller enable signals to false.
 			 */
@@ -167,7 +180,7 @@ namespace labust
 			/**
 			 * The safety radius, distance and time for B-Art.
 			 */
-			double safetyRadius, safetyDistance, safetyTime;
+			double safetyRadius, safetyDistance, safetyTime, safetyTime2, gyroYaw;
 			/**
 			 * Circle parameters
 			 */
@@ -184,11 +197,12 @@ namespace labust
 			/**
 			 * The publisher of the TAU message.
 			 */
-			ros::Publisher refPoint, refTrack, openLoopSurge, curMode, refHeading;
+			ros::Publisher refPoint, refTrack, openLoopSurge, curMode, refHeading,
+			hlMessagePub, sfPub;
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber state, launch, gpsData, virtualTargetTwist;
+			ros::Subscriber state, launch, gpsData, virtualTargetTwist, imuMeas;
 			/**
 			 * Mode selector service server.
 			 */
@@ -197,6 +211,10 @@ namespace labust
 			 * The highlevel controller set.
 			 */
 			ControllerMap controllers;
+			/**
+			 * The HL status message.
+			 */
+			cart2::HLMessage hlDiagnostics;
 		};
 	}
 }

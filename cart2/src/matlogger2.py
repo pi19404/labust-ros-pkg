@@ -9,6 +9,7 @@ from auv_msgs.msg import BodyVelocityReq;
 from auv_msgs.msg import BodyForceReq;
 from auv_msgs.msg import NavSts;
 from cart2.msg import ImuInfo
+from cart2.msg import HLMessage
 from threading import Lock
 from collections import OrderedDict
 import functools
@@ -135,11 +136,18 @@ class MatLogger:
             'gyro_x', 'gyro_y', 'gyro_z',
             'mag_x', 'mag_y', 'mag_z',
             'roll','pitch','yaw',
-            'ry','mmm','mm');        
-        
+            'ry','mmm','mm');
+        self.hlDiagnostics = ('mode',
+                            'ref_point.point.x',
+                            'ref_point.point.y',
+                            'ref_point.point.z',
+                            'radius',
+                            'surge',
+                            'yaw')     
         self.loggers=[MessageLogger("logger/stateNames", NavSts, self.navStsLogOrder),
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
+                      MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
                       ListLogger("logger/cart2_info", ImuInfo, self.cart2LogOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              

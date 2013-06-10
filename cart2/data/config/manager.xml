@@ -1,8 +1,9 @@
 <launch>
   <rosparam command="load" file="$(find cart2)/data/config/manager.yaml" />
   <node pkg="cart2" type="hlmanager" name="hl_manager" machine="controlled">
-      <param name="LocalFixSim" value="true" />     
+      <param name="LocalFixSim" value="$(env USE_LOCAL_FIX)" />     
       <remap from="ref_point" to="LFPoint" />
       <remap from="ref_track" to="TrackPoint" />
+			<param name="IsBart" value="$(env IS_BART)" />
   </node>
 </launch>

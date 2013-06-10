@@ -1,6 +1,7 @@
-logger/stateNames: ['stateHat', 'meas']
+logger/stateNames: ['stateHat', 'meas', 'sf_diagnostics']
 logger/bodyVelReqNames: ['nuRef']
 logger/bodyForceReqNames: ['tauOut', 'tauAch']
 logger/twistMessages: ['currentsHat']
 logger/cart2_info: ['cart2_info']
 logger/imu_info: ['imu_info']
+logger/HLDiagnostics: ['hl_diagnostics']
