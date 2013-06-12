@@ -144,7 +144,7 @@ namespace labust
 			/**
 			 * Handle the external target point.
 			 */
-			void onExtPoint(const geometry_msgs::PointStamped::ConstPtr& isLaunched);
+			void onExtPoint(const auv_msgs::NavSts::ConstPtr& isLaunched);
 			/**
 			 * Handle the estimates.
 			 */
@@ -291,6 +291,7 @@ namespace labust
 			 * The frame transformer.
 			 */
 			double originLat, originLon;
+			uint8_t lastMode;
 		};
 	}
 }

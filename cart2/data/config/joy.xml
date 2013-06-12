@@ -9,12 +9,13 @@
 
 	<node pkg="cart2" type="topside_radio" name="radio_modem" if="$(env IS_REMOTE)">
 		<param name="PortName" value="/dev/ttyUSB0" />
-		<!-- <param name="PortName" value="/dev/pts/3" /> -->
+		<!--  <param name="PortName" value="/dev/pts/9" /> -->
 		<param name="BaudRate" value="19200" />
 		<param name="TransmitRate" value="1" />
 		<param name="IsTopside" value="false" />
 		<param name="TwoWay" value="true" />
 		<remap from="joy_out" to="joy" />
+		<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
 	</node>
 	
 	<node pkg="cart2" type="cnr_radio" name="radio_modem" if="$(env USE_CNR_RADIO)">

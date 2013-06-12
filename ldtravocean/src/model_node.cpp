@@ -165,7 +165,7 @@ sensor_msgs::NavSatFix* mapToNavSatFix(const labust::simulation::vector& eta, co
 	try
 	{
 		//In case the origin changes
-		lisWorld.lookupTransform("worldLatLon", "world", ros::Time(0), transformDeg);
+		lisWorld.lookupTransform("/worldLatLon", "/world", ros::Time(0), transformDeg);
 		originLat = transformDeg.getOrigin().y();
 		originLon = transformDeg.getOrigin().x();
 	}

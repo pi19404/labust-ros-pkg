@@ -254,7 +254,7 @@ void VirtualTarget::step()
 			//sDot
 			boost::mutex::scoped_lock l(dataMux);
 			sTwist.twist.linear.x = flowSurgeEstimate*cos(gamma) + K1*s1;
-			sTwist.twist.linear.y = flowSurgeEstimate;
+			//sTwist.twist.linear.y = flowSurgeEstimate;
 			l.unlock();
 			vtTwist.publish(sTwist);
 

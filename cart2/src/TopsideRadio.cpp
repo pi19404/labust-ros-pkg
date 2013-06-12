@@ -58,7 +58,8 @@ TopsideRadio::TopsideRadio():
 		timeout(10),
 		port(io),
 		isTopside(true),
-		twoWayComms(false)
+		twoWayComms(false),
+		lastMode(0)
 {this->onInit();}
 
 TopsideRadio::~TopsideRadio()
@@ -91,7 +92,7 @@ void TopsideRadio::onInit()
 
 	if (isTopside)
 	{
-		extPoint = nh.subscribe<geometry_msgs::PointStamped>("target_point", 1,
+		extPoint = nh.subscribe<auv_msgs::NavSts>("target_point", 1,
 				&TopsideRadio::onExtPoint,this);
 		joyIn = nh.subscribe<sensor_msgs::Joy>("joy_in",1,&TopsideRadio::onJoy,this);
 		//Dynamic reconfigure
@@ -122,6 +123,8 @@ void TopsideRadio::onInit()
 	cdata.origin_lon = 0;
 	cdata.mode = 0;
 	cdata.sf_state[x]= cdata.sf_state[y]= cdata.sf_state[psi]= 0;
+	data.mode = 0;
+	data.surgeForce = data.torqueForce = 0;
 
 	this->start_receive();
 	iorunner = boost::thread(boost::bind(&boost::asio::io_service::run,&io));
@@ -134,19 +137,19 @@ void TopsideRadio::onJoy(const sensor_msgs::Joy::ConstPtr& joy)
 	data.torqueForce = joy->axes[2]*100;
 }
 
-void TopsideRadio::onExtPoint(const geometry_msgs::PointStamped::ConstPtr& extPoint)
+void TopsideRadio::onExtPoint(const auv_msgs::NavSts::ConstPtr& extPoint)
 {
 	if (!config.ManualPoint)
 	{
 		boost::mutex::scoped_lock l(dataMux);
 		if (extPoint->header.frame_id == "worldLatLon")
 		{
-			data.lat = extPoint->point.x*10000000;
-			data.lon = extPoint->point.y*10000000;
+			data.lat = extPoint->global_position.latitude*10000000;
+			data.lon = extPoint->global_position.longitude*10000000;
 		}
 		else if (extPoint->header.frame_id == "local")
 		{
-			local2LatLon(extPoint->point.x, extPoint->point.y);
+			local2LatLon(extPoint->position.north, extPoint->position.east);
 		}
 		else
 		{
@@ -159,6 +162,7 @@ void TopsideRadio::onCurrentMode(const std_msgs::Int32::ConstPtr& mode)
 {
 	boost::mutex::scoped_lock l(cdataMux);
 	cdata.mode = mode->data;
+	lastMode = mode->data;
 }
 
 void TopsideRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -173,7 +177,7 @@ void TopsideRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
 	try
 	{
 		tf::StampedTransform transformLocal;
-		listener.lookupTransform("worldLatLon", "local", ros::Time(0), transformLocal);
+		listener.lookupTransform("/worldLatLon", "local", ros::Time(0), transformLocal);
 		cdata.origin_lat = transformLocal.getOrigin().y()*10000000;
 		cdata.origin_lon = transformLocal.getOrigin().x()*10000000;
 	}
@@ -402,11 +406,18 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			ROS_ERROR("HLManager client not connected. Trying reset.");
 			client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
 		}
-		else if (update)
+		else
 		{
 			boost::mutex::scoped_lock l(dataMux);
 			cart2::SetHLMode mode;
-			mode.request.mode = data.mode;
+			if (update)
+			{
+				lastMode = mode.request.mode = data.mode;
+			}
+			else
+			{
+				mode.request.mode = lastMode;
+			}
 			mode.request.ref_point.header.stamp=ros::Time::now();
 			mode.request.ref_point.header.frame_id="worldLatLon";
 			mode.request.ref_point.point.x = data.lat/10000000.;
