@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<configurations>
+  <config type="program" name="AudioExperimentFieldwork">
+    <param name="IMUComPort" value ="COM0"/>
+    <!--COM0 meens imu(head tracking device) is not used, otherwise enter imu COM port-->
+    <param name="FilterMessage" value="Filter"/>
+    <param name="RovMessage" value="ROVData"/>
+    <param name="DvlMessage" value="DVLData"/>
+    <param name="ObjectLat" value="43.759859"/>
+    <param name="ObjectLong" value="15.673666"/>
+    <param name="AltitudeSetPoint" value="2"/>
+    <param name="Doppler" value="1"/>
+    <commsConfig name="k1" type="moos">
+      <!-- <param name="Hostname" value="192.168.1.130"/> -->
+      <param name="Hostname" value="localhost"/>
+      <param name="Port" value="9000"/>
+      <param name="ProcessName" value="AudioExperiment"/>
+      <param name="AppTick" value="10"/>
+      <param name="CommsTick" value="10"/>
+      <param name="Subscription" value="Filter"/>
+      <param name="Subscription" value="ROVData"/>
+      <param name="Subscription" value="DVLData"/>
+    </commsConfig>
+  </config>
+  <config type="program" name="AudioExperimentDino">
+    <param name="IMUComPort" value ="COM0"/>
+    <!--COM0 meens imu(head tracking device) is not used, otherwise enter imu COM port e.g. 17-->
+    <param name="FilterMessage" value="ROV"/>
+    <param name="RovMessage" value="ROV"/>
+    <param name="DvlMessage" value="ROV"/>
+    <param name="TARGETMessage" value="TARGET"/>
+    <param name="AltitudeSetPoint" value="5"/>
+    <param name="Doppler" value="1"/>
+    <param name="Silence_angle" value="0"/>
+    <param name="Verbal_angle" value="5"/>
+    
+    <param name="NonLinear_coeff" value="1"/> <!--1 is linear-->
+    <param name="Guidance_Mode" value="1"/>
+    <!--1 . 2D mode spatial sound, 2 - 3D mode spatial_speech, 3 - 3D mode full speech, 4 - 2D speech-->
+    <param name="Task_Mode" value="1"/>
+    <!--1 . Target, 2 - Path, 3 - Trajectory tracking-->
+    <param name="K_Diter_Time" value="1"/>
+    <param name="AmpDiter" value="0"/> <!--0 - default-->
+    <param name="FreqDiter" value="1"/> <!--1 - default-->
+    <param name="RabbitDistance" value="10"/>
+    <param name="JoyStick_Mode" value="2"/>
+    <!--1 . None, 2 - Joystick-->
+    <param name="PathVelocity" value="1"/>
+    <param name="SpeedProfile" value="C"/> <!--C is Const, S is Step, V is Variable-->
+    <param name="NonLinear_coeff_distance" value="1"/> <!--1 is linear-->
+    <param name="Kintegral" value="0.2"/>
+    <param name="Sound" value="0"/> <!--0 is Pink, 1 is Click-->
+    
+    <param name="PathStartX" value="-50"/>
+    <param name="PathStartY" value="50"/>
+    
+    <commsConfig name="k1" type="moos">
+      <param name="Hostname" value="localhost"/>
+      <param name="Port" value="9000"/>
+      <param name="ProcessName" value="AudioExperiment"/>
+      <param name="AppTick" value="10"/>
+      <param name="CommsTick" value="10"/>
+      <param name="Subscription" value="ROV"/>
+      <param name="Subscription" value="TARGET"/>
+    </commsConfig>
+
+    <peripheralConfig name="LogitechWireless" type="joystick">
+      <!-- Config for Joystick !-->
+      <param name="DeviceNumber" value="0"/>
+      <param name="Axes" value="12"/>
+      <param name="Buttons" value="10"/>
+    </peripheralConfig>
+
+    <peripheralConfig name="PalicaMS" type="joystick">
+      <!-- Config for Joystick !-->
+      <param name="DeviceNumber" value="0"/>
+      <param name="Axes" value="6"/>
+      <param name="Buttons" value="4"/>
+    </peripheralConfig>
+  </config>
+
+</configurations>
