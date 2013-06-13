@@ -26,14 +26,29 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <JoystickReader.h>
 #include <time.h>
 
 #include <ros/ros.h>
+#include <boost/thread.hpp>
+#include <sensor_msgs/Joy.h>
+
+namespace LABUST
+{
+    ///
+    ///   Returned from the ReadJoystickData function
+    ///   axes vector of vaalues for all axes
+    ///   buttons vector of bools for all axes
+
+    struct JoystickData
+    {
+        std::vector<short> axes;
+        std::vector<bool> buttons;
+    };
+};
 
 //#include <crtdbg.h>
-
-LABUST::JoystickReader *joystick;
+boost::mutex joyMux;
+LABUST::JoystickData joystickData;
 LABUST::COMMUNICATION::GyrosMoosCommsInterface *comms;
 std::string filterMessageLabel;
 std::string rovMessageLabel;
@@ -1101,10 +1116,9 @@ void doListenerMovement()
 
 	//r = rand();
 	//koristenje joysticka
-	LABUST::JoystickData joystickData;
 if (JoyStickMode==2)
 	{
-	joystickData = joystick->ReadJoystickData();
+	//joystickData = joystick->ReadJoystickData();
 	std::cout<<joystickData.axes[0]<<" "<<joystickData.axes[1]<<std::endl;
 }
 
@@ -2268,9 +2282,21 @@ GlutCloseClass::~GlutCloseClass()
 
 using namespace FMOD;
 
+void handleManual(const sensor_msgs::Joy::ConstPtr& joy)
+{
+	boost::mutex::scoped_lock l(joyMux);
+	joystickData.axes.resize(6);
+	joystickData.axes[0] = joy->axes[0]*32768;
+	joystickData.axes[1] = joy->axes[1]*32768;
+}
+
 int	main(int argc, char **argv)
 {
 	ros::init(argc,argv,"augmented_acoustics");
+	ros::NodeHandle nh;
+	ros::Subscriber manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,&handleManual);
+	boost::thread t(static_cast<void(*)(void)>(&ros::spin));
+	joystickData.axes.resize(6);
 
 	try
 	{
@@ -2350,7 +2376,6 @@ int	main(int argc, char **argv)
 		{
 			std::string joystickConfig("PalicaMS");
 			reader.useNode(configNode);
-			joystick = new LABUST::JoystickReader(reader,joystickConfig);
 		}
 
 

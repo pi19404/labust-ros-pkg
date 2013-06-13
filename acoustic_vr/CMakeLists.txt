@@ -74,8 +74,7 @@ add_library(acoustic_vr_temp src/AugmentedAcoustics.cpp)
 add_executable(acoustic_vr 
     src/acoustic_vr.cpp
     src/GyrosMoosCommsInterface.cpp
-    src/MoosConfig.cpp
-    src/JoystickReaderLinux.cpp)
+    src/MoosConfig.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
