@@ -57,13 +57,10 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-FIND_PACKAGE(MOOS REQUIRED)
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include
   /usr/local/include/
-  ${MOOS_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -71,10 +68,7 @@ include_directories(include
 add_library(acoustic_vr_temp src/AugmentedAcoustics.cpp)
 
 ## Declare a cpp executable
-add_executable(acoustic_vr 
-    src/acoustic_vr.cpp
-    src/GyrosMoosCommsInterface.cpp
-    src/MoosConfig.cpp)
+add_executable(acoustic_vr src/acoustic_vr.cpp src/AAGui.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -91,8 +85,6 @@ target_link_libraries(acoustic_vr
    SOIL
    glut
    GLU
-   ${MOOS_LIBRARY_DIRS}/libMOOS.a
-   ${MOOS_LIBRARY_DIRS}/libMOOSGen.a
    ${Boost_THREAD_LIBRARY}
 )
 
