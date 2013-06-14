@@ -122,6 +122,10 @@ namespace labust
 			 * Send the buoy reply message.
 			 */
 			void replyBuoy();
+			/**
+			 * Send the buoy reply message.
+			 */
+			void dummyRequest();
 
 			/**
 			 * The ROS node handles.
@@ -175,6 +179,10 @@ namespace labust
 			 * My id.
 			 */
 			int32_t id;
+			/**
+			 * Dummy requester.
+			 */
+			bool doDummyRequest;
 			/**
 			 * Last mode field.
 			 */

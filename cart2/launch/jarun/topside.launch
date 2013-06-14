@@ -9,7 +9,7 @@
 			<param name="deadzone" value="0.05" />
 		</node>
 
-		<node pkg="cart2" type="topside_radio" name="topside_modem">
+		<node pkg="cart2" type="topside_radio" name="topside_modem" if="$(env IS_REMOTE)">
 			<!-- <param name="PortName" value="/dev/ttyUSB1" /> -->
 			<param name="PortName" value="/dev/pts/3" />
 			<param name="BaudRate" value="19200" />
@@ -17,6 +17,15 @@
 			<param name="tf_prefix" value="topside" />
 			<remap from="joy_in" to="joy" />
 			<remap from="target_point" to="/dummy/stateHat" />
+		</node>
+		
+		<node pkg="cart2" type="cnr_radio" name="radio_modem" if="$(env USE_CNR_RADIO)">
+			<!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
+			<param name="PortName" value="/dev/pts/3" />
+			<param name="BaudRate" value="19200" />
+			<!-- cart=0, bart=1, station=2 -->
+			<param name="ID" value="2" />
+			<param name="DummyRequester" value="true" />
 		</node>
 
 		<node pkg="rqt_reconfigure" type="rqt_reconfigure" name="topside_reconfigure" />

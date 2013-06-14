@@ -65,6 +65,7 @@ CNRRemoteRadio::CNRRemoteRadio():
 				port(io),
 				buffer(sync_length,0),
 				id(bart),
+				doDummyRequest(false),
 				lastmode(1)
 {this->onInit();}
 
@@ -86,6 +87,7 @@ void CNRRemoteRadio::onInit()
 	ph.param("Timeout",timeout,timeout);
 	ph.param("ID",id,id);
 	ph.param("YawInc",yawInc,yawInc);
+	ph.param("DummyRequester",doDummyRequest,doDummyRequest);
 
 	port.open(portName);
 	port.set_option(boost::asio::serial_port::baud_rate(baud));
@@ -174,7 +176,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 		int32_t recv = (buffer[id_field] & 0xF0) >> 4;
 		int32_t sender = buffer[id_field] & 0x0F;
 
-		ROS_INFO("Message from %d to %d.",buffer[id_field] & 0x0F,recv);
+		ROS_INFO("Message from %d to %d.",sender,recv);
 
 
 		if ((this->id == station) && (sender == bart))
@@ -184,6 +186,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 			int32_t data2=static_cast<int32_t>(
 					htonl(*reinterpret_cast<uint32_t*>(&buffer[data2_field])));
 
+			lastModemMsg = ros::Time::now();
 			auv_msgs::NavSts currPose;
 			currPose.global_position.latitude = data1/1000000.;
 			currPose.global_position.longitude = data2/1000000.;
@@ -342,6 +345,21 @@ void CNRRemoteRadio::replyBuoy()
 	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
 }
 
+void CNRRemoteRadio::dummyRequest()
+{
+	char ret[7];
+	ret[0] = 'C';
+	ret[1] = 'P';
+	ret[2] = 2;
+	ret[3] = (bart<<4) + station;
+	ret[4] = 0;
+
+	int crc = compute_crc16(&ret[0], 5);
+	ret[5] = crc/256;
+	ret[6] = crc%256;
+	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
+}
+
 void CNRRemoteRadio::onTimeout()
 {
 	if (!client)
@@ -389,6 +407,7 @@ void CNRRemoteRadio::start()
 {
 	ros::Rate rate(20);
 
+	ros::Time lastDummyReq(ros::Time::now());
 	while (ros::ok())
 	{
 		rate.sleep();
@@ -397,6 +416,12 @@ void CNRRemoteRadio::start()
 		if ((ros::Time::now()-lastModemMsg).toSec() > timeout )
 		{
 			this->onTimeout();
+		}
+
+		if (doDummyRequest && ((ros::Time::now() - lastDummyReq).toSec() > 0.5))
+		{
+			lastDummyReq = ros::Time::now();
+			this->dummyRequest();
 		}
 	}
 }
