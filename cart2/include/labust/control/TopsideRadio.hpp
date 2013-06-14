@@ -226,7 +226,7 @@ namespace labust
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub, info;
+			ros::Publisher joyOut, launched, hlMsg, stateHatPub, stateMeasPub, info, selectedPoint;
 			/**
 			 * The subscribed topics.
 			 */

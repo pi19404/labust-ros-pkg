@@ -70,6 +70,7 @@ execute_process(COMMAND sh scripts/download_models.sh
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include
+  /usr/local/include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -99,6 +100,7 @@ add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
 	include/labust/control/BenchRadio.hpp)
 	
 add_executable(coop_node src/coop_node.cpp)
+add_executable(repost_node src/position_repost.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -121,6 +123,11 @@ target_link_libraries(cnr_radio
 )
 
 target_link_libraries(coop_node
+   ${Boost_SYSTEM_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(repost_node
    ${Boost_SYSTEM_LIBRARY}
    ${catkin_LIBRARIES}
 )

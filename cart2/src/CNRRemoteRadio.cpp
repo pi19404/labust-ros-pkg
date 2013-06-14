@@ -97,6 +97,7 @@ void CNRRemoteRadio::onInit()
 	}
 
 	joyOut = nh.advertise<sensor_msgs::Joy>("joy_out",1);
+	posOut = nh.advertise<auv_msgs::NavSts>("bart_position",1);
 	launched = nh.advertise<std_msgs::Bool>("launched",1);
 	hlMsg = nh.advertise<cart2::HLMessage>("hl_message",1);
 	client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
@@ -171,8 +172,23 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 	if (chksum == rcvchksum)
 	{
 		int32_t recv = (buffer[id_field] & 0xF0) >> 4;
+		int32_t sender = buffer[id_field] & 0x0F;
 
 		ROS_INFO("Message from %d to %d.",buffer[id_field] & 0x0F,recv);
+
+
+		if ((this->id == station) && (sender == bart))
+		{
+			int32_t data1=static_cast<int32_t>(
+					htonl(*reinterpret_cast<uint32_t*>(&buffer[data1_field])));
+			int32_t data2=static_cast<int32_t>(
+					htonl(*reinterpret_cast<uint32_t*>(&buffer[data2_field])));
+
+			auv_msgs::NavSts currPose;
+			currPose.global_position.latitude = data1/1000000.;
+			currPose.global_position.longitude = data2/1000000.;
+			posOut.publish(currPose);
+		}
 
 		if ((this->id == bart) && (recv == bart))
 		{

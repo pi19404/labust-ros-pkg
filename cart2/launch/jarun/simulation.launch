@@ -2,9 +2,9 @@
   <include file="$(find cart2)/data/config/$(env ROBOT).machine" /> 
     
   <include file="$(find cart2)/data/config/uwsim.xml" if="$(env USE_UWSIM)" />
-  <include file="$(find cart2)/data/config/rviz.xml" if="$(env USE_RVIZ)" />
-  
+ 
   <group ns="$(env NAMESPACE)">
+    <include file="$(find cart2)/data/config/rviz.xml" if="$(env USE_RVIZ)" />
   	<rosparam command="load" file="$(find cart2)/data/config/$(env LOCATION).yaml" />  	
   	<include file="$(find cart2)/data/config/navigation.xml" />
   	<include file="$(find cart2)/data/config/control.xml" />
@@ -12,5 +12,6 @@
   	<include file="$(find cart2)/data/config/driver.xml" />
   	<include file="$(find cart2)/data/config/manager.xml" />
   	<include file="$(find cart2)/data/config/logging.xml" if="$(env ENABLE_LOGGING)" />
+  	<!-- <include file="$(find acoustic_vr)/launch/audioex.launch" if="$(env USE_ACOUSTIC)" /> -->
   </group>
 </launch>

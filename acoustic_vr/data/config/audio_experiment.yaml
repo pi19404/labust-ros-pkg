@@ -15,7 +15,7 @@ AmpDiter: 0
 FreqDiter: 1
 RabbitDistance: 10
 #1 . None, 2 - Joystick
-JoyStick_Mode: 2
+JoyStick_Mode: 1
 PathVelocity: 1
 #C is Const, S is Step, V is Variable
 SpeedProfile: "C"

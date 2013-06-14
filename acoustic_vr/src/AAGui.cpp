@@ -97,8 +97,8 @@ void specialKeyFunc(int key, int x, int y);
 //void keyboardUpFunc(unsigned char key, int x, int y);
 //void keyboardFunc(unsigned char key, int x, int y);
 //void timerFunc(int nValue);
-//GLuint loadTexture(const char *filename);
-//GLuint loadTexturePNG(const char *filename);
+GLuint loadTexture(const char *filename);
+GLuint loadTexturePNG(const char *filename);
 //void initGeometry(const char* szFileName, Mesh& mesh, bool alter = false);
 //void ERRCHECK(FMOD_RESULT result);
 
@@ -117,7 +117,7 @@ void AAGui::start()
 AAGui::AAGui(const std::string& path)
 {
 	this->init();
-	//this->loadTextures(path);
+	this->loadTextures(path);
 }
 
 int width = 500;
@@ -143,49 +143,111 @@ void AAGui::init()
 //  glutSpecialUpFunc(specialKeyUpFunc);
 }
 
-//void AAGui::loadTextures(const std::string& path)
-//{
-//  std::cout<<"Loading geometry\n";
-//  initGeometry((path + "/walls.bin").c_str(), walls, true);
-//  initGeometry((path + "/center.bin").c_str(), rotatingMesh);
-//  std::cout<<"done.\n";
-//
-//  std::cout<<"Loading textures...\n";
-//	texture = loadTexture((path + "/texture.img").c_str());
-//  skyboxTexture[0] = loadTexturePNG((path + "/front.png").c_str());
-//  skyboxTexture[1] = loadTexturePNG((path + "/right.png").c_str());
-//  skyboxTexture[2] = loadTexturePNG((path + "/back.png").c_str());
-//  skyboxTexture[3] = loadTexturePNG((path + "/left.png").c_str());
-//  skyboxTexture[4] = loadTexturePNG((path + "/top.png").c_str());
-//  skyboxTexture[5] = loadTexturePNG((path + "/bottom.png").c_str());
-//  std::cout<<"done.\n";
-//
-//	// setup lighting
-//	GLfloat lightDiffuse[] = {1.0, 1.0, 1.0, 1.0};
-//	GLfloat lightPosition[] = {300.0, 1000.0, 400.0, 0.0};
-//	GLfloat lightAmbiant[] = {1.25, 1.25, 1.25, 1.0};
-//	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-//	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-//	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbiant);
-//	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, 1.0f);
-//	glEnable(GL_LIGHT0);
-//	glEnable(GL_LIGHTING);
-//
-//   // setup fog(water)
-//   GLfloat	fogColor[4] = {0.0f,0.1f,0.9f,1.0f};
-//
-//	glFogi(GL_FOG_MODE, GL_EXP);	    // Fog Mode
-//	glFogfv(GL_FOG_COLOR, fogColor);    // Set Fog Color
-//	glFogf(GL_FOG_DENSITY, 0.15f);	    // How Dense Will The Fog Be
-//	glHint(GL_FOG_HINT, GL_DONT_CARE);	// Fog Hint Value
-//	glFogf(GL_FOG_START, 0.0f);			// Fog Start Depth
-//	glFogf(GL_FOG_END, 1.0f);			// Fog End Depth
-//
-//	glEnable(GL_DEPTH_TEST);
-//
-//	glMatrixMode(GL_MODELVIEW);
-//	glLoadIdentity();
-//}
+void AAGui::loadTextures(const std::string& path)
+{
+  std::cout<<"Loading textures from "<<path<<std::endl;
+	texture = loadTexture((path + "/texture.img").c_str());
+  skyboxTexture[0] = loadTexturePNG((path + "/front.png").c_str());
+  skyboxTexture[1] = loadTexturePNG((path + "/right.png").c_str());
+  skyboxTexture[2] = loadTexturePNG((path + "/back.png").c_str());
+  skyboxTexture[3] = loadTexturePNG((path + "/left.png").c_str());
+  skyboxTexture[4] = loadTexturePNG((path + "/top.png").c_str());
+  skyboxTexture[5] = loadTexturePNG((path + "/bottom.png").c_str());
+  std::cout<<"done.\n";
+
+	// setup lighting
+	GLfloat lightDiffuse[] = {1.0, 1.0, 1.0, 1.0};
+	GLfloat lightPosition[] = {300.0, 1000.0, 400.0, 0.0};
+	GLfloat lightAmbiant[] = {1.25, 1.25, 1.25, 1.0};
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbiant);
+	glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, 1.0f);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHTING);
+
+   // setup fog(water)
+   GLfloat	fogColor[4] = {0.0f,0.1f,0.9f,1.0f};
+
+	glFogi(GL_FOG_MODE, GL_EXP);	    // Fog Mode
+	glFogfv(GL_FOG_COLOR, fogColor);    // Set Fog Color
+	glFogf(GL_FOG_DENSITY, 0.15f);	    // How Dense Will The Fog Be
+	glHint(GL_FOG_HINT, GL_DONT_CARE);	// Fog Hint Value
+	glFogf(GL_FOG_START, 0.0f);			// Fog Start Depth
+	glFogf(GL_FOG_END, 1.0f);			// Fog End Depth
+
+	glEnable(GL_DEPTH_TEST);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}
+
+void AAGui::drawSkyBox(float xListenerPos, float yListenerPos)
+{
+	glPushMatrix();
+	glTranslatef(xListenerPos, 0.0f, yListenerPos);
+	glDisable(GL_LIGHTING);
+	/*
+          Walls
+	 */
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[0]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, -150.0f);
+	glTexCoord2f(0.0f, 1.0f);  glVertex3f(150.0f, -150.0f, -150.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[1]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, -150.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f,-150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[2]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[3]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+	glEnd();
+
+	/*
+          Top
+	 */
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[4]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, 150.0f, -150.0f);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+	glEnd();
+
+	/*
+          Bottom
+	 */
+	glBindTexture(GL_TEXTURE_2D, skyboxTexture[5]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, -150.0f, -150.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+	glEnd();
+
+	glEnable(GL_LIGHTING);
+	glPopMatrix();
+}
+
 //
 //void display(void)
 //{
@@ -621,58 +683,58 @@ void specialKeyFunc(int key, int x, int y)
 //#endif
 //}
 //
-//GLuint loadTexturePNG(const char *filename)
-//{
-//    GLuint texture = SOIL_load_OGL_texture(filename, 0, 0, 0);
-//    glBindTexture(GL_TEXTURE_2D, texture);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//
-//    return texture;
-//}
-//
-//GLuint loadTexture(const char *filename)
-//{
-//    GLuint texture;
-//    int width;
-//	int height;
-//    unsigned char *data;
-//    FILE *file;
-//
-//    // open texture data
-//    file = fopen( filename, "rb" );
-//    if ( file == NULL )
-//		return 0;
-//
-//    width = 128;
-//    height = 128;
-//    data = (unsigned char*)malloc(width * height * 3);
-//
-//    fread(data, width * height * 3, 1, file );
-//    fclose(file);
-//
-//    glGenTextures(1, &texture);
-//    glBindTexture(GL_TEXTURE_2D, texture);
-//
-//    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-//
-//    gluBuild2DMipmaps(
-//		GL_TEXTURE_2D,
-//		3,
-//		width,
-//		height,
-//        GL_RGB,
-//		GL_UNSIGNED_BYTE,
-//		data);
-//
-//    free(data);
-//
-//    return texture;
-//}
+GLuint loadTexturePNG(const char *filename)
+{
+    GLuint texture = SOIL_load_OGL_texture(filename, 0, 0, 0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    return texture;
+}
+
+GLuint loadTexture(const char *filename)
+{
+    GLuint texture;
+    int width;
+	int height;
+    unsigned char *data;
+    FILE *file;
+
+    // open texture data
+    file = fopen( filename, "rb" );
+    if ( file == NULL )
+		return 0;
+
+    width = 128;
+    height = 128;
+    data = (unsigned char*)malloc(width * height * 3);
+
+    fread(data, width * height * 3, 1, file );
+    fclose(file);
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    gluBuild2DMipmaps(
+		GL_TEXTURE_2D,
+		3,
+		width,
+		height,
+        GL_RGB,
+		GL_UNSIGNED_BYTE,
+		data);
+
+    free(data);
+
+    return texture;
+}
 //
 //void initGeometry(const char* szFileName, Mesh& mesh, bool alter)
 //{

@@ -38,6 +38,7 @@
 #define AAGUI_HPP_
 #include <boost/shared_ptr.hpp>
 
+#include <GL/glut.h>
 #include <string>
 
 namespace labust
@@ -70,6 +71,11 @@ namespace labust
 			void loadTextures(const std::string& path);
 
 			void start();
+
+			void drawSkyBox(float x, float y);
+
+			GLuint texture;
+			GLuint skyboxTexture[6];
 		};
 	}
 }

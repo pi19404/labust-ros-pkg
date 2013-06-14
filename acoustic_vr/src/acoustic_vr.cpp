@@ -29,6 +29,7 @@
 #include <boost/thread.hpp>
 #include <sensor_msgs/Joy.h>
 #include <auv_msgs/NavSts.h>
+#include <geometry_msgs/PointStamped.h>
 
 #include <labust/gui/AAGui.hpp>
 
@@ -47,7 +48,8 @@ namespace LABUST
 boost::mutex joyMux;
 LABUST::JoystickData joystickData;
 
-auv_msgs::NavSts target,state;
+auv_msgs::NavSts state;
+geometry_msgs::PointStamped target;
 labust::gui::AAGui::Ptr gui;
 
 namespace FMOD
@@ -545,71 +547,71 @@ namespace FMOD
 	}
 
 
-	void drawSkyBox()
-	{
-		glPushMatrix();
-		glTranslatef(xListenerPos, 0.0f, yListenerPos);
-		glDisable(GL_LIGHTING);
-		/*
-            Walls
-		 */
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[0]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, -150.0f);
-		glTexCoord2f(0.0f, 1.0f);  glVertex3f(150.0f, -150.0f, -150.0f);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[1]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, -150.0f);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f,-150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[2]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[3]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
-		glEnd();
-
-		/*
-            Top
-		 */
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[4]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, 150.0f, -150.0f);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, 150.0f, 150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
-		glEnd();
-
-		/*
-            Bottom
-		 */
-		glBindTexture(GL_TEXTURE_2D, skyboxTexture[5]);
-		glBegin(GL_QUADS);
-		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
-		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, -150.0f, -150.0f);
-		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, -150.0f, 150.0f);
-		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
-		glEnd();
-
-		glEnable(GL_LIGHTING);
-		glPopMatrix();
-	}
+//	void drawSkyBox()
+//	{
+//		glPushMatrix();
+//		glTranslatef(xListenerPos, 0.0f, yListenerPos);
+//		glDisable(GL_LIGHTING);
+//		/*
+//            Walls
+//		 */
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[0]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, -150.0f);
+//		glTexCoord2f(0.0f, 1.0f);  glVertex3f(150.0f, -150.0f, -150.0f);
+//		glEnd();
+//
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[1]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, -150.0f);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f,-150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+//		glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+//		glEnd();
+//
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[2]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+//		glEnd();
+//
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[3]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+//		glEnd();
+//
+//		/*
+//            Top
+//		 */
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[4]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(-150.0f, 150.0f, -150.0f);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(150.0f, 150.0f, -150.0f);
+//		glTexCoord2f(0.0f, 1.0f); glVertex3f(150.0f, 150.0f, 150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(-150.0f, 150.0f, 150.0f);
+//		glEnd();
+//
+//		/*
+//            Bottom
+//		 */
+//		glBindTexture(GL_TEXTURE_2D, skyboxTexture[5]);
+//		glBegin(GL_QUADS);
+//		glTexCoord2f(0.0f, 1.0f); glVertex3f(-150.0f, -150.0f, -150.0f);
+//		glTexCoord2f(0.0f, 0.0f); glVertex3f(150.0f, -150.0f, -150.0f);
+//		glTexCoord2f(1.0f, 0.0f); glVertex3f(150.0f, -150.0f, 150.0f);
+//		glTexCoord2f(1.0f, 1.0f); glVertex3f(-150.0f, -150.0f, 150.0f);
+//		glEnd();
+//
+//		glEnable(GL_LIGHTING);
+//		glPopMatrix();
+//	}
 
 	void drawWaterRoom()
 	{
@@ -1105,9 +1107,9 @@ namespace FMOD
 		//Ovdje ide iz simulatora dodavanje
 		///////////////////////////////////////////////////////////////////////////////////////////////////
 		boost::mutex::scoped_lock lock(joyMux);
-		ObjectLong = target.position.north;
-		ObjectLat = target.position.east;
-		ObjectDepth = target.position.depth;
+		ObjectLong = target.point.x;
+		ObjectLat = target.point.y;
+		ObjectDepth = target.point.z;
 		if (JoyStickMode==2)
 		{yListenerPos = 20;}
 		else
@@ -1120,7 +1122,7 @@ namespace FMOD
 		xRotation = state.orientation.pitch; //rovStatus["Pitch"];
 		if (JoyStickMode==1)
 		{
-			yRotation = state.orientation.yaw; //rovStatus["Heading"];}
+			yRotation = 180*state.orientation.yaw/M_PI; //rovStatus["Heading"];}
 			//std::cout<<yRotation<<" "<<yListenerPos<<" "<<TaskMode<<" "<<GuidanceMode<<std::endl;
 			TauX = 0; //rovStatus["TauX"];
 			TauY = 0; //rovStatus["TauY"];
@@ -1357,6 +1359,9 @@ namespace FMOD
 				zListenerPosRel = 0;//20*cos(PI/180*InputStoh);
 				xListenerPosRel = -25;//20*sin(PI/180*InputStoh);
 			}
+
+			zListenerPosRel = zListenerPos;
+			xListenerPosRel = xListenerPos;
 		}
 		else
 		{
@@ -1743,7 +1748,7 @@ namespace FMOD
 		//drawGeometry(rotatingMesh);
 
 		// draw skybox
-		drawSkyBox();
+		gui->drawSkyBox(xListenerPos, yListenerPos);
 
 		glDisable(GL_TEXTURE_2D);
 
@@ -1945,7 +1950,10 @@ namespace FMOD
 		ERRCHECK(result);
 		//result = fmodEventSystem->setMediaPath("C:/Program Files/FMOD SoundSystem/FMOD Programmers API Win32/fmoddesignerapi/examples/media1/");
 		ERRCHECK(result);
-		result = fmodEventSystem->load("examples1.fev", 0, &fmodEventProject);
+		ros::NodeHandle ph("~");
+		std::string mediaPath("files");
+		ph.param("MediaPath",mediaPath,mediaPath);
+		result = fmodEventSystem->load((mediaPath + "/examples1.fev").c_str(), 0, &fmodEventProject);
 		ERRCHECK(result);
 		result = fmodEventProject->getGroup("FeatureDemonstration/3D Events", true, &fmodEventGroup);
 		ERRCHECK(result);
@@ -1994,42 +2002,42 @@ namespace FMOD
     skyboxTexture[4] = loadTexturePNG("C:/Program Files/FMOD SoundSystem/FMOD Programmers API Win32/fmoddesignerapi/examples/media/skybox/bluesky/top.png");
     skyboxTexture[5] = loadTexturePNG("C:/Program Files/FMOD SoundSystem/FMOD Programmers API Win32/fmoddesignerapi/examples/media/skybox/bluesky/bottom.png");
 		 */
-		texture = loadTexture("files/texture.img");
-		skyboxTexture[0] = loadTexturePNG("files/front.png");
-		skyboxTexture[1] = loadTexturePNG("files/right.png");
-		skyboxTexture[2] = loadTexturePNG("files/back.png");
-		skyboxTexture[3] = loadTexturePNG("files/left.png");
-		skyboxTexture[4] = loadTexturePNG("files/top.png");
-		skyboxTexture[5] = loadTexturePNG("files/bottom.png");
-
-
-		printf("done.\n");
-
-		// setup lighting
-		GLfloat lightDiffuse[] = {1.0, 1.0, 1.0, 1.0};
-		GLfloat lightPosition[] = {300.0, 1000.0, 400.0, 0.0};
-		GLfloat lightAmbiant[] = {1.25, 1.25, 1.25, 1.0};
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-		glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbiant);
-		glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, 1.0f);
-		glEnable(GL_LIGHT0);
-		glEnable(GL_LIGHTING);
-
-		// setup fog(water)
-		GLfloat	fogColor[4] = {0.0f,0.1f,0.9f,1.0f};
-
-		glFogi(GL_FOG_MODE, GL_EXP);	    // Fog Mode
-		glFogfv(GL_FOG_COLOR, fogColor);    // Set Fog Color
-		glFogf(GL_FOG_DENSITY, 0.15f);	    // How Dense Will The Fog Be
-		glHint(GL_FOG_HINT, GL_DONT_CARE);	// Fog Hint Value
-		glFogf(GL_FOG_START, 0.0f);			// Fog Start Depth
-		glFogf(GL_FOG_END, 1.0f);			// Fog End Depth
-
-		glEnable(GL_DEPTH_TEST);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+//		texture = loadTexture("files/texture.img");
+//		skyboxTexture[0] = loadTexturePNG("files/front.png");
+//		skyboxTexture[1] = loadTexturePNG("files/right.png");
+//		skyboxTexture[2] = loadTexturePNG("files/back.png");
+//		skyboxTexture[3] = loadTexturePNG("files/left.png");
+//		skyboxTexture[4] = loadTexturePNG("files/top.png");
+//		skyboxTexture[5] = loadTexturePNG("files/bottom.png");
+//
+//
+//		printf("done.\n");
+//
+//		// setup lighting
+//		GLfloat lightDiffuse[] = {1.0, 1.0, 1.0, 1.0};
+//		GLfloat lightPosition[] = {300.0, 1000.0, 400.0, 0.0};
+//		GLfloat lightAmbiant[] = {1.25, 1.25, 1.25, 1.0};
+//		glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+//		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+//		glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbiant);
+//		glLightModelf(GL_LIGHT_MODEL_TWO_SIDE, 1.0f);
+//		glEnable(GL_LIGHT0);
+//		glEnable(GL_LIGHTING);
+//
+//		// setup fog(water)
+//		GLfloat	fogColor[4] = {0.0f,0.1f,0.9f,1.0f};
+//
+//		glFogi(GL_FOG_MODE, GL_EXP);	    // Fog Mode
+//		glFogfv(GL_FOG_COLOR, fogColor);    // Set Fog Color
+//		glFogf(GL_FOG_DENSITY, 0.15f);	    // How Dense Will The Fog Be
+//		glHint(GL_FOG_HINT, GL_DONT_CARE);	// Fog Hint Value
+//		glFogf(GL_FOG_START, 0.0f);			// Fog Start Depth
+//		glFogf(GL_FOG_END, 1.0f);			// Fog End Depth
+//
+//		glEnable(GL_DEPTH_TEST);
+//
+//		glMatrixMode(GL_MODELVIEW);
+//		glLoadIdentity();
 	}
 
 	GlutCloseClass::~GlutCloseClass()
@@ -2056,10 +2064,10 @@ void handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 	joystickData.axes[1] = joy->axes[1]*32768;
 }
 
-void handleTarget(const auv_msgs::NavSts::ConstPtr& tg)
+void handleTarget(const geometry_msgs::PointStamped::ConstPtr& ref)
 {
 	boost::mutex::scoped_lock l(joyMux);
-	target = *tg;
+	target = *ref;
 }
 
 void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
@@ -2074,10 +2082,9 @@ int	main(int argc, char **argv)
 	ros::init(argc,argv,"audioex");
 	ros::NodeHandle nh;
 	ros::Subscriber manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,&handleManual);
-	//Initialize publishers
-	ros::Publisher tauOut = nh.advertise<auv_msgs::BodyForceReq>("tauOut", 1);
+
 	//Initialze subscribers
-	ros::Subscriber targetRef = nh.subscribe<auv_msgs::NavSts>("target_point", 1,
+	ros::Subscriber targetRef = nh.subscribe<geometry_msgs::PointStamped>("target_point", 1,
 			&handleTarget);
 	ros::Subscriber stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
 			&handleEstimates);
@@ -2119,7 +2126,10 @@ int	main(int argc, char **argv)
 //		glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 //		glutInitWindowSize(width, height);
 //		glutCreateWindow("Audio guidance");
-		gui.reset(new labust::gui::AAGui("files"));
+		std::string texturePath("files");
+		ph.param("TexturePath",texturePath,texturePath);
+
+		gui.reset(new labust::gui::AAGui(texturePath));
 		glutDisplayFunc(display);
 		glutReshapeFunc(reshapeFunc);
 		glutMouseFunc(mouseFunc);
@@ -2129,8 +2139,11 @@ int	main(int argc, char **argv)
 		glutSpecialUpFunc(specialKeyUpFunc);
 		glutTimerFunc(INTERFACE_UPDATETIME, timerFunc, 0);
 		init();
+		//boost::thread t(boost::bind(&labust::gui::AAGui::start,gui.get()));
 		gui->start();
 		//glutMainLoop();
+
+		ros::spin();
 
 		usleep(1000*1000);
 	}

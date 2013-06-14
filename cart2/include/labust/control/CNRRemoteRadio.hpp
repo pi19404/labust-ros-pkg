@@ -138,7 +138,7 @@ namespace labust
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg;
+			ros::Publisher joyOut, launched, hlMsg, posOut;
 			/**
 			 * The subscribed topics.
 			 */

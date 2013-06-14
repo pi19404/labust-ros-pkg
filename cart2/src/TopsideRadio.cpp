@@ -95,12 +95,13 @@ void TopsideRadio::onInit()
 		extPoint = nh.subscribe<auv_msgs::NavSts>("target_point", 1,
 				&TopsideRadio::onExtPoint,this);
 		joyIn = nh.subscribe<sensor_msgs::Joy>("joy_in",1,&TopsideRadio::onJoy,this);
-		//Dynamic reconfigure
-		server.setCallback(boost::bind(&TopsideRadio::dynrec_cb, this, _1, _2));
-
 		stateHatPub = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 		stateMeasPub = nh.advertise<auv_msgs::NavSts>("meas",1);
 		info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
+		selectedPoint = nh.advertise<geometry_msgs::PointStamped>("selected_point", 1);
+
+		//Dynamic reconfigure
+		server.setCallback(boost::bind(&TopsideRadio::dynrec_cb, this, _1, _2));
 
 		nh.param("LocalOriginLat",originLat,originLat);
 		nh.param("LocalOriginLon",originLon,originLon);
@@ -270,6 +271,16 @@ void TopsideRadio::dynrec_cb(cart2::RadioModemConfig& config, uint32_t level)
 	}
 	this->config = config;
 	this->populateDataFromConfig();
+
+	if (config.ManualPoint && config.UseLocal)
+	{
+		geometry_msgs::PointStamped point;
+		point.header.frame_id = "local";
+		point.header.stamp = ros::Time::now();
+		point.point.x = this->config.PointN;
+		point.point.y = this->config.PointE;
+		selectedPoint.publish(point);
+	}
 }
 
 void TopsideRadio::start_receive()
@@ -490,6 +501,20 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 		meas->position.north = cdata.state_meas[x]/100.;
 		meas->position.east = cdata.state_meas[y]/100.;
 		meas->orientation.yaw = cdata.state_meas[psi]/100.;
+
+		std::pair<double, double> location = labust::tools::meter2deg(
+				state->position.north,
+				state->position.east,
+				state->origin.latitude);
+		state->global_position.latitude = state->origin.latitude + location.first;
+		state->global_position.longitude = state->origin.longitude + location.second;
+
+		location = labust::tools::meter2deg(
+						meas->position.north,
+						meas->position.east,
+						meas->origin.latitude);
+		meas->global_position.latitude = state->origin.latitude + location.first;
+		meas->global_position.longitude = state->origin.longitude + location.second;
 
 		cart2::ImuInfo cinfo;
 		cinfo.data.resize(4);

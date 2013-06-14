@@ -1,3 +1,6 @@
 <launch>
     <node pkg="rviz" name="rviz" type="rviz" />
+    <node pkg="cart2" name="cart2_marker" type="cart2_rviz.py">
+        <remap from="target_point" to="LFPoint" />
+    </node>
 </launch>
