@@ -1006,14 +1006,12 @@ int main(int argc, char* argv[])
 			else
 			{
 				curr_port = thrust.Port;
-				SetReference(2,-thrust.Port);
-				//SetReference(1,0.5);
+				SetReference(1,-thrust.Port);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
 				curr_stbd = thrust.Stb;
-				SetReference(1,thrust.Stb);
-				//SetReference(2,0.5);
+				SetReference(2,thrust.Stb);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
@@ -1088,8 +1086,8 @@ int main(int argc, char* argv[])
 			CommsOkFlag = true;
 
 			bool VoltageTest = fabs(Supply_Voltage_Previous - Supply_Voltage)<0.0000001;
-			bool portTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[0])<10);
-			bool stbdTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[1])<10);
+			bool portTest = (fabs(thrust.Port) > 0.2) && (fabs(RPM[0])<10);
+			bool stbdTest = (fabs(thrust.Stb) > 0.2) && (fabs(RPM[1])<10);
 			//stbdTest = portTest = false;
 			if (VoltageTest || portTest || stbdTest)
 			{
