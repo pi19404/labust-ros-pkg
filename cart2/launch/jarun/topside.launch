@@ -10,18 +10,19 @@
 		</node>
 
 		<node pkg="cart2" type="topside_radio" name="topside_modem" if="$(env IS_REMOTE)">
-			<!-- <param name="PortName" value="/dev/ttyUSB1" /> -->
-			<param name="PortName" value="/dev/pts/3" />
+			<param name="PortName" value="/dev/ttyUSB1" />
+			<!-- <param name="PortName" value="/dev/pts/3" /> -->
 			<param name="BaudRate" value="19200" />
-			<param name="TransmitRate" value="5" />
+			<param name="TransmitRate" value="3" />
 			<param name="tf_prefix" value="topside" />
 			<remap from="joy_in" to="joy" />
 			<remap from="target_point" to="/dummy/stateHat" />
+			<remap from="selected_navsts" to="bartPos" />
 		</node>
 		
 		<node pkg="cart2" type="cnr_radio" name="radio_modem" if="$(env USE_CNR_RADIO)">
-			<!-- <param name="PortName" value="/dev/ttyUSB0" /> -->
-			<param name="PortName" value="/dev/pts/3" />
+			<param name="PortName" value="/dev/ttyUSB1" />
+			<!-- <param name="PortName" value="/dev/pts/3" /> -->
 			<param name="BaudRate" value="19200" />
 			<!-- cart=0, bart=1, station=2 -->
 			<param name="ID" value="2" />
@@ -32,6 +33,8 @@
 		<node pkg="rviz" name="rviz_topside" type="rviz" />
 		<node pkg="cart2" type="repost_node" name="position_repost">
 			<param name="tf_prefix" value="topside" />
+			<param name="PortName" value="/dev/ttyUSB2" />
+			<param name="BaudRate" value="38400" />
 		</node>
 
 		<node pkg="acoustic_vr" name="audioex" type="acoustic_vr">
