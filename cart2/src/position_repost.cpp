@@ -68,9 +68,17 @@ uint8_t aisConvertByte(uint8_t byte)
   return byte;
 }
 
-void aivdm2(long lat, long lon, int hdg, std::string& ais)
+void aivdm2(long lat, long lon, int hdg, std::string& ais, bool isTarget = false)
 {
-  ais = "!AIVDM,1,1,,A,13u?etP00000000000000000069D,0*   \n";
+	if (isTarget)
+	{
+		 ais = "!AIVDM,1,1,,A,13u?etP00000000000000000069D,0*  \n";
+	}
+	else
+	{
+		ais = "!AIVDM,1,1,,A,13u?ftP00000000000000000069D,0*  \n";
+	}
+  ROS_INFO("Encoding AIS information: lat=%d, lon=%d hdg=%d",lat,lon,hdg);
 	unsigned char chk;
 	int i;
 	ais[24] = 0x0 | ((lon >> 23) & 0x1F);
@@ -201,12 +209,17 @@ void aivdm(long lat, long lon, int hdg) {
     printf("\n");
 }
 
-void onData(SharedData& shared, const auv_msgs::NavSts::ConstPtr data)
+void onData(SharedData& shared, bool isTarget, const auv_msgs::NavSts::ConstPtr data)
 {
 	std::string ais_data;
+	int hdg = int(data->orientation.yaw*180/M_PI);
+	if (hdg < 0) hdg +=360;
 	aivdm2(long(data->global_position.latitude*600000),
 			long(data->global_position.longitude*600000),
-			int(data->orientation.yaw*180/M_PI), ais_data);
+			hdg, ais_data, isTarget);
+
+	ROS_INFO("Encoded ais: %s",ais_data.c_str());
+
 	boost::asio::write(shared.port,boost::asio::buffer(ais_data));
 
 	try
@@ -237,7 +250,8 @@ int main(int argc, char* argv[])
 	ros::NodeHandle nh,ph("~");
 
 	SharedData shared;
-	ros::Subscriber bartPos = nh.subscribe<auv_msgs::NavSts>("stateHat",1,boost::bind(&onData,boost::ref(shared),_1));
+	ros::Subscriber cartPos = nh.subscribe<auv_msgs::NavSts>("cartPos",1,boost::bind(&onData,boost::ref(shared),false,_1));
+	ros::Subscriber bartPos = nh.subscribe<auv_msgs::NavSts>("bartPos",1,boost::bind(&onData,boost::ref(shared),true,_1));
 	shared.trackPoint = nh.advertise<geometry_msgs::PointStamped>("target_point",1);
 
 	using namespace boost::asio::ip;

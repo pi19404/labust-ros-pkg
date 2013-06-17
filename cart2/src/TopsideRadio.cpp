@@ -99,6 +99,7 @@ void TopsideRadio::onInit()
 		stateMeasPub = nh.advertise<auv_msgs::NavSts>("meas",1);
 		info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
 		selectedPoint = nh.advertise<geometry_msgs::PointStamped>("selected_point", 1);
+		selectedNavSts = nh.advertise<auv_msgs::NavSts>("selected_navsts", 1);
 
 		//Dynamic reconfigure
 		server.setCallback(boost::bind(&TopsideRadio::dynrec_cb, this, _1, _2));
@@ -652,6 +653,26 @@ void TopsideRadio::start()
 			//write data
 			int n = boost::asio::write(port, output.data());
 			ROS_INFO("Transferred %d bytes.",n);
+
+			if (config.ManualPoint)
+			{
+				auv_msgs::NavSts selected;
+				if (config.UseLocal)
+				{
+					std::pair<double, double> location = labust::tools::meter2deg(config.PointN,
+							config.PointE,
+							originLat);
+					selected.global_position.latitude = originLat + location.first;
+					selected.global_position.longitude = originLon + location.second;
+				}
+				else
+				{
+					selected.global_position.latitude = config.PointLat;
+					selected.global_position.longitude = config.PointLon;
+				}
+				selectedNavSts.publish(selected);
+			}
+
 
 			rate.sleep();
 			ros::spinOnce();
