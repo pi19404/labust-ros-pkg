@@ -426,7 +426,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			mode.request.surge = data.surge/100.;
 			mode.request.yaw = M_PI*data.yaw/128.;
 			l.unlock();
-			client.call(mode);
+			if (!(data.launch && (data.mode == 0))) client.call(mode);
 		}
 		l2.unlock();
 

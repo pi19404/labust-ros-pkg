@@ -388,7 +388,7 @@ void HLManager::bArtStep()
 			cart2::SetHLMode srv;
 			srv.request.mode = srv.request.HeadingSurge;
 			srv.request.yaw = stateHat.orientation.yaw-gyroYaw;
-			srv.request.surge = 0.5;
+			srv.request.surge = 0;
 			this->setHLMode(srv.request, srv.response);
 		}
 
@@ -400,7 +400,7 @@ void HLManager::bArtStep()
 			srv.request.mode = srv.request.GoToPoint;
 			this->calculateBArtPoint(stateHat.orientation.yaw-gyroYaw);
 			srv.request.ref_point = point;
-			srv.request.surge = 0.5;
+			srv.request.surge = 0;
 			this->setHLMode(srv.request, srv.response);
 		}
 }

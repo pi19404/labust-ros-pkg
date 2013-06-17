@@ -81,15 +81,15 @@ struct TauT
 		{ScaleThrust = 1 / (fabs(Tau.Frw) + fabs(Tau.Yaw));}
 		else
 		{ScaleThrust = 1;}
-		Port = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
-		Stb = Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
+		Port = Limit * ScaleThrust * (Tau.Frw + Tau.Yaw);
+		Stb = Limit * ScaleThrust * (Tau.Frw - Tau.Yaw);
 	}
 
 	TauC getTauC()
 	{
 		TauC tau;
 		tau.Frw = (Port+Stb)/2;
-		tau.Yaw = (-Port+Stb)/2;
+		tau.Yaw = (Port-Stb)/2;
 
 		return tau;
 	}
@@ -961,8 +961,8 @@ int main(int argc, char* argv[])
 			double rpm_port(0), rpm_stbd(0);
 			int rpm_port_meas(0), rpm_stbd_meas(0);
 
-				medianPort.push_back(RPM[1]);
-				medianStbd.push_back(RPM[0]);
+				medianPort.push_back(RPM[0]);
+				medianStbd.push_back(RPM[1]);
 				if (medianPort.size()>median_size) medianPort.erase(medianPort.begin());
 				if (medianStbd.size()>median_size) medianStbd.erase(medianStbd.begin());
 
@@ -991,14 +991,14 @@ int main(int argc, char* argv[])
 				integralRPM[1]+=Ki*error[1]*0.1;
 
 				//curr_port=labust::math::coerce(-Kp*error[0] + integralRPM[0],-max_current,max_current);
-				curr_port=cport.step(-rpm_port, rpm_port_meas);
+				curr_port=cport.step(rpm_port, rpm_port_meas);
 				//curr_stbd=labust::math::coerce(Kp*error[1] + integralRPM[1],-max_current,max_current);
-				curr_stbd=cstbd.step(rpm_stbd, -rpm_stbd_meas);
-				SetReference(2,curr_port);
+				curr_stbd=cstbd.step(rpm_stbd, rpm_stbd_meas);
+				SetReference(1,-curr_port);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
-				SetReference(1,curr_stbd);
+				SetReference(2,curr_stbd);
 				usleep(1000*5);
 				if (!CommsOkFlag)
 				{break;}
