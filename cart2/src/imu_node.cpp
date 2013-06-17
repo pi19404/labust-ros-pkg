@@ -145,7 +145,7 @@ void handleIncoming(SharedData& shared,
 		Eigen::Quaternion<float> quat;
 		labust::tools::quaternionFromEulerZYX(data[roll],
 				data[pitch],
-				labust::math::wrapRad(data[yaw] + shared.magnetic_declination + M_PI), quat);
+				labust::math::wrapRad(data[yaw] + shared.magnetic_declination), quat);
 		imu->orientation.x = quat.x();
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
@@ -176,8 +176,8 @@ void handleIncoming(SharedData& shared,
 		if ((data[hdop]>0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
-		shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
-		shared.broadcast.sendTransform(tf::StampedTransform(shared.world, ros::Time::now(), "world", "local"));
+		//shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
+		//shared.broadcast.sendTransform(tf::StampedTransform(shared.world, ros::Time::now(), "world", "local"));
 	}
 	start_receive(shared,port);
 }
