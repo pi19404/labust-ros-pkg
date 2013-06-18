@@ -381,14 +381,26 @@ void HLManager::bArtStep()
 {
 		//Check that enough time has passed
 	  double dT = (ros::Time::now() - launchTime).toSec();
-		if ((dT > safetyTime) && (dT < safetyTime2))
+		double sft2 = 5;
+		if ((dT > safetyTime) && (dT < (safetyTime + sft2)))
+		{
+			ROS_INFO("Heading only mode.");
+			//Switch to combined heading
+			cart2::SetHLMode srv;
+			srv.request.mode = srv.request.HeadingSurge;
+			srv.request.yaw = stateHat.orientation.yaw-gyroYaw;
+			srv.request.surge = 0;
+			this->setHLMode(srv.request, srv.response);
+		}
+
+		if ((dT > (safetyTime+sft2)) && (dT < safetyTime2))
 		{
 			ROS_INFO("Heading + surge mode.");
 			//Switch to combined heading
 			cart2::SetHLMode srv;
 			srv.request.mode = srv.request.HeadingSurge;
 			srv.request.yaw = stateHat.orientation.yaw-gyroYaw;
-			srv.request.surge = 0;
+			srv.request.surge = 0.5;
 			this->setHLMode(srv.request, srv.response);
 		}
 
@@ -400,7 +412,7 @@ void HLManager::bArtStep()
 			srv.request.mode = srv.request.GoToPoint;
 			this->calculateBArtPoint(stateHat.orientation.yaw-gyroYaw);
 			srv.request.ref_point = point;
-			srv.request.surge = 0;
+			srv.request.surge = 0.5;
 			this->setHLMode(srv.request, srv.response);
 		}
 }
