@@ -68,7 +68,7 @@ namespace labust
 		{
 			enum {bArt=0, cArt};
 			enum {stop=0, manual,
-				gotoPoint, stationKeeping, circle, heading, headingSurge, lastMode};
+				gotoPoint, stationKeeping, circle, heading, headingSurge, vtManual, lastMode};
 
 			typedef std::map<std::string,bool> ControllerMap;
 

@@ -57,6 +57,8 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+execute_process(COMMAND sh scripts/download_media.sh 
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include

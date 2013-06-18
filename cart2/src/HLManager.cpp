@@ -205,6 +205,14 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		ROS_INFO("Set to Heading + constant surge mode.");
 		controllers["HDG"] = true;
 		break;
+	case vtManual:
+		ROS_INFO("Set to vt manual mode.");
+		srv.request.desired_mode[srv.request.u] = srv.request.ManualAxis;
+		srv.request.desired_mode[srv.request.r] = srv.request.ManualAxis;
+		controllers["VT"] = true;
+		s = 0;
+		this->onVTTwist(fakeTwist);
+		break;
 	case stop:
 		ROS_INFO("Stopping.");
 		return this->fullStop();
@@ -267,7 +275,7 @@ bool HLManager::configureControllers()
 
 void HLManager::onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist)
 {
-	if (mode == circle)
+	if (mode == circle || mode == vtManual)
 	{
 		//\todo Generalize this 0.1 with Ts.
 		s +=twist->twist.linear.x*0.1;

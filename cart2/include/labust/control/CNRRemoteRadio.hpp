@@ -49,6 +49,7 @@
 
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -99,6 +100,10 @@ namespace labust
 			 */
 			void onCurrentMode(const std_msgs::Int32::ConstPtr& mode);
 			/**
+			 * Handle the launch.
+			 */
+			void onLaunch(const std_msgs::Bool::ConstPtr& launch);
+			/**
 			 * Start the receiving thread.
 			 */
 			void start_receive();
@@ -146,7 +151,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode;
+			ros::Subscriber extPoint, joyIn, stateHat, stateMeas, curMode, launchFlag;
 			/**
 			 * The io service.
 			 */
@@ -182,7 +187,7 @@ namespace labust
 			/**
 			 * Dummy requester.
 			 */
-			bool doDummyRequest;
+			bool doDummyRequest, doLaunch;
 			/**
 			 * Last mode field.
 			 */
