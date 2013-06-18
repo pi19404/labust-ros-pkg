@@ -66,6 +66,7 @@ CNRRemoteRadio::CNRRemoteRadio():
 				buffer(sync_length,0),
 				id(bart),
 				doDummyRequest(false),
+				doLaunch(false),
 				lastmode(1)
 {this->onInit();}
 
@@ -106,6 +107,7 @@ void CNRRemoteRadio::onInit()
 	stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&CNRRemoteRadio::onStateHat,this);
 	//stateMeas = nh.subscribe<auv_msgs::NavSts>("meas",1,&CNRRemoteRadio::onStateMeas,this);
 	curMode = nh.subscribe<std_msgs::Int32>("current_mode",1,&CNRRemoteRadio::onCurrentMode,this);
+	launchFlag = nh.subscribe<std_msgs::Bool>("set_launch",1,&CNRRemoteRadio::onLaunch,this);
 
 	this->start_receive();
 	iorunner = boost::thread(boost::bind(&boost::asio::io_service::run,&io));
@@ -113,6 +115,11 @@ void CNRRemoteRadio::onInit()
 
 void CNRRemoteRadio::onCurrentMode(const std_msgs::Int32::ConstPtr& mode)
 {}
+
+void CNRRemoteRadio::onLaunch(const std_msgs::Bool::ConstPtr& launch)
+{
+	doLaunch = launch->data;
+}
 
 void CNRRemoteRadio::onStateHat(const auv_msgs::NavSts::ConstPtr& estimate)
 {
@@ -188,8 +195,8 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 
 			lastModemMsg = ros::Time::now();
 			auv_msgs::NavSts currPose;
-			currPose.global_position.latitude = data1/1000000.;
-			currPose.global_position.longitude = data2/1000000.;
+			currPose.global_position.latitude = data1/10000000.;
+			currPose.global_position.longitude = data2/10000000.;
 			posOut.publish(currPose);
 		}
 
@@ -231,8 +238,8 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					mode.request.mode = mode.request.Manual;
 					sensor_msgs::Joy joy;
 					joy.axes.assign(6,0);
-					joy.axes[1] = data2/10000.;
-					joy.axes[2] = -data1/10000.;
+					joy.axes[1] = data2/100.;
+					joy.axes[2] = -data1/100.;
 					//Sanity check
 					if (fabs(joy.axes[1]) > 1)
 					{
@@ -256,7 +263,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					mode.request.mode = mode.request.HeadingControl;
 					sensor_msgs::Joy joy;
 					joy.axes.assign(6,0);
-					joy.axes[1] = data2/10000.;
+					joy.axes[1] = data2/100.;
 					if (fabs(joy.axes[1]) > 1)
 					{
 						ROS_ERROR("Remote joystick force is above 1:", joy.axes[1]);
@@ -279,8 +286,8 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					mode.request.surge = 0.5;
 
 					mode.request.ref_point.header.frame_id = "worldLatLon";
-					mode.request.ref_point.point.x = data1/1000000.;
-					mode.request.ref_point.point.y = data2/1000000.;
+					mode.request.ref_point.point.x = data1/10000000.;
+					mode.request.ref_point.point.y = data2/10000000.;
 
 					ROS_INFO("Switch to remote mode: %f %f.",
 							mode.request.ref_point.point.x,
@@ -333,8 +340,8 @@ void CNRRemoteRadio::replyBuoy()
 	ret[2] = 9;
 	ret[3] = (station<<4) + bart;
 	boost::mutex::scoped_lock l(cdataMux);
-	uint32_t lat = htonl(currLat*1000000);
-	uint32_t lon = htonl(currLon*1000000);
+	uint32_t lat = htonl(currLat*10000000);
+	uint32_t lon = htonl(currLon*10000000);
 	l.unlock();
 	ROS_INFO("The buoy reply: %d, %d",htonl(lat), htonl(lon));
 	memcpy(&ret[4],&lat,sizeof(uint32_t));
@@ -352,7 +359,7 @@ void CNRRemoteRadio::dummyRequest()
 	ret[1] = 'P';
 	ret[2] = 2;
 	ret[3] = (bart<<4) + station;
-	ret[4] = 0;
+	ret[4] = doLaunch;
 
 	int crc = compute_crc16(&ret[0], 5);
 	ret[5] = crc/256;

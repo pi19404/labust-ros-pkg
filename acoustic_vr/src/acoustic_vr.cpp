@@ -29,7 +29,6 @@
 #include <boost/thread.hpp>
 #include <sensor_msgs/Joy.h>
 #include <auv_msgs/NavSts.h>
-#include <geometry_msgs/PointStamped.h>
 
 #include <labust/gui/AAGui.hpp>
 
@@ -48,8 +47,7 @@ namespace LABUST
 boost::mutex joyMux;
 LABUST::JoystickData joystickData;
 
-auv_msgs::NavSts state;
-geometry_msgs::PointStamped target;
+auv_msgs::NavSts state, target;
 labust::gui::AAGui::Ptr gui;
 
 namespace FMOD
@@ -998,7 +996,7 @@ namespace FMOD
 		}
 
 		// target or last WP won
-		if ((fabs(xListenerPos) < 2 && fabs(zListenerPos) < 2) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
+		if ((fabs(xListenerPos) < 0.1 && fabs(zListenerPos) < 0.1) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
 		{
 			objects[0].yPos = yListenerPos + 5000;
 			objects[6].yPos = yListenerPos + 5000;
@@ -1107,9 +1105,9 @@ namespace FMOD
 		//Ovdje ide iz simulatora dodavanje
 		///////////////////////////////////////////////////////////////////////////////////////////////////
 		boost::mutex::scoped_lock lock(joyMux);
-		ObjectLong = target.point.x;
-		ObjectLat = target.point.y;
-		ObjectDepth = target.point.z;
+		ObjectLong = target.position.north + RabbitDistance*cos(target.orientation.yaw);
+		ObjectLat = target.position.east + RabbitDistance*sin(target.orientation.yaw);
+		ObjectDepth = target.position.depth;
 		if (JoyStickMode==2)
 		{yListenerPos = 20;}
 		else
@@ -1134,7 +1132,7 @@ namespace FMOD
 			latVelVector = state.body_velocity.y; //rovStatus["v"];
 		}
 		Altitude = state.altitude; //dvlStatus["Altitude"];
-		if (fabs(xListenerPos - WPeast[ActualWPindex]) < 3 && fabs(zListenerPos-WPnorth[ActualWPindex]) < 3)
+		if (fabs(xListenerPos - WPeast[ActualWPindex]) < 0.5 && fabs(zListenerPos-WPnorth[ActualWPindex]) < 0.5)
 		{
 			ActualWPindex += 1;}
 		if (TaskMode==3)
@@ -1816,7 +1814,7 @@ namespace FMOD
 				objects[object].event->set3DAttributes(0, 0, &soundorientation);
 			}
 
-			glutSolidTeapot(1.f);//SolidTorus(0.15f, 0.6f, 8, 16);
+			glutSolidTeapot(0.1f);//SolidTorus(0.15f, 0.6f, 8, 16);
 			glPopAttrib();
 			glPopMatrix();
 		}
@@ -2064,7 +2062,7 @@ void handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 	joystickData.axes[1] = joy->axes[1]*32768;
 }
 
-void handleTarget(const geometry_msgs::PointStamped::ConstPtr& ref)
+void handleTarget(const auv_msgs::NavSts::ConstPtr& ref)
 {
 	boost::mutex::scoped_lock l(joyMux);
 	target = *ref;
@@ -2084,7 +2082,7 @@ int	main(int argc, char **argv)
 	ros::Subscriber manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,&handleManual);
 
 	//Initialze subscribers
-	ros::Subscriber targetRef = nh.subscribe<geometry_msgs::PointStamped>("target_point", 1,
+	ros::Subscriber targetRef = nh.subscribe<auv_msgs::NavSts>("target_point", 1,
 			&handleTarget);
 	ros::Subscriber stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
 			&handleEstimates);
