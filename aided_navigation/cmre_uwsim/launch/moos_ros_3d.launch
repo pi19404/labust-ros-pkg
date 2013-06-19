@@ -1,0 +1,29 @@
+<launch>
+  <node pkg="UWSim" name="UWSim" type="UWSim" 
+  	args="--configfile $(find cmre_uwsim)/data/scenes/test_environment.xml 
+  	--dataPath $(find cmre_uwsim)/data/scenes"  />    
+  <group ns="uuv">
+   <node pkg="cmre_uwsim" name="Goldrake" type="CMRE2UWSim">
+    <param name="InputState" value="uuv_meas" />
+    <param name="OutputState" value="uwsim_hook" />
+    <param name="nav_type" value="xml" />
+   </node>
+   <node pkg="moosros" name="uuv_bridge" type="Bridge">
+    <param name="xmlFile" value="$(find cmre_uwsim)/data/config/uuv_msgs.xml" />
+    <param name="moosFile" value="$(find cmre_uwsim)/data/config/uuv.moos" />
+   </node>
+  </group>
+  <group ns="usv">
+   <node pkg="cmre_uwsim" name="Gemellina" type="CMRE2UWSim">
+    <param name="nav_x" value="nav_x" />
+    <param name="nav_y" value="nav_y" />
+    <param name="nav_heading" value="nav_heading" />
+    <param name="nav_type" value="moos" />
+    <param name="OutputState" value="uwsim_hook" />
+   </node>
+   <node pkg="moosros" name="usv_bridge" type="Bridge">
+    <param name="xmlFile" value="$(find cmre_uwsim)/data/config/usv_msgs.xml" />
+    <param name="moosFile" value="$(find cmre_uwsim)/data/config/usv.moos" />
+   </node>
+  </group>
+</launch>

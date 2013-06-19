@@ -11,6 +11,7 @@ bin/
 #ignore bvt_sdk dirs
 */bvt_sdk/include/
 */bvt_sdk/colormaps/
+*/bvtsdk
 #ignore generated files
 srv_gen/
 msg_gen/
