@@ -72,6 +72,8 @@ namespace labust
 			enum {id_field = 3, data1_field = 4, data2_field=8, mode_field = 12, launch_field=4};
 			enum {stopbit, startbit, manualbit, automaticbit, remotebit};
 			enum {cart =0, bart=1, station=2};
+
+			enum {latlonmux = 10000000};
 		public:
 			/**
 			 * Main constructor

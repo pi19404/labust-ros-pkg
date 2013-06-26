@@ -195,19 +195,35 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 
 			lastModemMsg = ros::Time::now();
 			auv_msgs::NavSts currPose;
-			currPose.global_position.latitude = data1/10000000.;
-			currPose.global_position.longitude = data2/10000000.;
+			currPose.global_position.latitude = data1/double(latlonmux);
+			currPose.global_position.longitude = data2/double(latlonmux);
 			posOut.publish(currPose);
 		}
 
 		if ((this->id == bart) && (recv == bart))
 		{
-			if (buffer[launch_field] == 1)
+			if (buffer[launch_field] == 1 && (!doLaunch))
 			{
 				ROS_INFO("The vehicle will be launched.");
 				std_msgs::Bool launcher;
 				launcher.data = true;
 				launched.publish(launcher);
+				doLaunch = true;
+			}
+			else
+			{
+				//Stop the vehicle
+				cart2::SetHLMode mode;
+				if (!client)
+				{
+					ROS_ERROR("HLManager client not connected. Trying reset.");
+					client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+				}
+				else
+				{
+					client.call(mode);
+				}
+				doLaunch = false;
 			}
 			boost::mutex::scoped_lock l2(clientMux);
 			lastModemMsg = ros::Time::now();
@@ -286,8 +302,8 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					mode.request.surge = 0.5;
 
 					mode.request.ref_point.header.frame_id = "worldLatLon";
-					mode.request.ref_point.point.x = data1/10000000.;
-					mode.request.ref_point.point.y = data2/10000000.;
+					mode.request.ref_point.point.x = data1/double(latlonmux);
+					mode.request.ref_point.point.y = data2/double(latlonmux);
 
 					ROS_INFO("Switch to remote mode: %f %f.",
 							mode.request.ref_point.point.x,
@@ -320,35 +336,45 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 
 void CNRRemoteRadio::reply()
 {
-	char ret[7];
+	char ret[17];
 	ret[0] = 'C';
 	ret[1] = 'P';
-	ret[2] = 2;
+	ret[2] = 12;
 	ret[3] = (station<<4) + cart;
 	ret[4] = lastmode;
-	int crc = compute_crc16(&ret[0], 5);
-	ret[5] = crc/256;
-	ret[6] = crc%256;
+	boost::mutex::scoped_lock l(cdataMux);
+	uint32_t lat = htonl(currLat*latlonmux);
+	uint32_t lon = htonl(currLon*latlonmux);
+	uint16_t hdg = htons(uint16_t(currYaw*100*M_PI/180));
+	l.unlock();
+	ROS_INFO("The cart reply: %d, %d %d",htonl(lat), htonl(lon), htons(hdg));
+	memcpy(&ret[5],&lat,sizeof(uint32_t));
+	memcpy(&ret[9],&lon,sizeof(uint32_t));
+	memcpy(&ret[13],&hdg,sizeof(uint16_t));
+	int crc = compute_crc16(&ret[0], 15);
+	ret[15] = crc/256;
+	ret[16] = crc%256;
 	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
 }
 
 void CNRRemoteRadio::replyBuoy()
 {
-	char ret[14];
+	char ret[15];
 	ret[0] = 'C';
 	ret[1] = 'P';
-	ret[2] = 9;
+	ret[2] = 10;
 	ret[3] = (station<<4) + bart;
 	boost::mutex::scoped_lock l(cdataMux);
-	uint32_t lat = htonl(currLat*10000000);
-	uint32_t lon = htonl(currLon*10000000);
+	uint32_t lat = htonl(currLat*latlonmux);
+	uint32_t lon = htonl(currLon*latlonmux);
 	l.unlock();
 	ROS_INFO("The buoy reply: %d, %d",htonl(lat), htonl(lon));
 	memcpy(&ret[4],&lat,sizeof(uint32_t));
 	memcpy(&ret[8],&lon,sizeof(uint32_t));
-	int crc = compute_crc16(&ret[0], 12);
-	ret[12] = crc/256;
-	ret[13] = crc%256;
+	ret[12] = doLaunch;
+	int crc = compute_crc16(&ret[0], 13);
+	ret[13] = crc/256;
+	ret[14] = crc%256;
 	boost::asio::write(port, boost::asio::buffer(ret,sizeof(ret)));
 }
 
