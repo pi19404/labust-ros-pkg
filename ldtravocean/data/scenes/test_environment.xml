@@ -48,11 +48,11 @@
 			<z>0</z>
 		</offsetp>
 		<offsetr>
-			<x> 3.14</x>
-			<y> 0</y>
-			<z> -1.57 </z>
+			<x>0</x>
+			<y>0</y>
+			<z>0</z>
 		</offsetr>
-		<enablePhysics> 1 </enablePhysics>
+		<enablePhysics>1</enablePhysics>
 	</simParams>
 	<camera>
 		<freeMotion> 1 </freeMotion>
@@ -63,13 +63,13 @@
 		<far> 10000 </far>
 		<position>
 			<x>-5</x>
-			<y>-5 </y>
-			<z>8 </z>
+			<y>-5</y>
+			<z>8</z>
 		</position>
 		<lookAt>
 			<x>0</x>
-			<y>0 </y>
-			<z>0 </z>
+			<y>0</y>
+			<z>0</z>
 		</lookAt>
 	</camera>
 
@@ -77,17 +77,17 @@
 		<name>ldtravROV</name>
 		<file>data/scenes/ldtravROV.urdf</file>
 		<position>
-			<x> 0</x>
-			<y> 0 </y>
-			<z> 0 </z>
+			<x>0</x>
+			<y>0</y>
+			<z>0</z>
 		</position>
 		<orientation>
-			<r>3.14</r>
+			<r>0</r>
 			<p>0</p>
-			<y>-1.57</y>
+			<y>0</y>
 		</orientation>
 
-		<imu>
+		<!--  <imu>
 			<name>imu</name>
 			<relativeTo>base_link</relativeTo>
 			<position>
@@ -149,7 +149,7 @@
 				<y>0</y>
 			</orientation>
 			<std>0.000</std>
-		</dvlSensor>
+		</dvlSensor> -->
 	</vehicle>
 
 	<object>
@@ -161,9 +161,9 @@
 			<z> 0 </z>
 		</position>
 		<orientation>
-			<r>3.14</r>
+			<r>0</r>
 			<p>0</p>
-			<y>-1.57</y>
+			<y>0</y>
 		</orientation>
 	</object>
 
@@ -173,7 +173,7 @@
 			<vehicleName>ldtravROV</vehicleName>
 			<visualize>1</visualize>
 		</ROSOdomToPAT>
-		<ImuToROSImu>
+		<!-- <ImuToROSImu>
 			<name>imu</name>
 			<topic>imu</topic>
 			<rate>10</rate>
@@ -192,7 +192,7 @@
 			<name>DVLSensor</name>
 			<topic>dvl</topic>
 			<rate>1</rate>
-		</DVLSensorToROS>
+		</DVLSensorToROS> -->
 	</rosInterfaces>
 </UWSimScene>
 

@@ -46,6 +46,8 @@
 #include <std_msgs/String.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/FluidPressure.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
@@ -126,6 +128,26 @@ nav_msgs::Odometry* mapToUWSimOdometry(const labust::simulation::vector& eta,
 	odom->header.frame_id = "uwsim_frame";
 
 	return odom;
+}
+
+geometry_msgs::TwistStamped* mapToDvl(const labust::simulation::vector& eta,
+		const labust::simulation::vector& nu, geometry_msgs::TwistStamped* dvl,
+		tf::TransformBroadcaster& dvlBroadcast)
+{
+	using namespace labust::simulation;
+	dvl->twist.linear.x = nu(VehicleModel6DOF::u);
+	dvl->twist.linear.y = nu(VehicleModel6DOF::v);
+	dvl->twist.linear.z = nu(VehicleModel6DOF::w);
+
+	dvl->header.frame_id="base_link";
+	dvl->header.stamp = ros::Time::now();
+
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(0, 0, 0));
+	transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	dvlBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
+
+	return dvl;
 }
 
 auv_msgs::NavSts* mapToNavSts(const labust::simulation::vector& eta, const labust::simulation::vector& nu, auv_msgs::NavSts* nav)
@@ -284,6 +306,8 @@ int main(int argc, char* argv[])
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher gpsFix = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
 	ros::Publisher imuMeas = nh.advertise<sensor_msgs::Imu>("imu_model",1);
+	ros::Publisher dvlMeas = nh.advertise<geometry_msgs::TwistStamped>("dvl",1);
+	ros::Publisher pressureMeas = nh.advertise<sensor_msgs::FluidPressure>("pressure",1);
 	//Subscribers
 	labust::simulation::vector tau(labust::simulation::zero_v(6)), current(labust::simulation::zero_v(3));
 	ros::Subscriber tauSub = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, boost::bind(&handleTau,&tau,_1));
@@ -310,6 +334,8 @@ int main(int argc, char* argv[])
 	nav_msgs::Odometry odom;
 	sensor_msgs::NavSatFix fix;
 	sensor_msgs::Imu imu;
+	geometry_msgs::TwistStamped dvl;
+	sensor_msgs::FluidPressure depth;
 
 	double fs(10);
 	int wrap(1);
@@ -397,7 +423,12 @@ int main(int argc, char* argv[])
 			}
 			lastGps = ros::Time::now();
 		}
+
 		imuMeas.publish(*mapToImu(Eta,Nu,model.NuAcc(),&imu,localFrame));
+		dvlMeas.publish(*mapToDvl(Eta,Nu,&dvl,localFrame));
+		depth.fluid_pressure = model.getPressure(Eta(VehicleModel6DOF::z));
+		depth.header.frame_id = "local";
+		pressureMeas.publish(depth);
 
 		tf::Transform transform;
 		transform.setOrigin(tf::Vector3(originLon, originLat, 0));

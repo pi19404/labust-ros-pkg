@@ -70,11 +70,17 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 ## Declare a cpp executable
 add_executable(model_node src/model_node.cpp)
 
+## Declare a cpp executable
+add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
+	include/labust/navigation/LDTravModel.hpp)
+
 ## Add dependencies to the executable
 # add_dependencies(ldtravocean_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(model_node ${catkin_LIBRARIES} labust_xml uvsim-plug)
+
+target_link_libraries(ldnav_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
