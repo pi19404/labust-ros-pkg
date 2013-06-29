@@ -37,6 +37,7 @@
 #ifndef RBMODEL_HPP_
 #define RBMODEL_HPP_
 #include <labust/simulation/matrixfwd.hpp>
+#include <labust/simulation/DynamicsParams.hpp>
 #include <labust/simulation/NoiseModel.hpp>
 #include <labust/math/NumberManipulation.hpp>
 
@@ -49,7 +50,7 @@ namespace labust
      *  the equations of motion derived in chapter 2 of Guidance and control of
      *  Ocean Vehicles by Fossen (1994).
      */
-    class RBModel
+    class RBModel : public labust::simulation::DynamicsParams
     {
     public:
       enum {x=0,y,z,phi,theta,psi};
@@ -99,81 +100,15 @@ namespace labust
        *
        * \return Constant reference to the model states.
        */
-      inline const vector& EtaNoisy() const {return this->etaN;};
+      inline const vector& EtaNoisy() const {return this->etaN = this->eta + this->noise.calculateW();};
       /**
        * Method to get the current model states. This vector returns the model linear and rotational speeds in
        * the body-fixed coordinate frame.
        *
        * \return Constant reference to the model states.
        */
-      inline const vector& NuNoisy() const {return this->nuN;};
+      inline const vector& NuNoisy() const {return this->nuN = this->nu + this->noise.calculateV();};
 
-      /**
-       * The method sets the sampling time of the model simulation.
-       *
-       * \param dT The desired sampling time in seconds.
-       */
-      inline void setTs(double dT){this->dT = dT;};
-      /**
-       * The method sets the mass, inertia tensor and CoG (Center of Gravity) vector. These values are use to calculate the rigid-body
-       * mass-inertia matrix (Mrb). The
-       *
-       * \param m Model mass.
-       * \param Io Rigid-body inertia matrix.
-       * \param rg Center of gravity vector.
-       * \param g Gravity acceleration (defaults to 9.81).
-       */
-      void setInertiaParameters(double m, const matrix3& Io,const vector3& rg, double g = 9.81);
-      /**
-       * The method sets the added mass matrix of the model.
-       *
-       * \param Ma The model added mass matrix.
-       */
-      inline void setAddedMass(const matrix& Ma){this->Ma = Ma;};
-      /**
-       * The method sets the linear and quadratic damping matrices of the model.
-       *
-       * \param Dlin Linear part of the damping matrix.
-       * \param Dquad Quadratic part of the damping matrix.
-       */
-      inline void setDampingMatrix(const matrix& Dlin,const matrix& Dquad)
-      {
-        this->Dlin = Dlin;
-        this->Dquad = Dquad;
-      }
-      /**
-       * The method sets the buoyancy force and CoB (Center of Buoyancy) of the dynamic model.
-       *
-       * \param B Lift force
-       * \param rb Center of buoyancy
-       */
-      inline void setBuoyancyInfo(double rho, const vector3& rb)
-      {
-        this->rb = rb;
-      }
-      /**
-       * The method sets the bounding ellipsoid of the vehicle.
-       *
-       * \param ae length of x axis
-       * \param be length of y axis
-       * \param ce length of z axis
-       */
-      inline void setBoundingEllipsoid(double ae, double be, double ce)
-      {
-        this->ae = ae;
-        this->be = be;
-        this->ce = ce;
-      }
-      /**
-       * The method sets the water level.
-       *
-       * \param B Lift force
-       * \param rb Center of buoyancy
-       */
-      inline void setWaterLevel(double waterLevel)
-      {
-        this->waterLevel = waterLevel;
-      }
       /**
        * The method sets the initial states of the model.
        *
@@ -182,36 +117,61 @@ namespace labust
        */
       inline void setNuAndEta(const vector& nu,const vector& eta)
       {
-      	this->nuN = this->nu = this->nu0 = nu;
-      	this->etaN = this->eta = this->eta0 = eta;
+      	this->nu = this->nu0 = nu;
+      	this->eta = this->eta0 = eta;
       }
-      /**
-       * Selects the model simulation method. In coupled operations the model DOF are interconnected as in real-life scenarios.
-       * Uncoupled operation simulates each model's DOF separately. Useful when parameters for some DOF are unknown.
-       *
-       * \param coupled True if the model should be coupled.
-       */
-      inline void coupled(bool coupled){this->isCoupled = coupled;};
-      /**
-       * Set the external current disturbance.
-       *
-       * \param current The 3D vector of the current under effect.
-       */
-      inline void setCurrent(const vector3& current){this->current = current;}
       /**
        * Returns the pressure based on depth.
        */
       inline double getPressure(double h){return this->rho*this->g_acc*h;};
 
       /**
+       * Initialize the model.
+       */
+      inline void init()
+      {
+      	calculate_mrb();
+      	this->reset();
+      }
+      /**
        * The method restarts the model to initial parameters.
        */
-      inline void reset()
+      void reset()
       {
-        this->etaN = this->eta = this->eta0;
-        this->nuN = this->nu = this->nu0;
+        this->eta = this->eta0;
+        this->nu = this->nu0;
         this->B=2*labust::math::coerce((eta(z)+waterLevel)/ce+1,0,2)*M_PI/3*ae*be*ce*rho*g_acc;
       };
+
+      /**
+       * The sampling step.
+       */
+      double dT;
+      /**
+       * Coupled dynamics flag.
+       */
+      bool isCoupled;
+      /**
+       * The bounding ellipsoid parameters.
+       */
+      double ae,be,ce;
+      /**
+       * The current water-level for simple wave simulation.
+       */
+      double waterLevel;
+      /**
+       * The external current disturbance vector.
+       */
+      vector3 current;
+
+      /**
+       * The initial speeds and position vector.
+       */
+      vector nu0, eta0;
+      /**
+       * The noise generator.
+       */
+      mutable labust::simulation::NoiseModel noise;
 
     protected:
       /**
@@ -228,54 +188,25 @@ namespace labust
       void calculate_mrb();
 
       /**
-       * Model mass, water density, gravity, bounding ellipsoid sides,
-       * sampling time, water level, buoyancy.
+       * The calculated buoyancy.
        */
-      double m,g_acc,rho,ae,be,ce,dT,waterLevel,B;
-      /**
-       * Inertia matrix of the model.
-       */
-      matrix3 Io;
-      /**
-       * Rigid-body mass and added mass matrices.
-       */
-      matrix Mrb,Ma;
-      /**
-       * The coriolis and centripetal matrices of the model and the added mass.
-       */
-      matrix Crb,Ca;
-      /**
-       * Linear and quadratic parts of the damping matrix.
-       */
-      matrix Dlin,Dquad;
-      /**
-       * Center of gravity and buoyancy.
-       */
-      vector3 rg,rb;
+      double B;
       /**
        * Linear and orientation velocity and their initial state.
        */
-      vector nu,nu0,nuN,nuacc;
+      vector nu,nuacc;
       /**
        * Position and orientation and their initial state.
        */
-      vector eta,eta0,etaN;
+      vector eta;
+      /**
+       * The noisy measurements.
+       */
+      mutable vector etaN, nuN;
       /**
        * The restoring forces vector.
        */
       vector g;
-      /**
-       * Coupled dynamics flag and depth limit.
-       */
-      bool isCoupled, positiveDepth;
-      /**
-       * The noise generator.
-       */
-      labust::simulation::NoiseModel noise;
-      /**
-       * The external current disturbance vector.
-       */
-      vector3 current;
     };
 
     /**

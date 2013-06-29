@@ -30,29 +30,64 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Created: 20.05.2013.
- *  Author: Đula Nađ
  *********************************************************************/
-#ifndef CONVERSIONS_HPP_
-#define CONVERSIONS_HPP_
+#ifndef DYNAMICSPARAM_HPP_
+#define DYNAMICSPARAM_HPP_
+#include <labust/simulation/matrixfwd.hpp>
 
 namespace labust
 {
-	namespace snippets
+	namespace simulation
 	{
-		/**
-		 * The class offers mapping from a XYZ structure to a vector.
-		 */
-		template <class Point, class Iterator>
-		void remap(const Point& point, Iterator& vec)
+		struct DynamicsParams
 		{
-			vec[0] = point.x;
-			vec[1] = point.y;
-			vec[2] = point.z;
-		}
+			/**
+			 * The basic initialization constructor.
+			 */
+			DynamicsParams():
+				Io(matrix3::Identity()),
+				Mrb(matrix::Identity()),
+				Ma(matrix::Identity()),
+				Crb(matrix::Zero()),
+				Ca(matrix::Zero()),
+				Dlin(matrix::Identity()),
+				Dquad(matrix::Zero()),
+				rg(vector3::Zero()),
+				rb(vector3::Zero()),
+				m(1),
+				g_acc(9.81),
+				rho(1000){};
+			/**
+			 * Inertia matrix of the model.
+			 */
+			matrix3 Io;
+			/**
+			 * Rigid-body mass and added mass matrices.
+			 */
+			matrix Mrb,Ma;
+			/**
+			 * The coriolis and centripetal matrices of the model and the added mass.
+			 */
+			matrix Crb,Ca;
+			/**
+			 * Linear and quadratic parts of the damping matrix.
+			 */
+			matrix Dlin,Dquad;
+			/**
+			 * Center of gravity and buoyancy.
+			 */
+			vector3 rg,rb;
+			/**
+			 * Model mass and acceleration.
+			 */
+			double m, g_acc;
+			/**
+			 * Fluid density.
+			 */
+			double rho;
+		};
 	}
 }
 
-/* CONVERSIONS_HPP_ */
+/* ROSUTILS_HPP_ */
 #endif

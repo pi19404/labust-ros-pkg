@@ -31,41 +31,54 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created: 20.05.2013.
- *  Author: Đula Nađ
+ *  Author: Dula Nad
+ *  Created: 01.02.2013.
  *********************************************************************/
-#ifndef SENSORS_HPP_
-#define SENSORS_HPP_
-
-#include <sensor_msgs/Imu.h>
+#ifndef DYNAMICSLOADER_HPP_
+#define DYNAMICSLOADER_HPP_
+#include <labust/tools/MatrixLoader.hpp>
 #include <ros/ros.h>
 
 namespace labust
 {
-	namespace snippets
+	namespace tools
 	{
 		/**
-		 * The base ROS node class.
+		 * The extender expands a diagonal vector representation of the matrix
+		 * into a full rank diagonal matrix.
 		 */
-		class SnippetNodeBase
+		template <class Derived>
+		inline void matrixExtender(const ros::NodeHandle& nh,
+				const std::string& name, Eigen::MatrixBase<Derived>& matrix)
 		{
-		public:
-			SnippetNodeBase();
-		};
-		/**
-		 * The IMU handler class.
-		 */
-		class Imu
-		{
-		public:
-			Imu();
-			Imu(ros::NodeHandle& nh, ros::NodeHandle& ph);
+			std::pair<int,int> rowcols = getMatrixParam(nh,name,matrix);
+			if ((matrix.rows() > rowcols.first) && (rowcols.first == 1))
+			{
+				matrix=matrix.row(0).eval().asDiagonal();
+			}
+		}
 
-		protected:
-			void setup(ros::NodeHandle& nh, ros::NodeHandle& ph);
-		};
+		/**
+		 * The function loads and configures the dynamics parameters from the
+		 * supplied ROS node handle.
+		 */
+		template <class Model>
+		void loadDynamicsParams(const ros::NodeHandle& nh,
+				Model& model)
+		{
+			nh.param("mass",model.m, model.m);
+			nh.param("gravity",model.g_acc, model.g_acc);
+			nh.param("fluid_density",model.rho, model.rho);
+
+			getMatrixParam(nh,"rg",model.rg);
+			getMatrixParam(nh,"rb",model.rb);
+
+			matrixExtender(nh,"added_mass",model.Ma);
+			matrixExtender(nh,"linear_damping",model.Dlin);
+			matrixExtender(nh,"quadratic_damping",model.Dquad);
+			matrixExtender(nh,"inertia_matrix",model.Io);
+		}
 	}
 }
-
-/* SENSORS_HPP_ */
+/* DYNAMICSLOADER_HPP_ */
 #endif

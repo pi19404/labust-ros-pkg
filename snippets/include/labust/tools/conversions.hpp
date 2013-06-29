@@ -34,38 +34,58 @@
  *  Created: 20.05.2013.
  *  Author: Đula Nađ
  *********************************************************************/
-#ifndef SENSORS_HPP_
-#define SENSORS_HPP_
-
-#include <sensor_msgs/Imu.h>
-#include <ros/ros.h>
+#ifndef CONVERSIONS_HPP_
+#define CONVERSIONS_HPP_
 
 namespace labust
 {
-	namespace snippets
+	namespace tools
 	{
 		/**
-		 * The base ROS node class.
+		 * The class offers mapping from a XYZ structure to a vector.
 		 */
-		class SnippetNodeBase
+		template <class Point, class Iterator>
+		void pointToVector(const Point& point, Iterator& vec)
 		{
-		public:
-			SnippetNodeBase();
-		};
-		/**
-		 * The IMU handler class.
-		 */
-		class Imu
-		{
-		public:
-			Imu();
-			Imu(ros::NodeHandle& nh, ros::NodeHandle& ph);
+			vec[0] = point.x;
+			vec[1] = point.y;
+			vec[2] = point.z;
+		}
 
-		protected:
-			void setup(ros::NodeHandle& nh, ros::NodeHandle& ph);
-		};
+		/**
+		 * The class offers mapping from a XYZ structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToPoint(const Iterator& vec, Point& point)
+		{
+			point.x = vec[0];
+			point.y = vec[1];
+			point.z = vec[2];
+		}
+
+		template <class T>
+		void quaternionFromEulerZYX(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
+		{
+			using namespace Eigen;
+			Matrix<T,3,3> m;
+			typedef Matrix<T,3,1> Vector3;
+			m = AngleAxis<T>(yaw, Vector3::UnitZ())
+			* AngleAxis<T>(pitch, Vector3::UnitY())
+			* AngleAxis<T>(roll, Vector3::UnitX());
+			q = Quaternion<T>(m);
+		}
+
+		//\todo Test and document this method
+		template <class T>
+		void eulerZYXFromQuaternion(const Eigen::Quaternion<T>& q, double& roll, double& pitch, double& yaw)
+		{
+			using namespace Eigen;
+			yaw = atan2(2*(q.w()*q.x() + q.y()*q.z()),1-2*(q.x()*q.x() + q.y()*q.y()));
+			pitch = asin(2*(q.w()*q.y()-q.z()*q.x()));
+			roll = atan2(2*(q.w()*q.z()+q.x()*q.y()),1-2*(q.y()*q.y()+q.z()*q.z()));
+		}
 	}
 }
 
-/* SENSORS_HPP_ */
+/* CONVERSIONS_HPP_ */
 #endif

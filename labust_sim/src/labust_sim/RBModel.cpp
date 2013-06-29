@@ -41,40 +41,19 @@
 using namespace labust::simulation;
 
 RBModel::RBModel():
-    		 m(1),
-    		 g_acc(9.81),
-    		 rho(1000),ae(0.15),be(0.2),ce(0.2),
+    		 ae(0.15),be(0.2),ce(0.2),
     		 B(0),
     		 dT(0.1),
     		 waterLevel(0),
-    		 Io(matrix3::Identity()),
-    		 Mrb(matrix::Identity()),
-    		 Ma(matrix::Identity()),
-    		 Crb(matrix::Zero()),
-    		 Ca(matrix::Zero()),
-    		 Dlin(matrix::Identity()),
-    		 Dquad(matrix::Identity()),
-    		 rg(vector3::Zero()),
-    		 rb(vector3::Zero()),
-    		 nu(vector::Zero()),
     		 nu0(vector::Zero()),
-    		 eta(vector::Zero()),
     		 eta0(vector::Zero()),
+    		 nu(vector::Zero()),
+    		 eta(vector::Zero()),
     		 g(vector::Zero()),
     		 isCoupled(false),
-    		 positiveDepth(true),
-    		 current(vector3::Zero()){};
+    		 current(vector3::Zero()){this->init();};
 
 RBModel::~RBModel(){};
-
-void RBModel::setInertiaParameters(double m, const matrix3& Io,const vector3& rg, double g)
-{
-	this->m = m;
-	this->Io = Io;
-	this->rg = rg;
-	this->g_acc = g;
-	calculate_mrb();
-}
 
 void RBModel::calculate_mrb()
 {
@@ -133,12 +112,10 @@ void RBModel::step(const vector& tau)
 		};
 	}
 	nuacc = (nu - nu_old)/dT;
-	this->nuN = this->nu + this->noise.calculateV();
 
 	//From body to world coordinates
 	eta.block<3,1>(0,0) += dT*J1*nu.block<3,1>(0,0)+current;
 	eta.block<3,1>(3,0) += dT*J2*nu.block<3,1>(3,0);
-	this->etaN = this->eta + this->noise.calculateW();
 }
 
 void RBModel::coriolis()
@@ -171,10 +148,8 @@ void RBModel::restoring_force(const matrix3& J1)
 	//Currently a simple model
 	B=2*labust::math::coerce((eta(z)+waterLevel+rb(z)/2)/ce+1,0,2)*M_PI/3*ae*be*ce*rho*g_acc;
 
-	vector3 id;
-	id<<0,0,1;
-	vector3 fg = invJ1*(m*g_acc*id);
-	vector3 fb = -invJ1*(B*id);
+	vector3 fg = invJ1*(m*g_acc*vector3::UnitZ());
+	vector3 fb = -invJ1*(B*vector3::UnitZ());
 
 	g.block<3,1>(0,0) = -fg-fb;
 	g.block<3,1>(3,0) = -skewSymm3(rg)*fg-skewSymm3(rb)*fb;

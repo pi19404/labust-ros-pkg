@@ -31,41 +31,52 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created: 20.05.2013.
- *  Author: Đula Nađ
+ *  Author: Dula Nad
+ *  Created: 01.02.2013.
  *********************************************************************/
-#ifndef SENSORS_HPP_
-#define SENSORS_HPP_
+#include <labust/ros/SimCore.hpp>
+#include <labust/ros/SimSensors.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <sensor_msgs/Imu.h>
 #include <ros/ros.h>
 
-namespace labust
-{
-	namespace snippets
-	{
-		/**
-		 * The base ROS node class.
-		 */
-		class SnippetNodeBase
-		{
-		public:
-			SnippetNodeBase();
-		};
-		/**
-		 * The IMU handler class.
-		 */
-		class Imu
-		{
-		public:
-			Imu();
-			Imu(ros::NodeHandle& nh, ros::NodeHandle& ph);
 
-		protected:
-			void setup(ros::NodeHandle& nh, ros::NodeHandle& ph);
-		};
-	}
+void sim_imu(const sensor_msgs::Imu::Ptr& imu,
+		const labust::simulation::RBModel& model,
+		tf::TransformBroadcaster& broadcaster,
+		tf::TransformListener& listener)
+{
+	using namespace labust::simulation;
+	using namespace Eigen;
+
+	imu->header.stamp = ros::Time::now();
+	imu->header.frame_id = "imu_frame";
+	labust::tools::vectorToPoint(model.NuAcc(), imu->linear_acceleration);
+	labust::tools::vectorToPoint(&model.Nu()[RBModel::p], imu->angular_velocity);
+	Quaternion<double> quat;
+	labust::tools::quaternionFromEulerZYX(model.Eta()(RBModel::phi),
+			model.Eta()(RBModel::theta),
+			model.Eta()(RBModel::psi), quat);
+
+	imu->orientation.x = quat.x();
+	imu->orientation.y = quat.y();
+	imu->orientation.z = quat.z();
+	imu->orientation.w = quat.w();
+
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(0, 0, 0));
+	transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
 }
 
-/* SENSORS_HPP_ */
-#endif
+int main(int argc, char* argv[])
+{
+	ros::init(argc,argv,"uvsim");
+	labust::simulation::SimCore simulator;
+
+	labust::simulation::BasicSensor<sensor_msgs::Imu, sim_imu> imu;
+
+	ros::spin();
+	return 0;
+}

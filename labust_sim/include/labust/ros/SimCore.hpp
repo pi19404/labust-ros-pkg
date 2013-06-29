@@ -30,23 +30,67 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
+*
+*  Author: Dula Nad
+*  Created: 01.02.2013.
 *********************************************************************/
-#ifndef MATRIXFWD_HPP_
-#define MATRIXFWD_HPP_
+#ifndef SIMCORE_HPP_
+#define SIMCORE_HPP_
+#include <labust/simulation/RBModel.hpp>
+#include <labust/ros/SimSensors.hpp>
 
-#include <Eigen/Dense>
+#include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 namespace labust
 {
-	namespace simulation
-	{
-		typedef Eigen::Matrix<double,6,6> matrix;
-		typedef Eigen::Matrix<double,3,3> matrix3;
-		typedef Eigen::Matrix<double,6,1> vector;
-		typedef Eigen::Matrix<double,3,1> vector3;
-		typedef Eigen::Matrix<double,12,1> vector12;
-	}
+  namespace simulation
+  {
+  	/**
+  	 * The method populates the rigid body model from the
+  	 *
+  	 * \param nh The node handle to the configuration.
+  	 * \param model The rigid body model to configure.
+  	 */
+  	void configureModel(const ros::NodeHandle& nh, RBModel& model);
+
+    /**
+     *  This class implements core functionality of the ROS uvsim node.
+     */
+    class SimCore
+    {
+    public:
+    	/**
+    	 * The generic constructor.
+    	 */
+    	SimCore();
+
+    	/**
+    	 * The method initializes the ROS node and configures the model from the ROS parameters.
+    	 */
+    	void onInit();
+
+    private:
+    	/**
+    	 * Output the model parameters info.
+    	 */
+    	void modelReport();
+    	/**
+    	 * The rigid body model implementation.
+    	 */
+    	RBModel model;
+    	/**
+    	 * The frame transform broadcaster.
+    	 */
+			tf::TransformBroadcaster broadcast;
+    	/**
+    	 * The frame transform listener.
+    	 */
+			tf::TransformListener listener;
+    };
+  }
 }
 
-/* MATRIXFWD_HPP_ */
+/* SIMCORE_HPP_ */
 #endif
