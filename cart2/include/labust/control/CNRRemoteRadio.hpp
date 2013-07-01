@@ -145,7 +145,7 @@ namespace labust
 			/**
 			 * The timeout length.
 			 */
-			double timeout, currYaw, yawInc, currLat, currLon;
+			double timeout, currYaw, yawInc, currLat, currLon, desiredHeading, buoyDistance;
 			/**
 			 * The publishers.
 			 */
@@ -189,7 +189,7 @@ namespace labust
 			/**
 			 * Dummy requester.
 			 */
-			bool doDummyRequest, doLaunch;
+			bool doDummyRequest, doLaunch, wasLaunched;
 			/**
 			 * Last mode field.
 			 */
