@@ -106,6 +106,7 @@ void CNRRemoteRadio::onInit()
 
 	joyOut = nh.advertise<sensor_msgs::Joy>("joy_out",1);
 	posOut = nh.advertise<auv_msgs::NavSts>("bart_position",1);
+	posCOut = nh.advertise<auv_msgs::NavSts>("cart_position",1);
 	launched = nh.advertise<std_msgs::Bool>("launched",1);
 	hlMsg = nh.advertise<cart2::HLMessage>("hl_message",1);
 	client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
@@ -203,6 +204,25 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 			currPose.global_position.latitude = data1/double(latlonmux);
 			currPose.global_position.longitude = data2/double(latlonmux);
 			posOut.publish(currPose);
+		}
+
+		if ((this->id == station) && (sender == cart))
+		{
+			int32_t data1=static_cast<int32_t>(
+					htonl(*reinterpret_cast<uint32_t*>(&buffer[data1_field+1])));
+			int32_t data2=static_cast<int32_t>(
+					htonl(*reinterpret_cast<uint32_t*>(&buffer[data2_field+1])));
+			int16_t hdg=static_cast<int16_t>(
+								htons(*reinterpret_cast<int16_t*>(&buffer[data2_field+5])));
+
+			ROS_INFO("Received from CART: %d %d %d", data1,data2,hdg);
+
+			lastModemMsg = ros::Time::now();
+			auv_msgs::NavSts currPose;
+			currPose.global_position.latitude = data1/double(latlonmux);
+			currPose.global_position.longitude = data2/double(latlonmux);
+			currPose.orientation.yaw = labust::math::wrapRad(hdg/100./180.*M_PI);
+			posCOut.publish(currPose);
 		}
 
 		if ((this->id == bart) && (recv == bart))
@@ -405,9 +425,9 @@ void CNRRemoteRadio::reply()
 	boost::mutex::scoped_lock l(cdataMux);
 	uint32_t lat = htonl(currLat*latlonmux);
 	uint32_t lon = htonl(currLon*latlonmux);
-	uint16_t hdg = htons(uint16_t(currYaw*100*M_PI/180));
+	uint16_t hdg = htons(currYaw*100/M_PI*180);
 	l.unlock();
-	ROS_INFO("The cart reply: %d, %d %d",htonl(lat), htonl(lon), htons(hdg));
+	ROS_INFO("The cart reply: %d, %d %d",htonl(lat), htonl(lon), int16_t(htons(hdg)));
 	memcpy(&ret[5],&lat,sizeof(uint32_t));
 	memcpy(&ret[9],&lon,sizeof(uint32_t));
 	memcpy(&ret[13],&hdg,sizeof(uint16_t));
@@ -514,7 +534,10 @@ void CNRRemoteRadio::start()
 		if (doDummyRequest && ((ros::Time::now() - lastDummyReq).toSec() > 0.5))
 		{
 			lastDummyReq = ros::Time::now();
-			this->dummyRequest();
+//			if (this->id == cart)
+//				this->reply();
+//			else
+//				this->dummyRequest();
 		}
 	}
 }
