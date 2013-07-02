@@ -352,6 +352,9 @@ void VelocityControl::step()
 	}
 	else
 	{
+		double ulimit(1.0);
+		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
+		if (fabs(controller[u].output) > ulimit) controller[u].output = controller[u].output/fabs(controller[u].output)*ulimit;
 		tau.wrench.force.x = controller[u].output;
 	}
 	tau.wrench.force.y = controller[v].output;

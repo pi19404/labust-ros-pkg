@@ -346,12 +346,9 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					mode.request.ref_point.header.frame_id = "worldLatLon";
 					if ((data1 == 0) && (data2 == 0))
 					{
-						std::pair<double, double> location = labust::tools::meter2deg(buoyDistance*cos(currYaw),
-								buoyDistance*sin(currYaw),
-								currLat);
 						//Get current heading and calculate the desired point
-						mode.request.ref_point.point.x = currLat + location.first;
-						mode.request.ref_point.point.y = currLon + location.second;
+						mode.request.ref_point.point.x = desiredLat;
+						mode.request.ref_point.point.y = desiredLon;
 					}
 					else
 					{
@@ -362,6 +359,15 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 					ROS_INFO("Switch to remote mode: %f %f.",
 							mode.request.ref_point.point.x,
 							mode.request.ref_point.point.y);
+				}
+				else
+				{
+					std::pair<double, double> location = labust::tools::meter2deg(buoyDistance*cos(currYaw),
+							buoyDistance*sin(currYaw),
+							currLat);
+					//Get current heading and calculate the desired point
+					desiredLat= currLat + location.first;
+					desiredLon = currLon + location.second;
 				}
 			}
 

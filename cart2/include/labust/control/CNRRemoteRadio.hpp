@@ -145,7 +145,7 @@ namespace labust
 			/**
 			 * The timeout length.
 			 */
-			double timeout, currYaw, yawInc, currLat, currLon, desiredHeading, buoyDistance;
+			double timeout, currYaw, yawInc, currLat, currLon, desiredHeading, buoyDistance, desiredLat, desiredLon;
 			/**
 			 * The publishers.
 			 */
