@@ -1,0 +1,18 @@
+model_name: pladypos
+
+pladypos/dynamics/period: 0.1
+pladypos/dynamics/mass: 20.0
+pladypos/dynamics/rg: [0.0, 0.0, 0.0]
+pladypos/dynamics/rb: [0.0, 0.0, 0.0]
+pladypos/dynamics/g: 9.81
+
+#Add some parameters for the buoyancy calculations 
+pladypos/dynamics/inertia_matrix: [[30.0],[0.0, 30.0],[0.0, 0.0, 12.274219]]
+pladypos/dynamics/added_mass: [6.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
+pladypos/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 2.351080]
+pladypos/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
+
+pladypos/navigation/Q: "diag([10](0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01))"
+pladypos/navigation/R: "diag([4](1,1,1,1))"
+pladypos/navigation/V: "diag([4](1,1,1,1))"
+pladypos/navigation/W: "diag([10](1,1,1,1,1,1,1,1,1,1))"

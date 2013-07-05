@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="UWSim" name="UWSim" type="UWSim" 
+  args="--configfile $(find caddy_uwsim)/data/scenes/test_environment.xml 
+  --dataPath $(find caddy_uwsim)/data/scenes" 
+  machine="pladypos" />
+</launch>

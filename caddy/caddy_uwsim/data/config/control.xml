@@ -1,0 +1,5 @@
+<launch>
+    <rosparam command="load" file="$(find caddy_uwsim)/data/config/velocity_control.yaml" />
+    <rosparam command="load" file="$(find caddy_uwsim)/data/config/dp_control.yaml" /> 	    
+    <node pkg="labust_uvapp" type="velocity_control" name="velcon" machine="pladypos" />
+</launch>
