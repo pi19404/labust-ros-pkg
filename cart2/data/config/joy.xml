@@ -1,6 +1,6 @@
 <launch>
 	<node pkg="joy" name="joystick" type="joy_node" machine="shoreside"
-		unless="$(env IS_REMOTE)">
+		unless="$(env USE_CNR_RADIO)">
 		<param name="dev" value="$(env JOYSTICK)" />
 		<param name="coalesce_interval" value="0.1" />
 		<param name="autorepeat_rate" value="10" />
@@ -23,7 +23,8 @@
 		<!-- <param name="PortName" value="/dev/pts/3" /> -->
 		<param name="BaudRate" value="19200" />
 		<!-- cart=0, bart=1 -->
-		<param name="ID" value="1" />
+		<param name="ID" value="0" />
+		<param name="YawInc" value="0.05" />
 		<remap from="joy_out" to="joy" />
 	</node>
 </launch>
