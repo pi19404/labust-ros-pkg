@@ -1,0 +1,19 @@
+<package>
+  <description brief="Caddy USBL packages">
+		The package contains the USBL comms and filter node used
+		for diver communication and tracking. It requires the 
+		tritech_sdk in the labust_base package and seanet running
+		under Wine for the USBL DSP part.
+  </description>
+  <author>Gyula Nagy</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+	<!-- <url>http://ros.org/wiki/usbl</url> -->
+
+	<depend package="labust_base" />
+	<depend package="underwater_sensor_msgs" />
+	<depend package="roscpp" />
+
+</package>
+
+

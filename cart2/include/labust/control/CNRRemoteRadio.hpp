@@ -72,6 +72,8 @@ namespace labust
 			enum {id_field = 3, data1_field = 4, data2_field=8, mode_field = 12, launch_field=4};
 			enum {stopbit, startbit, manualbit, automaticbit, remotebit};
 			enum {cart =0, bart=1, station=2};
+
+			enum {latlonmux = 10000000};
 		public:
 			/**
 			 * Main constructor
@@ -143,11 +145,11 @@ namespace labust
 			/**
 			 * The timeout length.
 			 */
-			double timeout, currYaw, yawInc, currLat, currLon;
+			double timeout, currYaw, yawInc, currLat, currLon, desiredHeading, buoyDistance, desiredLat, desiredLon;
 			/**
 			 * The publishers.
 			 */
-			ros::Publisher joyOut, launched, hlMsg, posOut;
+			ros::Publisher joyOut, launched, hlMsg, posOut, posCOut;
 			/**
 			 * The subscribed topics.
 			 */
@@ -187,7 +189,7 @@ namespace labust
 			/**
 			 * Dummy requester.
 			 */
-			bool doDummyRequest, doLaunch;
+			bool doDummyRequest, doLaunch, wasLaunched;
 			/**
 			 * Last mode field.
 			 */

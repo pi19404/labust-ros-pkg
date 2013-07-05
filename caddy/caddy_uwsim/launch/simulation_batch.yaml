@@ -1,0 +1,16 @@
+thrusters/count: 4
+thrusters/allocation_matrix: []
+
+velocity_controller/closed_loop_freq: [1.1,1.1,0.1,1.0,1.0,1.0]
+velocity_controller/output_limits: [13.0,13.0,2000.0,.0,.0,10.0]
+velocity_controller/disable_axis: [0.0,0.0,1.0,1.0,1.0,0.0]
+velocity_controller/manual_axis: [0.0,0.0,1.0,1.0,1.0,0.0]
+velocity_controller/synced: 0
+
+dynamic_positioning/closed_loop_freq: [1.1,1.1]
+dynamic_positioning/max: [1,1]
+dynamic_positioning/Ts: 0.1
+dynamic_positioning/mode: 0
+
+trajectory_generator/mode: "speed"
+trajectory_generator/speed_points: [[[0,0.5],[5,1.5],[15,2],[25,0.5],[45,-0.5]],[[0,0],[35,0.5],[55,2.5]]]
