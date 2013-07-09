@@ -52,7 +52,7 @@ namespace labust
 		{
 		public:
 			typedef boost::shared_ptr<SimSensorInterface> Ptr;
-			virtual ~SimSensorInterface();
+			virtual ~SimSensorInterface(){};
 			virtual void step(const RBModel& model,
 					tf::TransformBroadcaster& broadcaster,
 					tf::TransformListener& listener) = 0;
@@ -62,33 +62,25 @@ namespace labust
 		class BasicSensor : public SimSensorInterface
 		{
 		public:
-			BasicSensor(const ros::NodeHandle& nh, const std::string& topic_name)
+			BasicSensor(ros::NodeHandle& nh, const std::string& topic_name)
 			{
 				pub = nh.advertise<ROSMsg>(topic_name,1);
 			}
+
+			~BasicSensor(){};
 
 			void step(const RBModel& model,
 					tf::TransformBroadcaster& broadcaster,
 					tf::TransformListener& listener)
 			{
 				typename ROSMsg::Ptr msg(new ROSMsg());
-				functor(msg,model,broadcaster, listener);
+				sensor(msg,model,broadcaster, listener);
 				pub.publish(msg);
 			}
 
 		private:
 				ros::Publisher pub;
-		};
-
-		class ImuSensor : public SimSensorInterface
-		{
-		public:
-			ImuSensor();
-			void step(const RBModel& model);
-
-		private:
-			tf::TransformBroadcaster broadcast;
-			ros::Publisher imu;
+				functor sensor;
 		};
 	}
 }

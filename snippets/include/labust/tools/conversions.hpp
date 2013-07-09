@@ -45,22 +45,22 @@ namespace labust
 		 * The class offers mapping from a XYZ structure to a vector.
 		 */
 		template <class Point, class Iterator>
-		void pointToVector(const Point& point, Iterator& vec)
+		void pointToVector(const Point& point, Iterator& vec, int offset = 0)
 		{
-			vec[0] = point.x;
-			vec[1] = point.y;
-			vec[2] = point.z;
+			vec[offset+0] = point.x;
+			vec[offset+1] = point.y;
+			vec[offset+2] = point.z;
 		}
 
 		/**
 		 * The class offers mapping from a XYZ structure to a vector.
 		 */
 		template <class Point, class Iterator>
-		void vectorToPoint(const Iterator& vec, Point& point)
+		void vectorToPoint(const Iterator& vec, Point& point, int offset = 0)
 		{
-			point.x = vec[0];
-			point.y = vec[1];
-			point.z = vec[2];
+			point.x = vec[offset+0];
+			point.y = vec[offset+1];
+			point.z = vec[offset+2];
 		}
 
 		template <class T>
