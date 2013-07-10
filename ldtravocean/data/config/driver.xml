@@ -8,6 +8,7 @@
 		<remap from="meas" to="meas_sim" />
 		<param name="maxThrust" value="140" />
 		<param name="minThrust" value="-140" />
+		<param name="thrustScale" value="100" />
 		<param name="publish_world" value="true" />
 		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
 
