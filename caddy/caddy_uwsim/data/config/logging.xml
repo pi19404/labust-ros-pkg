@@ -1,5 +1,9 @@
 <launch> 
-    <node pkg="cart_sim" name="logger" type="matlogger.py">
-      <param name="filename" value="$(env LOGDIR)/pladypos.csv" />
-    </node>  
+    <rosparam command="load" file="$(find caddy_uwsim)/data/config/logger.yaml" />
+    <node pkg="cart2" name="logger" type="matlogger2.py">
+      <param name="dir" value="$(env LOGDIR)" />
+    </node>
+    
+    <node pkg="rosbag" type="record" name="rosbag"
+       args="-a -o $(env LOGDIR)/rosmsgs" />
 </launch>
