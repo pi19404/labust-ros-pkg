@@ -61,6 +61,7 @@
 
 double modelLat(0),modelLon(0);
 double originLat(0), originLon(0);
+double thrustScale(1);
 
 nav_msgs::Odometry* mapToUWSimOdometry(const labust::simulation::vector& eta,
 		const labust::simulation::vector& nu,
@@ -269,12 +270,12 @@ sensor_msgs::Imu* mapToImu(const labust::simulation::vector& eta,
 void handleTau(labust::simulation::vector* tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
 	using namespace labust::simulation;
-	(*tauIn)(VehicleModel6DOF::X) = tau->wrench.force.x;
-	(*tauIn)(VehicleModel6DOF::Y) = tau->wrench.force.y;
-	(*tauIn)(VehicleModel6DOF::Z) = tau->wrench.force.z;
-	(*tauIn)(VehicleModel6DOF::K) = tau->wrench.torque.x;
-	(*tauIn)(VehicleModel6DOF::M) = tau->wrench.torque.y;
-	(*tauIn)(VehicleModel6DOF::N) = tau->wrench.torque.z;
+	(*tauIn)(VehicleModel6DOF::X) = thrustScale*tau->wrench.force.x;
+	(*tauIn)(VehicleModel6DOF::Y) = thrustScale*tau->wrench.force.y;
+	(*tauIn)(VehicleModel6DOF::Z) = thrustScale*tau->wrench.force.z;
+	(*tauIn)(VehicleModel6DOF::K) = thrustScale*tau->wrench.torque.x;
+	(*tauIn)(VehicleModel6DOF::M) = thrustScale*tau->wrench.torque.y;
+	(*tauIn)(VehicleModel6DOF::N) = thrustScale*tau->wrench.torque.z;
 };
 
 void handleCurrent(labust::simulation::vector* current, const std_msgs::String::ConstPtr& data)
@@ -322,6 +323,7 @@ int main(int argc, char* argv[])
 	ph.param("publish_world", publishWorld, true);
 	ph.param("use_noise", useNoisy, false);
 	ph.param("gps_time",gpsTime,1.0);
+	ph.param("thrustScale",thrustScale,1.0);
 
 	std::string utmzone;
 	/*/double northing, easting;

@@ -1,18 +1,25 @@
-model_name: pladypos
+model_name: cart2
 
-pladypos/dynamics/period: 0.1
-pladypos/dynamics/mass: 20.0
-pladypos/dynamics/rg: [0.0, 0.0, 0.0]
-pladypos/dynamics/rb: [0.0, 0.0, 0.0]
-pladypos/dynamics/g: 9.81
+cart2/dynamics/period: 0.1
+cart2/dynamics/mass: 1.0
+cart2/dynamics/rg: [0.0, 0.0, 0.0]
+cart2/dynamics/rb: [0.0, 0.0, 0.0]
+cart2/dynamics/g: 9.81
 
 #Add some parameters for the buoyancy calculations 
-pladypos/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 12.274219]
-pladypos/dynamics/added_mass: [6.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
-pladypos/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 26.0]
-pladypos/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
+cart2/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 1.0]
+cart2/dynamics/added_mass: [1.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
+cart2/dynamics/damping: [1.0, 13.0, 24.2846, 400.0, 300.0, 0.5]
+cart2/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
 
-pladypos/navigation/Q: "diag([10](0.01,0.003,0.01,0.01,0.001,0.001,0.001))"
-pladypos/navigation/R: "diag([4](0.01,0.03,10,10))"
-pladypos/navigation/V: "diag([4](1,1,1,1))"
-pladypos/navigation/W: "diag([10](1,1,1,1,1,1,1,1,1,1))"
+#Parameters:	  	          u   v    r    xp  yp       psi   xc  yc    b1   b2
+cart2/navigation/Q: "diag([10](0.001,0.001,0.001,0.00,0.00,0.0,0.01,0.01,0.01,0.00))"
+#cart2/navigation/Q: "diag([10](0.01,0.01,0.001,0.01,0.01,0.0,0.1,0.1,0.01,0.00))"
+cart2/navigation/W: "diag([10](1,1,1,1,1,1,1,1,1,1))"
+#Parameters: 			      x  y  psi 
+cart2/navigation/R: "diag([3](25,25,0.003))"
+cart2/navigation/V: "diag([3](1,1,1))"
+cart2/navigation/P: "diag([10](1000,1000,1000,10000,10000,1000,1000,1000,1000,1000))"
+cart2/navigation/x0: "[10](0,0,0,0,0,0,0,0,0,0)"
+
+
