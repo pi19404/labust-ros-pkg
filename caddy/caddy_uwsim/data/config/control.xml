@@ -2,7 +2,7 @@
     <rosparam command="load" file="$(find caddy_uwsim)/data/config/velocity_control.yaml" />
     <rosparam command="load" file="$(find caddy_uwsim)/data/config/dp_control.yaml" /> 	    
     <node pkg="labust_uvapp" type="velocity_control" name="velcon" machine="controlled">
-		<remap from="tauAchVelCon" to="tauAch" />
+			<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
     </node>
     <node pkg="labust_uvapp" type="dp_control" name="station_keeping" machine="controlled" />
     <node pkg="labust_uvapp" type="lf_control" name="line_following" machine="controlled" />
