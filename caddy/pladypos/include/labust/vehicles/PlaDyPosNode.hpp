@@ -57,6 +57,14 @@ namespace labust
 		 */
 		class PlaDyPosNode
 		{
+			/**
+			 * The scaling constants for the driver sensors.
+			 */
+			static const float sscale[6];
+			/**
+			 * Sensor enumeration.
+			 */
+			enum {current0, current1, current2, current3, currentConv, voltage};
 		public:
 			/**
 			 * Main constructor.
@@ -78,12 +86,16 @@ namespace labust
 			/**
 			 * The achieved force and torque publisher.
 			 */
-			ros::Publisher tauAch;
+			ros::Publisher tauAch, diag, info;
 
 			/**
 			 * Helper method to generate the driver msg.
 			 */
-			void driverMsg(const int n[4], std::ostringstream& out);
+			void driverMsg(const int n[4]);
+			/**
+			 * Publishes the diagnostics.
+			 */
+			void pubDiagnostics();
 
 			/**
 			 * Handles the arrived force and torque requests.
@@ -147,6 +159,10 @@ namespace labust
 			 * The input buffer.
 			 */
 			boost::asio::streambuf sbuffer;
+			/**
+			 * The sensor measurements
+			 */
+			boost::array<float,6> sensors;
 
 			/**
 			 * Allocation matrix and maximum force, torque.

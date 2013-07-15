@@ -34,12 +34,23 @@
 #include <labust/vehicles/PlaDyPosNode.hpp>
 #include <labust/vehicles/Allocation.hpp>
 
+#include <diagnostic_msgs/DiagnosticStatus.h>
+#include <cart2/ImuInfo.h>
+
 #include <boost/regex.hpp>
 
 #include <string>
 #include <sstream>
 
 using namespace labust::vehicles;
+
+const float PlaDyPosNode::sscale[6]={0.00926,
+		0.00926,
+		0.00926,
+		0.00926,
+		0.0152738,
+		0.002795
+};
 
 PlaDyPosNode::PlaDyPosNode():
 	io(),
@@ -60,6 +71,8 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	//Initialize subscribers and publishers
 	tau = nh.subscribe("tauIn", 1, &PlaDyPosNode::onTau,this);
 	tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
+	diag = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
+	info = nh.advertise<cart2::ImuInfo>("pladypos_info",1);
 
 	//Initialize max/min tau
 	double maxThrust(1),minThrust(-1);
@@ -113,6 +126,7 @@ void PlaDyPosNode::start_receive()
 
 void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t& transferred)
 {
+	static int trackC=0;
 	if (!error)
 	{
 		std::istream is(&sbuffer);
@@ -131,13 +145,48 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 			break;
 		case '(':
 			is>>ret>>idx>>junk>>value>>delimit;
-			ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
+			if (ret == 'c')
+			{
+				++trackC;
+				sensors[idx] = value*sscale[idx];
+				ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
+
+				if (trackC == sensors.size()) pubDiagnostics();
+			}
 			break;
 		default:
 			ROS_ERROR("Unknown start character.");
 		}
 	}
 	start_receive();
+}
+
+void PlaDyPosNode::pubDiagnostics()
+{
+	diagnostic_msgs::DiagnosticStatusPtr status(new diagnostic_msgs::DiagnosticStatus());
+
+	status->level = status->OK;
+	status->name = "PlaDyPos Driver";
+	status->message = "Voltage and current report";
+	status->hardware_id = "None";
+
+	std::string names[6]={"C0","C1","C2","C3","CP","Voltage"};
+	std::ostringstream out;
+	cart2::ImuInfoPtr data(new cart2::ImuInfo());
+	data->data.resize(sensors.size());
+	for (size_t i=0; i<sensors.size(); ++i)
+	{
+		out.str("");
+		out<<sensors[i];
+		diagnostic_msgs::KeyValue ddata;
+		ddata.key = names[i];
+		ddata.value = out.str();
+		status->values.push_back(ddata);
+		data->data[i]=sensors[i];
+	}
+
+	diag.publish(status);
+	info.publish(data);
 }
 
 void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t level)
@@ -147,19 +196,8 @@ void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t leve
 	if (revControl)
 	{
 		int n[4]={config.rev0, config.rev1, config.rev2, config.rev3};
-
-		//if (config.lock12) n[1] = n[0];
-		//if (config.lock34) n[3] = n[2];
-		std::ostringstream out("");
-		for (int i=0; i<4;++i)
-		{
-			out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
-		}
-
-		std::string todriver(out.str());
-		boost::mutex::scoped_lock lock(serialMux);
-		boost::asio::write(port,boost::asio::buffer(todriver));
-		ROS_INFO("Revoultion control enabled. Sending: %s",todriver.c_str());
+		driverMsg(n);
+		ROS_INFO("Revoultion control enabled.");
 	}
 }
 
@@ -172,28 +210,24 @@ void PlaDyPosNode::safetyTest()
 		if (((ros::Time::now() - lastTau).toSec() > timeout) && !revControl)
 		{
 			ROS_WARN("Timeout triggered.");
-			std::ostringstream out;
 			int n[4]={0,0,0,0};
-			driverMsg(n, out);
-			boost::mutex::scoped_lock lock(serialMux);
-			boost::asio::write(port,boost::asio::buffer(out.str()));
+			driverMsg(n);
 		}
 		rate.sleep();
 	}
 }
 
-void PlaDyPosNode::driverMsg(const int n[4], std::ostringstream& out)
+void PlaDyPosNode::driverMsg(const int n[4])
 {
-	for (int i=0; i<4;++i)
-	{
-		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
-	}
-	
-	for (int i=0; i<6;++i)
-	{
-		//Here we request the currents and voltages.
-		out<<"(C"<<i<<")";
-	}
+	std::ostringstream out;
+
+	//Here we set the thrust
+	for (int i=0; i<4;++i)	out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+	//Here we request the currents and voltages.
+	for (int i=0; i<6;++i)	out<<"(C"<<i<<")";
+
+	boost::mutex::scoped_lock lock(serialMux);
+	boost::asio::write(port,boost::asio::buffer(out.str()));
 }
 
 void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
@@ -222,24 +256,14 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 
 	//Tau to Revs
 	int n[4];
-	std::ostringstream out("");
-
+	//Here we map the thrusts
 	for (int i=0; i<4;++i)
 	{
-		//Here we need the thruster mapping
 		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
-		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
-	}
-	for (int i=0; i<4;++i)
-	{
-		//Here we request the currents and voltages.
-		out<<"(C"<<i<<")";
 	}
 
-	std::string todriver(out.str());
-	ROS_INFO("Revolutions output:%s\n",todriver.c_str());
+
+	driverMsg(n);
+
 	ROS_INFO("Revs: %d %d %d %d\n",n[0],n[1],n[2],n[3]);
-
-	boost::mutex::scoped_lock lock(serialMux);
-	boost::asio::write(port,boost::asio::buffer(todriver));
 }
