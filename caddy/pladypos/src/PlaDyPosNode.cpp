@@ -151,7 +151,11 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 				sensors[idx] = value*sscale[idx];
 				ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
 
-				if (trackC == sensors.size()) pubDiagnostics();
+				if (trackC == sensors.size()-1)
+				{
+					trackC = 0;
+				  	pubDiagnostics();
+				}
 			}
 			break;
 		default:
