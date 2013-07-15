@@ -81,6 +81,11 @@ namespace labust
 			ros::Publisher tauAch;
 
 			/**
+			 * Helper method to generate the driver msg.
+			 */
+			void driverMsg(const int n[4], std::ostringstream& out);
+
+			/**
 			 * Handles the arrived force and torque requests.
 			 */
 			void onTau(const auv_msgs::BodyForceReq::ConstPtr tau);

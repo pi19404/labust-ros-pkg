@@ -107,7 +107,7 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 
 void PlaDyPosNode::start_receive()
 {
-	boost::asio::async_read_until(port, sbuffer, boost::regex(")|!|?"),
+	boost::asio::async_read_until(port, sbuffer, boost::regex("\\)|!|\\?"),
 			boost::bind(&PlaDyPosNode::onReply,this,_1,_2));
 }
 
@@ -119,7 +119,8 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 		char c;
 		is>>c;
 
-		std::string data;
+		char ret, junk, delimit;
+		int idx, value;
 		switch (c)
 		{
 		case '!':
@@ -129,8 +130,8 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 			ROS_INFO("Communication error - received '?'");
 			break;
 		case '(':
-			is>>data;
-			ROS_INFO("Received data: %s", data.c_str());
+			is>>ret>>idx>>junk>>value>>delimit;
+			ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
 			break;
 		default:
 			ROS_ERROR("Unknown start character.");
@@ -171,11 +172,27 @@ void PlaDyPosNode::safetyTest()
 		if (((ros::Time::now() - lastTau).toSec() > timeout) && !revControl)
 		{
 			ROS_WARN("Timeout triggered.");
-			std::string todriver("(P0,0,0)(P1,0,0)(P2,0,0)(P3,0,0)");
+			std::ostringstream out;
+			int n[4]={0,0,0,0};
+			driverMsg(n, out);
 			boost::mutex::scoped_lock lock(serialMux);
-			boost::asio::write(port,boost::asio::buffer(todriver));
+			boost::asio::write(port,boost::asio::buffer(out.str()));
 		}
 		rate.sleep();
+	}
+}
+
+void PlaDyPosNode::driverMsg(const int n[4], std::ostringstream& out)
+{
+	for (int i=0; i<4;++i)
+	{
+		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+	}
+	
+	for (int i=0; i<6;++i)
+	{
+		//Here we request the currents and voltages.
+		out<<"(C"<<i<<")";
 	}
 }
 
@@ -212,6 +229,11 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 		//Here we need the thruster mapping
 		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
 		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+	}
+	for (int i=0; i<4;++i)
+	{
+		//Here we request the currents and voltages.
+		out<<"(C"<<i<<")";
 	}
 
 	std::string todriver(out.str());
