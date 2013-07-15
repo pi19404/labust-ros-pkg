@@ -93,6 +93,14 @@ namespace labust
 			 */
 			void dynrec(pladypos::ThrusterMappingConfig& config, uint32_t level);
 			/**
+			 * Handles the arrived message.
+			 */
+			void onReply(const boost::system::error_code& error, const size_t& transferred);
+			/**
+			 * Starts the message receive.
+			 */
+			void start_receive();
+			/**
 			 * The safety test thread.
 			 */
 			boost::thread safety;
@@ -126,6 +134,14 @@ namespace labust
 			 * The pladypos serial port.
 			 */
 			boost::asio::serial_port port;
+			/**
+			 * The io service thread.
+			 */
+			boost::thread iorunner;
+			/**
+			 * The input buffer.
+			 */
+			boost::asio::streambuf sbuffer;
 
 			/**
 			 * Allocation matrix and maximum force, torque.

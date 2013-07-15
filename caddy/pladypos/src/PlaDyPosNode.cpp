@@ -34,6 +34,8 @@
 #include <labust/vehicles/PlaDyPosNode.hpp>
 #include <labust/vehicles/Allocation.hpp>
 
+#include <boost/regex.hpp>
+
 #include <string>
 #include <sstream>
 
@@ -94,6 +96,40 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
   server.setCallback(boost::bind(&PlaDyPosNode::dynrec, this, _1, _2));
 
   safety = boost::thread(boost::bind(&PlaDyPosNode::safetyTest, this));
+}
+
+void PlaDyPosNode::start_receive()
+{
+	boost::asio::async_read_until(port, sbuffer, boost::regex(")|!|?"),
+			boost::bind(&PlaDyPosNode::onReply,this,_1,_2));
+}
+
+void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t& transferred)
+{
+	if (!error)
+	{
+		std::istream is(&sbuffer);
+		char c;
+		is>>c;
+
+		std::string data;
+		switch (c)
+		{
+		case '!':
+			ROS_INFO("Message acknowledged.");
+			break;
+		case '?':
+			ROS_INFO("Communication error - received '?'");
+			break;
+		case '(':
+			is>>data;
+			ROS_INFO("Received data: %s", data.c_str());
+			break;
+		default:
+			ROS_ERROR("Unknown start character.");
+		}
+	}
+	start_receive();
 }
 
 void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t level)
