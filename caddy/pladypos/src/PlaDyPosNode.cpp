@@ -48,7 +48,12 @@ PlaDyPosNode::PlaDyPosNode():
 	timeout(0.5),
 	revControl(false){}
 
-PlaDyPosNode::~PlaDyPosNode(){}
+PlaDyPosNode::~PlaDyPosNode()
+{
+	io.stop();
+	safety.join();
+	iorunner.join();
+}
 
 void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 {
@@ -95,7 +100,9 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	//Configure the dynamic reconfigure server
   server.setCallback(boost::bind(&PlaDyPosNode::dynrec, this, _1, _2));
 
+  this->start_receive();
   safety = boost::thread(boost::bind(&PlaDyPosNode::safetyTest, this));
+  iorunner = boost::thread(boost::bind(&boost::asio::io_service::run, &this->io));
 }
 
 void PlaDyPosNode::start_receive()

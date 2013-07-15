@@ -4,9 +4,9 @@
   <node pkg="nodelet" type="nodelet" name="usbl"
         args="load usbl/USBLNodelet usbl_pool">
   </node>
-  <node pkg="nodelet" type="nodelet" name="usbl_filter" 
+  <!-- <node pkg="nodelet" type="nodelet" name="usbl_filter" 
   		args="load usbl/USBLFilter usbl_pool">
-  </node>
+  </node> -->
   <node pkg="nodelet" type="nodelet" name="usbl_manager" 
   	args="load usbl/USBLManager usbl_pool">
   </node>
