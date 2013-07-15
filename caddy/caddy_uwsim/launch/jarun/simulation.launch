@@ -1,14 +1,16 @@
 <launch>
-  <include file="$(find caddy_uwsim)/data/config/$(env ROBOT).machine" /> 
-    
-  <include file="$(find caddy_uwsim)/data/config/uwsim.xml" />
-  
-  <group ns="pladypos">
-  	<rosparam command="load" file="$(find caddy_uwsim)/data/config/$(env LOCATION).yaml" />  	
+  <include file="$(find caddy_uwsim)/data/config/$(env ROBOT).machine" />     
+  <include file="$(find caddy_uwsim)/data/config/uwsim.xml" if="$(env USE_UWSIM)" />
+ 
+  <group ns="$(env NAMESPACE)">
+  	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
+  	<include file="$(find caddy_uwsim)/data/config/rviz.xml" if="$(env USE_RVIZ)" />  	
   	<include file="$(find caddy_uwsim)/data/config/navigation.xml" />
   	<include file="$(find caddy_uwsim)/data/config/control.xml" />
    	<include file="$(find caddy_uwsim)/data/config/joy.xml" />
-  	<include file="$(find caddy_uwsim)/data/config/driver.xml" />     
-	<include file="$(find usbl)/launch/usbl_full.launch" />
+  	<include file="$(find caddy_uwsim)/data/config/driver.xml" />
+  	<include file="$(find caddy_uwsim)/data/config/manager.xml" />
+  	<include file="$(find caddy_uwsim)/data/config/logging.xml" if="$(env ENABLE_LOGGING)" />
+	<include file="$(find usbl)/launch/usbl_full.launch" unless="$(env SIM_DIVER)"/>
   </group>
 </launch>

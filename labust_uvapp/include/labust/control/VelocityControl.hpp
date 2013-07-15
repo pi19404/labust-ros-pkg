@@ -68,7 +68,8 @@ namespace labust
 			enum {disableAxis=0,
 				manualAxis=1,
 				controlAxis=2,
-				identAxis=3};
+				identAxis=3,
+			  directAxis=4};
 
 		public:
 			/**

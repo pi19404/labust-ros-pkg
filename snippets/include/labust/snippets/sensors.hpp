@@ -50,7 +50,7 @@ namespace labust
 		class SnippetNodeBase
 		{
 		public:
-			SnippetNodeBase()
+			SnippetNodeBase();
 		};
 		/**
 		 * The IMU handler class.

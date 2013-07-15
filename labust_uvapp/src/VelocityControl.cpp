@@ -335,6 +335,16 @@ void VelocityControl::step()
 		case identAxis:
 			controller[i].output = doIdentification(i);
 			break;
+		case directAxis:
+			controller[i].output = controller[i].desired;
+			if (controller[u].autoTracking)
+			{
+
+				if (fabs(controller[u].desired) > controller[u].outputLimit)
+					controller[u].desired = controller[u].desired/fabs(controller[u].desired)*controller[u].outputLimit;
+				tau.wrench.force.x = controller[u].desired;
+			}
+			break;
 		case disableAxis:
 		default:
 			controller[i].output = 0;
@@ -342,26 +352,27 @@ void VelocityControl::step()
 		}
 	}
 	//Copy to tau
-	//tau.wrench.force.x = controller[u].output;
-	if (axis_control[u] == controlAxis)
-	{
-		double ulimit(1.0);
-		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-		if (fabs(controller[u].desired) > ulimit) controller[u].desired = controller[u].desired/fabs(controller[u].desired)*ulimit;
-		tau.wrench.force.x = controller[u].desired;
-	}
-	else
-	{
-		double ulimit(1.0);
-		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-		if (fabs(controller[u].output) > ulimit) controller[u].output = controller[u].output/fabs(controller[u].output)*ulimit;
-		tau.wrench.force.x = controller[u].output;
-	}
+	tau.wrench.force.x = controller[u].output;
 	tau.wrench.force.y = controller[v].output;
 	tau.wrench.force.z = controller[w].output;
 	tau.wrench.torque.x = controller[p].output;
 	tau.wrench.torque.y = controller[q].output;
 	tau.wrench.torque.z = controller[r].output;
+
+//	if (axis_control[u] == controlAxis)
+//	{
+//		double ulimit(1.0);
+//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
+//		if (fabs(controller[u].desired) > ulimit) controller[u].desired = controller[u].desired/fabs(controller[u].desired)*ulimit;
+//		tau.wrench.force.x = controller[u].desired;
+//	}
+//	else
+//	{
+//		double ulimit(1.0);
+//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
+//		if (fabs(controller[u].output) > ulimit) controller[u].output = controller[u].output/fabs(controller[u].output)*ulimit;
+//		tau.wrench.force.x = controller[u].output;
+//	}
 
 	tauach=tau;
 

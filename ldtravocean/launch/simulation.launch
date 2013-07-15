@@ -1,23 +1,15 @@
-<launch> 
-  <group ns="rov">
-    <rosparam command="load" file="$(find ldtravocean)/data/config/simulation.yaml" />
+<launch>
+  <include file="$(find ldtravocean)/data/config/$(env ROBOT).machine" /> 
     
-  	<node pkg="UWSim" name="UWSim" type="UWSim" 
-  		args="--configfile $(find ldtravocean)/data/scenes/test_environment.xml 
-  		--dataPath $(find ldtravocean)/data/scenes"  />    
-  		    
-    <node pkg="ldtravocean" name="model_node" type="model_node" args="$(find ldtravocean)/data/config/model.xml">
-        <!-- This will also adjust the model sampling time -->
-    	<param name="Rate" value="10" />
-    </node>
-    
-    <node pkg="labust_uvapp" name="velocity_control" type="velocity_control">
-      <remap from="tauOut" to="tauIn" />
-      <remap from="stateHat" to="meas" />
-    </node>
-    
-    <node pkg="ldtravocean" name="simple_dp" type="simple_dp.py">
-      <remap from="stateHat" to="meas" />
-    </node>
+  <include file="$(find ldtravocean)/data/config/uwsim.xml" if="$(env USE_UWSIM)" />
+  <include file="$(find ldtravocean)/data/config/rviz.xml" if="$(env USE_RVIZ)" />
+  
+  <group ns="ldrov">
+  	<rosparam command="load" file="$(find ldtravocean)/data/config/$(env LOCATION).yaml" />  	
+  	<include file="$(find ldtravocean)/data/config/navigation.xml" />
+  	<include file="$(find ldtravocean)/data/config/control.xml" />
+   	<include file="$(find ldtravocean)/data/config/joy.xml" />
+  	<include file="$(find ldtravocean)/data/config/driver.xml" />
+  	<include file="$(find ldtravocean)/data/config/logging.xml" if="$(env ENABLE_LOGGING)" />
   </group>
 </launch>

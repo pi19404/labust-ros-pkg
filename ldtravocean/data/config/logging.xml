@@ -1,0 +1,9 @@
+<launch> 
+    <rosparam command="load" file="$(find cart2)/data/config/logger.yaml" />
+    <node pkg="cart2" name="logger" type="matlogger2.py">
+      <param name="dir" value="$(env LOGDIR)" />
+    </node>
+    
+    <node pkg="rosbag" type="record" name="rosbag"
+       args="-a -o $(env LOGDIR)/rosmsgs --bz2" />
+</launch>

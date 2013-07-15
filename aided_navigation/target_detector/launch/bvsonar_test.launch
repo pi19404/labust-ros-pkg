@@ -1,0 +1,9 @@
+ <launch>
+  <node pkg="nodelet" type="nodelet" name="blueview_nodelet" args="standalone bvt_sdk/BVSonarRos" output="screen">
+   <param name="Address" value="/usr/local/share/bvtsdk/data/swimmer.son" />
+   <param name="ColormapDir" value="/usr/local/share/bvtsdk/colormaps" />
+   <param name="PingRate" value="10" />
+  </node> 
+  
+  <node pkg="target_detector" name="bv_monitor" type="bv_processor" />
+ </launch>

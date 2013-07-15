@@ -1,0 +1,8 @@
+ <launch>
+  <node pkg="bvt_sdk" name="blueview_node" type="blueview_node">
+   <param name="Address" value="/home/dnad/Development/sonar/900Linija03.son" />
+   <param name="ColormapDir" value="/usr/local/share/bvtsdk/colormaps" />
+   <param name="PingRate" value="10" />
+  </node>
+  <!-- <node pkg="target_detector" name="processor" type="bv_processor" /> -->
+ </launch>

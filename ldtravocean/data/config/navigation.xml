@@ -1,0 +1,4 @@
+<launch>
+  <rosparam command="load" file="$(env YAML_MODEL)" />
+  <node pkg="ldtravocean" type="ldnav_node" name="ekf_nav" machine="controlled" />
+</launch>

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<package>
+  <name>target_detector</name>
+  <version>0.1.0</version>
+  <description>
+  	The package contains the sonar image processing needed for 
+  	target detection and navigation aiding updates in sonar navaid scenarios.
+  </description>
+
+  <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
+  <license>BSD</license>
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://ros.org/wiki/target_detector</url> -->
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <!-- Examples: -->
+  <!-- Use build_depend for packages you need at compile time: -->
+  <!--   <build_depend>message_generation</build_depend> -->
+  <!-- Use buildtool_depend for build tool packages: -->
+  <!--   <buildtool_depend>catkin</buildtool_depend> -->
+  <!-- Use run_depend for packages you need at runtime: -->
+  <!--   <run_depend>message_runtime</run_depend> -->
+  <!-- Use test_depend for packages you need only for testing: -->
+  <!--   <test_depend>gtest</test_depend> -->
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>aidnav_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <run_depend>aidnav_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>cv_bridge</run_depend>
+</package>

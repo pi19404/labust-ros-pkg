@@ -1,19 +1,23 @@
 <launch>
-    <group if="$(env SIM)">
-    <node pkg="ldtravocean" type="model_node" name="pladypos_node" args="$(find caddy_uwsim)/data/config/pladypos_model.xml" machine="pladypos">
-        <!-- This will also adjust the model sampling time -->
-    	<param name="Rate" value="10" />
-    	<param name="ModelWrap" value="10"/>
-    	<remap from="tauIn" to="tauOut" />
-    	<remap from="meas" to="sim_meas" />
-    	<param name="maxThrust" value="9.2" />
-    	<param name="minThrust" value="-9.2" />
-    	<remap from="imu_model" to="imu" />
-    	<remap from="fix" to="gps" />
-    </node>
-    </group>
+	<node pkg="ldtravocean" type="model_node" name="cart2_node"
+		args="$(env SIM_MODEL)" if="$(env IS_SIM)">
+		<!-- This will also adjust the model sampling time -->
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<remap from="tauIn" to="tauOut" />
+		<remap from="meas" to="meas_sim" />
+		<param name="maxThrust" value="-9.19" />
+		<param name="minThrust" value="-9.19" />
+		<param name="publish_world" value="false" />
+		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
 
-    <node pkg="pladypos" name="pladypos_node" type="pladypos_node" unless="$(env SIM)" machine="pladypos" >
+		<remap from="imu_model" to="imu" />
+		<remap from="fix" to="gps" />
+		<!-- <remap from="tauAch" to="tauAchSim" /> -->
+		<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+	</node>
+
+	<node pkg="pladypos" name="pladypos_node" type="pladypos_node" if="$(env USE_PLADYPOS)" machine="pladypos" >
       <param name="PortName" value="/dev/ttyS1" />
       <param name="Baud" value="57600" />
       <param name="maxThrust" value="1"/>
