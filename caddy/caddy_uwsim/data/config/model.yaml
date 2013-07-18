@@ -1,15 +1,15 @@
 model_name: cart2
 
 cart2/dynamics/period: 0.1
-cart2/dynamics/mass: 20.0
+cart2/dynamics/mass: 0.4
 cart2/dynamics/rg: [0.0, 0.0, 0.0]
 cart2/dynamics/rb: [0.0, 0.0, 0.0]
 cart2/dynamics/g: 9.81
 
 #Add some parameters for the buoyancy calculations 
-cart2/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 12.3]
+cart2/dynamics/inertia_matrix: [30.0, 0.0, 0.0, 0.0, 30.0, 0.0, 0.0, 0.0, 0.4965]
 cart2/dynamics/added_mass: [6.0, 6.0, 79.4777, 15.0, 30.0, 0.0]
-cart2/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 26.0]
+cart2/dynamics/damping: [13.0, 13.0, 24.2846, 400.0, 300.0, 0.326]
 cart2/dynamics/quadratic_damping: [.0, .0, .0, .0, .0, .0]
 
 #Parameters:	  	          u   v    r    xp  yp       psi   xc  yc    b1   b2

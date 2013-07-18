@@ -129,8 +129,14 @@ class MatLogger:
                 'stbd_curr_desired',
                 'current',
                 'temp',
+		'voltage');
+        self.pladyposLogOrder = ('current0',
+                'current1',
+                'current2',
+                'current3',
+                'current',
                 'voltage');
-        self.imuLogOrder = ('latDeg'
+        self.imuLogOrder = ('latDeg',
             'latFrac', 'lonDeg', 'lonFrac','hdop',
             'accel_x', 'accel_y', 'accel_z',
             'gyro_x', 'gyro_y', 'gyro_z',
@@ -144,11 +150,17 @@ class MatLogger:
                             'radius',
                             'surge',
                             'yaw')     
+        isPladypos = rospy.get_param("~use_pladypos",False);             
+
+	loggerOrder=self.cart2LogOrder;
+	if isPladypos:
+		loggerOrder=self.pladyposLogOrder;
+		
         self.loggers=[MessageLogger("logger/stateNames", NavSts, self.navStsLogOrder),
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
-                      ListLogger("logger/cart2_info", ImuInfo, self.cart2LogOrder),
+                      ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              
         from datetime import datetime;
