@@ -85,7 +85,7 @@ add_executable(cart2_node src/cart2_main.cpp)
 add_executable(imu_node src/imu_node.cpp)
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
-add_executable(vr_node src/vr_node.cpp)
+#add_executable(vr_node src/vr_node.cpp)
 
 add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
 	include/labust/control/TopsideRadio.hpp
@@ -107,8 +107,8 @@ add_executable(repost_node src/position_repost.cpp)
 add_dependencies(hlmanager cart2_generate_messages_cpp)
 add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(topside_radio cart2_gencfg)
-add_dependencies(topside_radio cart2_generate_messages_cpp)
-add_dependencies(cnr_radio cart2_generate_messages_cpp)
+#add_dependencies(topside_radio cart2_generate_messages_cpp)
+#add_dependencies(cnr_radio cart2_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(topside_radio
@@ -158,11 +158,11 @@ target_link_libraries(hlmanager
    ${catkin_LIBRARIES}
 )
 
-target_link_libraries(vr_node
-   ${catkin_LIBRARIES}
-   ${Boost_SYSTEM_LIBRARY}
-   videoray-plug
-)
+#target_link_libraries(vr_node
+#   ${catkin_LIBRARIES}
+#   ${Boost_SYSTEM_LIBRARY}
+#   videoray-plug
+#)
 
 #############
 ## Install ##

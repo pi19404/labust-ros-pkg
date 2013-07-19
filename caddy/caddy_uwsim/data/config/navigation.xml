@@ -10,6 +10,6 @@
     <param name="gps_pub" value="10" />
     <remap from="fix" to="gps" />
     <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
-    <param name="magnetic_declination" value="0.122172944" />
+    <param name="magnetic_declination" value="0.052359833" />
   </node> 
 </launch>
