@@ -5,7 +5,7 @@ project(labust_uvapp)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp dynamic_reconfigure sensor_msgs
-	message_generation tf orocos_kdl)
+	message_generation tf orocos_kdl snippets)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

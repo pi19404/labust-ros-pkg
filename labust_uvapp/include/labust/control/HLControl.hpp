@@ -157,7 +157,7 @@ namespace labust
 				//Copy into controller
 				typename OutputType::Ptr ref(new OutputType());
 				Windup::get_windup(this);
-				//Controller::step(estimate, ref);
+				Controller::step(estimate, ref);
 				refPub.publish(ref);
 			}
 

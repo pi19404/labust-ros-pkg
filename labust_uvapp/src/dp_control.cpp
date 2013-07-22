@@ -35,14 +35,131 @@
 *  Created: 01.02.2013.
 *********************************************************************/
 #include <labust/control/DPControl.hpp>
+#include <labust/control/HLControl.hpp>
+#include <labust/tools/MatrixLoader.hpp>
+#include <Eigen/Dense>
+
+#include <geometry_msgs/PointStamped.h>
+
+namespace labust{namespace control{
+///The fully actuated dynamic positioning controller
+struct FADPControl
+{
+	enum {x=0,y};
+
+	FADPControl():Ts(0.1){};
+
+	void init()
+	{
+		ros::NodeHandle nh;
+		refTrack = nh.subscribe<auv_msgs::NavSts>("TrackPoint", 1,
+				&FADPControl::onTrackPoint,this);
+		refPoint = nh.subscribe<geometry_msgs::PointStamped>("LFPoint", 1,
+				&FADPControl::onNewPoint,this);
+
+		initialize_controller();
+	}
+
+	void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref)
+	{
+		trackPoint = *ref;
+
+		con[x].desired =  trackPoint.position.north;
+		con[y].desired =  trackPoint.position.east;
+		con[x].feedforward=  trackPoint.body_velocity.x;
+		con[y].feedforward =  trackPoint.body_velocity.y;
+	};
+
+	void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
+	{
+		con[x].desired = point->point.x;
+		con[y].desired = point->point.y;
+	};
+
+	void windup(const auv_msgs::BodyForceReq& tauAch)
+	{
+		//Copy into controller
+		con[x].windup = tauAch.disable_axis.x;
+		con[y].windup = tauAch.disable_axis.y;
+	};
+
+	void step(const auv_msgs::NavSts::ConstPtr& state, auv_msgs::BodyVelocityReqPtr nu)
+	{
+		ROS_INFO("Test");
+		con[x].state = state->position.north;
+		con[y].state = state->position.east;
+
+		PIFFExtController_step(&con[x],Ts);
+		PIFFExtController_step(&con[y],Ts);
+
+		nu->header.stamp = ros::Time::now();
+		nu->goal.requester = "fadp_controller";
+
+		Eigen::Vector2f out, in;
+		Eigen::Matrix2f R;
+		in<<con[x].output,con[y].output;
+		double yaw(state->orientation.yaw);
+		R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
+
+		out = R*in;
+
+		nu->twist.linear.x = out[0];
+		nu->twist.linear.y = out[1];
+	}
+
+	void initialize_controller()
+	{
+		ROS_INFO("Initializing dynamic positioning controller...");
+
+		ros::NodeHandle nh;
+		Eigen::Vector2d closedLoopFreq(Eigen::Vector2d::Ones());
+		labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
+		nh.param("dp_controller/sampling",Ts,Ts);
+
+		enum {Kp=0, Ki, Kd, Kt};
+		for (size_t i=0; i<2;++i)
+		{
+			PIDController_init(&con[i]);
+			con[i].gains[Kp] = 2*closedLoopFreq(i);
+			con[i].gains[Ki] = closedLoopFreq(i)*closedLoopFreq(i);
+			con[i].autoTracking = 0;
+		}
+
+		ROS_INFO("Dynamic positioning controller initialized.");
+	}
+
+private:
+	PIDController con[2];
+	ros::Subscriber refTrack, refPoint;
+	auv_msgs::NavSts trackPoint;
+	double Ts;
+};
+}}
 
 int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"dp_control");
-	//Initialize
-	labust::control::DPControl controller;
-	//Start execution.
-	controller.start();
+
+	bool underactuated(true);
+
+	ros::NodeHandle nh;
+	nh.param("dp_controller/underactuated",underactuated,underactuated);
+
+	if (underactuated)
+	{
+		//Initialize
+		labust::control::DPControl controller;
+		//Start execution.
+		controller.start();
+	}
+	else
+	{
+		labust::control::HLControl<labust::control::FADPControl,
+			labust::control::EnablePolicy,
+			labust::control::WindupPolicy> controller;
+		ros::spin();
+	}
+
 	return 0;
 }
 
