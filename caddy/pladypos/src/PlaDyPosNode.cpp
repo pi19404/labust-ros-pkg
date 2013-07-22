@@ -33,6 +33,7 @@
 *********************************************************************/
 #include <labust/vehicles/PlaDyPosNode.hpp>
 #include <labust/vehicles/Allocation.hpp>
+#include <labust/math/NumberManipulation.hpp>
 
 #include <diagnostic_msgs/DiagnosticStatus.h>
 #include <cart2/ImuInfo.h>
@@ -49,7 +50,7 @@ const float PlaDyPosNode::sscale[6]={0.00926,
 		0.00926,
 		0.00926,
 		0.0152738,
-		0.002795
+		0.02795
 };
 
 PlaDyPosNode::PlaDyPosNode():
@@ -73,7 +74,7 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	diag = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
 	info = nh.advertise<cart2::ImuInfo>("pladypos_info",1);
-
+	
 	//Initialize max/min tau
 	double maxThrust(1),minThrust(-1);
 	ph.param("maxThrust",maxThrust,maxThrust);
@@ -151,7 +152,11 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 				sensors[idx] = value*sscale[idx];
 				ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
 
-				if (trackC == sensors.size()) pubDiagnostics();
+				if (trackC == sensors.size()-1)
+				{
+					trackC = 0;
+				  	pubDiagnostics();
+				}
 			}
 			break;
 		default:
@@ -220,6 +225,7 @@ void PlaDyPosNode::safetyTest()
 void PlaDyPosNode::driverMsg(const int n[4])
 {
 	std::ostringstream out;
+	
 
 	//Here we set the thrust
 	for (int i=0; i<4;++i)	out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
@@ -241,27 +247,47 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 	double scale = allocator.scaleII(tauXYN,&tauXYNsc,&tauI);
 
 	//Publish the scaled values if scaling occured
+	auv_msgs::BodyForceReq t;
+	t.wrench.force.x = tauXYNsc(0);
+	t.wrench.force.y = tauXYNsc(1);
+	t.wrench.force.z = 0;
+	t.wrench.torque.x = 0;
+	t.wrench.torque.y = 0;
+	t.wrench.torque.z = tauXYNsc(2);
+	t.header.stamp = ros::Time::now();
+
 	if (scale>1)
 	{
-		auv_msgs::BodyForceReq t;
-		t.wrench.force.x = tauXYNsc(0);
-		t.wrench.force.y = tauXYNsc(1);
-		t.wrench.force.z = 0;
-		t.wrench.torque.x = 0;
-		t.wrench.torque.y = 0;
-		t.wrench.torque.z = tauXYNsc(2);
-		t.header.stamp = ros::Time::now();
-		tauAch.publish(t);
+	  t.disable_axis.x = 1;
+	  t.disable_axis.y = 1;
+	  t.disable_axis.yaw = 1;
 	}
+
+	tauAch.publish(t);
 
 	//Tau to Revs
 	int n[4];
 	//Here we map the thrusts
 	for (int i=0; i<4;++i)
 	{
+		//This is the quadratic allocation.
 		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
+		//This is the linear allocation.
+		//n[i]=tauI(i)*255; 
+		//This is the compensated quadratic+linear allocation.
+		if (fabs(tauI(i)) < 0.23184)
+		{
+		  n[i] = 255*labust::vehicles::AffineThruster::getRevsD(tauI(i),1.894,1.894);
+		}
+		else
+		{
+		  double a(1.21), b(-0.1915);
+		  n[i]=255*labust::math::coerce((tauI(i)-fabs(tauI(i))/tauI(i)*b)/a, -1,1);
+		}
 	}
-
+	
+	n[0] = 0.95*n[0];
+	n[1] = 0.95*n[1];
 
 	driverMsg(n);
 

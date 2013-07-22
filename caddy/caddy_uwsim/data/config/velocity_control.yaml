@@ -1,6 +1,6 @@
-#The velocity controller closed loop parameters
-velocity_controller/closed_loop_freq: [1.0,1.0,0.1,1.0,1.0,1.0]
-velocity_controller/auto_tracking: [1.0,1.0,1.0,1.0,1.0,1.0]
-velocity_controller/output_limits: [13.0,0.0,0.0,0.0,0.0,13.0]
+#:The velocity controller closed loop parameters
+velocity_controller/closed_loop_freq: [0.5,0.5,0.1,1.0,1.0,2.0]
+velocity_controller/auto_tracking: [0.0,0.0,1.0,1.0,1.0,0.0]
+velocity_controller/output_limits: [0.0,0.0,0.0,0.0,0.0,4.0]
 velocity_controller/Ts: 0.1
 velocity_controller/timeout: 2.0

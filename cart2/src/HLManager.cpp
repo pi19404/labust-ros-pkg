@@ -169,7 +169,10 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		srv.request.desired_mode[i] = srv.request.DisableAxis;
 	}
 
+	srv.request.desired_mode[srv.request.u] = srv.request.DirectAxis;
+	srv.request.desired_mode[srv.request.v] = srv.request.DirectAxis;
 	srv.request.desired_mode[srv.request.u] = srv.request.ControlAxis;
+	//srv.request.desired_mode[srv.request.v] = srv.request.ControlAxis;
 	srv.request.desired_mode[srv.request.r] = srv.request.ControlAxis;
 
 	geometry_msgs::TwistStampedPtr fakeTwist(new geometry_msgs::TwistStamped());
@@ -180,6 +183,7 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	case manual:
 		ROS_INFO("Set to manual mode.");
 		srv.request.desired_mode[srv.request.u] = srv.request.ManualAxis;
+		srv.request.desired_mode[srv.request.v] = srv.request.ManualAxis;
 		srv.request.desired_mode[srv.request.r] = srv.request.ManualAxis;
 		break;
 	case gotoPoint:
@@ -199,6 +203,7 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 	case heading:
 		ROS_INFO("Set to Heading mode.");
 		srv.request.desired_mode[srv.request.u] = srv.request.ManualAxis;
+		srv.request.desired_mode[srv.request.v] = srv.request.ManualAxis;
 		controllers["HDG"] = true;
 		break;
 	case headingSurge:
