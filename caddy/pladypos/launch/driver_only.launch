@@ -1,8 +1,5 @@
 <launch>
   <group ns="pladypos">
-    <rosparam command="load" file="$(find pladypos)/launch/model.yaml" />
-  	<rosparam command="load" file="$(find caddy_uwsim)/launch/simulation.yaml" />
-  	
     <node pkg="pladypos" name="pladypos_node" type="pladypos_node">
       <param name="PortName" value="/dev/ttyS1" />
       <param name="Baud" value="57600" />
