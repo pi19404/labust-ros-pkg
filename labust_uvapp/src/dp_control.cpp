@@ -68,8 +68,8 @@ struct FADPControl
 
 		con[x].desired =  trackPoint.position.north;
 		con[y].desired =  trackPoint.position.east;
-		con[x].feedforward=  trackPoint.body_velocity.x;
-		con[y].feedforward =  trackPoint.body_velocity.y;
+		con[x].feedforward=  trackPoint.body_velocity.x*cos(trackPoint.orientation.yaw);
+		con[y].feedforward =  trackPoint.body_velocity.x*sin(trackPoint.orientation.yaw);
 	};
 
 	void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
