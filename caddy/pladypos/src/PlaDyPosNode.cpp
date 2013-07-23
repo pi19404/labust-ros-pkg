@@ -277,7 +277,7 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 		//This is the compensated quadratic+linear allocation.
 		if (fabs(tauI(i)) < 0.23184)
 		{
-		  //n[i] = 255*labust::vehicles::AffineThruster::getRevsD(tauI(i),1.894,1.894);
+		  n[i] = 255*labust::vehicles::AffineThruster::getRevsD(tauI(i),1.894,1.894);
 		}
 		else
 		{

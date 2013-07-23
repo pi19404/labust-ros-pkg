@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 labust-ros-pkg
 ==============
 
