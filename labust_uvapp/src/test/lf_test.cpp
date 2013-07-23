@@ -43,7 +43,7 @@
 
 struct LFControl
 {
-	LFControl():Ts(0.1),LFKp(1){};
+	LFControl():Ts(0.1),LFKp(1),T0(labust::navigation::LFModel::zeros(3)),Tt(labust::navigation::LFModel::zeros(3)){};
 
 	void init()
 	{

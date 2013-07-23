@@ -54,11 +54,13 @@
 
 #include <boost/bind.hpp>
 #include <sstream>
+#include <fstream>
 
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
 
 ros::Time t;
+KFNav::vector measurement, newMeas;
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -90,6 +92,12 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 		xy(x) = posxy.first;
 		xy(y) = posxy.second;
 		xy(newMsg) = 1;
+
+		//For generic updates
+		newMeas(KFNav::xp) = 1;
+		newMeas(KFNav::yp) = 1;
+		measurement(KFNav::xp) = posxy.first;
+		measurement(KFNav::yp) = posxy.second;
 	}
 	catch(tf::TransformException& ex)
 	{
@@ -122,6 +130,12 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 		rpy(p) = pitch;
 		rpy(y) = yaw;
 		rpy[newMsg] = 1;
+
+		//For generic updates
+		newMeas(KFNav::psi) = 1;
+		newMeas(KFNav::r) = 1;
+		measurement(KFNav::psi) = yaw;
+		measurement(KFNav::r) = data->angular_velocity.z;
 	}
 	catch (tf::TransformException& ex)
 	{
@@ -205,6 +219,99 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 	nav.setState(x0);
 }
 
+void offline_sim(const std::string& filename, KFNav& ekf)
+{
+	std::fstream file(filename.c_str());
+	std::ofstream log("test.csv");
+	std::cout<<"Reading log file:"<<filename<<std::endl;
+
+	//Define a desired structure
+	log<<"%element: off_data\n"
+	"% body_velocity.x\n"
+	"% body_velocity.y\n"
+	"% orientation_rate.yaw\n"
+	"% position.north\n"
+	"% position.east\n"
+	"% orientation.yaw\n"
+	"% current.xc\n"
+	"% current.yc\n"
+	"% b1\n"
+	"% b2\n"
+	"%element: off_cov \n"
+  "% u_cov\n"
+	"% v_cov\n"
+	"% r_cov\n"
+	"% x_cov\n"
+	"% y_cov\n"
+	"% psi_cov\n"
+	"% xc_cov\n"
+	"% yc_cov\n"
+	"% b1_cov\n"
+	"% b2_cov\n";
+
+	double tauX,tauY,tauN,x,y,psi,yaw_rate;
+	file>>tauX>>tauY>>tauN>>x>>y>>psi>>yaw_rate;
+
+	KFNav::vector state(KFNav::zeros(KFNav::stateNum));
+	state(KFNav::xp) = x;
+	state(KFNav::yp) = y;
+	state(KFNav::psi) = psi;
+
+	ekf.setState(state);
+
+	double lastx,lasty;
+	labust::math::unwrap unwrap;
+
+	int i=0;
+	while(!file.eof() && ros::ok())
+	{
+		file>>tauX>>tauY>>tauN>>x>>y>>psi>>yaw_rate;
+		//psi -= 2*M_PI*3.0/180;
+		KFNav::input_type input(KFNav::inputSize);
+		input(KFNav::X) = tauX;
+		input(KFNav::Y) = tauY;
+		input(KFNav::N) = tauN;
+		ekf.predict(input);
+
+		KFNav::vector newMeas(KFNav::zeros(KFNav::stateNum));
+		KFNav::vector measurement(KFNav::zeros(KFNav::stateNum));
+
+		double yaw = unwrap(psi);
+
+		newMeas(KFNav::psi) = 1;
+		newMeas(KFNav::r) = 1;
+		measurement(KFNav::psi) = yaw;
+		measurement(KFNav::r) = yaw_rate;
+
+		if (i%10 == 0)
+		{
+			//if (!((lastx == x) && (lasty == y)))
+			newMeas(KFNav::xp) = 1;
+			newMeas(KFNav::yp) = 1;
+			measurement(KFNav::xp) = x;
+			measurement(KFNav::yp) = y;
+		}
+
+		ekf.correct(ekf.update(measurement, newMeas));
+
+		lastx=x;
+		lasty=y;
+
+		//std::cout<<"Meas:"<<x<<","<<y<<","<<M_PI*psi/180<<std::endl;
+		//std::cout<<"Estimate:"<<ekf.getState()(KFNav::xp)<<",";
+		//std::cout<<ekf.getState()(KFNav::yp)<<","<<ekf.getState()(KFNav::psi)<<std::endl;
+		//std::cout<<ekf.traceP()<<std::endl;
+
+		log<<ekf.getState()(0);
+		for (size_t j = 1; j< ekf.getState().size(); ++j)
+			log<<","<<((j==KFNav::psi)?labust::math::wrapRad(ekf.getState()(j)):ekf.getState()(j));
+		for (size_t j = 0; j< ekf.getState().size(); ++j)	log<<","<<ekf.getStateCovariance()(j,j);
+		log<<"\n";
+
+		++i;
+	}
+}
+
 //consider making 2 corrections based on arrived measurements (async)
 int main(int argc, char* argv[])
 {
@@ -216,6 +323,20 @@ int main(int argc, char* argv[])
 
 	double outlierR;
 	nh.param("outlier_radius",outlierR,1.0);
+
+	/////////////////////////////////////////
+	//ADDED FOR LOG-BASED NAVIGATION TUNING
+	bool offline(false);
+	nh.param("offline",offline,false);
+	std::string filename("");
+	nh.param("offline_file",filename,filename);
+
+	if (offline)
+	{
+		offline_sim(filename, nav);
+		return 0;
+	}
+	////////////////////////////////////////
 
 	//Publishers
 	ros::Publisher stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
@@ -246,34 +367,51 @@ int main(int argc, char* argv[])
 	{
 		nav.predict(tau);
 
-		if (rpy(3))
+		//Generic measurment outlier rejection
+		bool outlier = false;
+		double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+		double inx(0),iny(0);
+		nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+		outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+		if (outlier)
 		{
-			double yaw = unwrap(rpy(2));
-
-			bool outlier = false;
-			double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
-			double inx(0),iny(0);
-			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
-			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
-			if (outlier)
-			{ 
-			   ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);	
-			   xy(2) = 0;
-			}
-
-			if (xy(2) == 1 && !outlier)
-			{
-			   ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
-			   nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
-			   xy(2) = 0;
-			}
-			else
-			{
-				ROS_INFO("Heading correction:%f",yaw);
-				nav.correct(nav.yawUpdate(yaw));
-			}
-			rpy(3) = 0;
+			ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
+			newMeas(KFNav::xp) = 0;
+			newMeas(KFNav::yp) = 0;
 		}
+
+		nav.correct(nav.update(measurement, newMeas));
+		//Clear measurements
+		newMeas = KFNav::zeros(KFNav::stateNum);
+
+//		if (rpy(3))
+//		{
+//			double yaw = unwrap(rpy(2));
+//
+//			bool outlier = false;
+//			double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+//			double inx(0),iny(0);
+//			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+//			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+//			if (outlier)
+//			{
+//				ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
+//				xy(2) = 0;
+//			}
+//
+//			if (xy(2) == 1 && !outlier)
+//			{
+//				ROS_INFO("XY correction: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f,%d)",xy(0),xy(1),x,y,inx,iny,nav.getInovationCovariance().size1());
+//				nav.correct(nav.fullUpdate(xy(0),xy(1),yaw));
+//				xy(2) = 0;
+//			}
+//			else
+//			{
+//				ROS_INFO("Heading correction:%f",yaw);
+//				nav.correct(nav.yawUpdate(yaw));
+//			}
+//			rpy(3) = 0;
+//		}
 
 		meas.orientation.roll = rpy(0);
 		meas.orientation.pitch = rpy(1);

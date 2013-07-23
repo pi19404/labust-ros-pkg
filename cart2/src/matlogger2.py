@@ -5,9 +5,10 @@ Created on Feb 04, 2013
 @author: dnad
 '''
 import rospy;
-from auv_msgs.msg import BodyVelocityReq;
-from auv_msgs.msg import BodyForceReq;
-from auv_msgs.msg import NavSts;
+from auv_msgs.msg import BodyVelocityReq
+from auv_msgs.msg import BodyForceReq
+from auv_msgs.msg import NavSts
+from sensor_msgs.msg import Imu
 from cart2.msg import ImuInfo
 from cart2.msg import HLMessage
 from threading import Lock
@@ -136,6 +137,16 @@ class MatLogger:
                 'current3',
                 'current',
                 'voltage');
+        self.imusensLogOrder= ('linear_acceleration.x',
+                               'linear_acceleration.y',
+                               'linear_acceleration.z',
+                               'angular_velocity.x',
+                               'angular_velocity.y',
+                               'angular_velocity.z',
+                               'orientation.x',
+                               'orientation.y',
+                               'orientation.z',
+                               'orientation.w');
         self.imuLogOrder = ('latDeg',
             'latFrac', 'lonDeg', 'lonFrac','hdop',
             'accel_x', 'accel_y', 'accel_z',
@@ -160,6 +171,7 @@ class MatLogger:
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
+                      MessageLogger(['imu'], Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              
