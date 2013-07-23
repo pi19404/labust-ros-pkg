@@ -38,6 +38,7 @@
 #include <labust/control/HLControl.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <Eigen/Dense>
+#include <boost/thread/mutex.hpp>
 
 #include <geometry_msgs/PointStamped.h>
 
@@ -62,6 +63,7 @@ struct FADPControl
 
 	void onTrackPoint(const auv_msgs::NavSts::ConstPtr& ref)
 	{
+		boost::mutex::scoped_lock l(cnt_mux);
 		trackPoint = *ref;
 
 		con[x].desired =  trackPoint.position.north;
@@ -72,6 +74,7 @@ struct FADPControl
 
 	void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 	{
+		boost::mutex::scoped_lock l(cnt_mux);
 		con[x].desired = point->point.x;
 		con[y].desired = point->point.y;
 	};
@@ -79,12 +82,14 @@ struct FADPControl
 	void windup(const auv_msgs::BodyForceReq& tauAch)
 	{
 		//Copy into controller
+		boost::mutex::scoped_lock l(cnt_mux);
 		con[x].windup = tauAch.disable_axis.x;
 		con[y].windup = tauAch.disable_axis.y;
 	};
 
 	void step(const auv_msgs::NavSts::ConstPtr& state, auv_msgs::BodyVelocityReqPtr nu)
 	{
+		boost::mutex::scoped_lock l(cnt_mux);
 		ROS_INFO("Test");
 		con[x].state = state->position.north;
 		con[y].state = state->position.east;
@@ -132,6 +137,7 @@ private:
 	PIDController con[2];
 	ros::Subscriber refTrack, refPoint;
 	auv_msgs::NavSts trackPoint;
+	boost::mutex cnt_mux;
 	double Ts;
 };
 }}

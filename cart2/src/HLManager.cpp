@@ -169,10 +169,10 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		srv.request.desired_mode[i] = srv.request.DisableAxis;
 	}
 
-	srv.request.desired_mode[srv.request.u] = srv.request.DirectAxis;
-	srv.request.desired_mode[srv.request.v] = srv.request.DirectAxis;
+	//srv.request.desired_mode[srv.request.u] = srv.request.DirectAxis;
+	//srv.request.desired_mode[srv.request.v] = srv.request.DirectAxis;
 	srv.request.desired_mode[srv.request.u] = srv.request.ControlAxis;
-	//srv.request.desired_mode[srv.request.v] = srv.request.ControlAxis;
+	srv.request.desired_mode[srv.request.v] = srv.request.ControlAxis;
 	srv.request.desired_mode[srv.request.r] = srv.request.ControlAxis;
 
 	geometry_msgs::TwistStampedPtr fakeTwist(new geometry_msgs::TwistStamped());

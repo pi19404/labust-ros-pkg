@@ -337,11 +337,11 @@ void VelocityControl::step()
 			break;
 		case directAxis:
 			controller[i].output = controller[i].desired;
-			if (controller[u].autoTracking)
+			if (controller[i].autoTracking)
 			{
-				if (fabs(controller[u].desired) > controller[u].outputLimit)
-					controller[u].desired = controller[u].desired/fabs(controller[u].desired)*controller[u].outputLimit;
-				tau.wrench.force.x = controller[u].desired;
+				if (fabs(controller[i].desired) > controller[i].outputLimit)
+					controller[i].desired = controller[i].desired/fabs(controller[i].desired)*controller[i].outputLimit;
+				tau.wrench.force.x = controller[i].desired;
 			}
 			break;
 		case disableAxis:

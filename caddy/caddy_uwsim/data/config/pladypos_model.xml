@@ -3,16 +3,16 @@
 <configurations>
 		<VehicleModel id="cart">
 			<sampling-time>0.1</sampling-time>
-			<mass>20</mass>
+			<mass>1</mass>
 			<gravity>10</gravity>
-			<inertia-matrix>diag([3](30,30,12.274219))</inertia-matrix>
+			<inertia-matrix>diag([3](30,30,0.4965))</inertia-matrix>
 			<rg>[3](0,0,0)</rg>
 			<rb>[3](0,0,0)</rb>
 			<rho>1025</rho>
 			<lift-force>200</lift-force>
 			<bounding-ellipsoid>[3](0.2,0.17,0.17)</bounding-ellipsoid>
-			<added-mass>diag([6](6,6,20,15,30,0))</added-mass>
-			<linear-damping>diag([6](13,13,15,400,300,26))</linear-damping>
+			<added-mass>diag([6](0.74,0.74,20,15,30,0))</added-mass>
+			<linear-damping>diag([6](3.3,3.3,15,400,300,0.326))</linear-damping>
 			<quadratic-damping>diag([6](0,0,0,0,0,0))</quadratic-damping>
 			<eta0>[6](0,0,0,0,0,0)</eta0>
 			<nu0>[6](0,0,0,0,0,0)</nu0>

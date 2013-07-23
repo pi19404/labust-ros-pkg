@@ -6,8 +6,8 @@
 		<param name="ModelWrap" value="10" />
 		<remap from="tauIn" to="tauOut" />
 		<remap from="meas" to="meas_sim" />
-		<param name="maxThrust" value="-9.19" />
-		<param name="minThrust" value="-9.19" />
+		<param name="maxThrust" value="1" />
+		<param name="minThrust" value="-1" />
 		<param name="publish_world" value="false" />
 		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
 

@@ -60,7 +60,7 @@ typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
 tf::TransformListener* listener;
 
 ros::Time t;
-KFNav::vector measurement, newMeas;
+KFNav::vector measurement(KFNav::zeros(KFNav::stateNum)), newMeas(KFNav::zeros(KFNav::stateNum));
 
 void handleTau(KFNav::vector& tauIn, const auv_msgs::BodyForceReq::ConstPtr& tau)
 {
@@ -367,22 +367,32 @@ int main(int argc, char* argv[])
 	{
 		nav.predict(tau);
 
-		//Generic measurment outlier rejection
-		bool outlier = false;
-		double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
-		double inx(0),iny(0);
-		nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
-		outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
-		if (outlier)
+		bool newArrived(false);
+
+		for(size_t i=0; i<newMeas.size(); ++i)
 		{
-			ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
-			newMeas(KFNav::xp) = 0;
-			newMeas(KFNav::yp) = 0;
+			if ((newArrived = newMeas(i))) break;
 		}
 
-		nav.correct(nav.update(measurement, newMeas));
-		//Clear measurements
-		newMeas = KFNav::zeros(KFNav::stateNum);
+		if (newArrived)
+		{
+			//Generic measurment outlier rejection
+			bool outlier = false;
+			double x(nav.getState()(KFNav::xp)), y(nav.getState()(KFNav::yp));
+			double inx(0),iny(0);
+			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
+			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+			if (outlier)
+			{
+				ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);
+				newMeas(KFNav::xp) = 0;
+				newMeas(KFNav::yp) = 0;
+			}
+
+			nav.correct(nav.update(measurement, newMeas));
+			//Clear measurements
+			newMeas = KFNav::zeros(KFNav::stateNum);
+		}
 
 //		if (rpy(3))
 //		{
