@@ -46,7 +46,7 @@ namespace labust{namespace control{
 ///The fully actuated dynamic positioning controller
 struct FADPControl
 {
-	enum {x=0,y};
+	enum {x=0,y,psi};
 
 	FADPControl():Ts(0.1){};
 
@@ -57,6 +57,8 @@ struct FADPControl
 				&FADPControl::onTrackPoint,this);
 		refPoint = nh.subscribe<geometry_msgs::PointStamped>("LFPoint", 1,
 				&FADPControl::onNewPoint,this);
+		headingRef = nh.subscribe<std_msgs::Float32>("heading_ref", 1,
+					&FADPControl::onHeadingRef,this);
 
 		initialize_controller();
 	}
@@ -72,6 +74,12 @@ struct FADPControl
 		con[y].feedforward =  trackPoint.body_velocity.x*sin(trackPoint.orientation.yaw);
 	};
 
+	void onHeadingRef(const std_msgs::Float32::ConstPtr& hdg)
+	{
+		boost::mutex::scoped_lock l(cnt_mux);
+		con[psi].desired = hdg->data;
+	};
+
 	void onNewPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 	{
 		boost::mutex::scoped_lock l(cnt_mux);
@@ -85,17 +93,19 @@ struct FADPControl
 		boost::mutex::scoped_lock l(cnt_mux);
 		con[x].windup = tauAch.disable_axis.x;
 		con[y].windup = tauAch.disable_axis.y;
+		con[psi].windup = tauAch.disable_axis.yaw;
 	};
 
 	void step(const auv_msgs::NavSts::ConstPtr& state, auv_msgs::BodyVelocityReqPtr nu)
 	{
 		boost::mutex::scoped_lock l(cnt_mux);
-		ROS_INFO("Test");
 		con[x].state = state->position.north;
 		con[y].state = state->position.east;
+		con[psi].state = state->orientation.yaw;
 
 		PIFFExtController_step(&con[x],Ts);
 		PIFFExtController_step(&con[y],Ts);
+		PIFFExtController_step(&con[psi],Ts);
 
 		nu->header.stamp = ros::Time::now();
 		nu->goal.requester = "fadp_controller";
@@ -104,12 +114,13 @@ struct FADPControl
 		Eigen::Matrix2f R;
 		in<<con[x].output,con[y].output;
 		double yaw(state->orientation.yaw);
-		R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
+		R<<cos(yaw),-sin(yaw),-in(yaw),cos(yaw);
 
-		out = R*in;
+		out = R.transpose()*in;
 
 		nu->twist.linear.x = out[0];
 		nu->twist.linear.y = out[1];
+		nu->twist.angular.z = con[psi].output;
 	}
 
 	void initialize_controller()
@@ -117,12 +128,12 @@ struct FADPControl
 		ROS_INFO("Initializing dynamic positioning controller...");
 
 		ros::NodeHandle nh;
-		Eigen::Vector2d closedLoopFreq(Eigen::Vector2d::Ones());
+		Eigen::Vector3d closedLoopFreq(Eigen::Vector3d::Ones());
 		labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
 		nh.param("dp_controller/sampling",Ts,Ts);
 
 		enum {Kp=0, Ki, Kd, Kt};
-		for (size_t i=0; i<2;++i)
+		for (size_t i=0; i<3;++i)
 		{
 			PIDController_init(&con[i]);
 			con[i].gains[Kp] = 2*closedLoopFreq(i);
@@ -134,8 +145,8 @@ struct FADPControl
 	}
 
 private:
-	PIDController con[2];
-	ros::Subscriber refTrack, refPoint;
+	PIDController con[3];
+	ros::Subscriber refTrack, refPoint, headingRef;
 	auv_msgs::NavSts trackPoint;
 	boost::mutex cnt_mux;
 	double Ts;

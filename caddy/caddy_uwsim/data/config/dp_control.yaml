@@ -1,5 +1,5 @@
 #The dynamic positioning parameters
-dp_controller/closed_loop_freq: [0.2,0.5]
+dp_controller/closed_loop_freq: [0.3,0.3,0.5]
 dp_controller/safetyRadius: 0.5
 dp_controller/sampling: 0.1
 dp_controller/underactuated: true
