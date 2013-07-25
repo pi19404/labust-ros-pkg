@@ -37,6 +37,7 @@
 #include <labust/control/DPControl.hpp>
 #include <labust/control/HLControl.hpp>
 #include <labust/tools/MatrixLoader.hpp>
+#include <labust/math/NumberManipulation.hpp>
 #include <Eigen/Dense>
 #include <boost/thread/mutex.hpp>
 
@@ -105,7 +106,9 @@ struct FADPControl
 
 		PIFFExtController_step(&con[x],Ts);
 		PIFFExtController_step(&con[y],Ts);
-		PIFFExtController_step(&con[psi],Ts);
+		float errorWrap = labust::math::wrapRad(
+			con[psi].desired - con[psi].state);
+		PIFFExtController_stepWrap(&con[psi],Ts, errorWrap);
 
 		nu->header.stamp = ros::Time::now();
 		nu->goal.requester = "fadp_controller";
@@ -114,7 +117,7 @@ struct FADPControl
 		Eigen::Matrix2f R;
 		in<<con[x].output,con[y].output;
 		double yaw(state->orientation.yaw);
-		R<<cos(yaw),-sin(yaw),-in(yaw),cos(yaw);
+		R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
 
 		out = R.transpose()*in;
 

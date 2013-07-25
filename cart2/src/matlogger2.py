@@ -172,7 +172,7 @@ class MatLogger:
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
-                      MessageLogger(['imu'], Imu, self.imusensLogOrder),
+                      #MessageLogger(['imu'], Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              
