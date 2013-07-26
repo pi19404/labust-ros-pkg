@@ -109,6 +109,8 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 {
 	enum {r,p,y,newMsg};
 	double roll,pitch,yaw;
+	static labust::math::unwrap unwrap;
+	
 
 	tf::StampedTransform transform;
 	try
@@ -134,7 +136,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 		//For generic updates
 		newMeas(KFNav::psi) = 1;
 		newMeas(KFNav::r) = 1;
-		measurement(KFNav::psi) = yaw;
+		measurement(KFNav::psi) = unwrap(yaw);
 		measurement(KFNav::r) = data->angular_velocity.z;
 	}
 	catch (tf::TransformException& ex)
@@ -426,6 +428,7 @@ int main(int argc, char* argv[])
 		meas.orientation.roll = rpy(0);
 		meas.orientation.pitch = rpy(1);
 		meas.orientation.yaw = rpy(2);
+		meas.orientation_rate.yaw = measurement(KFNav::r);
 		meas.position.north = xy(0);
 		meas.position.east = xy(1);
 		stateMeas.publish(meas);

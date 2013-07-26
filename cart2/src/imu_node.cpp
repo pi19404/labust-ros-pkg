@@ -53,9 +53,10 @@
 
 struct SharedData
 {
-	enum {msg_size = 77,
+	enum {msg_size = 86,
 		data_offset=4,
-		checksum = 76};
+		checksum = 85,
+		float_offset=9};
 	ros::Publisher imuPub, gpsPub, imuinfo;
 	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
@@ -116,16 +117,16 @@ void handleIncoming(SharedData& shared,
 			return;
 		}
 
-		float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset]));
-		enum {hdop=2,
+		float* data(reinterpret_cast<float*>(&shared.buffer[SharedData::data_offset + SharedData::float_offset]));
+		enum {sog=0, cog, declination,
 			accel_x, accel_y, accel_z,
 			gyro_x, gyro_y, gyro_z,
 			mag_x, mag_y, mag_z,
 			roll,pitch,yaw,ry,mmm,mm};
 
 		cart2::ImuInfo info;
-		info.data.resize(mm+3);
-		for (size_t i=0; i<mm+1; ++i) info.data[i+2] = data[i];
+		info.data.resize(mm+6);
+		for (size_t i=0; i<mm+1; ++i) info.data[i+5] = data[i];
 
 		//std::cout<<"Euler:"<<data[roll]<<","<<data[pitch]<<","<<data[yaw]<<std::endl;
 		//std::cout<<"Magnetski:"<<data[mag_x]<<","<<data[mag_y]<<","<<data[mag_z]<<std::endl;
@@ -162,18 +163,19 @@ void handleIncoming(SharedData& shared,
 		info.data[1] = latlon[fraclat];
 		info.data[2] = latlon[lon];
 		info.data[3] = latlon[fraclon];
+		char status = info.data[4] = shared.buffer[SharedData::data_offset+SharedData::float_offset-1];
 		shared.imuinfo.publish(info);
 		gps->latitude = latlon[lat]/100 + (latlon[lat]%100 + latlon[fraclat]/10000.)/60. ;
 		gps->longitude = latlon[lon]/100 + (latlon[lon]%100 + latlon[fraclon]/10000.)/60.;
-		gps->position_covariance[0] = data[hdop];
-		gps->position_covariance[4] = data[hdop];
+		gps->position_covariance[0] = 9999;
+		gps->position_covariance[4] = 9999;
 		gps->position_covariance[8] = 9999;
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
 		static int i=0;
 		++i;
-		if ((data[hdop]>0.5) && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+		if ((status == 'A') && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
 
 		//Send the WorldLatLon frame update
 		//shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));

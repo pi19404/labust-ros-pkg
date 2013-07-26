@@ -148,7 +148,8 @@ class MatLogger:
                                'orientation.z',
                                'orientation.w');
         self.imuLogOrder = ('latDeg',
-            'latFrac', 'lonDeg', 'lonFrac','hdop',
+            'latFrac', 'lonDeg', 'lonFrac','status',
+	    'sog','cog','declination',
             'accel_x', 'accel_y', 'accel_z',
             'gyro_x', 'gyro_y', 'gyro_z',
             'mag_x', 'mag_y', 'mag_z',
@@ -171,7 +172,7 @@ class MatLogger:
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
-                      MessageLogger(['imu'], Imu, self.imusensLogOrder),
+                      #MessageLogger(['imu'], Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              
