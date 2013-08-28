@@ -376,7 +376,11 @@ void VelocityControl::step()
 	tauach=tau;
 
 	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
-	if (controller[v].autoTracking) tauach.disable_axis.y = controller[v].windup;
+	if (controller[v].autoTracking)
+	{
+		ROS_INFO("WINDUP SWAY");
+		 tauach.disable_axis.y = controller[v].windup;
+	}	
 	if (controller[w].autoTracking) tauach.disable_axis.z = controller[w].windup;
 	if (controller[p].autoTracking) tauach.disable_axis.roll = controller[p].windup;
 	if (controller[q].autoTracking) tauach.disable_axis.pitch = controller[q].windup;

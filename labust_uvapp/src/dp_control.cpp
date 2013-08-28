@@ -86,6 +86,8 @@ struct FADPControl
 		boost::mutex::scoped_lock l(cnt_mux);
 		con[x].desired = point->point.x;
 		con[y].desired = point->point.y;
+		con[x].feedforward=  0;
+		con[y].feedforward =  0;
 	};
 
 	void windup(const auv_msgs::BodyForceReq& tauAch)

@@ -1,5 +1,5 @@
 #!/bin/bash
-rostopic pub /topside/joy sensor_msgs/Joy "header:
+rostopic pub /pladypos/joy sensor_msgs/Joy "header:
   seq: 0
   stamp:
     secs: 0
