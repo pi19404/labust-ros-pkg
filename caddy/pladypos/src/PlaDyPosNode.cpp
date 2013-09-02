@@ -225,7 +225,6 @@ void PlaDyPosNode::safetyTest()
 void PlaDyPosNode::driverMsg(const int n[4])
 {
 	std::ostringstream out;
-	
 
 	//Here we set the thrust
 	for (int i=0; i<4;++i)	out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
@@ -271,7 +270,7 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 	for (int i=0; i<4;++i)
 	{
 		//This is the quadratic allocation.
-		//n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
+		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
 		//This is the linear allocation.
 		//n[i]=tauI(i)*255; 
 		//This is the compensated quadratic+linear allocation.
@@ -285,9 +284,7 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 		  n[i]=255*labust::math::coerce((tauI(i)-fabs(tauI(i))/tauI(i)*b)/a, -1,1);
 		}
 	}
-	
-	n[0] = 0.95*n[0];
-	n[1] = 0.95*n[1];
+
 
 	driverMsg(n);
 

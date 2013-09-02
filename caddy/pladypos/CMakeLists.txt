@@ -76,7 +76,6 @@ add_executable(nav_node src/nav_node.cpp)
 
 ## Add dependencies to the executable
 add_dependencies(pladypos_node ${PROJECT_NAME}_gencpp)
-add_dependencies(pladypos_node ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pladypos_node ${catkin_LIBRARIES} labust_comms)

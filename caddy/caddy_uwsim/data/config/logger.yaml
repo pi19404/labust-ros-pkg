@@ -1,4 +1,4 @@
-logger/stateNames: ['stateHat', 'meas', 'sf_diagnostics', 'TrackPoint']
+logger/stateNames: ['stateHat', 'meas', 'sf_diagnostics']
 logger/bodyVelReqNames: ['nuRef']
 logger/bodyForceReqNames: ['tauOut', 'tauAch']
 logger/twistMessages: ['currentsHat']
