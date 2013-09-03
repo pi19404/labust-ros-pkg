@@ -35,23 +35,23 @@
  *  Created: 01.02.2010.
  *********************************************************************/
 #include <labust/simulation/RBModel.hpp>
-#include <labust/math/Rotation.hpp>
 #include <labust/math/NumberManipulation.hpp>
 
 using namespace labust::simulation;
 
 RBModel::RBModel():
-    		 ae(0.15),be(0.2),ce(0.2),
-    		 B(0),
-    		 dT(0.1),
-    		 waterLevel(0),
-    		 nu0(vector::Zero()),
-    		 eta0(vector::Zero()),
-    		 nu(vector::Zero()),
-    		 eta(vector::Zero()),
-    		 g(vector::Zero()),
-    		 isCoupled(false),
-    		 current(vector3::Zero()){this->init();};
+    ae(0.15),be(0.2),ce(0.2),
+    B(0),
+    dT(0.1),
+    waterLevel(0),
+    nu0(vector::Zero()),
+    eta0(vector::Zero()),
+    nu(vector::Zero()),
+    eta(vector::Zero()),
+    g(vector::Zero()),
+    isCoupled(false),
+    current(vector3::Zero())
+	{this->init();};
 
 RBModel::~RBModel(){};
 
@@ -70,11 +70,11 @@ void RBModel::step(const vector& tau)
 	using namespace Eigen;
 	matrix3 J1;
 	J1 = AngleAxisd(eta(psi), Vector3d::UnitZ())
-	* AngleAxisd(eta(theta), Vector3d::UnitY())
-	* AngleAxisd(eta(phi), Vector3d::UnitX());
-  double c1 = cos(eta(phi)), s1 = sin(eta(phi));
-  double c2 = cos(eta(theta)), t2 = tan(eta(theta));
-  if (!c2) c2 = 0.1;
+			* AngleAxisd(eta(theta), Vector3d::UnitY())
+			* AngleAxisd(eta(phi), Vector3d::UnitX());
+	double c1 = cos(eta(phi)), s1 = sin(eta(phi));
+	double c2 = cos(eta(theta)), t2 = tan(eta(theta));
+	if (!c2) c2 = 0.1;
 	matrix3 J2;
 	J2<<1,s1*t2,c1*t2,
 			0,0,c1,
@@ -141,7 +141,7 @@ void RBModel::coriolis()
 
 void RBModel::restoring_force(const matrix3& J1)
 {
-  matrix3 invJ1;
+	matrix3 invJ1;
 	invJ1=J1.inverse();
 
 	//Update the lift force

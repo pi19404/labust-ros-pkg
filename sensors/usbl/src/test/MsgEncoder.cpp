@@ -45,30 +45,42 @@
 #include <vector>
 #include <cstdint>
 #include <bitset>
-#include <iostream>
+#include <iostream>ll
 #include <boost/integer/integer_mask.hpp>
 #include <cassert>
 #include <boost/regex.hpp>
 
 #define ADD_DIVER_MESSAGE(NAME, CODE, DEPTHSIZE, \
-	LATLONSIZE, MSGSIZE) \
+	LATLONSIZE, DEFSIZE, MSGSIZE, KMLNOSIZE, KMLSIZE, IMGSIZE, VOIDSIZE, CHKSIZE) \
 	struct NAME\
 	{\
 	  enum{type=CODE};\
-		enum{depthSize=DEPTHSIZE,latlonSize=LATLONSIZE,msgSize=MSGSIZE};\
+		enum{depthSize=DEPTHSIZE,latlonSize=LATLONSIZE,defSize=DEFSIZE, msgSize=MSGSIZE, kmlNoSize=KMLNOSIZE, \
+	  kmlSize=KMLSIZE, imgSize=IMGSIZE, voidSize=VOIDSIZE, chkSize=CHKSIZE};\
 	};\
 
 
 struct DiverMsg
 {
 	//Topside messages
-	ADD_DIVER_MESSAGE(PositionInit,1,0,22,0);
-	ADD_DIVER_MESSAGE(Position,2,7,18,1);
-	ADD_DIVER_MESSAGE(PositionMsg,3,7,7,23);
-	ADD_DIVER_MESSAGE(PositionDef,5,7,14,9);
+	ADD_DIVER_MESSAGE(PositionInit,		0,	0,	22,	0,	0,	0,	0,	0,	0,	0);
+	ADD_DIVER_MESSAGE(Position_18,		1,	7,	18,	0,	0,	0,	0,	0,	1,	0);
+	ADD_DIVER_MESSAGE(PositionMsg,		2,	7,	7,	0,	18,	0,	0,	0,	5,	0);
+	ADD_DIVER_MESSAGE(PositionImg,		2,	7,	7,	0,	0,	0,	0,	23,	0,	0);
+	ADD_DIVER_MESSAGE(Position_14Def,	4,	7,	14,	5,	0,	0,	0,	0,	4,	0);
+	ADD_DIVER_MESSAGE(PositionMsgDef,	5,	7,	7,	5,	18,	0,	0,	0,	0,	0);
+	ADD_DIVER_MESSAGE(PositionImgDef,	6,	7,	7,	5,	0,	0,	0,	18,	0,	0);
+	ADD_DIVER_MESSAGE(PositionKml,		7,	7,	7,	0,	0,	3,	10,	0,	0,	0);
+	ADD_DIVER_MESSAGE(PositionChk,		8,	7,	7,	0,	0,	0,	0,	0,	17,	6);
+	ADD_DIVER_MESSAGE(PositionMsgChk,	9,	7,	7,	0,	12,	0,	0,	0,	5,	6);
+	ADD_DIVER_MESSAGE(PositionImgChk,	10,	7,	7,	0,	0,	0,	0,	17,	0,	6);
+	ADD_DIVER_MESSAGE(PositionDefChk,	11,	7,	7,	5,	0,	0,	0,	0,	12,	6);
+	ADD_DIVER_MESSAGE(PositionMsgDefChk,12,	7,	7,	5,	12,	0,	0,	0,	0,	6);
+	ADD_DIVER_MESSAGE(PositionImgDefChk,13,	7,	7,	5,	0,	0,	0,	12,	0,	6);
+
 	//Diver messages
-	ADD_DIVER_MESSAGE(PositonInitAck,1,0,22,0);
-	ADD_DIVER_MESSAGE(Msg,2,0,0,44);
+	ADD_DIVER_MESSAGE(PositonInitAck,	0,	0,	22,	0,	0,	0,	0,	0,	0,	0);
+	ADD_DIVER_MESSAGE(Msg,				1,	0,	0,	0,	0,	0,	0,	0,	44,	0);
 
 	DiverMsg():
 		latitude(0),
@@ -231,7 +243,7 @@ int main(int argc, char* argv[])
 	boost::asio::io_service io;
 	boost::asio::serial_port port(io);
 
-	port.open("/dev/ttyUSB0");
+	port.open("/dev/rfcomm0");
 	port.set_option(boost::asio::serial_port::baud_rate(57600));
 	port.set_option(boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none));
 
@@ -308,7 +320,7 @@ int main(int argc, char* argv[])
 	{
 		msg.latitude += step;
 		msg.longitude += step;
-		msg.pack<DiverMsg::Position>();
+		msg.pack<DiverMsg::Position_18>();
 		writeLatLon(msg);
 		sendToModem(port, msg);
 		usleep(1000*1000);
@@ -318,7 +330,7 @@ int main(int argc, char* argv[])
 	{
 		msg.latitude -= step;
 		msg.longitude -= step;
-		msg.pack<DiverMsg::Position>();
+		msg.pack<DiverMsg::Position_18>();
 		writeLatLon(msg);
 		sendToModem(port, msg);
 		usleep(1000*1000);

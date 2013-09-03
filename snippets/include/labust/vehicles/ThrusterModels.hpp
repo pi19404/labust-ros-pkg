@@ -30,76 +30,36 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Dula Nad
-*  Created: 01.02.2013.
 *********************************************************************/
-#ifndef SIMSENSORS_HPP_
-#define SIMSENSORS_HPP_
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#ifndef THRUSTERMODELS_HPP_
+#define THRUSTERMODELS_HPP_
+
+#include <cmath>
 
 namespace labust
 {
-	namespace simulation
+	namespace vehicles
 	{
-		class RBModel;
-
 		/**
-		 * The interface class for the different simulated sensors.
+		 * This class helps calculate the thruster allocation.
 		 */
-		class SimSensorInterface
+		struct AffineThruster
 		{
-		public:
-			struct Hook
+			/**
+			 * The method returns the number of revolutions needed to generate the requested thrust.
+			 */
+			inline static int getRevs(double thrust, double Tnn = 1, double _Tnn = 1)
 			{
-				Hook(const RBModel& model,
-						tf::TransformBroadcaster& broadcaster,
-						tf::TransformListener& listener,
-						bool noisy = false):
-							model(model),
-							broadcaster(broadcaster),
-							listener(listener),
-							noisy(noisy){};
-
-				const RBModel& model;
-				tf::TransformBroadcaster& broadcaster;
-				tf::TransformListener& listener;
-				bool noisy;
-			};
-
-			typedef boost::shared_ptr<SimSensorInterface> Ptr;
-			virtual ~SimSensorInterface(){};
-			virtual void step(const Hook& data) = 0;
-			virtual void configure(ros::NodeHandle& nh, const std::string& topic_name) = 0;
-		};
-
-		template <class ROSMsg, class functor>
-		class BasicSensor : public SimSensorInterface
-		{
-		public:
-			BasicSensor(){};
-			~BasicSensor(){};
-
-			void configure(ros::NodeHandle& nh, const std::string& topic_name)
-			{
-				pub = nh.advertise<ROSMsg>(topic_name,1);
-			};
-
-			void step(const Hook& data)
-			{
-				typename ROSMsg::Ptr msg(new ROSMsg());
-				sensor(msg, data);
-				pub.publish(msg);
+				return (thrust >= 0) ? std::ceil(std::sqrt(thrust/Tnn)) : -std::ceil(std::sqrt(-thrust/_Tnn));
 			}
-
-		private:
-				ros::Publisher pub;
-				functor sensor;
+			
+			inline static double getRevsD(double thrust, double Tnn = 1, double _Tnn = 1)
+			{
+				return (thrust >= 0) ? std::sqrt(thrust/Tnn) : -std::sqrt(-thrust/_Tnn);
+			}
 		};
 	}
 }
 
-/* SIMSENSORS_HPP_ */
+/* THRUSTERMODELS_HPP_*/
 #endif

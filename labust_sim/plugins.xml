@@ -1,0 +1,8 @@
+<library path="lib/libsim_sensors">
+  <class type="labust::simulation::ImuSensor" base_class_type="labust::simulation::SimSensorInterface">
+  <description>
+ 	This is a simple Imu sensor simulation class. It simulates the accelerations, orientation and speeds
+ 	of the vehicle base on the rigid body model simulation.
+  </description>
+  </class>
+</library>

@@ -54,9 +54,30 @@ namespace labust
 
 		/**
 		 * Reads a vector or matrix list and populates the supplied vector or matrix.
+		 *
+		 * \todo Derive one function for variable and fixed size.
 		 */
 		template <class Derived>
-		std::pair<int,int>	getMatrixParam(const ros::NodeHandle& nh,
+		inline std::pair<int,int>	getMatrixParam(const ros::NodeHandle& nh,
+				const std::string& name,
+				const Eigen::MatrixBase<Derived>& matrix)
+		{
+			if ((matrix.RowsAtCompileTime <= 0) ||
+					(matrix.ColsAtCompileTime <=0))
+			{
+				return getMatrixParam_variablesize(nh,name,matrix);
+			}
+			else
+			{
+				return getMatrixParam_fixedsize(nh,name,matrix);
+			}
+		}
+
+		/**
+		 * Reads a vector or matrix list and populates the supplied vector or matrix.
+		 */
+		template <class Derived>
+		std::pair<int,int>	getMatrixParam_fixedsize(const ros::NodeHandle& nh,
 				const std::string& name,
 				const Eigen::MatrixBase<Derived>& matrix)
 		{
@@ -100,13 +121,70 @@ namespace labust
 					col = 0;
 					for(size_t j=0; j<data[i].size(); ++j)
 					{
-						ROS_INFO("Access element %d %d",i,j);
+						//ROS_DEBUG("Access element %d %d",i,j);
 						bool intType = data[i][j].getType() == XmlRpc::XmlRpcValue::TypeInt;
 						const_cast< Eigen::MatrixBase<Derived>& >
 						(matrix)(row,col++) = xmlRpcConvert<Derived>(data[i][j], intType);
 					}
 				}
 			}
+
+			return std::make_pair(row,col);
+		}
+
+		/**
+		 * Reads a vector or matrix list and populates the supplied vector or matrix.
+		 */
+		template <class Derived>
+		std::pair<int,int>	getMatrixParam_variablesize(const ros::NodeHandle& nh,
+				const std::string& name,
+				const Eigen::MatrixBase<Derived>& matrix)
+		{
+			if (!nh.hasParam(name))
+			{
+				ROS_WARN("Configuration parameter %s not found.", name.c_str());
+				return std::make_pair(-1,-1);
+			}
+			else
+			{
+				ROS_INFO("Found configuration parameter %s.", name.c_str());
+			}
+
+			XmlRpc::XmlRpcValue data;
+			nh.getParam(name, data);
+			ROS_ASSERT(data.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+			std::vector<typename Derived::Scalar> temp;
+
+			size_t col(0),row(0);
+			for(size_t i=0; i<data.size(); ++i)
+			{
+				//Check validity
+				bool doubleType = data[i].getType() == XmlRpc::XmlRpcValue::TypeDouble;
+				bool intType = data[i].getType() == XmlRpc::XmlRpcValue::TypeInt;
+				bool vectorType = data[i].getType() == XmlRpc::XmlRpcValue::TypeArray;
+				ROS_ASSERT(doubleType || intType || vectorType);
+
+				if (doubleType || intType)
+				{
+					temp.push_back(xmlRpcConvert<Derived>(data[i], intType));
+					col++;
+				}
+				else
+				{
+					row = i;
+					col = 0;
+					for(size_t j=0; j<data[i].size(); ++j)
+					{
+						//ROS_DEBUG("Access element %d %d",i,j);
+						bool intType = data[i][j].getType() == XmlRpc::XmlRpcValue::TypeInt;
+						temp.push_back(xmlRpcConvert<Derived>(data[i][j], intType));
+						col++;
+					}
+				}
+			}
+
+			const_cast< Eigen::MatrixBase<Derived>& >(matrix) = matrix.derived().Map(&temp[0],col,row+1).transpose();
 
 			return std::make_pair(row,col);
 		}
