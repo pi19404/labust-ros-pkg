@@ -34,38 +34,53 @@
  *  Author: Dula Nad
  *  Created: 01.02.2013.
  *********************************************************************/
-#include <labust/ros/SimCore.hpp>
+#include <labust/simulation/matrixfwd.hpp>
 #include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
+#include <labust/simulation/RBModel.hpp>
 
-#include <pluginlib/class_loader.h>
+#include <sensor_msgs/Imu.h>
+#include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
 
-///\todo Edit the class loading to be loaded from the rosparam server.
-int main(int argc, char* argv[])
+namespace labust
 {
-	ros::init(argc,argv,"uvsim");
-	ros::NodeHandle nh;
-
-	//Sensor loaders
-	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
-		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
-
-	labust::simulation::SimCore simulator;
-
-	try
+	namespace simulation
 	{
-		using namespace labust::simulation;
-		SimSensorInterface::Ptr sensor = sim_loader.createInstance("labust::simulation::ImuSensor");
-		sensor->configure(nh,"imu");
-		simulator.addSensor(sensor);
-	}
-	catch(pluginlib::PluginlibException& ex)
-	{
-	  //handle the class failing to load
-	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
-	}
+		struct sim_imu
+		{
+			void operator()(sensor_msgs::Imu::Ptr& imu,
+					const SimSensorInterface::Hook& data)
+			{
+				using namespace labust::simulation;
+				using namespace Eigen;
 
-	ros::spin();
-	return 0;
+				imu->header.stamp = ros::Time::now();
+				imu->header.frame_id = "imu_frame";
+				const labust::simulation::vector& nu =
+						data.noisy?data.model.NuNoisy():data.model.Nu();
+				labust::tools::vectorToPoint(data.model.NuAcc(), imu->linear_acceleration);
+				labust::tools::vectorToPoint(nu, imu->angular_velocity,3);
+
+				const labust::simulation::vector& eta =
+						data.noisy?data.model.EtaNoisy():data.model.Eta();
+				Quaternion<double> quat;
+				labust::tools::quaternionFromEulerZYX(eta(RBModel::phi),
+						eta(RBModel::theta),
+						eta(RBModel::psi), quat);
+
+				imu->orientation.x = quat.x();
+				imu->orientation.y = quat.y();
+				imu->orientation.z = quat.z();
+				imu->orientation.w = quat.w();
+			}
+		};
+
+		typedef BasicSensor<sensor_msgs::Imu, sim_imu> ImuSensor;
+	}
 }
+
+PLUGINLIB_EXPORT_CLASS(labust::simulation::ImuSensor,
+		labust::simulation::SimSensorInterface)
+
+

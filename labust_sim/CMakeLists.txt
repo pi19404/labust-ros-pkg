@@ -4,7 +4,7 @@ project(labust_sim)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp rospy tf snippets)
+find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp rospy tf snippets pluginlib)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS random)
@@ -62,12 +62,15 @@ include_directories(include
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  /home/dnad/Development/catkin_ws/src/labust-base/src/labust_tools/include
 )
 
 file(GLOB SRC src/labust_sim/*.cpp)
 file(GLOB HPP include/labust/simulation/*.hpp) 
 add_library(labust_sim ${SRC} ${HPP})
+
+file(GLOB SRC src/sim_sensors/*.cpp)
+file(GLOB HPP include/labust/ros/*.hpp) 
+add_library(sim_sensors ${SRC} ${HPP})
 
 file(GLOB SRC src/uvsim/*.cpp)
 file(GLOB HPP include/labust/ros/*.hpp) 
