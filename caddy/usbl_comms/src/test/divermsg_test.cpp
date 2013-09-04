@@ -34,13 +34,6 @@
 *  Author: Dula Nad
 *  Created: 14.02.2013.
 *********************************************************************/
-#include <labust/tritech/mtMessages.hpp>
-#include <labust/tritech/mmcMessages.hpp>
-
-#include <boost/asio.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -48,7 +41,6 @@
 #include <iostream>
 #include <boost/integer/integer_mask.hpp>
 #include <cassert>
-#include <boost/regex.hpp>
 
 #define ADD_DIVER_MESSAGE(NAME, CODE, DEPTHSIZE, \
 	LATLONSIZE, DEFSIZE, MSGSIZE, KMLNOSIZE, KMLSIZE, IMGSIZE, VOIDSIZE, CHKSIZE) \
@@ -60,7 +52,7 @@
 	};\
 
 
-struct DiverMsg
+struct DiverMsg2
 {
 	//Topside messages
 	ADD_DIVER_MESSAGE(PositionInit,		0,	0,	22,	0,	0,	0,	0,	0,	0,	0);
@@ -82,7 +74,7 @@ struct DiverMsg
 	ADD_DIVER_MESSAGE(PositonInitAck,	0,	0,	22,	0,	0,	0,	0,	0,	0,	0);
 	ADD_DIVER_MESSAGE(Msg,				1,	0,	0,	0,	0,	0,	0,	0,	44,	0);
 
-	DiverMsg():
+	DiverMsg2():
 		latitude(0),
 		longitude(0),
 		z(0),
@@ -124,7 +116,7 @@ struct DiverMsg
 		data >>= msg::depthSize;
 
 		assert(((data & 0x0F) == msg::type) &&
-				"DiverMsg desired unpack type and received data type do not match.");
+				"DiverMsg2 desired unpack type and received data type do not match.");
 	};
 
 	template <size_t precission>
@@ -140,7 +132,7 @@ struct DiverMsg
 };
 
 template <>
-inline std::pair<int,int> DiverMsg::latlonToBits<22>(double lat, double lon)
+inline std::pair<int,int> DiverMsg2::latlonToBits<22>(double lat, double lon)
 {
 	double min = (lon - int(lon))*60;
 	this->lon = int((int(lon)+180)*10000 + min*100);
@@ -152,7 +144,7 @@ inline std::pair<int,int> DiverMsg::latlonToBits<22>(double lat, double lon)
 }
 
 template <>
-inline std::pair<int,int> DiverMsg::latlonToBits<18>(double lat, double lon)
+inline std::pair<int,int> DiverMsg2::latlonToBits<18>(double lat, double lon)
 {
 	this->lat = int((lat - int(lat))*600000)%100000;
 	this->lon = int((lon - int(lon))*600000)%100000;
@@ -160,7 +152,7 @@ inline std::pair<int,int> DiverMsg::latlonToBits<18>(double lat, double lon)
 }
 
 template <>
-std::pair<int,int> DiverMsg::latlonToBits<14>(double lat, double lon)
+std::pair<int,int> DiverMsg2::latlonToBits<14>(double lat, double lon)
 {
 	double min = (lon - int(lon))*60;
 	this->lon = int((min - int(min))*10000);
@@ -172,7 +164,7 @@ std::pair<int,int> DiverMsg::latlonToBits<14>(double lat, double lon)
 }
 
 template <>
-inline std::pair<int,int> DiverMsg::latlonToBits<7>(double lat, double lon)
+inline std::pair<int,int> DiverMsg2::latlonToBits<7>(double lat, double lon)
 {
 	latlonToBits<14>(lat,lon);
 	this->lat%=100;
@@ -180,56 +172,7 @@ inline std::pair<int,int> DiverMsg::latlonToBits<7>(double lat, double lon)
 	return std::pair<int,int>(this->lat,this->lon);
 }
 
-void sendToModem(boost::asio::serial_port& port, DiverMsg& msg)
-{
-	using namespace labust::tritech;
-	MTMsgPtr tmsg(new MTMsg());
-	tmsg->txNode = labust::tritech::Nodes::SlaveModem;
-	tmsg->rxNode = labust::tritech::Nodes::Surface;
-	tmsg->node = labust::tritech::Nodes::SlaveModem;
-	tmsg->msgType = MTMsg::mtMiniModemData;
-	MMCMsg mmsg;
-	mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48;
-	mmsg.data[0] = 48;
-
-	const char* p=reinterpret_cast<const char*>(&msg.fullmsg);
-	std::cout<<"Payload:";
-//	for (int i=5; i>=0; --i)
-//	{
-//		mmsg.data[i+1] = p[i];
-//		std::cout<<int(p[i])<<",";
-//	}
-	for (int i=0; i<6; ++i)
-	{
-		mmsg.data[i+1] = p[5-i];
-		std::cout<<int(p[5-i])<<",";
-	}
-	std::cout<<std::endl;
-
-	std::bitset<48> pyl(msg.fullmsg);
-	std::cout<<"Payload 2:"<<pyl<<std::endl;
-
-	boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
-	ar<<mmsg;
-
-	tmsg->setup();
-	boost::asio::streambuf output;
-	std::ostream out(&output);
-	//prepare header
-  out<<'@';
-  out.width(4);
-  out.fill('0');
-  out<<std::uppercase<<std::hex<<tmsg->size;
-  boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
-  dataSer << (*tmsg);
-
-  //write header
-  boost::asio::write(port, output.data());
-  //write data
-  boost::asio::write(port, tmsg->data->data());
-}
-
-void writeLatLon(DiverMsg& msg)
+void writeLatLon(DiverMsg2& msg)
 {
 	double lat = msg.latitude;
 	double lon = msg.longitude;
@@ -238,103 +181,161 @@ void writeLatLon(DiverMsg& msg)
 	std::cout<<"\t encoded lat-lon:"<<msg.lat<<", "<<msg.lon<<std::endl;
 }
 
+struct DiverMsg
+{
+	static uint64_t pack(const std::vector<int>& bitmap,
+			const std::vector<int>& data)
+	{
+		uint64_t retVal(0);
+		assert(bitmap.size() == data.size() &&
+				"The bitmap and data size have to be the same length.");
+
+		for (size_t i=0,j=1; i<bitmap.size(); ++i,++j)
+		{
+			int bitmask = (1 << bitmap[i]) -1;
+			retVal |= data[i] & bitmask;
+			if (j < bitmap.size()) retVal <<= bitmap[j];
+		}
+
+		return retVal;
+	}
+
+	static uint64_t pack_flipped(const std::vector<int>& bitmap,
+			const std::vector<int>& data)
+	{
+		uint64_t retVal(0);
+		assert(bitmap.size() == data.size() &&
+				"The bitmap and data size have to be the same length.");
+
+		for (int i=bitmap.size()-1,j=bitmap.size()-2; i>=0; --i,--j)
+		{
+			int bitmask = (1 << bitmap[i]) -1;
+			retVal |= data[i] & bitmask;
+			if (j >= 0) retVal <<= bitmap[j];
+		}
+
+		return retVal;
+	}
+
+	static void unpack(uint64_t msg, const std::vector<int>& bitmap,
+			std::vector<int>& data)
+	{
+//		data.clear();
+//		for (size_t i=0,j=1; i<bitmap.size(); ++i,++j)
+//		{
+//			int bitmask = (1 << bitmap[i]) -1;
+//			data.push_back(msg & bitmask);
+//			data >>= bitmap[i];
+//		}
+
+		/*fullmsg=data;
+		this->msg = data & boost::low_bits_mask_t<msg::msgSize>::sig_bits;
+		data >>= msg::msgSize;
+		lon = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
+		data >>= msg::latlonSize;
+		lat = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
+		data >>= msg::latlonSize;
+		depth = data & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
+		data >>= msg::depthSize;*/
+	};
+
+	//std::map<int, std::vector<int> > messageList;
+};
+
 int main(int argc, char* argv[])
 {
-	boost::asio::io_service io;
-	boost::asio::serial_port port(io);
-
-	port.open("/dev/rfcomm0");
-	port.set_option(boost::asio::serial_port::baud_rate(57600));
-	port.set_option(boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none));
-
-	//boost::asio::streambuf incoming;
-	//boost::asio::read_until(port, incoming, boost::regex("\n"));
-
-	if (port.is_open()) std::cout<<"Port is open."<<std::endl;
-
-	uint8_t test_data[] = {0x40,0x30,0x30,0x31,0x46,0x1F,0x00,0x56,0xFF,0x1A,0x4F,0x80,0x56,0x21,0x02,0x00,
-			0x00,0x00,0xB8,0x0B,0x30,0x22,0xC3,0xF3,0x38,0x78,0x38,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-
-	using namespace labust::tritech;
-
 	double depth = 5;
 	double lat=45.769216667, lon=16.001851667;
 	//init
-	DiverMsg msg;
+	DiverMsg2 msg;
 	msg.latitude = lat;
 	msg.longitude = lon;
 	msg.z = depth;
 	msg.msg = 0;
-	msg.pack<DiverMsg::PositionInit>();
+	msg.pack<DiverMsg2::PositionInit>();
 	writeLatLon(msg);
-	sendToModem(port,msg);
-	usleep(1000*1000);
 
-	//7bit
-	double step = 0.003/60;
-	for (int i=0; i<4; ++i)
-	{
-		msg.latitude += step;
-		msg.longitude += step;
-		msg.pack<DiverMsg::PositionMsg>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}
-	for (int i=0; i<8; ++i)
-	{
-		msg.latitude -= step;
-		msg.longitude -= step;
-		msg.pack<DiverMsg::PositionMsg>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}
-	//14 bit
-	/*step = 0.3/60;
-	for (int i=0; i<4; ++i)
-	{
-		msg.latitude += step;
-		msg.longitude += step;
-		msg.pack<DiverMsg::PositionDef>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}
-	step = 0.3/60;
-	for (int i=0; i<8; ++i)
-	{
-		msg.latitude -= step;
-		msg.longitude -= step;
-		msg.pack<DiverMsg::PositionDef>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}*/
-	//18 bit
+	std::cout<<"Binary encoding:"<<std::bitset<48>(msg.fullmsg)<<std::endl;
 
-	usleep(5000*1000);
+	std::vector<int> bitmap;
+	bitmap.push_back(4);
+	bitmap.push_back(22);
+	bitmap.push_back(22);
 
-	step = 3./60;
-	for (int i=0; i<4; ++i)
-	{
-		msg.latitude += step;
-		msg.longitude += step;
-		msg.pack<DiverMsg::Position_18>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}
-	step = 3./60;
-	for (int i=0; i<8; ++i)
-	{
-		msg.latitude -= step;
-		msg.longitude -= step;
-		msg.pack<DiverMsg::Position_18>();
-		writeLatLon(msg);
-		sendToModem(port, msg);
-		usleep(1000*1000);
-	}
+	std::vector<int> data;
+	data.push_back(DiverMsg2::PositionInit::type);
+	data.push_back(msg.lat);
+	data.push_back(msg.lon);
+
+	uint64_t ret = DiverMsg::pack_flipped(bitmap,data);
+	std::cout<<"Binary encoding:"<<std::bitset<48>(ret)<<std::endl;
+
+
+//	//7bit
+//	double step = 0.003/60;
+//	for (int i=0; i<4; ++i)
+//	{
+//		msg.latitude += step;
+//		msg.longitude += step;
+//		msg.pack<DiverMsg2::PositionMsg>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}
+//	for (int i=0; i<8; ++i)
+//	{
+//		msg.latitude -= step;
+//		msg.longitude -= step;
+//		msg.pack<DiverMsg2::PositionMsg>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}
+//	//14 bit
+//	/*step = 0.3/60;
+//	for (int i=0; i<4; ++i)
+//	{
+//		msg.latitude += step;
+//		msg.longitude += step;
+//		msg.pack<DiverMsg2::PositionDef>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}
+//	step = 0.3/60;
+//	for (int i=0; i<8; ++i)
+//	{
+//		msg.latitude -= step;
+//		msg.longitude -= step;
+//		msg.pack<DiverMsg2::PositionDef>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}*/
+//	//18 bit
+//
+//	usleep(5000*1000);
+//
+//	step = 3./60;
+//	for (int i=0; i<4; ++i)
+//	{
+//		msg.latitude += step;
+//		msg.longitude += step;
+//		msg.pack<DiverMsg2::Position_18>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}
+//	step = 3./60;
+//	for (int i=0; i<8; ++i)
+//	{
+//		msg.latitude -= step;
+//		msg.longitude -= step;
+//		msg.pack<DiverMsg2::Position_18>();
+//		writeLatLon(msg);
+//		sendToModem(port, msg);
+//		usleep(1000*1000);
+//	}
 
 	return 0;
 }

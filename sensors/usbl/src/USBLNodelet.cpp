@@ -52,10 +52,12 @@ using namespace labust::tritech;
 USBLNodelet::USBLNodelet():
 	address("127.0.0.1"),
 	port(4000),
-	usblBusy(false){};
+	usblBusy(false),
+	autoMode(true){};
 
 USBLNodelet::~USBLNodelet()
 {
+	usblCondition.notify_all();
 	usbl.reset();
 };
 
@@ -64,6 +66,9 @@ void USBLNodelet::onInit()
 	ros::NodeHandle ph = this->getPrivateNodeHandle();
 	ph.param("ip",address,address);
 	ph.param("port",port,port);
+	std::string op_mode("auto");
+	ph.param("op_mode",op_mode,op_mode);
+	autoMode = (op_mode == "auto");
 	//Connect to the TCPDevice
 	usbl.reset(new TCPDevice(address,port));
 	//Register handlers
@@ -75,16 +80,41 @@ void USBLNodelet::onInit()
 
 	ros::NodeHandle nh = this->getNodeHandle();
 	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));
+	opMode = nh.subscribe<std_msgs::Bool>("auto_mode",	0, boost::bind(&USBLNodelet::onAutoMode,this,_1));
 	navPub = nh.advertise<geometry_msgs::PointStamped>("usbl_nav",1);
 	dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
 
-	worker = boost::thread(boost::bind(&USBLNodelet::run,this));
+	if (autoMode)	worker = boost::thread(boost::bind(&USBLNodelet::run,this));
 }
+
+void USBLNodelet::onAutoMode(const std_msgs::Bool::ConstPtr mode)
+{
+	this->autoMode = mode->data;
+
+	//Turn off autoMode
+	if (this->autoMode && !mode->data)
+	{
+		this->autoMode = false;
+		usblCondition.notify_all();
+		worker.join();
+		ROS_INFO("Turning off USBL auto interrogation.");
+	}
+
+	//Turn on autoMode
+	if (!this->autoMode && mode->data)
+	{
+		this->autoMode = true;
+		usblCondition.notify_all();
+		worker = boost::thread(boost::bind(&USBLNodelet::run,this));
+		ROS_INFO("Turning on USBL auto interrogation.");
+	}
+};
 
 void USBLNodelet::onOutgoingMsg(const std_msgs::String::ConstPtr msg)
 {
 	boost::mutex::scoped_lock lock(dataMux);
 	msg_out = msg->data;
+	if (!autoMode) sendUSBLPkg();
 };
 
 void USBLNodelet::onTCONMsg(labust::tritech::TCONMsgPtr tmsg)
@@ -151,42 +181,47 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 	NODELET_DEBUG("Received data message.\n");
 }
 
+void USBLNodelet::sendUSBLPkg()
+{
+	TCONMsgPtr tmsg(new TCONMsg());
+	tmsg->txNode = 255;
+	tmsg->rxNode = labust::tritech::Nodes::USBL;
+	tmsg->node = 255;
+	tmsg->msgType = MTMsg::mtMiniModemCmd;
+
+	MMCMsg mmsg;
+	mmsg.msgType = labust::tritech::mmcGetRangeSync;
+
+	if (msg_out.size())
+	{
+		mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48;
+		mmsg.data[0] = 48;
+		for (int i=0;i<msg_out.size();++i) mmsg.data[i+1] = msg_out[i];
+		msg_out.clear();
+	}
+
+	boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
+	ar<<mmsg;
+	usbl->send(tmsg);
+	usblBusy = true;
+
+	boost::mutex::scoped_lock lock(pingLock);
+	while (usblBusy) 	usblCondition.wait(lock);
+}
+
 void USBLNodelet::run()
 {
-	while (ros::ok())
+	while (ros::ok() && autoMode)
 	{
-		boost::mutex::scoped_lock lock(pingLock);
-		while (usblBusy) 	usblCondition.wait(lock);
-
-		TCONMsgPtr tmsg(new TCONMsg());
-		tmsg->txNode = 255;
-		tmsg->rxNode = labust::tritech::Nodes::USBL;
-		tmsg->node = 255;
-		tmsg->msgType = MTMsg::mtMiniModemCmd;
-
-		MMCMsg mmsg;
-		mmsg.msgType = labust::tritech::mmcGetRangeSync;
-
-		if (msg_out.size())
-		{
-			mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48;
-			mmsg.data[0] = 48;
-			for (int i=0;i<msg_out.size();++i) mmsg.data[i+1] = msg_out[i];
-			msg_out.clear();
-		}
-
-		boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
-		ar<<mmsg;
-		usbl->send(tmsg);
-		usblBusy = true;
-
+		sendUSBLPkg();
 		//Broadcast frame
+		///\todo Determine if transform broadcast is neeeded
 		///\todo add transform settings in initial parameters.
 		///\todo determine real transform values relative to base_link
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(0.25, 0.0, 0.5) );
-		transform.setRotation(tf::Quaternion(0,0,0,1));
-		frameBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "usbl"));
+		//tf::Transform transform;
+		//transform.setOrigin(tf::Vector3(0.25, 0.0, 0.5) );
+		//transform.setRotation(tf::Quaternion(0,0,0,1));
+		//frameBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "usbl"));
 	}
 
 	usblCondition.notify_all();

@@ -36,12 +36,10 @@
  *********************************************************************/
 #ifndef USBLMANAGER_HPP_
 #define USBLMANAGER_HPP_
-#include <labust/tritech/tritechfwd.hpp>
-#include <labust/tritech/DiverMsg.hpp>
-
 #include <nodelet/nodelet.h>
 #include <auv_msgs/NavSts.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 #include <ros/ros.h>
 
 #include <boost/thread.hpp>
@@ -55,11 +53,13 @@ namespace labust
 		/**
 		 * The class implements the Tritech USBL manager that allows specifying which
 		 * messages and what data to relay to the modem. It also encodes arrived modem messages.
-		 *
-		 * \todo Add dynamic reconfiguration GUI options
 		 */
 		class USBLManager : public nodelet::Nodelet
 		{
+			/**
+			 * The communication states.
+			 */
+			enum {idle=0,initDiver,waitForReply,transmission};
 		public:
 			/**
 			 * Default constructor.
@@ -86,9 +86,14 @@ namespace labust
 			void onIncomingMsg(const std_msgs::String::ConstPtr msg);
 
 			/**
+			 * The main runner thread.
+			 */
+			void run();
+
+			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher outgoing;
+			ros::Publisher outgoing, auto_mode;
 			/**
 			 * The navigation data subscription.
 			 */
@@ -96,7 +101,22 @@ namespace labust
 			/**
 			 * The message encoder.
 			 */
-			DiverMsg encoder;
+			//DiverMsg encoder;
+			/**
+			 * The worker thread.
+			 */
+			boost::thread worker;
+			/**
+			 * The current comms state.
+			 */
+			int state;
+			/**
+			 * Navigation message flag.
+			 */
+			bool validNav;
+			/**
+			 *
+			 */
 		};
 	}
 }

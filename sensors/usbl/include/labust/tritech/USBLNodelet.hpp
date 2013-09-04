@@ -39,6 +39,7 @@
 #include <labust/tritech/tritechfwd.hpp>
 
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 #include <tf/transform_broadcaster.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -88,6 +89,14 @@ namespace labust
 			 * Handles outgoing messages requests.
 			 */
 			void onOutgoingMsg(const std_msgs::String::ConstPtr msg);
+			/**
+			 * Handles outgoing messages requests.
+			 */
+			void onAutoMode(const std_msgs::Bool::ConstPtr mode);
+			/**
+			 * Send one USBL encoded package.
+			 */
+			void sendUSBLPkg();
 
 			/**
 			 * The USBL device.
@@ -134,11 +143,15 @@ namespace labust
 			/**
 			 * The outgoing data subscription.
 			 */
-			ros::Subscriber dataSub;
+			ros::Subscriber dataSub, opMode;
 			/**
 			 * USBL frame transformation broadcaster.
 			 */
 			tf::TransformBroadcaster frameBroadcast;
+			/**
+			 * Auto interrogate mode.
+			 */
+			bool autoMode;
 		};
 	}
 }
