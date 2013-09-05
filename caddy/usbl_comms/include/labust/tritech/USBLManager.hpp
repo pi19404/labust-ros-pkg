@@ -67,7 +67,7 @@ namespace labust
 			 */
 			static char ascii2Int(char c)
 			{
-				if (isalpha(c)) return (c-alpha_diff);
+				if (isalpha(c)) return (toupper(c)-alpha_diff);
 				if (isdigit(c)) return (c-digit_diff);
 				return zero_char;
 			}

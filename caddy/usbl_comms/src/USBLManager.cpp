@@ -86,7 +86,7 @@ void USBLManager::init_diver()
 		outgoing.publish(outgoing_package);
 
 		//Change to transmission state
-		//changeState(waitForReply);
+		changeState(waitForReply);
 	}
 	else if ((lastState == initDiver) && (state == waitForReply))
 	{
@@ -95,7 +95,7 @@ void USBLManager::init_diver()
 		if ((sentLat == incoming_msg.data[DiverMsg::lat]) && (sentLon == incoming_msg.data[DiverMsg::lon]))
 		{
 			NODELET_INFO("Diver initialization successful.");
-			changeState(positionOnly);
+			changeState(sendMsg);
 		}
 		else
 		{
@@ -131,6 +131,7 @@ std::string USBLManager::intToMsg(int len)
 
 int USBLManager::msgToInt(int len)
 {
+	NODELET_INFO("Encode message.");
 	int retVal(0);
 	//Fill with zero chars if needed.
 	while (textBuffer.size() < len) textBuffer.push(AsciiInternal::zero_char);
@@ -138,9 +139,12 @@ int USBLManager::msgToInt(int len)
 	for (int i=0; i<len; ++i)
 	{
 		retVal |= textBuffer.front() & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits;
+		NODELET_INFO("Message encoding: %c to %d",textBuffer.front(), retVal);
 		textBuffer.pop();
 		if (i < len-1) retVal <<= AsciiInternal::char_size;
 	}
+
+	std::cout<<"Bin text:"<<std::bitset<18>(retVal)<<std::endl;
 
 	return retVal;
 }
@@ -176,6 +180,7 @@ void USBLManager::send_msg()
 			}
 			else
 			{
+				NODELET_INFO("Send message.",outgoing_msg.latitude, outgoing_msg.longitude);
 				int msglen = DiverMsg::PositionMsg::bitmap()[DiverMsg::msg]/AsciiInternal::char_size;
 				outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
 				outgoing_package.data = outgoing_msg.toString<DiverMsg::PositionMsg>();
@@ -187,13 +192,22 @@ void USBLManager::send_msg()
 		{
 			//Process and send the KML data.
 		}
+		else
+		{
+			//Send position only.
+			ROS_INFO("Send position (%f, %f)",outgoing_msg.latitude, outgoing_msg.longitude);
+			outgoing_msg.latitude += 0.001;
+			outgoing_msg.longitude += 0.001;
+			outgoing_package.data = outgoing_msg.toString<DiverMsg::Position_18>();
+			outgoing.publish(outgoing_package);
+		}
 	}
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
 void USBLManager::run()
 {
-	ros::Rate rate(10);
+	ros::Rate rate(1);
 	std_msgs::String package;
 
 	while (ros::ok())
@@ -201,7 +215,7 @@ void USBLManager::run()
 		switch (state)
 		{
 		case idle: break;
-		case waitForReply:	break;
+		case waitForReply: break;
 		case initDiver:
 			this->init_diver();
 			break;
@@ -238,6 +252,7 @@ void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 	NODELET_INFO("Received modem message with type: %d",DiverMsg::testType(msg->data));
 	newMessage = true;
 	incoming_package = *msg;
+	//incoming_msg.fromString<DiverMsg::PositionInitAck>(msg->data);
 	if (dispatch.find(DiverMsg::testType(msg->data)) != dispatch.end())
 	{
 		dispatch[DiverMsg::testType(msg->data)]();

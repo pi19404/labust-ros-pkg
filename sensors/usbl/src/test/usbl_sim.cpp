@@ -105,9 +105,10 @@ public:
 		ar<<mmsg;
 		usbl->send(tmsg);
 		usblBusy = true;
+		ROS_INFO("Sent data message.");
 
-		boost::mutex::scoped_lock lock(pingLock);
-		while (usblBusy) 	usblCondition.wait(lock);
+		//boost::mutex::scoped_lock lock(pingLock);
+		//while (usblBusy) usblCondition.wait(lock);
 	}
 
 	ros::Subscriber dataSub;

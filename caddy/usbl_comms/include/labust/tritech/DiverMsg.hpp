@@ -38,6 +38,9 @@
 #define DIVERMSG_HPP_
 #include <labust/tools/BitPacker.hpp>
 
+#include <bitset>
+#include <iostream>
+
 #include <boost/preprocessor/tuple/rem.hpp>
 
 #include <string>
@@ -158,6 +161,7 @@ namespace labust
 				const char* p=reinterpret_cast<const char*>(&data);
 				//Flip bytes
 				for (int i=0; i<msgByteCount; ++i) retVal[i+1] = p[(msgByteCount-1)-i];
+				//std::cout<<"Send:"<<std::bitset<48>(data);
 				return retVal;
 			}
 
@@ -173,12 +177,14 @@ namespace labust
 				uint64_t data;
 				char* ret=reinterpret_cast<char*>(&data);
 				for (int i=0; i<msgByteCount; ++i) ret[i] = msg[1+(msgByteCount-1)-i];
+				//for (int i=0; i<msgByteCount; ++i) ret[i] = msg[1+i];
+				//std::cout<<"Bits:"<<std::bitset<48>(data)<<std::endl;
 				decode<MsgType>(data);
 			}
 
 			static inline uint8_t testType(const std::string& data)
 			{
-				return data[1] & 0x0F;
+				return data[1] & 0xF0;
 			}
 
 			static inline uint8_t testType(uint64_t data, size_t msgSize = 48)

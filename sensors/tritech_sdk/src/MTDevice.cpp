@@ -119,7 +119,7 @@ void MTDevice::onSync(const boost::system::error_code& error, std::size_t bytes_
 				data->pubseekoff(-2,std::ios_base::cur);
 				boost::asio::async_read(port,
 					//Add +1 for the carriage return at the end of each message
-					data->prepare(len-2 + 1),
+					data->prepare(len-2 + 0*1),
 					boost::bind(&MTDevice::onHeader,this,data,_1,_2));
 				return;
 			}
