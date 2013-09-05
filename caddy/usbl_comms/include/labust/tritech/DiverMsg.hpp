@@ -36,85 +36,149 @@
  *********************************************************************/
 #ifndef DIVERMSG_HPP_
 #define DIVERMSG_HPP_
+#include <labust/tools/BitPacker.hpp>
+
+#include <boost/preprocessor/tuple/rem.hpp>
+
+#include <string>
 
 namespace labust
 {
 	namespace tritech
 	{
 		/**
-		 * Bitpacker for diver message.
+		 * The utility structure for converting latitude, longitude diver coordinates to
+		 * bit encodings.
 		 *
-		 * \todo Generalize this bit packer with boost::serialization concepts,
-		 * similar to the XML approach.
+		 * \todo Move into
+		 */
+		class LatLon2Bits
+		{
+		public:
+			void convert(double lat, double lon, int bits = 7);
+
+			int lat, lon;
+
+		protected:
+			template <size_t precission>
+			void latlonToBits(double lat, double lon);
+		};
+
+		template <> void LatLon2Bits::latlonToBits<7>(double lat, double lon);
+		template <> void LatLon2Bits::latlonToBits<14>(double lat, double lon);
+		template <> void LatLon2Bits::latlonToBits<18>(double lat, double lon);
+		template <> void LatLon2Bits::latlonToBits<22>(double lat, double lon);
+
+#define ADD_DIVER_MESSAGE(name, code, bits) \
+	struct name \
+	{ \
+		enum {type = code}; \
+		static inline\
+		const std::vector<int>& bitmap() \
+		{ \
+			static const std::vector<int> bitmap({4, BOOST_PP_TUPLE_REM_CTOR(11, bits)});	\
+			return bitmap; \
+		} \
+	}; \
+
+		/**
+		 * The diver message list. Keep in mind that the final string version of the message contains
+		 * the bit number as the first byte. The bytes are flipped due to little-big endian issues.
+		 * \todo Add auto-load messages from ROS.
+		 * \todo Add auto-unpack data.
+		 * \todo Separate the diver and topside messages into separate subclasses.
 		 */
 		struct DiverMsg
 		{
-			uint64_t pack(const std::vector<int>& bitmap,
-					const std::vector<int>& data)
-			{
-				uint64_t retVal(0);
-				for (size_t i=0; i<bitmap.size()-1; ++i)
-				{
-					int bitmask = (1 << bitmap[i]) -1;
-					retVal |= data[i] & bitmask;
-					retVal <<= bitmap[i+1];
-				}
-			}
+			/**
+			 * The maximum length of the message.
+			 */
+			enum {msgByteCount = 6};
+			/**
+			 * The list of encoded variables.
+			 */
+			enum {type=0,
+				z,
+				lat,
+				lon,
+				def,
+				msg,
+				kmlno,
+				kmlx,
+				kmly,
+				img,
+				empty,
+				chksum,
+				num_elements};
 
-			void unpack(uint64_t data, );
+			//Topside messages				name,		code, (z,lat,lon,def,msg,kmlno,kmlx,kmly,img,emp,chk)
+			ADD_DIVER_MESSAGE(PositionInit,			0, 	(0, 22, 22, 0,  0,	0, 		0, 		0, 	0,	0, 	0));
+			ADD_DIVER_MESSAGE(Position_18,			1,	(7,	18,	18,	0,	0,	0,		0,		0,	0,	1,	0));
+			ADD_DIVER_MESSAGE(PositionMsg,			2,	(7,	 7,	7, 	0, 18,	0,		0,		0,	0,	5,	0));
+			ADD_DIVER_MESSAGE(PositionImg,			3,	(7,	 7,	0,	0, 	0,	0,		0,		0, 23,	0,	0));
+			ADD_DIVER_MESSAGE(Position_14Def,		4,	(7,	14,	14, 5,	0,	0,		0,		0,	0,	4,	0));
+			ADD_DIVER_MESSAGE(PositionMsgDef,		5,	(7,	 7,	 7, 5, 18,	0,		0,		0,	0,	0, 	0));
+			ADD_DIVER_MESSAGE(PositionImgDef,		6,	(7,	 7,	 7,	5,	0,	0,		0,		0, 18,	0,	0));
+			ADD_DIVER_MESSAGE(PositionKml,			7,	(7,	 7,	 7,	0,	0,	3,	 10,	 10,	0,	0,	0));
+			ADD_DIVER_MESSAGE(PositionChk,			8,	(7,	 7,  7,	0,	0,	0,		0,		0,	0, 17,	6));
+			ADD_DIVER_MESSAGE(PositionMsgChk,		9,	(7,	 7,	 7,	0, 12,	0,		0,		0,	0,	5,	6));
+			ADD_DIVER_MESSAGE(PositionImgChk,		10,	(7,	 7,	 7, 0,	0,	0,		0,		0, 17,	0,	6));
+			ADD_DIVER_MESSAGE(PositionDefChk,		11,	(7,	 7,	 7,	5,	0,	0,		0,		0,	0, 12,	6));
+			ADD_DIVER_MESSAGE(PositionMsgDefChk,12,	(7,	 7,	 7, 5,	12,	0,		0,		0,	0,	0,	6));
+			ADD_DIVER_MESSAGE(PositionImgDefChk,13,	(7,	 7,	 7, 5,	0,	0,		0,		0, 12,	0,	6));
 
-			std::map<int, std::vector<int> > messageList;
-		};
-
-		struct Packer
-		{
-			virtual ~Packer(){};
-			virtual uint64_t pack(DiverMsg& msg) = 0;
-			virtual void unpack(uint64_t data, DiverMsg& msg) = 0;
-		};
-
-		struct DiverMsg
-		{
-			struct AutoTopside{};
-			struct AutoDiver{};
-
-			DEFINE_TOPSIDE_MESSAGES(
-					(PositionInit,1,0,22,0)
-					(Position,2,7,18,1)
-					(PositionMsg,3,7,7,23)
-					(PositionDef,5,7,14,9))
-
-			DEFINE_DIVER_MESSAGES(
-					(PositionInitAck,1,0,22,0)
-					(Msg,2,0,0,44))
+			//Diver messages						name,	code,	(z,lat,lon,def,msg,kmlno,kmlx,kmly,img,emp,chk)
+			ADD_DIVER_MESSAGE(PositionInitAck,	 0,	(0,	22,	22,	0,	0,	0,		0,		0,	0,	0,	0));
+			ADD_DIVER_MESSAGE(Msg,							 1,	(0,	0,	0,	0, 42,	0,		0,		0,	0,	0,	0));
 
 			DiverMsg():
 				latitude(0),
 				longitude(0),
-				z(0),
+				depth(0),
 				depthRes(0.5),
-				msgType(0)
-			{
-				DiverMsg::registerTopsideMessages();
-				DiverMsg::registerDiverMessages();
-			};
+				data(num_elements,0){};
 
-			//\todo Add automatic extraction of lat-lon data from double values
-			template <class msg>
-			uint64_t pack()
+			template <class MsgType>
+			uint64_t encode()
 			{
-				msgType = msg::type;
-				fullmsg = msg::type;
-				fullmsg <<= msg::depthSize;
-				fullmsg |= int(z/depthRes) & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
-				fullmsg <<= msg::latlonSize;
-				latlonToBits<msg::latlonSize>(latitude,longitude);
-				fullmsg |= lat & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-				fullmsg <<= msg::latlonSize;
-				fullmsg |= lon & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-				fullmsg <<= msg::msgSize;
-				fullmsg |= this->msg & boost::low_bits_mask_t<msg::msgSize>::sig_bits;
-				return fullmsg;
+				llEncoder.convert(latitude,longitude, MsgType::bitmap()[lat]);
+				data[type] = MsgType::type;
+				data[lat] = llEncoder.lat;
+				data[lon] = llEncoder.lon;
+				data[z] = int(depth/depthRes);
+				return labust::tools::BitPacker::pack(MsgType::bitmap(), data);
+			}
+
+			template <class MsgType>
+			std::string toString()
+			{
+				std::string retVal(msgByteCount+1,'\0');
+				retVal[0] = msgByteCount*8;
+				uint64_t data = encode<MsgType>();
+				const char* p=reinterpret_cast<const char*>(&data);
+				//Flip bytes
+				for (int i=0; i<msgByteCount; ++i) retVal[i+1] = p[(msgByteCount-1)-i];
+				return retVal;
+			}
+
+			template <class MsgType>
+			void decode(uint64_t data)
+			{
+				labust::tools::BitPacker::unpack(data,MsgType::bitmap(), this->data);
+			}
+
+			template <class MsgType>
+			void fromString(const std::string& msg)
+			{
+				uint64_t data;
+				char* ret=reinterpret_cast<char*>(&data);
+				for (int i=0; i<msgByteCount; ++i) ret[i] = msg[1+(msgByteCount-1)-i];
+				decode<MsgType>(data);
+			}
+
+			static inline uint8_t testType(const std::string& data)
+			{
+				return data[1] & 0x0F;
 			}
 
 			static inline uint8_t testType(uint64_t data, size_t msgSize = 48)
@@ -122,113 +186,14 @@ namespace labust
 				return (data >> (msgSize - 4)) & 0xF;
 			}
 
-			template <class msg>
-			void unpack(uint64_t data)
-			{
-				fullmsg=data;
-				this->msg = data & boost::low_bits_mask_t<msg::msgSize>::sig_bits;
-				data >>= msg::msgSize;
-				lon = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-				data >>= msg::latlonSize;
-				lat = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-				data >>= msg::latlonSize;
-				depth = data & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
-				data >>= msg::depthSize;
-				msgType = data & 0x0F;
-				assert((msgType == msg::type) &&
-						"DiverMsg desired unpack type and received data type do not match.");
-			};
-
-			template <size_t precission>
-			std::pair<int,int> latlonToBits(double lat, double lon){return std::pair<int,int>(lat,lon);};
-
-			double latitude, longitude, z, depthRes;
-			uint64_t fullmsg;
-			uint8_t depth, msgType;
-			int lat,lon;
-			uint64_t msg;
-			//uint8_t noKML, def, checksum;
-			//int kmlX, kmlY;
-
-		private:
-			std::map<int, boost::shared_ptr<Packer> > topsideMap, diverMap;
+			std::vector<int64_t> data;
+			LatLon2Bits llEncoder;
+			double latitude, longitude, depth, depthRes;
 		};
 
-		template <>
-		inline uint64_t DiverMsg::pack<DiverMsg::AutoTopside>()
-		{
-			assert(topsideMap.find(msgType) != topsideMap.end());
-			return topsideMap[msgType]->pack(*this);
-		}
-
-		template <>
-		inline void DiverMsg::unpack<DiverMsg::AutoTopside>(uint64_t data)
-		{
-			testType(data);
-			assert(topsideMap.find(msgType) != topsideMap.end());
-			topsideMap[msgType]->unpack(data, *this);
-		}
-
-		template <>
-		inline uint64_t DiverMsg::pack<DiverMsg::AutoDiver>()
-		{
-			assert(diverMap.find(msgType) != diverMap.end());
-			return diverMap[msgType]->pack(*this);
-		}
-
-		template <>
-		inline void DiverMsg::unpack<DiverMsg::AutoDiver>(uint64_t data)
-		{
-			testType(data);
-			assert(diverMap.find(msgType) != diverMap.end());
-			diverMap[msgType]->unpack(data,*this);
-		}
-
-		template <>
-		inline std::pair<int,int> DiverMsg::latlonToBits<22>(double lat, double lon)
-		{
-			double min = (lon - int(lon))*60;
-			this->lon = int((int(lon)+180)*10000 + min*100);
-
-			min = (lat - int(lat))*60;
-			this->lat = int((int(lat)+90)*10000 + min*100);
-
-			return std::pair<int,int>(this->lat,this->lon);
-		}
-
-		template <>
-		inline std::pair<int,int> DiverMsg::latlonToBits<18>(double lat, double lon)
-		{
-			this->lat = int((lat - int(lat))*600000)%100000;
-			this->lon = int((lon - int(lon))*600000)%100000;
-			return std::pair<int,int>(this->lat,this->lon);
-		}
-
-		template <>
-		std::pair<int,int> DiverMsg::latlonToBits<14>(double lat, double lon)
-		{
-			double min = (lon - int(lon))*60;
-			this->lon = int((min - int(min))*10000);
-
-			min = (lat - int(lat))*60;
-			this->lat = int((min - int(min))*10000);
-
-			return std::pair<int,int>(this->lat,this->lon);
-		}
-
-		template <>
-		inline std::pair<int,int> DiverMsg::latlonToBits<7>(double lat, double lon)
-		{
-			latlonToBits<14>(lat,lon);
-			this->lat%=100;
-			this->lon%=100;
-			return std::pair<int,int>(this->lat,this->lon);
-		}
+#undef ADD_DIVER_MESSAGE
 	}
 }
-
-#include <labust/tritech/detail/message_preprocess_undef.hpp>
-
 /* DIVERMSG_HPP_ */
 #endif
 

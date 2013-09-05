@@ -83,6 +83,7 @@ void USBLNodelet::onInit()
 	opMode = nh.subscribe<std_msgs::Bool>("auto_mode",	0, boost::bind(&USBLNodelet::onAutoMode,this,_1));
 	navPub = nh.advertise<geometry_msgs::PointStamped>("usbl_nav",1);
 	dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
+	usblTimeout = nh.advertise<std_msgs::Bool>("usbl_timeout",1);
 
 	if (autoMode)	worker = boost::thread(boost::bind(&USBLNodelet::run,this));
 }
@@ -169,13 +170,16 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 
 		std_msgs::String::Ptr modem(new std_msgs::String());
 		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
-		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload,
+		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload-1,
 				modem_data.data.begin() + MMCMsg::ranged_payload + size);
 		dataPub.publish(modem);
 	}
 	else
 	{
 		NODELET_DEBUG("Invalid data reply from USBL. Validity:%d\n",usbl_data.reply_validity);
+		std_msgs::Bool data;
+		data.data = true;
+		usblTimeout.publish(data);
 	}
 
 	NODELET_DEBUG("Received data message.\n");

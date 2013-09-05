@@ -36,6 +36,8 @@
  *********************************************************************/
 #ifndef USBLMANAGER_HPP_
 #define USBLMANAGER_HPP_
+#include <labust/tritech/DiverMsg.hpp>
+
 #include <nodelet/nodelet.h>
 #include <auv_msgs/NavSts.h>
 #include <std_msgs/String.h>
@@ -43,23 +45,56 @@
 #include <ros/ros.h>
 
 #include <boost/thread.hpp>
+#include <boost/function.hpp>
 
 #include <string>
+#include <queue>
+#include <map>
+#include <ctype.h>
 
 namespace labust
 {
 	namespace tritech
 	{
+		///\todo Add stream operators.
+		struct AsciiInternal
+		{
+			enum {digit_diff=48, alpha_diff=55};
+			enum {alpha_limit_int=36, digit_limit_int=10};
+			enum {char_size = 6, zero_char = 63};
+			/**
+			 * Convert char from ascii to internal encoding.
+			 */
+			static char ascii2Int(char c)
+			{
+				if (isalpha(c)) return (c-alpha_diff);
+				if (isdigit(c)) return (c-digit_diff);
+				return zero_char;
+			}
+			/**
+			 * Conver char from internal endoascii to e
+			 */
+			static char int2Ascii(char c)
+			{
+				if (c<digit_limit_int) return (c+digit_diff);
+				if (c<alpha_limit_int) return (c+alpha_diff);
+				return 0;
+			}
+		};
+
 		/**
 		 * The class implements the Tritech USBL manager that allows specifying which
 		 * messages and what data to relay to the modem. It also encodes arrived modem messages.
+		 *
+		 * \todo Should we extract message handlers into different class/classes ?
+		 * \todo Extract helper functions for ascii conversions ?
 		 */
 		class USBLManager : public nodelet::Nodelet
 		{
 			/**
 			 * The communication states.
 			 */
-			enum {idle=0,initDiver,waitForReply,transmission};
+			enum {idle=0,initDiver,waitForReply,positionOnly,sendMsg};
 		public:
 			/**
 			 * Default constructor.
@@ -74,6 +109,15 @@ namespace labust
 			 * Node initialization.
 			 */
 			void onInit();
+			/**
+			 * State changer.
+			 */
+			inline void changeState(int next)
+			{
+				lastState = state;
+				state = next;
+				NODELET_INFO("Change state: %d -> %d",lastState,next);
+			}
 
 		protected:
 			/**
@@ -84,6 +128,14 @@ namespace labust
 			 * Handles arrived modem messages.
 			 */
 			void onIncomingMsg(const std_msgs::String::ConstPtr msg);
+			/**
+			 * Handles arrived modem messages.
+			 */
+			void onIncomingText(const std_msgs::String::ConstPtr msg);
+			/**
+			 * Handles the USBL timeout.
+			 */
+			void onUSBLTimeout(const std_msgs::Bool::ConstPtr msg);
 
 			/**
 			 * The main runner thread.
@@ -91,13 +143,35 @@ namespace labust
 			void run();
 
 			/**
+			 * Helper function for initialization.
+			 */
+			void init_diver();
+			/**
+			 * Helper function for message sending.
+			 */
+			void send_msg();
+			/**
+			 * Helper function for handling incoming text messages.
+			 */
+			void incoming_txt();
+
+			/**
+			 * Helper function for message encoding to int.
+			 */
+			int msgToInt(int len);
+			/**
+			 * Helper function for message decoding from int.
+			 */
+			std::string intToMsg(int len);
+
+			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher outgoing, auto_mode;
+			ros::Publisher outgoing, auto_mode, diverText;
 			/**
 			 * The navigation data subscription.
 			 */
-			ros::Subscriber navData, incoming;
+			ros::Subscriber navData, incoming, intext, timeoutNotification;
 			/**
 			 * The message encoder.
 			 */
@@ -109,14 +183,39 @@ namespace labust
 			/**
 			 * The current comms state.
 			 */
-			int state;
+			int state, lastState;
 			/**
 			 * Navigation message flag.
 			 */
 			bool validNav;
 			/**
-			 *
+			 * The diver message encoder.
 			 */
+			DiverMsg outgoing_msg, incoming_msg;
+			/**
+			 * The last sent package.
+			 */
+			std_msgs::String outgoing_package, incoming_package;
+			/**
+			 * Text message buffer.
+			 */
+			std::queue<char> textBuffer;
+			/**
+			 * The preset messages buffer.
+			 */
+			std::queue<char> defaultMsgs;
+			/**
+			 * The kml buffer.
+			 */
+			std::vector< std::pair<double, double> > kmlBuffer;
+			/**
+			 * Flag for the turnaround message.
+			 */
+			bool newMessage;
+			/**
+			 * Message decoder dispatcher.
+			 */
+			std::map<int, boost::function<void(void)> > dispatch;
 		};
 	}
 }

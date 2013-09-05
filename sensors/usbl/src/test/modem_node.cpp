@@ -37,7 +37,7 @@
 #include <labust/tritech/MTDevice.hpp>
 #include <labust/tritech/mtMessages.hpp>
 #include <labust/tritech/USBLMessages.hpp>
-#include <labust/tritech/DiverMsg.hpp>
+#include <labust/tritech/DiverMsg_adv.hpp>
 
 #include <std_msgs/String.h>
 #include <ros/ros.h>

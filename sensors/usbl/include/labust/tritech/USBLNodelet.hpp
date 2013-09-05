@@ -139,7 +139,7 @@ namespace labust
 			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher navPub, dataPub;
+			ros::Publisher navPub, dataPub, usblTimeout;
 			/**
 			 * The outgoing data subscription.
 			 */

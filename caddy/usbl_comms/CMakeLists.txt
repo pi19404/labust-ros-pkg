@@ -67,10 +67,10 @@ include_directories(include
 )
 
 ## Declare a cpp library
-add_library(usbl_comms src/USBLManager.cpp)
+add_library(usbl_comms src/USBLManager.cpp src/DiverMsg.cpp)
 
 ## Declare a cpp executable
-add_executable(divermsg_test src/test/divermsg_test.cpp)
+add_executable(divermsg_test src/test/divermsg_test.cpp src/DiverMsg.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes

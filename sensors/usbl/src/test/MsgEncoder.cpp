@@ -65,8 +65,8 @@ struct DiverMsg
 	//Topside messages
 	ADD_DIVER_MESSAGE(PositionInit,		0,	0,	22,	0,	0,	0,	0,	0,	0,	0);
 	ADD_DIVER_MESSAGE(Position_18,		1,	7,	18,	0,	0,	0,	0,	0,	1,	0);
-	ADD_DIVER_MESSAGE(PositionMsg,		2,	7,	7,	0,	18,	0,	0,	0,	5,	0);
-	ADD_DIVER_MESSAGE(PositionImg,		2,	7,	7,	0,	0,	0,	0,	23,	0,	0);
+	ADD_DIVER_MESSAGE(PositionMsg,		2,	7,	7,	0,	23,	0,	0,	0,	0,	0);
+	ADD_DIVER_MESSAGE(PositionImg,		3,	7,	7,	0,	0,	0,	0,	23,	0,	0);
 	ADD_DIVER_MESSAGE(Position_14Def,	4,	7,	14,	5,	0,	0,	0,	0,	4,	0);
 	ADD_DIVER_MESSAGE(PositionMsgDef,	5,	7,	7,	5,	18,	0,	0,	0,	0,	0);
 	ADD_DIVER_MESSAGE(PositionImgDef,	6,	7,	7,	5,	0,	0,	0,	18,	0,	0);

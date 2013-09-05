@@ -40,7 +40,9 @@
 #include <bitset>
 #include <iostream>
 #include <boost/integer/integer_mask.hpp>
+#include <boost/preprocessor/tuple/rem.hpp>
 #include <cassert>
+#include <labust/tritech/DiverMsg.hpp>
 
 #define ADD_DIVER_MESSAGE(NAME, CODE, DEPTHSIZE, \
 	LATLONSIZE, DEFSIZE, MSGSIZE, KMLNOSIZE, KMLSIZE, IMGSIZE, VOIDSIZE, CHKSIZE) \
@@ -181,67 +183,6 @@ void writeLatLon(DiverMsg2& msg)
 	std::cout<<"\t encoded lat-lon:"<<msg.lat<<", "<<msg.lon<<std::endl;
 }
 
-struct DiverMsg
-{
-	static uint64_t pack(const std::vector<int>& bitmap,
-			const std::vector<int>& data)
-	{
-		uint64_t retVal(0);
-		assert(bitmap.size() == data.size() &&
-				"The bitmap and data size have to be the same length.");
-
-		for (size_t i=0,j=1; i<bitmap.size(); ++i,++j)
-		{
-			int bitmask = (1 << bitmap[i]) -1;
-			retVal |= data[i] & bitmask;
-			if (j < bitmap.size()) retVal <<= bitmap[j];
-		}
-
-		return retVal;
-	}
-
-	static uint64_t pack_flipped(const std::vector<int>& bitmap,
-			const std::vector<int>& data)
-	{
-		uint64_t retVal(0);
-		assert(bitmap.size() == data.size() &&
-				"The bitmap and data size have to be the same length.");
-
-		for (int i=bitmap.size()-1,j=bitmap.size()-2; i>=0; --i,--j)
-		{
-			int bitmask = (1 << bitmap[i]) -1;
-			retVal |= data[i] & bitmask;
-			if (j >= 0) retVal <<= bitmap[j];
-		}
-
-		return retVal;
-	}
-
-	static void unpack(uint64_t msg, const std::vector<int>& bitmap,
-			std::vector<int>& data)
-	{
-//		data.clear();
-//		for (size_t i=0,j=1; i<bitmap.size(); ++i,++j)
-//		{
-//			int bitmask = (1 << bitmap[i]) -1;
-//			data.push_back(msg & bitmask);
-//			data >>= bitmap[i];
-//		}
-
-		/*fullmsg=data;
-		this->msg = data & boost::low_bits_mask_t<msg::msgSize>::sig_bits;
-		data >>= msg::msgSize;
-		lon = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-		data >>= msg::latlonSize;
-		lat = data & boost::low_bits_mask_t<msg::latlonSize>::sig_bits;
-		data >>= msg::latlonSize;
-		depth = data & boost::low_bits_mask_t<msg::depthSize>::sig_bits;
-		data >>= msg::depthSize;*/
-	};
-
-	//std::map<int, std::vector<int> > messageList;
-};
-
 int main(int argc, char* argv[])
 {
 	double depth = 5;
@@ -257,18 +198,22 @@ int main(int argc, char* argv[])
 
 	std::cout<<"Binary encoding:"<<std::bitset<48>(msg.fullmsg)<<std::endl;
 
-	std::vector<int> bitmap;
-	bitmap.push_back(4);
-	bitmap.push_back(22);
-	bitmap.push_back(22);
+	using labust::tritech::DiverMsg;
+	DiverMsg nmsg;
+	nmsg.latitude = lat;
+	nmsg.longitude = lon;
+	nmsg.depth = depth;
 
-	std::vector<int> data;
-	data.push_back(DiverMsg2::PositionInit::type);
-	data.push_back(msg.lat);
-	data.push_back(msg.lon);
-
-	uint64_t ret = DiverMsg::pack_flipped(bitmap,data);
+	uint64_t ret = nmsg.encode<DiverMsg::PositionInit>();
 	std::cout<<"Binary encoding:"<<std::bitset<48>(ret)<<std::endl;
+
+	std::string test = nmsg.toString<DiverMsg::PositionInit>();
+
+	nmsg.decode<DiverMsg::PositionInitAck>(ret);
+	nmsg.fromString<DiverMsg::PositionInitAck>(test);
+	std::cout<<"Equal:"<<DiverMsg2::PositionInit::type<<"="<<nmsg.data[DiverMsg::type]<<std::endl;
+	std::cout<<"Equal:"<<msg.lat<<"="<<nmsg.data[DiverMsg::lat]<<std::endl;
+	std::cout<<"Equal:"<<msg.lon<<"="<<nmsg.data[DiverMsg::lon]<<std::endl;
 
 
 //	//7bit
