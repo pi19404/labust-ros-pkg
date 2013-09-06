@@ -48,8 +48,8 @@ USBLManager::USBLManager():
 			newMessage(false),
 			validNav(false)
 {
-	dispatch[DiverMsg::PositionInitAck::type] = boost::bind(&USBLManager::init_diver,this);
-	dispatch[DiverMsg::Msg::type] = boost::bind(&USBLManager::incoming_txt,this);
+	dispatch[DiverMsg::PositionInitAck] = boost::bind(&USBLManager::init_diver,this);
+	dispatch[DiverMsg::Msg] = boost::bind(&USBLManager::incoming_txt,this);
 };
 
 USBLManager::~USBLManager(){};
@@ -80,7 +80,7 @@ void USBLManager::init_diver()
 		data.data = false;
 		auto_mode.publish(data);
 
-		outgoing_package.data = outgoing_msg.toString<DiverMsg::PositionInit>();
+		outgoing_package.data = outgoing_msg.toString(DiverMsg::PositionInit);
 		sentLat = outgoing_msg.data[DiverMsg::lat];
 		sentLon = outgoing_msg.data[DiverMsg::lon];
 		outgoing.publish(outgoing_package);
@@ -90,12 +90,12 @@ void USBLManager::init_diver()
 	}
 	else if ((lastState == initDiver) && (state == waitForReply))
 	{
-		incoming_msg.fromString<DiverMsg::PositionInitAck>(incoming_package.data);
+		//incoming_msg.fromString<DiverMsg::AutoDiver>(incoming_package.data, DiverMsg::PositionInitAck);
 
 		if ((sentLat == incoming_msg.data[DiverMsg::lat]) && (sentLon == incoming_msg.data[DiverMsg::lon]))
 		{
 			NODELET_INFO("Diver initialization successful.");
-			changeState(sendMsg);
+			changeState(transmission);
 		}
 		else
 		{
@@ -109,8 +109,7 @@ void USBLManager::init_diver()
 void USBLManager::incoming_txt()
 {
 	//Decode
-	incoming_msg.fromString<DiverMsg::Msg>(incoming_package.data);
-	int size = DiverMsg::Msg::bitmap()[DiverMsg::msg]/AsciiInternal::char_size;
+	int size = DiverMsg::diverMap[DiverMsg::Msg][DiverMsg::msg]/AsciiInternal::char_size;
 	std_msgs::String text;
 	text.data = intToMsg(size);
 	diverText.publish(text);
@@ -144,15 +143,11 @@ int USBLManager::msgToInt(int len)
 		if (i < len-1) retVal <<= AsciiInternal::char_size;
 	}
 
-	std::cout<<"Bin text:"<<std::bitset<18>(retVal)<<std::endl;
-
 	return retVal;
 }
 
 void USBLManager::send_msg()
 {
-	if (state == sendMsg)
-	{
 		//This can be replaced with a switch statement
 		bool hasMsg(textBuffer.size());
 		bool hasKml(kmlBuffer.size());
@@ -166,27 +161,25 @@ void USBLManager::send_msg()
 				{
 					outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
 					defaultMsgs.pop();
-					int msglen = DiverMsg::PositionMsgDef::bitmap()[DiverMsg::msg]/AsciiInternal::char_size;
+					int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsgDef][DiverMsg::msg]/AsciiInternal::char_size;
 					outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
-					outgoing_package.data = outgoing_msg.toString<DiverMsg::PositionMsgDef>();
+					outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsgDef;
 				}
 				else
 				{
 					//Copy the message to the outgoing package
 					outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
 					defaultMsgs.pop();
-					outgoing_package.data = outgoing_msg.toString<DiverMsg::Position_14Def>();
+					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
 				}
 			}
 			else
 			{
-				NODELET_INFO("Send message.",outgoing_msg.latitude, outgoing_msg.longitude);
-				int msglen = DiverMsg::PositionMsg::bitmap()[DiverMsg::msg]/AsciiInternal::char_size;
+				NODELET_INFO("Send message.", outgoing_msg.latitude, outgoing_msg.longitude);
+				int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
 				outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
-				outgoing_package.data = outgoing_msg.toString<DiverMsg::PositionMsg>();
+				outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsg;
 			}
-
-			outgoing.publish(outgoing_package);
 		}
 		else if (hasKml)
 		{
@@ -195,13 +188,15 @@ void USBLManager::send_msg()
 		else
 		{
 			//Send position only.
-			ROS_INFO("Send position (%f, %f)",outgoing_msg.latitude, outgoing_msg.longitude);
 			outgoing_msg.latitude += 0.001;
 			outgoing_msg.longitude += 0.001;
-			outgoing_package.data = outgoing_msg.toString<DiverMsg::Position_18>();
-			outgoing.publish(outgoing_package);
+			outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 		}
-	}
+
+		//Send message
+		outgoing_msg.toString();
+		outgoing.publish(outgoing_package);
+		changeState(waitForReply);
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
@@ -219,7 +214,7 @@ void USBLManager::run()
 		case initDiver:
 			this->init_diver();
 			break;
-		case sendMsg:
+		case transmission:
 			//Send the different messages and navigation data
 			this->send_msg();
 			break;
@@ -250,17 +245,19 @@ void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
 void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 {
 	NODELET_INFO("Received modem message with type: %d",DiverMsg::testType(msg->data));
-	newMessage = true;
 	incoming_package = *msg;
-	//incoming_msg.fromString<DiverMsg::PositionInitAck>(msg->data);
-	if (dispatch.find(DiverMsg::testType(msg->data)) != dispatch.end())
+	incoming_msg.fromString(msg->data);
+	int msg_type = incoming_msg.data[DiverMsg::type];
+	if (dispatch.find(msg_type) != dispatch.end())
 	{
-		dispatch[DiverMsg::testType(msg->data)]();
+		dispatch[msg_type]();
 	}
 	else
 	{
 		NODELET_ERROR("Do not know how to handle message type: %d",DiverMsg::testType(msg->data));
 	}
+
+	if (state == waitForReply && lastState == transmission) changeState(transmission);
 }
 
 void USBLManager::onIncomingText(const std_msgs::String::ConstPtr msg)
@@ -276,6 +273,8 @@ void USBLManager::onUSBLTimeout(const std_msgs::Bool::ConstPtr msg)
 	if  (msg->data && state == waitForReply)
 	{
 		//resend last package
+		//repack the message with possibly new navigation data.
+		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 	}
 }

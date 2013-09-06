@@ -36,7 +36,7 @@
  *********************************************************************/
 #ifndef DIVERMSG_HPP_
 #define DIVERMSG_HPP_
-#include <labust/tritech/detail/message_preprocess.hpp>
+#include <labust/tritech/detail-tks/message_preprocess.hpp>
 
 #include <cstdint>
 #include <map>
@@ -208,7 +208,7 @@ namespace labust
 	}
 }
 
-#include <labust/tritech/detail/message_preprocess_undef.hpp>
+#include <labust/tritech/detail-tks/message_preprocess_undef.hpp>
 
 /* DIVERMSG_HPP_ */
 #endif

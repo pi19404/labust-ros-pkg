@@ -204,13 +204,13 @@ int main(int argc, char* argv[])
 	nmsg.longitude = lon;
 	nmsg.depth = depth;
 
-	uint64_t ret = nmsg.encode<DiverMsg::PositionInit>();
+	uint64_t ret = nmsg.encode<DiverMsg::AutoTopside>(DiverMsg::PositionInit);
 	std::cout<<"Binary encoding:"<<std::bitset<48>(ret)<<std::endl;
 
-	std::string test = nmsg.toString<DiverMsg::PositionInit>();
+	std::string test = nmsg.toString<DiverMsg::AutoTopside>(DiverMsg::PositionInit);
 
-	nmsg.decode<DiverMsg::PositionInitAck>(ret);
-	nmsg.fromString<DiverMsg::PositionInitAck>(test);
+	nmsg.decode<DiverMsg::AutoTopside>(ret);
+	nmsg.fromString<DiverMsg::AutoDiver>(test);
 	std::cout<<"Equal:"<<DiverMsg2::PositionInit::type<<"="<<nmsg.data[DiverMsg::type]<<std::endl;
 	std::cout<<"Equal:"<<msg.lat<<"="<<nmsg.data[DiverMsg::lat]<<std::endl;
 	std::cout<<"Equal:"<<msg.lon<<"="<<nmsg.data[DiverMsg::lon]<<std::endl;

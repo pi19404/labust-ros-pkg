@@ -94,7 +94,7 @@ namespace labust
 			/**
 			 * The communication states.
 			 */
-			enum {idle=0,initDiver,waitForReply,positionOnly,sendMsg};
+			enum {idle=0,initDiver,waitForReply,transmission};
 		public:
 			/**
 			 * Default constructor.

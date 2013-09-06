@@ -39,6 +39,10 @@
 
 using namespace labust::tritech;
 
+//Initialize the static maps
+DiverMsg::BitsCollection DiverMsg::topsideMap;
+DiverMsg::BitsCollection DiverMsg::diverMap;
+
 #define PP_ADD_CASE(x) \
 		case x: \
 		this->latlonToBits<x>(lat,lon); \
