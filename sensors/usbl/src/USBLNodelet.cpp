@@ -53,11 +53,12 @@ USBLNodelet::USBLNodelet():
 	address("127.0.0.1"),
 	port(4000),
 	usblBusy(false),
-	autoMode(true){};
+	autoMode(true),
+	ping_timeout(7){};
 
 USBLNodelet::~USBLNodelet()
 {
-	usblCondition.notify_all();
+	stop();
 	usbl.reset();
 };
 
@@ -85,29 +86,35 @@ void USBLNodelet::onInit()
 	dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
 	usblTimeout = nh.advertise<std_msgs::Bool>("usbl_timeout",1);
 
-	if (autoMode)	worker = boost::thread(boost::bind(&USBLNodelet::run,this));
+	if (autoMode) worker = boost::thread(boost::bind(&USBLNodelet::run,this));
+}
+
+void USBLNodelet::stop()
+{
+	{
+		boost::mutex::scoped_lock lock(pingLock);
+		this->usblBusy = false;
+		this->autoMode = false;
+	}
+	usblCondition.notify_all();
+	worker.join();
 }
 
 void USBLNodelet::onAutoMode(const std_msgs::Bool::ConstPtr mode)
 {
-	this->autoMode = mode->data;
-
 	//Turn off autoMode
 	if (this->autoMode && !mode->data)
 	{
-		this->autoMode = false;
-		usblCondition.notify_all();
-		worker.join();
-		ROS_INFO("Turning off USBL auto interrogation.");
+		stop();
+		NODELET_INFO("Turning off USBL auto interrogation.");
 	}
 
 	//Turn on autoMode
 	if (!this->autoMode && mode->data)
 	{
 		this->autoMode = true;
-		usblCondition.notify_all();
 		worker = boost::thread(boost::bind(&USBLNodelet::run,this));
-		ROS_INFO("Turning on USBL auto interrogation.");
+		NODELET_INFO("Turning on USBL auto interrogation.");
 	}
 };
 
@@ -170,8 +177,11 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 
 		std_msgs::String::Ptr modem(new std_msgs::String());
 		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
-		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload-1,
-				modem_data.data.begin() + MMCMsg::ranged_payload + size);
+		std::cout<<"Modem data byte size "<<size<<" data:";
+		for(int i=0; i<modem_data.data.size(); ++i) std::cout<<int(modem_data.data[i])<<",";
+		std::cout<<std::endl;
+		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload_size,
+				modem_data.data.begin() + MMCMsg::ranged_payload_size + size + 1);
 		dataPub.publish(modem);
 	}
 	else
@@ -198,9 +208,11 @@ void USBLNodelet::sendUSBLPkg()
 
 	if (msg_out.size())
 	{
-		mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48;
-		mmsg.data[0] = 48;
-		for (int i=0;i<msg_out.size();++i) mmsg.data[i+1] = msg_out[i];
+		//Switch message size
+		if (msg_out[0] == 48) mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48;
+		//mmsg.data[0] = 48;
+		//for (int i=0;i<msg_out.size();++i) mmsg.data[i+1] = msg_out[i];
+		for (int i=0;i<msg_out.size();++i) mmsg.data[i] = msg_out[i];
 		msg_out.clear();
 	}
 
@@ -210,7 +222,18 @@ void USBLNodelet::sendUSBLPkg()
 	usblBusy = true;
 
 	boost::mutex::scoped_lock lock(pingLock);
-	while (usblBusy) 	usblCondition.wait(lock);
+	boost::system_time const timeout=boost::get_system_time()+boost::posix_time::seconds(ping_timeout);
+	while (usblBusy) 
+	{
+		if (!usblCondition.timed_wait(lock,timeout))
+		{ 
+			NODELET_INFO("USBL went into timeout.");
+			std_msgs::Bool data;
+			data.data = true;
+			usblTimeout.publish(data);
+			break;
+		}
+	}
 }
 
 void USBLNodelet::run()
@@ -226,9 +249,9 @@ void USBLNodelet::run()
 		//transform.setOrigin(tf::Vector3(0.25, 0.0, 0.5) );
 		//transform.setRotation(tf::Quaternion(0,0,0,1));
 		//frameBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "usbl"));
+		NODELET_INFO("Running.");	
 	}
-
-	usblCondition.notify_all();
+	NODELET_INFO("Exiting run.");	
 }
 
 

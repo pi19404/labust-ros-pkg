@@ -99,7 +99,7 @@ void USBLManager::init_diver()
 		}
 		else
 		{
-			NODELET_INFO("Diver initialization failed. Sent (%d, %d) and received (%d, %d)",
+			NODELET_INFO("Diver initialization failed. Sent (%d, %d) and received (%lld, %lld)",
 					sentLat, sentLon, incoming_msg.data[DiverMsg::lat], incoming_msg.data[DiverMsg::lon]);
 			changeState(initDiver);
 		}
@@ -190,19 +190,21 @@ void USBLManager::send_msg()
 			//Send position only.
 			outgoing_msg.latitude += 0.001;
 			outgoing_msg.longitude += 0.001;
+			NODELET_INFO("Send position only: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
 			outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 		}
 
 		//Send message
-		outgoing_msg.toString();
+		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 		changeState(waitForReply);
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
+///\todo Switch the manager to async triggered instead of having a run method.
 void USBLManager::run()
 {
-	ros::Rate rate(1);
+	ros::Rate rate(10);
 	std_msgs::String package;
 
 	while (ros::ok())
@@ -245,19 +247,28 @@ void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
 void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 {
 	NODELET_INFO("Received modem message with type: %d",DiverMsg::testType(msg->data));
-	incoming_package = *msg;
-	incoming_msg.fromString(msg->data);
-	int msg_type = incoming_msg.data[DiverMsg::type];
-	if (dispatch.find(msg_type) != dispatch.end())
+	
+	try
 	{
-		dispatch[msg_type]();
+		incoming_msg.fromString(msg->data);
+		incoming_package = *msg;
+		int msg_type = incoming_msg.data[DiverMsg::type];
+		if (dispatch.find(msg_type) != dispatch.end())
+		{
+			dispatch[msg_type]();
+		}
+		else
+		{
+			NODELET_ERROR("No handler for message type %d",msg_type);
+		}
 	}
-	else
+	catch (std::exception& e)
 	{
-		NODELET_ERROR("Do not know how to handle message type: %d",DiverMsg::testType(msg->data));
+		NODELET_ERROR("Exception caught on incoming msg: %s",e.what());
 	}
 
 	if (state == waitForReply && lastState == transmission) changeState(transmission);
+	if (state == waitForReply && lastState == initDiver) changeState(initDiver);
 }
 
 void USBLManager::onIncomingText(const std_msgs::String::ConstPtr msg)
@@ -274,6 +285,7 @@ void USBLManager::onUSBLTimeout(const std_msgs::Bool::ConstPtr msg)
 	{
 		//resend last package
 		//repack the message with possibly new navigation data.
+		NODELET_INFO("Resending last package.");
 		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 	}

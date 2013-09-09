@@ -61,7 +61,14 @@ namespace labust
 		{
 			enum {digit_diff=48, alpha_diff=55};
 			enum {alpha_limit_int=36, digit_limit_int=10};
-			enum {char_size = 6, zero_char = 63};
+			enum {char_size = 6};
+			enum {point=36, 
+			      comma, 
+			      question_mark, 
+			      exclamation_mark, 
+			      space, 
+			      newline = 62, 
+			      zero_char};
 			/**
 			 * Convert char from ascii to internal encoding.
 			 */
@@ -69,6 +76,12 @@ namespace labust
 			{
 				if (isalpha(c)) return (toupper(c)-alpha_diff);
 				if (isdigit(c)) return (c-digit_diff);
+				if (c == '.') return (point);
+				if (c == ',') return (comma);
+				if (c == '?') return (question_mark);
+				if (c == '!') return (exclamation_mark);
+				if (c == ' ') return (space);
+				if (c == '\n') return (newline);
 				return zero_char;
 			}
 			/**
@@ -78,6 +91,12 @@ namespace labust
 			{
 				if (c<digit_limit_int) return (c+digit_diff);
 				if (c<alpha_limit_int) return (c+alpha_diff);
+				if (c == point) return '.';
+				if (c == comma) return ',';
+				if (c == question_mark) return '?';
+				if (c == exclamation_mark) return '!';
+				if (c == space) return ' ';
+				if (c == newline) return '\n';
 				return 0;
 			}
 		};

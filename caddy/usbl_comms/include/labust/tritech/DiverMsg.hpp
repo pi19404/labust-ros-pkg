@@ -46,6 +46,7 @@
 
 #include <string>
 #include <map>
+#include <stdexcept>
 
 namespace labust
 {
@@ -160,7 +161,12 @@ namespace labust
 			uint64_t encode(int msg_type = -1)
 			{
 				if (msg_type != -1) data[type] = msg_type;
-				assert(MsgType::map().find(data[type]) != MsgType::map().end());
+				//assert(MsgType::map().find(data[type]) != MsgType::map().end());
+				if (MsgType::map().find(type) == MsgType::map().end())
+				{
+				  throw std::invalid_argument("DiverMsg::encode : Unknown message type, skipping encoding.");
+				}
+
 				const BitMap& map =MsgType::map().at(data[type]);
 				llEncoder.convert(latitude,longitude, map[lat]);
 				data[lat] = llEncoder.lat;
@@ -195,7 +201,11 @@ namespace labust
 			void decode(uint64_t data, int type = -1)
 			{
 				if (type == -1) type = testType(data);
-				assert(MsgType::map().find(type) != MsgType::map().end());
+				//assert(MsgType::map().find(data[type]) != MsgType::map().end());
+				if (MsgType::map().find(type) == MsgType::map().end())
+				{
+				  throw std::invalid_argument("DiverMsg::decode : Unknown message type, skipping decoding.");
+				}
 				labust::tools::BitPacker::unpack(data,MsgType::map().at(type), this->data);
 			}
 
@@ -207,6 +217,10 @@ namespace labust
 			template <class MsgType>
 			void fromString(const std::string& msg, int type = -1)
 			{
+				if (msg.size() <msgByteCount)
+				{
+				  throw std::invalid_argument("DiverMsg::fromString : Wrong message size.");
+				}
 				uint64_t data;
 				char* ret=reinterpret_cast<char*>(&data);
 				for (int i=0; i<msgByteCount; ++i) ret[i] = msg[1+(msgByteCount-1)-i];
@@ -220,7 +234,7 @@ namespace labust
 
 			static inline uint8_t testType(const std::string& data)
 			{
-				return data[1] & 0xF0;
+				return (data[1] >> 4) & 0xF;
 			}
 
 			static inline uint8_t testType(uint64_t data, size_t msgSize = 48)

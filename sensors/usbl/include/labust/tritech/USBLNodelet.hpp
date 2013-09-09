@@ -75,6 +75,11 @@ namespace labust
 			 * The main run method.
 			 */
 			void run();
+			/**
+			 * Cleanly stops the main method but leaves on
+			 * the USBL connection.
+			 */
+			void stop();
 
 		protected:
 			/**
@@ -97,6 +102,13 @@ namespace labust
 			 * Send one USBL encoded package.
 			 */
 			void sendUSBLPkg();
+			/**
+			 * Ping timeout.
+			 */
+			int ping_timeout;
+
+
+
 
 			/**
 			 * The USBL device.
@@ -134,7 +146,7 @@ namespace labust
 			/**
 			 * The worker thread.
 			 */
-			boost::thread worker;
+			boost::thread worker, guard;
 
 			/**
 			 * The navigation and incoming data publisher.

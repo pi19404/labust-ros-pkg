@@ -65,9 +65,9 @@ TCPDevice::TCPDevice(const std::string& address, uint32_t port):
 TCPDevice::~TCPDevice()
 {
 	registerDevice(false);
-
 	io.stop();
 	service.join();
+	socket.close();
 
 	std::cout<<"Closed TCPDevice."<<std::endl;
 }
@@ -88,9 +88,9 @@ try
   ///\todo Refactor this code.
   while (!socket.is_open())
   {
-	usleep(1000*1000);
 	socket.close();
 	socket.connect(endpoint);
+	usleep(1000*1000);
   }
 
   if (socket.is_open())
@@ -99,9 +99,6 @@ try
   }
   else
     throw std::runtime_error("TCPDevice::_setup : Socket not open.");
-
-
-  
 }
 catch (std::exception& e)
 {
