@@ -42,6 +42,8 @@
 #include <auv_msgs/NavSts.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int32.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <ros/ros.h>
 
 #include <boost/thread.hpp>
@@ -106,7 +108,7 @@ namespace labust
 		 * messages and what data to relay to the modem. It also encodes arrived modem messages.
 		 *
 		 * \todo Should we extract message handlers into different class/classes ?
-		 * \todo Extract helper functions for ascii conversions ?
+		 * \todo Probably Yes, it is getting messy and heavy
 		 */
 		class USBLManager : public nodelet::Nodelet
 		{
@@ -114,6 +116,7 @@ namespace labust
 			 * The communication states.
 			 */
 			enum {idle=0,initDiver,waitForReply,transmission};
+			enum {kmlNotSent=0, kmlSent, kmlWaitValidation, kmlSentAndValid};
 		public:
 			/**
 			 * Default constructor.
@@ -155,6 +158,14 @@ namespace labust
 			 * Handles the USBL timeout.
 			 */
 			void onUSBLTimeout(const std_msgs::Bool::ConstPtr msg);
+			/**
+			 * Handles the incoming default messages.
+			 */
+			void onIncomingDefaults(const std_msgs::Int32::ConstPtr msg);
+			/**
+			 * Handles the incoming KML messages.
+			 */
+			void onIncomingKML(const std_msgs::Float64MultiArray::ConstPtr msg);
 
 			/**
 			 * The main runner thread.
@@ -172,7 +183,16 @@ namespace labust
 			/**
 			 * Helper function for handling incoming text messages.
 			 */
-			void incoming_txt();
+			void incoming_def_txt();
+			/**
+			 * Incoming KML message.
+			 */
+			void incoming_kml();
+
+			/**
+			 * Kml message send handler.
+			 */
+			void kml_send();
 
 			/**
 			 * Helper function for message encoding to int.
@@ -182,15 +202,25 @@ namespace labust
 			 * Helper function for message decoding from int.
 			 */
 			std::string intToMsg(int len);
+			/**
+			 * Helper function for resending the last package.
+			 */
+			void resendLastPackage();
+			/**
+			 * Helper diver origin publisher.
+			 */
+			void publishDiverOrigin();
 
 			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher outgoing, auto_mode, diverText;
+			ros::Publisher outgoing, auto_mode, diverText,
+			diverDefaults, retKml, diverOrigin;
 			/**
 			 * The navigation data subscription.
 			 */
-			ros::Subscriber navData, incoming, intext, timeoutNotification;
+			ros::Subscriber navData, incoming, intext,
+			timeoutNotification, inDefaults, inKml;
 			/**
 			 * The message encoder.
 			 */
@@ -224,9 +254,17 @@ namespace labust
 			 */
 			std::queue<char> defaultMsgs;
 			/**
-			 * The kml buffer.
+			 * The incoming kml queue.
 			 */
-			std::vector< std::pair<double, double> > kmlBuffer;
+			std::queue< std::pair<double, double> > kmlBuffer;
+			/**
+			 * The current kml transmit buffer.
+			 */
+			std::vector< std::pair<int, int> > kmlVec;
+			/**
+			 * The validated kml indexes.
+			 */
+			std::vector<int> kmlValidIdx;
 			/**
 			 * Flag for the turnaround message.
 			 */
@@ -235,6 +273,14 @@ namespace labust
 			 * Message decoder dispatcher.
 			 */
 			std::map<int, boost::function<void(void)> > dispatch;
+			/**
+			 * Internal timeout in iterations and general counter.
+			 */
+			int timeout, emptyIterations;
+			/**
+			 * The diver frame origin.
+			 */
+			double diverOriginLat, diverOriginLon;
 		};
 	}
 }

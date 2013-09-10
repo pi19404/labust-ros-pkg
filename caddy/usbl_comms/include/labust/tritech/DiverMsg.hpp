@@ -71,6 +71,7 @@ namespace labust
 		};
 
 		template <> void LatLon2Bits::latlonToBits<7>(double lat, double lon);
+		template <> void LatLon2Bits::latlonToBits<10>(double lat, double lon);
 		template <> void LatLon2Bits::latlonToBits<14>(double lat, double lon);
 		template <> void LatLon2Bits::latlonToBits<18>(double lat, double lon);
 		template <> void LatLon2Bits::latlonToBits<22>(double lat, double lon);
@@ -92,6 +93,10 @@ namespace labust
 			 * The maximum length of the message.
 			 */
 			enum {msgByteCount = 6};
+			/**
+			 * Default messages enum
+			 */
+			enum {nextKMLSet=6, endOfKML=7};
 			/**
 			 * The list of encoded variables.
 			 */
@@ -133,7 +138,14 @@ namespace labust
 			DEFINE_MAPPED_MESSAGES(diverMap,
 //										name,		code, (z,lat,lon,def,msg,kmlno,kmlx,kmly,img,emp,chk)
 					(PositionInitAck,	 		0,	(0,	22,	22,	0,	0,	0,		0,		0,	0,	0,	0))
-					(Msg,								 	1,	(0,	0,	0,	0, 42,	0,		0,		0,	0,	0,	0)));
+					(MsgReply,					 	1,	(0,	0,	0,	0, 42,	0,		0,		0,	0,	0,	0))
+					(ImgReply,					 	2,	(0,	0,	0,	0, 	0,	0,		0,		0, 44,	0,	0))
+					(DefReply,					 	3,	(0,	0,	0,	5, 	0,	0,		0,		0,	0, 39,	0))
+					(MsgDefReply,				 	4,	(0,	0,	0,	5, 36,	0,		0,		0,	0,	3,	0))
+					(ImgDefReply,				 	5,	(0,	0,	0,	5, 39,	0,		0,		0,	0,	0,	0))
+					(MsgChkReply,				 	6,	(0,	0,	0,	0, 36,	0,		0,		0,	0,	2,	6))
+					(ImgChkReply,				 	7,	(0,	0,	0,	0, 	0,	0,		0,		0, 38,	0,	6))
+					(KmlReply,					 11,	(0,	0,	0,	0, 	0,	3,	 10,	 10, 	0, 21,	0)));
 
 			DiverMsg(bool default_topside = true):
 				latitude(0),
@@ -244,7 +256,7 @@ namespace labust
 
 			std::vector<int64_t> data;
 			LatLon2Bits llEncoder;
-			double latitude, longitude, depth, depthRes;
+			double latitude, longitude, depth, depthRes, kml_latitude, kml_longitude;
 			bool default_topside;
 		};
 

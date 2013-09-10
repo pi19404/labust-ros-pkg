@@ -51,7 +51,8 @@ class USBLSim
 {
 public:
 	USBLSim():
-		usblBusy(false)
+		usblBusy(false),
+		useDevice(false)
 	{
 		ros::NodeHandle nh,ph("~");
 		std::string port("/dev/rfcomm0");
@@ -59,12 +60,16 @@ public:
 
 		ph.param("port",port,port);
 		ph.param("baud",baud,baud);
+		ph.param("use_device",useDevice,useDevice);
 
-		using namespace labust::tritech;
-		usbl.reset(new MTDevice(port,baud));
-		MTDevice::HandlerMap map;
-		map[MTMsg::mtMiniModemCmd] = boost::bind(&USBLSim::onReplyMsg,this, _1);
-		usbl->registerHandlers(map);
+		if (useDevice)
+		{
+			using namespace labust::tritech;
+			usbl.reset(new MTDevice(port,baud));
+			MTDevice::HandlerMap map;
+			map[MTMsg::mtMiniModemCmd] = boost::bind(&USBLSim::onReplyMsg,this, _1);
+			usbl->registerHandlers(map);
+		}
 
 		dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLSim::onOutgoingMsg,this,_1));
 		dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
@@ -82,9 +87,11 @@ public:
 		boost::archive::binary_iarchive dataSer(*tmsg->data, boost::archive::no_header);
 		MMCMsg modem_data;
 		dataSer>>modem_data;
-		std_msgs::String::Ptr modem(new std_msgs::String());
-		modem->data.assign(modem_data.data.begin(), modem_data.data.end());
-		dataPub.publish(modem);
+		//std_msgs::String::Ptr modem(new std_msgs::String());
+		//modem->data.assign(modem_data.data.begin(), modem_data.data.end());
+		dataPub.publish(last_reply);
+		//Buffer one message like the acoustic modem does
+		last_reply.data.assign(modem_data.data.begin(), modem_data.data.end());
 		ROS_INFO("Received data message.");
 	}
 
@@ -103,8 +110,16 @@ public:
 
 		boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
 		ar<<mmsg;
-		usbl->send(tmsg);
 		usblBusy = true;
+
+		if (useDevice)
+		{
+			usbl->send(tmsg);
+		}
+		else
+		{
+			onReplyMsg(tmsg);
+		}
 		ROS_INFO("Sent data message.");
 
 		//boost::mutex::scoped_lock lock(pingLock);
@@ -116,7 +131,8 @@ public:
 	boost::shared_ptr<labust::tritech::MTDevice> usbl;
 	boost::mutex pingLock;
 	boost::condition_variable usblCondition;
-	bool usblBusy;
+	bool usblBusy, useDevice;
+	std_msgs::String last_reply;
 };
 
 int main(int argc, char* argv[])

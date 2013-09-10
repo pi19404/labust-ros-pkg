@@ -66,6 +66,7 @@ namespace labust
      */
     class CaddyKML
     {
+    	enum {kml_radius=800};
     public:
       /**
        * Generic constructor.
@@ -106,11 +107,19 @@ namespace labust
         this->write();
       }
       /**
+       * Update the diver origin.
+       */
+      void setDiverOrigin(const geometry_msgs::Point::ConstPtr& point);
+      /**
        * Write data to the KML file.
        */
       void write();
 
     private:
+      /**
+       * Helper function to add the operating region to the KML file.
+       */
+      void addOpRegionToDocument(kmldom::DocumentPtr document);
       /**
        * Vehicle path
        */
@@ -123,6 +132,14 @@ namespace labust
        * Ship polygon.
        */
       VehiclePolygon ship;
+      /**
+       *	The acoustic KML operating region.
+       */
+      kmldom::CoordinatesPtr opRegion;
+      /**
+       * The diver origin.
+       */
+      kmlbase::Vec3 diverOrigin;
       /**
        * The KML factory for creating KML files.
        */

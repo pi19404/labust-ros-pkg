@@ -73,6 +73,7 @@ include_directories(include
 
 ## Declare a cpp executable
 add_executable(ros2ge src/CaddyKML.cpp src/ros2ge.cpp)
+add_executable(kml_upload src/kml_upload.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -85,6 +86,16 @@ target_link_libraries(ros2ge
   kmldom
   ${catkin_LIBRARIES}
   ${Boost_THREAD_LIBRARY}
+)
+
+target_link_libraries(kml_upload
+  kmlbase
+  kmldom
+  kmlxsd
+  kmlengine
+  kmlregionator
+  kmlconvenience
+  ${catkin_LIBRARIES}
 )
 
 #############

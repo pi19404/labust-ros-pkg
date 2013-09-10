@@ -52,6 +52,7 @@ void LatLon2Bits::convert(double lat, double lon, int bits)
 {
 	switch (bits)
 	{
+		case 0: break;
 		PP_ADD_CASE(7);
 		PP_ADD_CASE(14);
 		PP_ADD_CASE(18);
@@ -87,6 +88,14 @@ void LatLon2Bits::latlonToBits<14>(double lat, double lon)
 
 	min = (lat - int(lat))*60;
 	this->lat = int((min - int(min))*10000);
+}
+
+template <>
+void LatLon2Bits::latlonToBits<10>(double lat, double lon)
+{
+	this->latlonToBits<14>(lat,lon);
+	this->lat/=10;
+	this->lon/=10;
 }
 
 template <>

@@ -2,7 +2,7 @@ rostopic pub /usblFiltered auv_msgs/NavSts "header:
   seq: 0
   stamp: {secs: 0, nsecs: 0}
   frame_id: ''
-global_position: {latitude: 42.0, longitude: 13.0}
+global_position: {latitude: 44.0, longitude: 15.25}
 origin: {latitude: 0.0, longitude: 0.0}
 position: {north: 0.0, east: 0.0, depth: 0.0}
 altitude: 0.0

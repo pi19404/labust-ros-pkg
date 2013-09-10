@@ -39,17 +39,25 @@
 
 #include <boost/integer/integer_mask.hpp>
 
+#include <geometry_msgs/Point.h>
+
 PLUGINLIB_DECLARE_CLASS(usbl,USBLManager,labust::tritech::USBLManager, nodelet::Nodelet)
 
 using namespace labust::tritech;
 
 USBLManager::USBLManager():
-			state(initDiver),
-			newMessage(false),
-			validNav(false)
+					state(initDiver),
+					newMessage(false),
+					validNav(false),
+					timeout(80),
+					emptyIterations(0)
 {
 	dispatch[DiverMsg::PositionInitAck] = boost::bind(&USBLManager::init_diver,this);
-	dispatch[DiverMsg::Msg] = boost::bind(&USBLManager::incoming_txt,this);
+
+	//Handle multiple combination with one handler
+	dispatch[DiverMsg::DefReply] = dispatch[DiverMsg::MsgDefReply] =
+			dispatch[DiverMsg::MsgReply] = boost::bind(&USBLManager::incoming_def_txt,this);
+	dispatch[DiverMsg::KmlReply] = boost::bind(&USBLManager::incoming_kml,this);
 };
 
 USBLManager::~USBLManager(){};
@@ -59,11 +67,16 @@ void USBLManager::onInit()
 	ros::NodeHandle nh = this->getNodeHandle();
 	navData = nh.subscribe<auv_msgs::NavSts>("usblFiltered",	1, boost::bind(&USBLManager::onNavMsg,this,_1));
 	incoming = nh.subscribe<std_msgs::String>("incoming_data",	1, boost::bind(&USBLManager::onIncomingMsg,this,_1));
-	intext = nh.subscribe<std_msgs::String>("text",	1, boost::bind(&USBLManager::onIncomingText,this,_1));
+	intext = nh.subscribe<std_msgs::String>("usbl_text",	1, boost::bind(&USBLManager::onIncomingText,this,_1));
+	inDefaults = nh.subscribe<std_msgs::Int32>("usbl_defaults",	1, boost::bind(&USBLManager::onIncomingDefaults,this,_1));
+	inKml = nh.subscribe<std_msgs::Float64MultiArray>("kml_array",	1, boost::bind(&USBLManager::onIncomingKML,this,_1));
 	timeoutNotification = nh.subscribe<std_msgs::Bool>("usbl_timeout",	1, boost::bind(&USBLManager::onUSBLTimeout,this,_1));
+
 	outgoing = nh.advertise<std_msgs::String>("outgoing_data",1);
-	diverText = nh.advertise<std_msgs::String>("diver_txt",1);
+	diverText = nh.advertise<std_msgs::String>("diver_text",1);
+	diverDefaults = nh.advertise<std_msgs::Int32>("diver_defaults",1);
 	auto_mode = nh.advertise<std_msgs::Bool>("auto_mode",1);
+	diverOrigin = nh.advertise<geometry_msgs::Point>("diver_origin",1);
 
 	worker = boost::thread(boost::bind(&USBLManager::run,this));
 }
@@ -83,6 +96,8 @@ void USBLManager::init_diver()
 		outgoing_package.data = outgoing_msg.toString(DiverMsg::PositionInit);
 		sentLat = outgoing_msg.data[DiverMsg::lat];
 		sentLon = outgoing_msg.data[DiverMsg::lon];
+		diverOriginLat = outgoing_msg.latitude;
+		diverOriginLon = outgoing_msg.longitude;
 		outgoing.publish(outgoing_package);
 
 		//Change to transmission state
@@ -95,30 +110,72 @@ void USBLManager::init_diver()
 		if ((sentLat == incoming_msg.data[DiverMsg::lat]) && (sentLon == incoming_msg.data[DiverMsg::lon]))
 		{
 			NODELET_INFO("Diver initialization successful.");
+			publishDiverOrigin();
 			changeState(transmission);
 		}
 		else
 		{
 			NODELET_INFO("Diver initialization failed. Sent (%d, %d) and received (%lld, %lld)",
 					sentLat, sentLon, incoming_msg.data[DiverMsg::lat], incoming_msg.data[DiverMsg::lon]);
-			changeState(initDiver);
+			//Republish the last message due
+			//We need this due to one message lag in the communication
+			outgoing.publish(outgoing_package);
 		}
 	}
 }
 
-void USBLManager::incoming_txt()
+void USBLManager::incoming_def_txt()
 {
-	//Decode
-	int size = DiverMsg::diverMap[DiverMsg::Msg][DiverMsg::msg]/AsciiInternal::char_size;
-	std_msgs::String text;
-	text.data = intToMsg(size);
-	diverText.publish(text);
+	//Current diver message type
+	DiverMsg::BitMap& map = DiverMsg::diverMap.at(incoming_msg.data[DiverMsg::type]);
+
+	//If the message has a default
+	if (map[DiverMsg::def])
+	{
+		//Publish the default value
+		std_msgs::Int32 mdef;
+		mdef.data = incoming_msg.data[DiverMsg::def];
+		diverDefaults.publish(mdef);
+	}
+
+	//If the message has a default
+	if (map[DiverMsg::msg])
+	{
+		//Decode
+		static int size = DiverMsg::diverMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
+		std_msgs::String text;
+		text.data = intToMsg(size);
+		diverText.publish(text);
+	}
+}
+
+void USBLManager::incoming_kml()
+{
+	if (kmlVec.size())
+	{
+		int kmlno = incoming_msg.data[DiverMsg::kmlno];
+		if (kmlno < kmlVec.size())
+		{
+			bool valid = kmlVec[kmlno].first == incoming_msg.data[DiverMsg::kmlx];
+			valid = valid && kmlVec[kmlno].second == incoming_msg.data[DiverMsg::kmly];
+			if (valid) kmlValidIdx[kmlno] = kmlSentAndValid;
+		}
+		else
+		{
+			NODELET_ERROR("Received kmlno=%d from diver "
+					"but the kml vector has size %d.",kmlno);
+		}
+	}
+	else
+	{
+		NODELET_INFO("Kml vector is empty. Received new KML point from diver.");
+	}
 }
 
 std::string USBLManager::intToMsg(int len)
 {
 	std::string retVal(len,'\0');
-	int64_t msg = incoming_msg.data[msg];
+	int64_t msg = incoming_msg.data[DiverMsg::msg];
 	for (int i=0; i<len; ++i)
 	{
 		retVal[i] = msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits;
@@ -148,63 +205,140 @@ int USBLManager::msgToInt(int len)
 
 void USBLManager::send_msg()
 {
-		//This can be replaced with a switch statement
-		bool hasMsg(textBuffer.size());
-		bool hasKml(kmlBuffer.size());
-		bool hasDefault(defaultMsgs.size());
+	//This can be replaced with a switch statement
+	bool hasMsg(textBuffer.size());
+	bool hasKml(kmlBuffer.size() || kmlVec.size());
+	bool hasDefault(defaultMsgs.size());
 
-		if (hasDefault || hasMsg)
+	if (hasDefault || hasMsg)
+	{
+		if (hasDefault)
 		{
-			if (hasDefault)
+			if (hasMsg)
 			{
-				if (hasMsg)
-				{
-					outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
-					defaultMsgs.pop();
-					int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsgDef][DiverMsg::msg]/AsciiInternal::char_size;
-					outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
-					outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsgDef;
-				}
-				else
-				{
-					//Copy the message to the outgoing package
-					outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
-					defaultMsgs.pop();
-					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
-				}
+				outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
+				defaultMsgs.pop();
+				int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsgDef][DiverMsg::msg]/AsciiInternal::char_size;
+				outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
+				outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsgDef;
 			}
 			else
 			{
-				NODELET_INFO("Send message.", outgoing_msg.latitude, outgoing_msg.longitude);
-				int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
-				outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
-				outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsg;
+				//Copy the message to the outgoing package
+				outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
+				defaultMsgs.pop();
+				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
 			}
-		}
-		else if (hasKml)
-		{
-			//Process and send the KML data.
 		}
 		else
 		{
-			//Send position only.
-			outgoing_msg.latitude += 0.001;
-			outgoing_msg.longitude += 0.001;
-			NODELET_INFO("Send position only: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
-			outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+			NODELET_INFO("Send message.", outgoing_msg.latitude, outgoing_msg.longitude);
+			int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
+			outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
+			outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsg;
 		}
+	}
+	else if (hasKml)
+	{
+		kml_send();
+	}
+	else
+	{
+		//Send position only.
+		outgoing_msg.latitude += 0.001;
+		outgoing_msg.longitude += 0.001;
+		NODELET_INFO("Send position only: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
+		outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+	}
 
-		//Send message
-		outgoing_package.data = outgoing_msg.toString();
-		outgoing.publish(outgoing_package);
-		changeState(waitForReply);
+	//Send message
+	outgoing_package.data = outgoing_msg.toString();
+	outgoing.publish(outgoing_package);
+	changeState(waitForReply);
+}
+
+void USBLManager::kml_send()
+{
+	//If none are scheduled for sending
+	if (kmlVec.size() == 0)
+	{
+		int i=0;
+		static int kml_send_size = 1 << DiverMsg::topsideMap.at(DiverMsg::PositionKml)[DiverMsg::kmlno];
+		NODELET_INFO("KML send size is %d.",kml_send_size);
+		while (!kmlBuffer.empty() && i<kml_send_size)
+		{
+			kmlVec.push_back(kmlBuffer.front());
+			kmlValidIdx.push_back(0);
+			kmlBuffer.pop();
+		}
+	}
+
+	//Find first non sent point, increment idx in for declaration
+	int idx=0;
+	for(int i=0; i<kmlValidIdx.size(); ++i, ++idx) if (kmlValidIdx[i] == kmlNotSent) break;
+
+	//If all sent try to find a non-validated
+	if (idx == kmlValidIdx.size())
+	{
+		idx = 0;
+		for(int i=0; i<kmlValidIdx.size(); ++i, ++idx) if (kmlValidIdx[i] != kmlSentAndValid) break;
+
+		//If all validated
+		if (idx == kmlValidIdx.size())
+		{
+			//Clear vector
+			kmlVec.clear();
+			kmlValidIdx.clear();
+			//Send KML end default message
+			outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
+			outgoing_msg.data[DiverMsg::def] = kmlBuffer.empty()?DiverMsg::endOfKML:
+					DiverMsg::nextKMLSet;
+			return;
+		}
+		else
+		{
+			int kmlUnvalidated = 0;
+			//count unvalidated
+			for(int i=0; i<kmlValidIdx.size(); ++i) if (kmlValidIdx[i] != kmlSentAndValid) ++kmlUnvalidated;
+			//For the last non-validated kml value we have to send some
+			//random message to try and get a validation
+			if (kmlUnvalidated == 1)
+			{
+				//In order to validate the last message we have to do a pull with some message
+				//Send a position update message as a pull message
+				if (kmlValidIdx[idx] != kmlWaitValidation)
+				{
+					//Do not send a kml message
+					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+					//Send a position message
+					kmlValidIdx[idx] = kmlWaitValidation;
+					return;
+				}
+				//but if we sent a position message and no validation occured resend the last kml
+				else
+				{
+					//Resend the last unvalidated kml
+					kmlValidIdx[idx] = kmlSent;
+				}
+			}
+		}
+	}
+
+	//Send KML message if we did not return till now from the function
+	outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionKml;
+	outgoing_msg.data[DiverMsg::kmlno] = idx;
+	outgoing_msg.data[DiverMsg::kmlx] = kmlVec[idx].first;
+	outgoing_msg.data[DiverMsg::kmly] = kmlVec[idx].second;
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
 ///\todo Switch the manager to async triggered instead of having a run method.
 void USBLManager::run()
 {
-	ros::Rate rate(10);
+	double freq;
+	ros::NodeHandle ph("~");
+	ph.param("rate",freq,10.0);
+	ros::Rate rate(freq);
 	std_msgs::String package;
 
 	while (ros::ok())
@@ -212,20 +346,24 @@ void USBLManager::run()
 		switch (state)
 		{
 		case idle: break;
-		case waitForReply: break;
+		case waitForReply:
+			if (++emptyIterations > timeout) resendLastPackage();
+			break;
 		case initDiver:
 			this->init_diver();
 			break;
 		case transmission:
 			//Send the different messages and navigation data
+			//We publish the origin here to reduce the work load :).
+			publishDiverOrigin();
 			this->send_msg();
 			break;
 		default:
-			ROS_ERROR("Unknown state.");
+			NODELET_ERROR("Unknown state.");
 			state = idle;
 		}
 
-		NODELET_INFO("Manager running.");
+		//NODELET_INFO("Manager running.");
 
 		//Reset the turn-around flag
 		newMessage = false;
@@ -247,7 +385,7 @@ void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
 void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 {
 	NODELET_INFO("Received modem message with type: %d",DiverMsg::testType(msg->data));
-	
+
 	try
 	{
 		incoming_msg.fromString(msg->data);
@@ -267,8 +405,7 @@ void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 		NODELET_ERROR("Exception caught on incoming msg: %s",e.what());
 	}
 
-	if (state == waitForReply && lastState == transmission) changeState(transmission);
-	if (state == waitForReply && lastState == initDiver) changeState(initDiver);
+	if (state == waitForReply) changeState(lastState);
 }
 
 void USBLManager::onIncomingText(const std_msgs::String::ConstPtr msg)
@@ -289,4 +426,49 @@ void USBLManager::onUSBLTimeout(const std_msgs::Bool::ConstPtr msg)
 		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 	}
+}
+
+void USBLManager::resendLastPackage()
+{
+		//resend last package
+		//repack the message with possibly new navigation data.
+		NODELET_INFO("Resending last package.");
+		outgoing_package.data = outgoing_msg.toString();
+		outgoing.publish(outgoing_package);
+
+		//Reset the empty iterations counter.
+		emptyIterations = 0;
+}
+
+
+void USBLManager::onIncomingDefaults(const std_msgs::Int32::ConstPtr msg)
+{
+	//Do some checking on the default messages
+	defaultMsgs.push(msg->data);
+}
+
+void USBLManager::onIncomingKML(const std_msgs::Float64MultiArray::ConstPtr msg)
+{
+	int len = msg->data.size();
+	if (len % 2 != 0)
+	{
+		--len;
+		NODELET_WARN("The kml array should have a even lengths. Pairs of {lat0,lon0,...,latN,lonN}");
+	}
+
+	LatLon2Bits llEncoder;
+	static int kmlbits = DiverMsg::topsideMap.at(DiverMsg::PositionKml)[DiverMsg::kmlx];
+	for (int i=0; i<len; i+=2)
+	{
+		llEncoder.convert(msg->data[i],msg->data[i+1], kmlbits);
+		kmlBuffer.push(std::make_pair(llEncoder.lat,llEncoder.lon));
+	}
+}
+
+void USBLManager::publishDiverOrigin()
+{
+	geometry_msgs::PointPtr msg(new geometry_msgs::Point());
+	msg->x = diverOriginLat;
+	msg->y = diverOriginLon;
+	diverOrigin.publish(msg);
 }

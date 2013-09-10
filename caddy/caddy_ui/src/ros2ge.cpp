@@ -37,20 +37,31 @@
 #include <labust/gearth/CaddyKML.hpp>
 
 #include <auv_msgs/NavSts.h>
+#include <geometry_msgs/Point.h>
 #include <ros/ros.h>
-
 
 ///\todo Edit the class loading to be loaded from the rosparam server.
 int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"caddy_ge");
-	ros::NodeHandle nh;
+	ros::NodeHandle nh,ph("~");
 
 	labust::gearth::CaddyKML kml;
 	ros::Subscriber platform = nh.subscribe<auv_msgs::NavSts>("platform",
 			1, &labust::gearth::CaddyKML::addShipPosition, &kml);
 	ros::Subscriber diver = nh.subscribe<auv_msgs::NavSts>("diver",
 			1, &labust::gearth::CaddyKML::addVehiclePosition, &kml);
+	ros::Subscriber diver_origin = nh.subscribe<geometry_msgs::Point>("diver_origin",
+			1, &labust::gearth::CaddyKML::setDiverOrigin, &kml);
+
+	double freq(2);
+	ph.param("rate",freq,freq);
+	ros::Rate rate(freq);
+	while (ros::ok())
+	{
+		ros::spinOnce();
+		rate.sleep();
+	}
 
 	ros::spin();
 	return 0;
