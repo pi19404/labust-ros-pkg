@@ -4,7 +4,7 @@ project(caddy_ui)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy auv_msgs labust_base)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy auv_msgs labust_base rqt_gui rqt_gui_py rqt_gui_cpp)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread system)
@@ -12,7 +12,7 @@ find_package(Boost REQUIRED COMPONENTS thread system)
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+catkin_python_setup()
 
 #######################################
 ## Declare ROS messages and services ##
@@ -107,10 +107,10 @@ target_link_libraries(kml_upload
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
+#install(PROGRAMS
+#   src/rqt_caddy/caddy_gui.py
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+#)
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS caddy_ui caddy_ui_node

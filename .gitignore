@@ -28,3 +28,5 @@ checkout
 */*/data/robots/
 downloaded
 CATKIN_IGNORE
+#Python stuff
+*.pyc
