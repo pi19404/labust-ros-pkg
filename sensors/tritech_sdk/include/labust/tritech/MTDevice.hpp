@@ -123,7 +123,7 @@ namespace labust
 			/**
 			 * The header ring buffer.
 			 */
-			std::vector<char> ringBuffer;
+			std::vector<uint8_t> ringBuffer;
 			/**
 			 * Structure serializator.
 			 */

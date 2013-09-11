@@ -54,6 +54,7 @@ void LatLon2Bits::convert(double lat, double lon, int bits)
 	{
 		case 0: break;
 		PP_ADD_CASE(7);
+		PP_ADD_CASE(10);
 		PP_ADD_CASE(14);
 		PP_ADD_CASE(18);
 		PP_ADD_CASE(22);

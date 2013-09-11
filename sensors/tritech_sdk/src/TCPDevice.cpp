@@ -162,7 +162,7 @@ void TCPDevice::onSync(const boost::system::error_code& error, std::size_t bytes
 		input.commit(bytes_transferred);
 		//Put the new byte on the end of the ring buffer
 		if (bytes_transferred == 1)	ringBuffer.push_back(input.sbumpc());
-		else input.sgetn(ringBuffer.data(),bytes_transferred);
+		else input.sgetn(reinterpret_cast<char*>(ringBuffer.data()),bytes_transferred);
 
 		if (ringBuffer[0] == '@' || ringBuffer[0] == '#')
 		{

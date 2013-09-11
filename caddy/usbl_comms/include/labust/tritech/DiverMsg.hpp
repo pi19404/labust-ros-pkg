@@ -43,6 +43,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <iostream>
+#include <bitset>
 
 #include <string>
 #include <map>
@@ -138,7 +139,7 @@ namespace labust
 			DEFINE_MAPPED_MESSAGES(diverMap,
 //										name,		code, (z,lat,lon,def,msg,kmlno,kmlx,kmly,img,emp,chk)
 					(PositionInitAck,	 		0,	(0,	22,	22,	0,	0,	0,		0,		0,	0,	0,	0))
-					(MsgReply,					 	1,	(0,	0,	0,	0, 42,	0,		0,		0,	0,	0,	0))
+					(MsgReply,					 	1,	(0,	0,	0,	0, 42,	0,		0,		0,	0,	2,	0))
 					(ImgReply,					 	2,	(0,	0,	0,	0, 	0,	0,		0,		0, 44,	0,	0))
 					(DefReply,					 	3,	(0,	0,	0,	5, 	0,	0,		0,		0,	0, 39,	0))
 					(MsgDefReply,				 	4,	(0,	0,	0,	5, 36,	0,		0,		0,	0,	3,	0))
@@ -223,7 +224,7 @@ namespace labust
 
 			inline void decode(uint64_t data, int type = -1)
 			{
-				default_topside?decode<AutoTopside>(data,type):decode<AutoDiver>(data,type);
+				default_topside?decode<AutoDiver>(data,type):decode<AutoTopside>(data,type);
 			}
 
 			template <class MsgType>
@@ -235,13 +236,20 @@ namespace labust
 				}
 				uint64_t data;
 				char* ret=reinterpret_cast<char*>(&data);
-				for (int i=0; i<msgByteCount; ++i) ret[i] = msg[1+(msgByteCount-1)-i];
+				std::cout<<"Bytes:";
+				for (int i=0; i<msgByteCount; ++i)
+				{
+				 
+				 ret[i] = msg[1+(msgByteCount-1)-i];
+				 std::cout<<std::bitset<8>(ret[i])<<" ";
+				}				
+				std::cout<<std::endl;
 				decode<MsgType>(data, type);
 			}
 
 			void fromString(const std::string& msg, int type = -1)
 			{
-				default_topside?fromString<AutoTopside>(msg,type):fromString<AutoDiver>(msg,type);
+				default_topside?fromString<AutoDiver>(msg,type):fromString<AutoTopside>(msg,type);
 			}
 
 			static inline uint8_t testType(const std::string& data)

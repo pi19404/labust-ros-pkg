@@ -104,7 +104,7 @@ void MTDevice::onSync(const boost::system::error_code& error, std::size_t bytes_
 		input.commit(bytes_transferred);
 		//Put the new byte on the end of the ring buffer
 		if (bytes_transferred == 1)	ringBuffer.push_back(input.sbumpc());
-		else input.sgetn(ringBuffer.data(),bytes_transferred);
+		else input.sgetn(reinterpret_cast<char*>(ringBuffer.data()),bytes_transferred);
 
 		if (ringBuffer[0] == '@')
 		{
@@ -125,6 +125,8 @@ void MTDevice::onSync(const boost::system::error_code& error, std::size_t bytes_
 			}
 		}
 		std::cerr<<"Out of sync."<<std::endl;
+		//std::cout<<"Text:";
+		//for (int i=0; i<ringBuffer.size(); ++i) {std::cout<<uint32_t(ringBuffer[i])<<",";}
 		//If no size match or sync byte, move by one
 		ringBuffer.erase(ringBuffer.begin());
 		boost::asio::async_read(port,

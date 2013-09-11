@@ -49,6 +49,7 @@ USBLManager::USBLManager():
 					state(initDiver),
 					newMessage(false),
 					validNav(false),
+					kmlEndValidation(std::make_pair(kmlNotSent,-1)),
 					timeout(80),
 					emptyIterations(0)
 {
@@ -135,6 +136,13 @@ void USBLManager::incoming_def_txt()
 		//Publish the default value
 		std_msgs::Int32 mdef;
 		mdef.data = incoming_msg.data[DiverMsg::def];
+
+		if (mdef.data == kmlEndValidation.second)
+		{
+		  NODELET_INFO("Kml validated.");
+		  kmlEndValidation.first = kmlSentAndValid;
+		}
+	
 		diverDefaults.publish(mdef);
 	}
 
@@ -142,9 +150,8 @@ void USBLManager::incoming_def_txt()
 	if (map[DiverMsg::msg])
 	{
 		//Decode
-		static int size = DiverMsg::diverMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
 		std_msgs::String text;
-		text.data = intToMsg(size);
+		text.data = intToMsg(map[DiverMsg::msg]/AsciiInternal::char_size);
 		diverText.publish(text);
 	}
 }
@@ -156,9 +163,17 @@ void USBLManager::incoming_kml()
 		int kmlno = incoming_msg.data[DiverMsg::kmlno];
 		if (kmlno < kmlVec.size())
 		{
+			NODELET_INFO("Received kml idx: %d",kmlno);
 			bool valid = kmlVec[kmlno].first == incoming_msg.data[DiverMsg::kmlx];
 			valid = valid && kmlVec[kmlno].second == incoming_msg.data[DiverMsg::kmly];
-			if (valid) kmlValidIdx[kmlno] = kmlSentAndValid;
+			NODELET_INFO("Kml message sent (%d,%d) and received (%d,%d).", kmlVec[kmlno].first, kmlVec[kmlno].second,
+				incoming_msg.data[DiverMsg::kmlx], incoming_msg.data[DiverMsg::kmly]);
+			
+			if (valid)
+			{
+				kmlValidIdx[kmlno] = kmlSentAndValid;
+			}
+		
 		}
 		else
 		{
@@ -176,10 +191,13 @@ std::string USBLManager::intToMsg(int len)
 {
 	std::string retVal(len,'\0');
 	int64_t msg = incoming_msg.data[DiverMsg::msg];
+	NODELET_INFO("Decoding text message with size: %d",len);
+	std::cout<<"Message:"<<std::bitset<42>(msg)<<std::endl;
 	for (int i=0; i<len; ++i)
 	{
-		retVal[i] = msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits;
-		msg >> AsciiInternal::char_size;
+		retVal[i] = AsciiInternal::int2Ascii(msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits);
+		std::cout<<"Char:"<<std::bitset<6>(msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits)<<std::endl;
+		msg >>= AsciiInternal::char_size;
 	}
 
 	return retVal;
@@ -245,8 +263,8 @@ void USBLManager::send_msg()
 	else
 	{
 		//Send position only.
-		outgoing_msg.latitude += 0.001;
-		outgoing_msg.longitude += 0.001;
+		//outgoing_msg.latitude += 0.001;
+		//outgoing_msg.longitude += 0.001;
 		NODELET_INFO("Send position only: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
 		outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 	}
@@ -257,6 +275,7 @@ void USBLManager::send_msg()
 	changeState(waitForReply);
 }
 
+///\todo Simplify this message logic when we have time, it can be rewritten in a nicer shape using and automaton.
 void USBLManager::kml_send()
 {
 	//If none are scheduled for sending
@@ -267,15 +286,24 @@ void USBLManager::kml_send()
 		NODELET_INFO("KML send size is %d.",kml_send_size);
 		while (!kmlBuffer.empty() && i<kml_send_size)
 		{
+			++i;
 			kmlVec.push_back(kmlBuffer.front());
 			kmlValidIdx.push_back(0);
 			kmlBuffer.pop();
 		}
+		kmlEndValidation.first = kmlNotSent;
 	}
 
 	//Find first non sent point, increment idx in for declaration
 	int idx=0;
-	for(int i=0; i<kmlValidIdx.size(); ++i, ++idx) if (kmlValidIdx[i] == kmlNotSent) break;
+	for(int i=0; i<kmlValidIdx.size(); ++i, ++idx)
+	{
+		if (kmlValidIdx[i] == kmlNotSent)
+		{
+			kmlValidIdx[idx] = kmlSent;
+		 	break;
+		}
+	}
 
 	//If all sent try to find a non-validated
 	if (idx == kmlValidIdx.size())
@@ -286,13 +314,38 @@ void USBLManager::kml_send()
 		//If all validated
 		if (idx == kmlValidIdx.size())
 		{
-			//Clear vector
-			kmlVec.clear();
-			kmlValidIdx.clear();
-			//Send KML end default message
-			outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
-			outgoing_msg.data[DiverMsg::def] = kmlBuffer.empty()?DiverMsg::endOfKML:
+			if (kmlEndValidation.first == kmlNotSent || kmlEndValidation.first == kmlWaitValidation)
+			{
+				//Send KML end default message
+				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
+				outgoing_msg.data[DiverMsg::def] = kmlBuffer.empty()?DiverMsg::endOfKML:
 					DiverMsg::nextKMLSet;
+				kmlEndValidation.first = kmlSent;
+				kmlEndValidation.second = outgoing_msg.data[DiverMsg::def];
+				NODELET_INFO("Send end kml.");
+			}
+			else if (kmlEndValidation.first == kmlSent)
+			{
+				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+				kmlEndValidation.first = kmlWaitValidation;
+				NODELET_INFO("Send position only.");
+			}
+			else if (kmlEndValidation.first == kmlSentAndValid)
+			{
+				//Clear vector
+				kmlVec.clear();
+				kmlValidIdx.clear();
+				//recurse 
+				if (kmlEndValidation.second == DiverMsg::nextKMLSet) 
+				{
+					kml_send();
+				}
+				else
+				{
+					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+				}
+				NODELET_INFO("Validated default and send position only.");
+			}
 			return;
 		}
 		else
@@ -312,6 +365,7 @@ void USBLManager::kml_send()
 					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 					//Send a position message
 					kmlValidIdx[idx] = kmlWaitValidation;
+					NODELET_INFO("Send position only while waiting for last validation.");
 					return;
 				}
 				//but if we sent a position message and no validation occured resend the last kml
@@ -319,6 +373,23 @@ void USBLManager::kml_send()
 				{
 					//Resend the last unvalidated kml
 					kmlValidIdx[idx] = kmlSent;
+				}
+			}
+			else
+			{
+				for(int i=0; i<kmlValidIdx.size(); ++i)
+				{ 
+				  if (kmlValidIdx[i] == kmlSent) kmlValidIdx[i] = kmlNotSent;
+				}
+	
+				idx = 0;
+				for(int i=0; i<kmlValidIdx.size(); ++i, ++idx)
+				{			
+					if (kmlValidIdx[i] == kmlNotSent)
+					{
+						kmlValidIdx[idx] = kmlSent;
+		 				break;
+					}
 				}
 			}
 		}
@@ -329,6 +400,7 @@ void USBLManager::kml_send()
 	outgoing_msg.data[DiverMsg::kmlno] = idx;
 	outgoing_msg.data[DiverMsg::kmlx] = kmlVec[idx].first;
 	outgoing_msg.data[DiverMsg::kmly] = kmlVec[idx].second;
+	NODELET_INFO("Sent kml idx: %d, (%d,%d)",idx, outgoing_msg.data[DiverMsg::kmlx], outgoing_msg.data[DiverMsg::kmly]);
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
@@ -339,6 +411,8 @@ void USBLManager::run()
 	ros::NodeHandle ph("~");
 	ph.param("rate",freq,10.0);
 	ros::Rate rate(freq);
+	//8 sec. 
+	timeout = 8*freq;
 	std_msgs::String package;
 
 	while (ros::ok())
@@ -391,6 +465,7 @@ void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 		incoming_msg.fromString(msg->data);
 		incoming_package = *msg;
 		int msg_type = incoming_msg.data[DiverMsg::type];
+		NODELET_INFO("Disptach message: %d",msg_type);
 		if (dispatch.find(msg_type) != dispatch.end())
 		{
 			dispatch[msg_type]();

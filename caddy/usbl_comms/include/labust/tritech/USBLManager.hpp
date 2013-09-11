@@ -266,6 +266,11 @@ namespace labust
 			 */
 			std::vector<int> kmlValidIdx;
 			/**
+			 * The default and next kml message validation.
+			 * The pair is <validation_flag, expected message>.
+			 */
+			std::pair<int, int> kmlEndValidation; 
+			/**
 			 * Flag for the turnaround message.
 			 */
 			bool newMessage;

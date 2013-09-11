@@ -52,7 +52,8 @@ class USBLSim
 public:
 	USBLSim():
 		usblBusy(false),
-		useDevice(false)
+		useDevice(false),
+		sent(false)
 	{
 		ros::NodeHandle nh,ph("~");
 		std::string port("/dev/rfcomm0");
@@ -87,11 +88,14 @@ public:
 		boost::archive::binary_iarchive dataSer(*tmsg->data, boost::archive::no_header);
 		MMCMsg modem_data;
 		dataSer>>modem_data;
+		//std::cout<<"Modem data:";
+		//for(int i=0; i<modem_data.data.size(); ++i) std::cout<<int(modem_data.data[i])<<",";
+		//std::cout<<std::endl;
 		//std_msgs::String::Ptr modem(new std_msgs::String());
 		//modem->data.assign(modem_data.data.begin(), modem_data.data.end());
-		dataPub.publish(last_reply);
 		//Buffer one message like the acoustic modem does
 		last_reply.data.assign(modem_data.data.begin(), modem_data.data.end());
+		sent = false;
 		ROS_INFO("Received data message.");
 	}
 
@@ -124,6 +128,11 @@ public:
 
 		//boost::mutex::scoped_lock lock(pingLock);
 		//while (usblBusy) usblCondition.wait(lock);
+		if (true)
+		{
+			dataPub.publish(last_reply);
+			sent = true;
+		}
 	}
 
 	ros::Subscriber dataSub;
@@ -133,6 +142,7 @@ public:
 	boost::condition_variable usblCondition;
 	bool usblBusy, useDevice;
 	std_msgs::String last_reply;
+	bool sent;
 };
 
 int main(int argc, char* argv[])

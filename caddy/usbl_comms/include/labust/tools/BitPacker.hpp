@@ -39,6 +39,8 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <bitset>
+#include <iostream>
 
 namespace labust
 {
@@ -78,8 +80,9 @@ namespace labust
 				data.resize(bitmap.size());
 				for (int i=bitmap.size()-1; i>=0; --i)
 				{
-					DataType bitmask = (1 << bitmap[i]) -1;
+					DataType bitmask = DataType(DataType(1) << bitmap[i]) -1;
 					data[i]=(msg & bitmask);
+					std::cout<<"Unpacking message:"<<std::bitset<48>(msg)<<" with bitmap: "<<std::bitset<sizeof(DataType)*8>(bitmask)<<std::endl;
 					msg >>= bitmap[i];
 				}
 			};

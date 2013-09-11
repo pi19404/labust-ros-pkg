@@ -58,10 +58,10 @@ namespace labust
 		{
 			enum {default_size=4};
 
-			static inline size_t length(char* data, std::size_t len = default_size)
+			static inline size_t length(uint8_t* data, std::size_t len = default_size)
 			{
 				size_t retVal;
-				std::stringstream in(std::string(data,4));
+				std::stringstream in(std::string(reinterpret_cast<char*>(data),4));
 				in>>std::hex>>retVal;
 				return retVal;
 			}
