@@ -115,7 +115,7 @@ namespace labust
 			/**
 			 * The communication states.
 			 */
-			enum {idle=0,initDiver,waitForReply,transmission};
+			enum {idle=0,initDiver,waitForReply,transmission, lastStateNum};
 			enum {kmlNotSent=0, kmlSent, kmlWaitValidation, kmlSentAndValid};
 		public:
 			/**
@@ -166,6 +166,10 @@ namespace labust
 			 * Handles the incoming KML messages.
 			 */
 			void onIncomingKML(const std_msgs::Float64MultiArray::ConstPtr msg);
+			/**
+			 * Handles the incoming default messages.
+			 */
+			void onIncomingForceState(const std_msgs::Int32::ConstPtr msg);
 
 			/**
 			 * The main runner thread.
@@ -215,12 +219,12 @@ namespace labust
 			 * The navigation and incoming data publisher.
 			 */
 			ros::Publisher outgoing, auto_mode, diverText,
-			diverDefaults, retKml, diverOrigin;
+			diverDefaults, retKml, diverOrigin, outCurState;
 			/**
 			 * The navigation data subscription.
 			 */
 			ros::Subscriber navData, incoming, intext,
-			timeoutNotification, inDefaults, inKml;
+			timeoutNotification, inDefaults, inKml, forceState;
 			/**
 			 * The message encoder.
 			 */

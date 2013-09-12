@@ -28,9 +28,9 @@ class CaddyGui():
         else:
             chatHistory = self._widget.diverChatHistory;
             
-        chatHistory.insertHtml("<b>"+source+": </b>")
-        chatHistory.insertHtml(text)
-        chatHistory.insertPlainText("\n")
+        #chatHistory.insertHtml("<b>"+source+": </b>")
+        chatHistory.insertPlainText(text)
+        #chatHistory.insertPlainText("\n")
         
     def newDefaultMessage(self, idx):
         self._widget.defaultReceivedLabel.setText(self.defaultMsgs[idx])
@@ -41,7 +41,9 @@ class CaddyGui():
                             2:"Yes",
                             3:"No",
                             4:"Repeat again",
-                            5:"Diving out"};              
+                            5:"Diving out",
+                            6:"Next kml set",
+                            7:"End kml"};              
         
     def _setup_gui(self):
         #Fill default combo box
@@ -56,17 +58,18 @@ class CaddyGui():
         self._widget.sendDefault.clicked.connect(self._onSendDefault)
         self._widget.loadKml.clicked.connect(self._onLoadKml)
         self._widget.sendKml.clicked.connect(self._onSendKml)
+        self._widget.initDiverButton.clicked.connect(self._onInitDiver)
     
     def _newTopsideMessage(self):
-        self.newChatMessage(text = self._widget.chatInput.text())
-        self._exthook.sendText(self._widget.chatInput.text());
-                #clear input   
+        text = (self._widget.chatInput.text() + "\n");
+        self.newChatMessage(text)
+        self._exthook.sendText(text);
+        #clear input   
         self._widget.chatInput.setText("");
         
     def _onSendDefault(self):
         print "Send default message with idx: " + str(self._widget.defaultComboBox.currentIndex());
         self._exthook.sendDefault(self._widget.defaultComboBox.currentIndex());
-        #Add connection to ROS
         
     def _onLoadKml(self):
         self._widget.kmlFilePath.setText(QtGui.QFileDialog.getOpenFileName(self._widget, "Get KML file",".","Google KML (*.kml)")[0]);
@@ -75,6 +78,10 @@ class CaddyGui():
         #Add connection to ROS
         print "send: " + self._widget.kmlFilePath.text()
         self._exthook.sendKml(self._widget.kmlFilePath.text())
+        
+    def _onInitDiver(self):
+        #Add ROS connection here
+        pass
         
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)

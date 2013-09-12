@@ -107,10 +107,12 @@ void CaddyKML::addOpRegionToDocument(kmldom::DocumentPtr document)
   	coords->add_vec3(opRegion->get_coordinates_array_at(i));
 
   ring->set_coordinates(coords);
+  ring->set_tessellate(false);
   kmldom::OuterBoundaryIsPtr boundary(factory->CreateOuterBoundaryIs());
   boundary->set_linearring(ring);
   kmldom::PolygonPtr poly(factory->CreatePolygon());
   poly->set_outerboundaryis(boundary);
+  poly->set_tessellate(false);
 
   //Create the polygon
   kmldom::PolyStylePtr poly_style(factory->CreatePolyStyle());
@@ -140,10 +142,7 @@ void CaddyKML::setDiverOrigin(const geometry_msgs::Point::ConstPtr& point)
 		opRegion.reset(factory->CreateCoordinates());
 		for(double i=0; i<2*M_PI; i+=0.1)
 		{
-			std::pair<double, double> latlon=
-					labust::tools::meter2deg(kml_radius*cos(i),
-							kml_radius*sin(i),
-							diverOrigin.get_latitude());
+			std::pair<double, double > latlon=std::make_pair(0.008*cos(i),0.008*sin(i));
 			opRegion->add_latlng(point->x + latlon.first,
 					point->y + latlon.second);
 		}

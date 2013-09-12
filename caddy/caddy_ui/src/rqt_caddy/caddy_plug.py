@@ -18,7 +18,7 @@ class CaddyGuiROS():
         self._gui.bindHook(self)
         #Define event     
         self.diverText = rospy.Subscriber("diver_text",String,self._onDiverText);
-        self.defaultMsgs = rospy.Subscriber("diver_defaults",String,self._onDiverText);
+        self.defaultMsgs = rospy.Subscriber("diver_defaults",Int32,self._onDiverDefaults);
         
         self.outText = rospy.Publisher("usbl_text", String);
         self.outDefaults = rospy.Publisher("usbl_defaults",Int32);
@@ -42,6 +42,9 @@ class CaddyGuiROS():
        
     def _onDiverText(self,data):
         self._gui.newChatMessage(data.data, "Diver");
+            
+    def _onDiverDefaults(self,data):
+        self._gui.newDefaultMessage(data.data);
         
     def unload(self):
         self.diverText.unregister();
