@@ -34,7 +34,8 @@
  *  Author : Dula Nad
  *  Created: 23.01.2013.
  *********************************************************************/
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/conversions.hpp>
+#include <labust/tools/MatrixLoader.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <cart2/ImuInfo.h>
 

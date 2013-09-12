@@ -1,0 +1,6 @@
+<launch>
+ 	<node pkg="usbl" type="usbl_sim" name="usbl_sim">
+      <param name="use_device" value="true" />
+      <param name="port" value="/dev/rfcomm0" />
+    </node>
+</launch>

@@ -1,0 +1,24 @@
+<launch>
+	<node pkg="labust_sim" type="uvsim" 
+	    name="$(optenv SIM_NODE_NAME uvsim)" 
+		if="$(optenv IS_SIM true)">
+		
+		<!-- Enable noise -->
+		<param name="use_noise" value="true" if="$(optenv SIM_NOISE false)" />
+		
+		
+		<!-- This will also adjust the model sampling time
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<remap from="tauIn" to="tauOut" />
+		<remap from="meas" to="meas_sim" />
+		<param name="maxThrust" value="1" />
+		<param name="minThrust" value="-1" />
+		<param name="publish_world" value="false" />
+
+		<remap from="imu_model" to="imu" />
+		<remap from="fix" to="gps" />
+		<remap from="tauAch" to="tauAchSim" />
+		<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" /> -->
+	</node>
+</launch>

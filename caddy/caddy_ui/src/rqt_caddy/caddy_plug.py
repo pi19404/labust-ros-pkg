@@ -44,8 +44,11 @@ class CaddyGuiROS():
         self._gui.newChatMessage(data.data, "Diver");
         
     def unload(self):
-        rospy.diverText.unregister();
-
+        self.diverText.unregister();
+        self.defaultMsgs.unregister();
+        self.outText.unregister();
+        self.outDefaults.unregister();
+        self.outKml.unregister();
 
 class CaddyGuiPlug(Plugin):
 

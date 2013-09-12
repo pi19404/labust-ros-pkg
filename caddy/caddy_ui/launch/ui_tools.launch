@@ -1,0 +1,22 @@
+<launch>
+	<group ns="uitools">
+		<node pkg="caddy_ui" type="ros2ge" name="ros2ge">
+			<remap from="platform" to="/pladypos/stateHat" />
+			<remap from="diver" to="/pladypos/usbl/usblFiltered" />
+			<remap from="diver_origin" to="/pladypos/usbl/diver_origin />
+		</node>
+		<node pkg="caddy_ui" type="kml_upload" name="kml_upload" >
+			<remap from="kml_array" to="/pladypos/usbl/kml_array" />
+		</node>
+		<node pkg="rqt_gui" type="rqt_gui" name="caddy_gui">
+			<remap from="diver_text" to="/pladypos/usbl/diver_text" />
+			<remap from="diver_defaults" to="/pladypos/usbl/diver_defaults" />
+			
+			<remap from="usbl_text" to="/pladypos/usbl/usbl_text" />
+			<remap from="usbl_defaults" to="/pladypos/usbl/usbl_defaults" />
+			
+			<remap from="usbl_force_state" to="/pladypos/usbl/force_state" />
+			<remap from="usbl_current_state" to="/pladypos/usbl/current_state" />
+		</node>
+	</group>
+</launch>

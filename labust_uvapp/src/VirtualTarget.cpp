@@ -35,7 +35,7 @@
  *  Created: 03.05.2013.
  *********************************************************************/
 #include <labust/control/VirtualTarget.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/MatrixLoader.hpp>
 
 #include <auv_msgs/BodyVelocityReq.h>
 #include <kdl/frames.hpp>

@@ -36,7 +36,8 @@
  *********************************************************************/
 #include <labust/control/TopsideRadio.hpp>
 #include <labust/tools/GeoUtilities.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/conversions.hpp>
+#include <labust/tools/MatrixLoader.hpp>
 #include <cart2/SetHLMode.h>
 #include <cart2/HLMessage.h>
 #include <cmath>
