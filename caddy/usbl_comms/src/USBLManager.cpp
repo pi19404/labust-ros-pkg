@@ -41,6 +41,8 @@
 
 #include <geometry_msgs/Point.h>
 
+#include <algorithm>
+
 PLUGINLIB_DECLARE_CLASS(usbl,USBLManager,labust::tritech::USBLManager, nodelet::Nodelet)
 
 using namespace labust::tritech;
@@ -72,12 +74,14 @@ void USBLManager::onInit()
 	inDefaults = nh.subscribe<std_msgs::Int32>("usbl_defaults",	1, boost::bind(&USBLManager::onIncomingDefaults,this,_1));
 	inKml = nh.subscribe<std_msgs::Float64MultiArray>("kml_array",	1, boost::bind(&USBLManager::onIncomingKML,this,_1));
 	timeoutNotification = nh.subscribe<std_msgs::Bool>("usbl_timeout",	1, boost::bind(&USBLManager::onUSBLTimeout,this,_1));
+	forceState = nh.subscribe<std_msgs::Int32>("usbl_force_state",	1, boost::bind(&USBLManager::onIncomingForceState,this,_1));
 
 	outgoing = nh.advertise<std_msgs::String>("outgoing_data",1);
 	diverText = nh.advertise<std_msgs::String>("diver_text",1);
 	diverDefaults = nh.advertise<std_msgs::Int32>("diver_defaults",1);
 	auto_mode = nh.advertise<std_msgs::Bool>("auto_mode",1);
 	diverOrigin = nh.advertise<geometry_msgs::Point>("diver_origin",1);
+	outCurState = nh.advertise<std_msgs::Int32>("usbl_current_state",1);
 
 	worker = boost::thread(boost::bind(&USBLManager::run,this));
 }
@@ -199,7 +203,7 @@ std::string USBLManager::intToMsg(int len)
 		std::cout<<"Char:"<<std::bitset<6>(msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits)<<std::endl;
 		msg >>= AsciiInternal::char_size;
 	}
-
+	std::reverse(retVal.begin(), retVal.end());
 	return retVal;
 }
 
@@ -441,6 +445,9 @@ void USBLManager::run()
 
 		//Reset the turn-around flag
 		newMessage = false;
+		std_msgs::Int32Ptr curstate(new std_msgs::Int32());
+		curstate->data = state;
+		outCurState.publish(curstate);
 
 		rate.sleep();
 		ros::spinOnce();
@@ -522,6 +529,19 @@ void USBLManager::onIncomingDefaults(const std_msgs::Int32::ConstPtr msg)
 	defaultMsgs.push(msg->data);
 }
 
+void USBLManager::onIncomingForceState(const std_msgs::Int32::ConstPtr msg)
+{
+	//Do some checking on the default messages
+	if (msg->data < lastStateNum)
+	{
+		this->state = msg->data;
+	}
+	else
+	{
+		ROS_ERROR("Unknown state %d",msg->data);
+	}
+}
+
 void USBLManager::onIncomingKML(const std_msgs::Float64MultiArray::ConstPtr msg)
 {
 	int len = msg->data.size();
@@ -547,3 +567,4 @@ void USBLManager::publishDiverOrigin()
 	msg->y = diverOriginLon;
 	diverOrigin.publish(msg);
 }
+
