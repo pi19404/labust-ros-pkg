@@ -10,19 +10,33 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from caddy_gui import CaddyGui
 from std_msgs.msg import String, Int32
+from geometry_msgs.msg import Point
 
 class CaddyGuiROS():
     
     def __init__(self, gui):
         self._gui = gui;
         self._gui.bindHook(self)
-        #Define event     
-        self.diverText = rospy.Subscriber("diver_text",String,self._onDiverText);
-        self.defaultMsgs = rospy.Subscriber("diver_defaults",Int32,self._onDiverDefaults);
         
+    def setup(self):
+        #Define event     
+        self.diverText = rospy.Subscriber("diver_text",String,
+                            lambda data: 
+                                self._gui.newChatMessage(data.data, "Diver"));
+        self.defaultMsgs = rospy.Subscriber("diver_defaults",Int32,
+                            lambda data:
+                                self._gui.newDefaultMessage(data.data)); 
+        self.diverOrigin = rospy.Subscriber("diver_origin",Point,
+                            lambda data: 
+                                 self._gui.newOriginPosition(data));
+        self.managerState = rospy.Subscriber("usbl_current_state",Int32,
+                            lambda data:
+                                self._gui.newManagerState(data.data));
+            
         self.outText = rospy.Publisher("usbl_text", String);
         self.outDefaults = rospy.Publisher("usbl_defaults",Int32);
         self.outKml = rospy.Publisher("kml_file",String);
+        self.outMode = rospy.Publisher("usbl_force_state",Int32);
         
     def sendText(self, text):
         data = String();
@@ -39,19 +53,20 @@ class CaddyGuiROS():
         data.data = path;
         self.outKml.publish(data);
         
-       
-    def _onDiverText(self,data):
-        self._gui.newChatMessage(data.data, "Diver");
-            
-    def _onDiverDefaults(self,data):
-        self._gui.newDefaultMessage(data.data);
-        
+    def setManagerState(self, state):
+        data = Int32();
+        data.data = state;
+        self.outMode.publish(data);
+              
     def unload(self):
         self.diverText.unregister();
         self.defaultMsgs.unregister();
+        self.managerState.unregister();
+        self.diverOrigin.unregister();       
         self.outText.unregister();
         self.outDefaults.unregister();
         self.outKml.unregister();
+        self.outMode.unregister();
 
 class CaddyGuiPlug(Plugin):
 
@@ -83,6 +98,7 @@ class CaddyGuiPlug(Plugin):
         # Give QObjects reasonable names
         self._gui._widget.setObjectName('CaddyGui')
         self._gui.setup()
+        self._ros.setup()
         
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
@@ -96,6 +112,7 @@ class CaddyGuiPlug(Plugin):
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
+        self._gui.unload();
         self._ros.unload()
         pass
 

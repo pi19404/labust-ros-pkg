@@ -36,6 +36,7 @@
  *********************************************************************/
 #include <labust/ros/SimCore.hpp>
 #include <labust/tools/DynamicsLoader.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <sstream>
 
@@ -78,7 +79,11 @@ void labust::simulation::configureModel(const ros::NodeHandle& nh, RBModel& mode
 SimCore::SimCore():
 		tau(vector::Zero()),
 		rate(10),
-		wrap(1)
+		wrap(1),
+		enablePublishWorld(true),
+		enablePublishSimBaseLink(true),
+		originLat(0),
+		originLon(0)
 {
 	this->onInit();
 }
@@ -102,14 +107,15 @@ void SimCore::onInit()
 
 	odom = nh.advertise<nav_msgs::Odometry>("meas_odom",1);
 	odomn = nh.advertise<nav_msgs::Odometry>("meas_odom_noisy",1);
-    tauAchWrench = nh.advertise<geometry_msgs::WrenchStamped>("tauAchWrench",1);
+  tauAchWrench = nh.advertise<geometry_msgs::WrenchStamped>("tauAchWrench",1);
 
 	double fs(10);
 	ph.param("Rate",fs,fs);
 	ph.param("ModelWrap",wrap,wrap);
 	model.dT = 1/(fs*wrap);
 	rate = ros::Rate(fs);
-
+	ph.param("publish_world",enablePublishWorld, enablePublishWorld);
+	ph.param("publish_sim_base",enablePublishSimBaseLink, enablePublishSimBaseLink);
 	runner = boost::thread(boost::bind(&SimCore::start, this));
 }
 
@@ -184,6 +190,34 @@ void SimCore::etaNuToOdom(const vector& eta, const vector& nu, nav_msgs::Odometr
 	labust::tools::vectorToPoint(nu,state.twist.twist.angular,3);
 }
 
+void SimCore::publishWorld()
+{
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+	transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+	transform.setOrigin(tf::Vector3(0, 0, 0));
+	Eigen::Quaternion<float> q;
+	labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
+	transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
+}
+
+void SimCore::publishSimBaseLink()
+{
+	const vector& eta = model.Eta();
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(eta(RBModel::x),
+			eta(RBModel::y),
+			eta(RBModel::z)));
+	Eigen::Quaternion<double> q;
+	labust::tools::quaternionFromEulerZYX(eta(RBModel::phi),
+			eta(RBModel::theta),
+			eta(RBModel::psi), q);
+	transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
+}
+
 void SimCore::start()
 {
 	SimSensorInterface::Hook hook(model,broadcast,listener);
@@ -208,61 +242,14 @@ void SimCore::start()
 		//Publish states
 		publishNavSts();
 		publishOdom();
+		//Publish transforms
+		if (enablePublishWorld) publishWorld();
+		if (enablePublishSimBaseLink) publishSimBaseLink();
 
 		model_lock.unlock();
 		rate.sleep();
 	}
 		/*while (ros::ok())
-			{
-
-				using namespace labust::simulation;
-				Eigen::Vector3f tauXYN,tauXYNsc;
-				tauXYN<<tau(RBModel::X),tau(RBModel::Y),tau(RBModel::N);
-				double scale = allocator.scale(tauXYN,&tauXYNsc);
-
-		//		tau(RBModel::X) = labust::math::coerce(tau(RBModel::X), minThrust, maxThrust);
-		//		tau(RBModel::N) = labust::math::coerce(tau(RBModel::N), minThrust, maxThrust);
-		//
-		//		//Differential allocation
-		//		double t1 = (tau(RBModel::X) + tau(RBModel::N))/2;
-		//		double t2 = (tau(RBModel::X) - tau(RBModel::N))/2;
-		//
-		//		t1 = labust::math::coerce(t1, minThrust, maxThrust);
-		//		t2 = labust::math::coerce(t2, minThrust, maxThrust);
-
-				auv_msgs::BodyForceReq t;
-				//tau(RBModel::X) = t.wrench.force.x = t1+t2;
-				tau(RBModel::X) = t.wrench.force.x = tauXYNsc(0);
-				tau(RBModel::Y) = t.wrench.force.y = tauXYNsc(1);
-				t.wrench.force.z = tau(RBModel::Z);
-				t.wrench.torque.x = tau(RBModel::K);
-				t.wrench.torque.y = tau(RBModel::M);
-				tau(RBModel::N) = t.wrench.torque.z = tauXYNsc(2);
-				//tau(RBModel::N) = t.wrench.torque.z = t1-t2;
-				t.header.stamp = ros::Time::now();
-
-				//t.disable_axis.x = tau(RBModel::X) != tauXYN(0);
-				//t.disable_axis.yaw = tau(RBModel::N) != tauXYN(2);
-
-				//scale = 1;
-
-				//Publish the scaled values if scaling occured
-				if (scale>1)
-				{
-					//Signal windup occured
-					t.disable_axis.x = t.disable_axis.y = t.disable_axis.yaw = 1;
-				}
-
-				tauAch.publish(t);
-
-				model.setCurrent(current);
-				//Perform simulation with smaller sampling type if wrap>1
-				for (size_t i=0; i<wrap;++i) model.step(tau);
-
-				//uwsim.publish(*mapToUWSimOdometry(model.Eta(),model.Nu(),&odom, lisWorld));
-				state.publish(*mapToNavSts(model.Eta(),model.Nu(),&nav));
-				stateNoisy.publish(*mapToNavSts(model.EtaNoisy(),model.NuNoisy(),&navNoisy));
-
 				const vector& Nu = (useNoisy?model.NuNoisy():model.Nu());
 				const vector& Eta = (useNoisy?model.EtaNoisy():model.Eta());
 				if ((ros::Time::now()-lastGps).sec >= gpsTime)
@@ -281,40 +268,7 @@ void SimCore::start()
 				depth.header.frame_id = "local";
 				pressureMeas.publish(depth);
 
-				tf::Transform transform;
-				transform.setOrigin(tf::Vector3(originLon, originLat, 0));
-				transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-				Eigen::Quaternion<float> q;
-				labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
-				if (publishWorld)
-				{
-					localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
-					transform.setOrigin(tf::Vector3(0, 0, 0));
-					transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-					localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
-				}
 
-				tf::Transform transform3;
-				transform3.setOrigin(tf::Vector3(0, 0, 0));
-				q = q.conjugate();
-				transform3.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-				localFrame.sendTransform(tf::StampedTransform(transform3, ros::Time::now(), "local", "uwsim_frame"));
-
-				const vector& eta = model.Eta();
-				//tf::Transform transform;
-				transform.setOrigin(tf::Vector3(eta(RBModel::x),
-						eta(RBModel::y),
-						eta(RBModel::z)));
-				labust::tools::quaternionFromEulerZYX(eta(RBModel::phi),
-						eta(RBModel::theta),
-						eta(RBModel::psi), q);
-				transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-				localFrame.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
-
-				tf::Transform transform2;
-				transform2.setOrigin(tf::Vector3(0, 0, -0.25));
-				transform2.setRotation(tf::createQuaternionFromRPY(0,0,0));
-				localFrame.sendTransform(tf::StampedTransform(transform2, ros::Time::now(), "base_link", "gps_frame"));
 
 				ros::spinOnce();
 	}

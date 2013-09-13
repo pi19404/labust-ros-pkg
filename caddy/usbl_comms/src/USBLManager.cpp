@@ -120,7 +120,7 @@ void USBLManager::init_diver()
 		}
 		else
 		{
-			NODELET_INFO("Diver initialization failed. Sent (%d, %d) and received (%lld, %lld)",
+			NODELET_ERROR("Diver initialization failed. Sent (%d, %d) and received (%lld, %lld)",
 					sentLat, sentLon, incoming_msg.data[DiverMsg::lat], incoming_msg.data[DiverMsg::lon]);
 			//Republish the last message due
 			//We need this due to one message lag in the communication
@@ -143,7 +143,7 @@ void USBLManager::incoming_def_txt()
 
 		if (mdef.data == kmlEndValidation.second)
 		{
-		  NODELET_INFO("Kml validated.");
+		  NODELET_DEBUG("Kml validated.");
 		  kmlEndValidation.first = kmlSentAndValid;
 		}
 	
@@ -167,10 +167,10 @@ void USBLManager::incoming_kml()
 		int kmlno = incoming_msg.data[DiverMsg::kmlno];
 		if (kmlno < kmlVec.size())
 		{
-			NODELET_INFO("Received kml idx: %d",kmlno);
+			NODELET_DEBUG("Received kml idx: %d",kmlno);
 			bool valid = kmlVec[kmlno].first == incoming_msg.data[DiverMsg::kmlx];
 			valid = valid && kmlVec[kmlno].second == incoming_msg.data[DiverMsg::kmly];
-			NODELET_INFO("Kml message sent (%d,%d) and received (%d,%d).", kmlVec[kmlno].first, kmlVec[kmlno].second,
+			NODELET_DEBUG("Kml message sent (%d,%d) and received (%lld,%lld).", kmlVec[kmlno].first, kmlVec[kmlno].second,
 				incoming_msg.data[DiverMsg::kmlx], incoming_msg.data[DiverMsg::kmly]);
 			
 			if (valid)
@@ -187,7 +187,7 @@ void USBLManager::incoming_kml()
 	}
 	else
 	{
-		NODELET_INFO("Kml vector is empty. Received new KML point from diver.");
+		NODELET_INFO("Received new KML point from diver.");
 	}
 }
 
@@ -195,12 +195,11 @@ std::string USBLManager::intToMsg(int len)
 {
 	std::string retVal(len,'\0');
 	int64_t msg = incoming_msg.data[DiverMsg::msg];
-	NODELET_INFO("Decoding text message with size: %d",len);
-	std::cout<<"Message:"<<std::bitset<42>(msg)<<std::endl;
+	//NODELET_DEBUG("Decoding text message with size: %d",len);
+	//std::cout<<"Message:"<<std::bitset<42>(msg)<<std::endl;
 	for (int i=0; i<len; ++i)
 	{
 		retVal[i] = AsciiInternal::int2Ascii(msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits);
-		std::cout<<"Char:"<<std::bitset<6>(msg & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits)<<std::endl;
 		msg >>= AsciiInternal::char_size;
 	}
 	std::reverse(retVal.begin(), retVal.end());
@@ -209,7 +208,6 @@ std::string USBLManager::intToMsg(int len)
 
 int USBLManager::msgToInt(int len)
 {
-	NODELET_INFO("Encode message.");
 	int retVal(0);
 	//Fill with zero chars if needed.
 	while (textBuffer.size() < len) textBuffer.push(AsciiInternal::zero_char);
@@ -217,7 +215,7 @@ int USBLManager::msgToInt(int len)
 	for (int i=0; i<len; ++i)
 	{
 		retVal |= textBuffer.front() & boost::low_bits_mask_t<AsciiInternal::char_size>::sig_bits;
-		NODELET_INFO("Message encoding: %c to %d",textBuffer.front(), retVal);
+		//NODELET_DEBUG("Message encoding: %c to %d",textBuffer.front(), retVal);
 		textBuffer.pop();
 		if (i < len-1) retVal <<= AsciiInternal::char_size;
 	}
@@ -243,6 +241,8 @@ void USBLManager::send_msg()
 				int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsgDef][DiverMsg::msg]/AsciiInternal::char_size;
 				outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
 				outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsgDef;
+				NODELET_INFO("Send PositionMsgDef: %lld, %lld", outgoing_msg.data[DiverMsg::msg],
+						outgoing_msg.data[DiverMsg::def]);
 			}
 			else
 			{
@@ -250,14 +250,15 @@ void USBLManager::send_msg()
 				outgoing_msg.data[DiverMsg::def] = defaultMsgs.front();
 				defaultMsgs.pop();
 				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_14Def;
+				NODELET_INFO("Send Position_14Def: %lld", outgoing_msg.data[DiverMsg::def]);
 			}
 		}
 		else
 		{
-			NODELET_INFO("Send message.", outgoing_msg.latitude, outgoing_msg.longitude);
 			int msglen = DiverMsg::topsideMap[DiverMsg::PositionMsg][DiverMsg::msg]/AsciiInternal::char_size;
 			outgoing_msg.data[DiverMsg::msg] = msgToInt(msglen);
 			outgoing_msg.data[DiverMsg::type] = DiverMsg::PositionMsg;
+			NODELET_INFO("Send PositionMsg: %lld", outgoing_msg.data[DiverMsg::msg]);
 		}
 	}
 	else if (hasKml)
@@ -269,7 +270,7 @@ void USBLManager::send_msg()
 		//Send position only.
 		//outgoing_msg.latitude += 0.001;
 		//outgoing_msg.longitude += 0.001;
-		NODELET_INFO("Send position only: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
+		NODELET_INFO("Send Position_18: lat=%f, long=%f", outgoing_msg.latitude, outgoing_msg.longitude);
 		outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 	}
 
@@ -287,7 +288,7 @@ void USBLManager::kml_send()
 	{
 		int i=0;
 		static int kml_send_size = 1 << DiverMsg::topsideMap.at(DiverMsg::PositionKml)[DiverMsg::kmlno];
-		NODELET_INFO("KML send size is %d.",kml_send_size);
+
 		while (!kmlBuffer.empty() && i<kml_send_size)
 		{
 			++i;
@@ -326,13 +327,12 @@ void USBLManager::kml_send()
 					DiverMsg::nextKMLSet;
 				kmlEndValidation.first = kmlSent;
 				kmlEndValidation.second = outgoing_msg.data[DiverMsg::def];
-				NODELET_INFO("Send end kml.");
+				NODELET_INFO("Sending end kml.");
 			}
 			else if (kmlEndValidation.first == kmlSent)
 			{
 				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 				kmlEndValidation.first = kmlWaitValidation;
-				NODELET_INFO("Send position only.");
 			}
 			else if (kmlEndValidation.first == kmlSentAndValid)
 			{
@@ -348,7 +348,6 @@ void USBLManager::kml_send()
 				{
 					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 				}
-				NODELET_INFO("Validated default and send position only.");
 			}
 			return;
 		}
@@ -369,7 +368,6 @@ void USBLManager::kml_send()
 					outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
 					//Send a position message
 					kmlValidIdx[idx] = kmlWaitValidation;
-					NODELET_INFO("Send position only while waiting for last validation.");
 					return;
 				}
 				//but if we sent a position message and no validation occured resend the last kml
@@ -404,7 +402,9 @@ void USBLManager::kml_send()
 	outgoing_msg.data[DiverMsg::kmlno] = idx;
 	outgoing_msg.data[DiverMsg::kmlx] = kmlVec[idx].first;
 	outgoing_msg.data[DiverMsg::kmly] = kmlVec[idx].second;
-	NODELET_INFO("Sent kml idx: %d, (%d,%d)",idx, outgoing_msg.data[DiverMsg::kmlx], outgoing_msg.data[DiverMsg::kmly]);
+	NODELET_INFO("Sent PositionKml: %d, (%lld,%lld)",idx,
+			outgoing_msg.data[DiverMsg::kmlx],
+			outgoing_msg.data[DiverMsg::kmly]);
 }
 
 ///\todo Switch all automata like this to a boost state chart or something to avoid switch
@@ -432,8 +432,6 @@ void USBLManager::run()
 			break;
 		case transmission:
 			//Send the different messages and navigation data
-			//We publish the origin here to reduce the work load :).
-			publishDiverOrigin();
 			this->send_msg();
 			break;
 		default:
@@ -448,6 +446,7 @@ void USBLManager::run()
 		std_msgs::Int32Ptr curstate(new std_msgs::Int32());
 		curstate->data = state;
 		outCurState.publish(curstate);
+		publishDiverOrigin();
 
 		rate.sleep();
 		ros::spinOnce();
@@ -472,7 +471,7 @@ void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 		incoming_msg.fromString(msg->data);
 		incoming_package = *msg;
 		int msg_type = incoming_msg.data[DiverMsg::type];
-		NODELET_INFO("Disptach message: %d",msg_type);
+		NODELET_DEBUG("Disptach message: %d",msg_type);
 		if (dispatch.find(msg_type) != dispatch.end())
 		{
 			dispatch[msg_type]();
@@ -503,10 +502,7 @@ void USBLManager::onUSBLTimeout(const std_msgs::Bool::ConstPtr msg)
 	if  (msg->data && state == waitForReply)
 	{
 		//resend last package
-		//repack the message with possibly new navigation data.
-		NODELET_INFO("Resending last package.");
-		outgoing_package.data = outgoing_msg.toString();
-		outgoing.publish(outgoing_package);
+		resendLastPackage();
 	}
 }
 
@@ -514,7 +510,7 @@ void USBLManager::resendLastPackage()
 {
 		//resend last package
 		//repack the message with possibly new navigation data.
-		NODELET_INFO("Resending last package.");
+		NODELET_INFO("Timeout - resending last package.");
 		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 
@@ -534,7 +530,7 @@ void USBLManager::onIncomingForceState(const std_msgs::Int32::ConstPtr msg)
 	//Do some checking on the default messages
 	if (msg->data < lastStateNum)
 	{
-		this->state = msg->data;
+		this->changeState(msg->data);
 	}
 	else
 	{

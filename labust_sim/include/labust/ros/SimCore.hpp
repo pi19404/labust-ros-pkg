@@ -177,6 +177,15 @@ namespace labust
 			void etaNuToOdom(const vector& eta, const vector& nu, nav_msgs::Odometry& state);
 
 			/**
+			 * The method publishes the main world frames.
+			 */
+			void publishWorld();
+			/**
+			 * The method publishes the base link simulation frame.
+			 */
+			void publishSimBaseLink();
+
+			/**
 			 * The rigid body model implementation.
 			 */
 			RBModel model;
@@ -220,6 +229,18 @@ namespace labust
 			 * The simulation internal wrap.
 			 */
 			int wrap;
+			/**
+			 * The flag to enable publishing of world frame data.
+			 */
+			bool enablePublishWorld;
+			/**
+			 * The flag to enable publishing of world frame data.
+			 */
+			bool enablePublishSimBaseLink;
+			/**
+			 * The origin latitude and longitude position.
+			 */
+			double originLat, originLon;
 		};
 	}
 }

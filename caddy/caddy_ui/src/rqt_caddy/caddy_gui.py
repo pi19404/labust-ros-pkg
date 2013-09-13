@@ -6,6 +6,7 @@ Created on Sep 10, 2013
 import sys
 #from PyQt4 import QtCore, QtGui, uic
 from python_qt_binding import QtCore, QtGui, loadUi
+from functools import partial
 
 class CaddyGui():
     def __init__(self):
@@ -27,13 +28,40 @@ class CaddyGui():
             chatHistory = self._widget.topsideChatHistory;
         else:
             chatHistory = self._widget.diverChatHistory;
-            
-        #chatHistory.insertHtml("<b>"+source+": </b>")
+    
         chatHistory.insertPlainText(text)
-        #chatHistory.insertPlainText("\n")
         
     def newDefaultMessage(self, idx):
-        self._widget.defaultReceivedLabel.setText(self.defaultMsgs[idx])
+        if idx in self.defaultMsgs.keys(): 
+            self._widget.defaultTextEdit.insertHtml("<b>" + "Diver: " + "</b>");
+            self._widget.defaultTextEdit.insertHtml(self.defaultMsgs[idx]);
+            self._widget.defaultTextEdit.insertPlainText("\n");
+        
+    def newOriginPosition(self, data):
+        self._widget.latLabel.setText(str(data.x))
+        self._widget.lonLabel.setText(str(data.y))
+        
+    def newManagerState(self,data):                      
+        if data in self._managerButtons.keys():
+            for key in self._managerButtons.keys():
+                if key == data: 
+                    self._managerButtons[data].setStyleSheet("color: green;");
+                else:
+                    self._managerButtons[key].setStyleSheet("");
+                    
+    def unload(self):
+        from datetime import datetime;
+        
+        if self._widget.saveAll.isChecked():
+            logFile = open(datetime.today().isoformat() + "_gui_logs.html",'w');
+            for textEdit in (self._widget.diverChatHistory, 
+                             self._widget.topsideChatHistory,
+                             self._widget.defaultTextEdit):
+                
+                logFile.write(textEdit.toHtml());
+                logFile.write("<br>");
+            
+            logFile.close(); 
         
     def _setup_diver_data(self):
         self.defaultMsgs = {0:"Alert",
@@ -53,12 +81,23 @@ class CaddyGui():
         self._widget.defaultComboBox.addItem("No");
         self._widget.defaultComboBox.addItem("Repeat again");
         self._widget.defaultComboBox.addItem("Dive out");
+        
+        #Fill manager state indicators
+        self._managerButtons={0: self._widget.idleButton,
+                              1: self._widget.initButton,
+                              2: self._widget.waitButton,
+                              3: self._widget.transmitButton};
+        
         #Connect signals and slots
         self._widget.chatInput.returnPressed.connect(self._newTopsideMessage)
-        self._widget.sendDefault.clicked.connect(self._onSendDefault)
         self._widget.loadKml.clicked.connect(self._onLoadKml)
-        self._widget.sendKml.clicked.connect(self._onSendKml)
-        self._widget.initDiverButton.clicked.connect(self._onInitDiver)
+        self._widget.sendDefault.clicked.connect(self._onSendDefault);        
+        self._widget.sendKml.clicked.connect(
+                    lambda: 
+                        self._exthook.sendKml(self._widget.kmlFilePath.text()));        
+        
+        for key, button in self._managerButtons.iteritems():
+            button.clicked.connect(partial(self._exthook.setManagerState,key))
     
     def _newTopsideMessage(self):
         text = (self._widget.chatInput.text() + "\n");
@@ -68,21 +107,14 @@ class CaddyGui():
         self._widget.chatInput.setText("");
         
     def _onSendDefault(self):
-        print "Send default message with idx: " + str(self._widget.defaultComboBox.currentIndex());
-        self._exthook.sendDefault(self._widget.defaultComboBox.currentIndex());
+        self._widget.defaultTextEdit.insertHtml("<b>" + "Topside: " + "</b>");
+        self._widget.defaultTextEdit.insertHtml(self._widget.defaultComboBox.currentText());
+        self._widget.defaultTextEdit.insertPlainText("\n");
+        self._exthook.sendDefault(self._widget.defaultComboBox.currentIndex())
         
     def _onLoadKml(self):
         self._widget.kmlFilePath.setText(QtGui.QFileDialog.getOpenFileName(self._widget, "Get KML file",".","Google KML (*.kml)")[0]);
-                 
-    def _onSendKml(self):
-        #Add connection to ROS
-        print "send: " + self._widget.kmlFilePath.text()
-        self._exthook.sendKml(self._widget.kmlFilePath.text())
-        
-    def _onInitDiver(self):
-        #Add ROS connection here
-        pass
-        
+                
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
     window = CaddyGui()
