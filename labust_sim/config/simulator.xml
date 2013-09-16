@@ -1,9 +1,8 @@
 <launch>
+    <arg name="uvsim_tf_prefix" value="$(optenv TF_PREFIX /)" />
     <node pkg="labust_sim" type="uvsim" 
 	    name="$(optenv SIM_NODE_NAME uvsim)" 
-		if="$(optenv IS_SIM true)">
-		<arg name="uvsim_tf_prefix" value="$(optenv TF_PREFIX /)" />
-    	    
+		if="$(optenv IS_SIM true)">    	    
 		<param name="Rate" value="10" />
 		<param name="ModelWrap" value="10" />
 		<param name="publish_world" value="false" />

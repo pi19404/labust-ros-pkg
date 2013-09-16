@@ -8,8 +8,9 @@ import sys
 from python_qt_binding import QtCore, QtGui, loadUi
 from functools import partial
 
-class CaddyGui():
+class CaddyGui(QtCore.QObject):
     def __init__(self):
+        QtCore.QObject.__init__(self)
         # Set up the user interface from Designer.
         #self._widget = uic.loadUi("resource/CaddyGui.ui")
         #self._widget.show()
@@ -87,6 +88,11 @@ class CaddyGui():
                               1: self._widget.initButton,
                               2: self._widget.waitButton,
                               3: self._widget.transmitButton};
+                              
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onSendKml"), self._exthook.sendKml)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onSendText"), self._exthook.sendText)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onSendDefault"), self._exthook.sendDefault)
+       # QtCore.QObject.connect(self, QtCore.SIGNAL("onManagerState"), self._gui.newManagerState)
         
         #Connect signals and slots
         self._widget.chatInput.returnPressed.connect(self._newTopsideMessage)
@@ -94,7 +100,7 @@ class CaddyGui():
         self._widget.sendDefault.clicked.connect(self._onSendDefault);        
         self._widget.sendKml.clicked.connect(
                     lambda: 
-                        self._exthook.sendKml(self._widget.kmlFilePath.text()));        
+                        self.emit(QtCore.SIGNAL("onSendKml"),self._widget.kmlFilePath.text()));      
         
         for key, button in self._managerButtons.iteritems():
             button.clicked.connect(partial(self._exthook.setManagerState,key))
@@ -102,7 +108,7 @@ class CaddyGui():
     def _newTopsideMessage(self):
         text = (self._widget.chatInput.text() + "\n");
         self.newChatMessage(text)
-        self._exthook.sendText(text);
+        self.emit(QtCore.SIGNAL("onSendText"),text);
         #clear input   
         self._widget.chatInput.setText("");
         
@@ -110,7 +116,7 @@ class CaddyGui():
         self._widget.defaultTextEdit.insertHtml("<b>" + "Topside: " + "</b>");
         self._widget.defaultTextEdit.insertHtml(self._widget.defaultComboBox.currentText());
         self._widget.defaultTextEdit.insertPlainText("\n");
-        self._exthook.sendDefault(self._widget.defaultComboBox.currentIndex())
+        self.emit(QtCore.SIGNAL("onSendDefault"),self._widget.defaultComboBox.currentIndex());
         
     def _onLoadKml(self):
         self._widget.kmlFilePath.setText(QtGui.QFileDialog.getOpenFileName(self._widget, "Get KML file",".","Google KML (*.kml)")[0]);

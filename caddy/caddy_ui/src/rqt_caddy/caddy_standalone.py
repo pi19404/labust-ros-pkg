@@ -29,6 +29,5 @@ if __name__=="__main__":
     gui.setup()
     ros.setup()
     
-    #rospy.spin();
     sys.exit(app.exec_())
     
