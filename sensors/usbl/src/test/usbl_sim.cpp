@@ -39,12 +39,15 @@
 #include <labust/tritech/mmcMessages.hpp>
 
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 #include <ros/ros.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+
+#include <queue>
 
 ///\todo Join the USBLSim and real USBL classes ??
 class USBLSim
@@ -74,6 +77,7 @@ public:
 
 		dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLSim::onOutgoingMsg,this,_1));
 		dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
+		usblTimeout = nh.advertise<std_msgs::Bool>("usbl_timeout",1);
 	}
 
 	void onReplyMsg(labust::tritech::MTMsgPtr tmsg)
@@ -94,8 +98,10 @@ public:
 		//std_msgs::String::Ptr modem(new std_msgs::String());
 		//modem->data.assign(modem_data.data.begin(), modem_data.data.end());
 		//Buffer one message like the acoustic modem does
-		last_reply.data.assign(modem_data.data.begin(), modem_data.data.end());
-		sent = false;
+		std_msgs::String reply;
+		reply.data.assign(modem_data.data.begin(), modem_data.data.end());
+		reply_queue.push(reply);
+		if (reply_queue.size() > 1) reply_queue.pop();
 		ROS_INFO("Received data message.");
 	}
 
@@ -128,20 +134,21 @@ public:
 
 		//boost::mutex::scoped_lock lock(pingLock);
 		//while (usblBusy) usblCondition.wait(lock);
-		if (true)
+		if (!reply_queue.empty())
 		{
-			dataPub.publish(last_reply);
+			dataPub.publish(reply_queue.front());
+			reply_queue.pop();
 			sent = true;
 		}
 	}
 
 	ros::Subscriber dataSub;
-	ros::Publisher dataPub;
+	ros::Publisher dataPub, usblTimeout;
 	boost::shared_ptr<labust::tritech::MTDevice> usbl;
 	boost::mutex pingLock;
 	boost::condition_variable usblCondition;
 	bool usblBusy, useDevice;
-	std_msgs::String last_reply;
+	std::queue<std_msgs::String> reply_queue;
 	bool sent;
 };
 
