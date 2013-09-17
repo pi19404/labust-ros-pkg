@@ -52,6 +52,7 @@ USBLManager::USBLManager():
 					newMessage(false),
 					validNav(false),
 					kmlEndValidation(std::make_pair(kmlNotSent,-1)),
+					initValidation(),
 					timeout(80),
 					emptyIterations(0)
 {
@@ -327,11 +328,20 @@ void USBLManager::kml_send()
 					DiverMsg::nextKMLSet;
 				kmlEndValidation.first = kmlSent;
 				kmlEndValidation.second = outgoing_msg.data[DiverMsg::def];
-				NODELET_INFO("Sending end kml.");
+
+				if (kmlBuffer.empty())
+				{
+					NODELET_INFO("Sending end kml.");
+				}
+				else
+				{
+					NODELET_INFO("Sending next kml.");
+				}
 			}
 			else if (kmlEndValidation.first == kmlSent)
 			{
 				outgoing_msg.data[DiverMsg::type] = DiverMsg::Position_18;
+				NODELET_INFO("Sending position while wait for kml reply.");
 				kmlEndValidation.first = kmlWaitValidation;
 			}
 			else if (kmlEndValidation.first == kmlSentAndValid)
@@ -439,7 +449,7 @@ void USBLManager::run()
 			state = idle;
 		}
 
-		//NODELET_INFO("Manager running.");
+		NODELET_INFO("Manager running.");
 
 		//Reset the turn-around flag
 		newMessage = false;
@@ -471,7 +481,7 @@ void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 		incoming_msg.fromString(msg->data);
 		incoming_package = *msg;
 		int msg_type = incoming_msg.data[DiverMsg::type];
-		NODELET_DEBUG("Disptach message: %d",msg_type);
+		NODELET_INFO("Disptach message: %d",msg_type);
 		if (dispatch.find(msg_type) != dispatch.end())
 		{
 			dispatch[msg_type]();

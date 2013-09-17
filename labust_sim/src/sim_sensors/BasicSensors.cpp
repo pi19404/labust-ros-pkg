@@ -73,6 +73,11 @@ namespace labust
 				imu->orientation.y = quat.y();
 				imu->orientation.z = quat.z();
 				imu->orientation.w = quat.w();
+
+				tf::Transform transform;
+				transform.setOrigin(tf::Vector3(0, 0, 0));
+				transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+				data.broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
 			}
 		};
 

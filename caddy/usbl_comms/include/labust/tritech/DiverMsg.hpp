@@ -236,14 +236,14 @@ namespace labust
 				}
 				uint64_t data;
 				char* ret=reinterpret_cast<char*>(&data);
-				/*std::cout<<"Bytes:";
+				/*std::cout<<"Bytes:";*/
 				for (int i=0; i<msgByteCount; ++i)
 				{
 				 
 				 ret[i] = msg[1+(msgByteCount-1)-i];
-				 std::cout<<std::bitset<8>(ret[i])<<" ";
+				 //std::cout<<std::bitset<8>(ret[i])<<" ";
 				}				
-				std::cout<<std::endl;*/
+				/*std::cout<<std::endl;*/
 				decode<MsgType>(data, type);
 			}
 

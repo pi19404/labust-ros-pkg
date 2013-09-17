@@ -38,6 +38,8 @@
 #include <labust/tritech/mtMessages.hpp>
 #include <labust/tritech/mmcMessages.hpp>
 
+#include <geometry_msgs/PointStamped.h>
+#include <auv_msgs/NavSts.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
@@ -56,7 +58,8 @@ public:
 	USBLSim():
 		usblBusy(false),
 		useDevice(false),
-		sent(false)
+		sent(false),
+		navTime(4)
 	{
 		ros::NodeHandle nh,ph("~");
 		std::string port("/dev/rfcomm0");
@@ -65,6 +68,7 @@ public:
 		ph.param("port",port,port);
 		ph.param("baud",baud,baud);
 		ph.param("use_device",useDevice,useDevice);
+		ph.param("nav_time",navTime,navTime);
 
 		if (useDevice)
 		{
@@ -75,9 +79,12 @@ public:
 			usbl->registerHandlers(map);
 		}
 
-		dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLSim::onOutgoingMsg,this,_1));
+		dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	1, boost::bind(&USBLSim::onOutgoingMsg,this,_1));
 		dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
 		usblTimeout = nh.advertise<std_msgs::Bool>("usbl_timeout",1);
+		usblNav = nh.advertise<geometry_msgs::PointStamped>("usbl_nav", 1);
+		simDiverState = nh.subscribe<auv_msgs::NavSts>("diver_sim",1, boost::bind(&USBLSim::onDiverSim, this, _1));
+		simVehicleState = nh.subscribe<auv_msgs::NavSts>("platform_sim",1, boost::bind(&USBLSim::onPlatformSim, this, _1));
 	}
 
 	void onReplyMsg(labust::tritech::MTMsgPtr tmsg)
@@ -103,6 +110,26 @@ public:
 		reply_queue.push(reply);
 		if (reply_queue.size() > 1) reply_queue.pop();
 		ROS_INFO("Received data message.");
+	}
+
+	void onDiverSim(const auv_msgs::NavSts::ConstPtr msg)
+	{
+		boost::mutex::scoped_lock l(vehicleStateMux);
+		vehicleState = *msg;
+	}
+
+	void onPlatformSim(const auv_msgs::NavSts::ConstPtr msg)
+	{
+		if ((ros::Time::now() - lastNav).toSec() > navTime)
+		{
+			boost::mutex::scoped_lock l(vehicleStateMux);
+			geometry_msgs::PointStamped::Ptr point(new geometry_msgs::PointStamped());
+			point->header.stamp = ros::Time::now();
+			point->point.x = msg->position.north - vehicleState.position.north;
+			point->point.y = msg->position.east - vehicleState.position.east;
+			point->point.z = msg->position.depth - vehicleState.position.depth;
+			usblNav.publish(point);
+		}
 	}
 
 	void onOutgoingMsg(const std_msgs::String::ConstPtr msg)
@@ -142,14 +169,17 @@ public:
 		}
 	}
 
-	ros::Subscriber dataSub;
-	ros::Publisher dataPub, usblTimeout;
+	ros::Publisher dataPub, usblTimeout, usblNav;
+	ros::Subscriber dataSub, simDiverState, simVehicleState;
+	auv_msgs::NavSts vehicleState;
 	boost::shared_ptr<labust::tritech::MTDevice> usbl;
-	boost::mutex pingLock;
+	boost::mutex pingLock, vehicleStateMux;
 	boost::condition_variable usblCondition;
 	bool usblBusy, useDevice;
 	std::queue<std_msgs::String> reply_queue;
 	bool sent;
+	double navTime;
+	ros::Time lastNav;
 };
 
 int main(int argc, char* argv[])

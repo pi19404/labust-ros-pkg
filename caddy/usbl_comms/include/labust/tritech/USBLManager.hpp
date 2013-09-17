@@ -117,6 +117,7 @@ namespace labust
 			 */
 			enum {idle=0,initDiver,waitForReply,transmission, lastStateNum};
 			enum {kmlNotSent=0, kmlSent, kmlWaitValidation, kmlSentAndValid};
+			//enum {kmlNotSent=0, kmlSent, kmlWaitValidation, kmlSentAndValid};
 		public:
 			/**
 			 * Default constructor.
@@ -273,7 +274,11 @@ namespace labust
 			 * The default and next kml message validation.
 			 * The pair is <validation_flag, expected message>.
 			 */
-			std::pair<int, int> kmlEndValidation; 
+			std::pair<int, int> kmlEndValidation;
+			/**
+			 * The init validation.
+			 */
+			int initValidation;
 			/**
 			 * Flag for the turnaround message.
 			 */

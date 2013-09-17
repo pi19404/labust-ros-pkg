@@ -42,6 +42,12 @@
           <property name="readOnly">
            <bool>true</bool>
           </property>
+          <property name="overwriteMode">
+           <bool>false</bool>
+          </property>
+          <property name="textInteractionFlags">
+           <set>Qt::NoTextInteraction</set>
+          </property>
          </widget>
         </item>
        </layout>
@@ -59,6 +65,9 @@
          <widget class="QTextEdit" name="diverChatHistory">
           <property name="readOnly">
            <bool>true</bool>
+          </property>
+          <property name="textInteractionFlags">
+           <set>Qt::NoTextInteraction</set>
           </property>
          </widget>
         </item>
@@ -119,7 +128,14 @@
      </layout>
     </item>
     <item>
-     <widget class="QTextEdit" name="defaultTextEdit"/>
+     <widget class="QTextEdit" name="defaultTextEdit">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+      <property name="textInteractionFlags">
+       <set>Qt::NoTextInteraction</set>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="Line" name="line">
@@ -169,7 +185,7 @@
      <x>400</x>
      <y>330</y>
      <width>231</width>
-     <height>87</height>
+     <height>93</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -222,7 +238,7 @@
      <x>10</x>
      <y>300</y>
      <width>381</width>
-     <height>111</height>
+     <height>112</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="initDiverLayout">
@@ -378,7 +394,7 @@
      <x>400</x>
      <y>300</y>
      <width>231</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout_7">
