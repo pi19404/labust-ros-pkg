@@ -90,13 +90,19 @@ void USBLManager::init_diver()
 {
 	static int sentLat, sentLon;
 
-	if (!validNav) NODELET_ERROR("No valid diver navigation stats received.");
+	if (!validNav)
+	{
+	   NODELET_ERROR("No valid diver navigation stats received.");
+	   return;
+	}
+	
+	//Turn off auto-interrogation	
+	std_msgs::Bool data;
+	data.data = false;
+	auto_mode.publish(data);
 
 	if ((state == initDiver) && (validNav))
 	{
-		std_msgs::Bool data;
-		data.data = false;
-		auto_mode.publish(data);
 
 		outgoing_package.data = outgoing_msg.toString(DiverMsg::PositionInit);
 		sentLat = outgoing_msg.data[DiverMsg::lat];
@@ -416,7 +422,7 @@ void USBLManager::run()
 	ph.param("rate",freq,10.0);
 	ros::Rate rate(freq);
 	//8 sec. 
-	timeout = 8*freq;
+	timeout = 10*freq;
 	std_msgs::String package;
 
 	while (ros::ok())
@@ -447,6 +453,7 @@ void USBLManager::run()
 		curstate->data = state;
 		outCurState.publish(curstate);
 		publishDiverOrigin();
+		
 
 		rate.sleep();
 		ros::spinOnce();
@@ -465,13 +472,16 @@ void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
 void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
 {
 	NODELET_INFO("Received modem message with type: %d",DiverMsg::testType(msg->data));
+	
+	//Reset the empty iterations counter.
+	emptyIterations = 0;
 
 	try
 	{
 		incoming_msg.fromString(msg->data);
 		incoming_package = *msg;
 		int msg_type = incoming_msg.data[DiverMsg::type];
-		NODELET_DEBUG("Disptach message: %d",msg_type);
+		NODELET_INFO("Disptach message: %d",msg_type);
 		if (dispatch.find(msg_type) != dispatch.end())
 		{
 			dispatch[msg_type]();
@@ -510,7 +520,7 @@ void USBLManager::resendLastPackage()
 {
 		//resend last package
 		//repack the message with possibly new navigation data.
-		NODELET_INFO("Timeout - resending last package.");
+		NODELET_INFO("Timeout - resending last package. Iterations: %d",emptyIterations);
 		outgoing_package.data = outgoing_msg.toString();
 		outgoing.publish(outgoing_package);
 
