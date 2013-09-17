@@ -23,6 +23,3 @@ current: [0,0,0] # Initial currents (N,E,D)
 process_noise: [0.05,0.05,0.05,0.02,0.02,0.02] # Vector (6)
 measurement_noise: [1,1,0.02,0.01,0.01,0.01] # Vector (6)
 coupled: false # Use a coupled model
-
-
-

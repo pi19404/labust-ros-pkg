@@ -40,15 +40,18 @@
 #include <labust/simulation/DynamicsParams.hpp>
 #include <labust/simulation/NoiseModel.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/vehicles/ThrustAllocation.hpp>
 
 namespace labust
 {
   namespace simulation
   {
-    /**
+  	/**
      *  This class implements a 6DOF marine vehicle model. This model is based on
      *  the equations of motion derived in chapter 2 of Guidance and control of
      *  Ocean Vehicles by Fossen (1994).
+     *
+     *  \todo Add allocation type and thruster modeling
      */
     class RBModel : public labust::simulation::DynamicsParams
     {
@@ -72,6 +75,15 @@ namespace labust
        * \param tau Vector of forces and moments acting on the model.
        */
       void step(const vector& tau);
+
+      /**
+       * The method the additional allocation step and generates a new tau.
+       */
+      inline void alloc_step(const vector& tauIn, vector& tauAch)
+      {
+      	this->allocator.allocate(tauIn,tauAch);
+      	this->step(tauAch);
+      }
 
       /**
        * Method to get the current model states. This vector returns the model position and orientation
@@ -172,6 +184,11 @@ namespace labust
        * The noise generator.
        */
       mutable labust::simulation::NoiseModel noise;
+
+      /**
+       * The thrust allocator.
+       */
+      labust::vehicles::ThrustAllocator allocator;
 
     protected:
       /**

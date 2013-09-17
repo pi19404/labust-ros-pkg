@@ -1,43 +1,43 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2010, LABUST, UNIZG-FER
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the LABUST nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Dula Nad
-*  Created: 14.02.2013.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2010, LABUST, UNIZG-FER
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the LABUST nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  Author: Dula Nad
+ *  Created: 14.02.2013.
+ *********************************************************************/
 #include <labust/tritech/MTDevice.hpp>
 #include <labust/tritech/mtMessages.hpp>
 #include <labust/tritech/USBLMessages.hpp>
-#include <labust/tritech/DiverMsg.hpp>
+#include <labust/tritech/DiverMsg_adv.hpp>
 
 #include <std_msgs/String.h>
 #include <ros/ros.h>
@@ -58,29 +58,21 @@ void onMsg(labust::tritech::MTDevice* modem, const std_msgs::String::ConstPtr ms
 
 	MMCMsg mmsg;
 	mmsg.msgType = labust::tritech::mmcSetRepBits;
-	mmsg.data[0] = 48;
-	for (int i=0;i<6;++i) 	mmsg.data[i+1] = msg->data[i];
 
-	/*switch (msg->data.size())
+	switch (msg->data.size())
 	{
-	 case 0: mmsg.msgType = labust::tritech::mmcGetRangeSync; break;
-	 case 1: mmsg.msgType = labust::tritech::mmcGetRangeTxRxByte; break;
-	 case 2: case 3: mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits24; break;
-	 case 4: mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits32; break;
-	 case 5: mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits40; break;
-	 case 6: mmsg.msgType = labust::tritech::mmcGetRangeTxRxBits48; break;
-   default:break;
+	case 0: mmsg.data[0] = 0; break;
+	case 1: mmsg.data[0] = 8; break;
+	case 2: mmsg.data[0] = 16; break;
+	case 3: mmsg.data[0] = 24; break;
+	case 4: mmsg.data[0] = 32; break;
+	case 5: mmsg.data[0] = 40; break;
+	case 6: mmsg.data[0] = 48; break;
+	default:break;
 	}
 
-	if (msg->data.size()) >
-	mmsg.data[0] = msg->data.size();
-	mmsg.data[1] = 50;
-	mmsg.data[2] = 49;
-	mmsg.data[3] = 48;
-	mmsg.data[4] = 55;
-	mmsg.data[5] = 56;
-	mmsg.data[6] = 57;
-*/
+	for (int i=0;i<6;++i) 	mmsg.data[i+1] = msg->data[i];
+
 	std::ostream out();
 	boost::archive::binary_oarchive ar(*tmsg->data, boost::archive::no_header);
 	ar<<mmsg;
@@ -93,16 +85,23 @@ void onMsg(labust::tritech::MTDevice* modem, const std_msgs::String::ConstPtr ms
 void onData(ros::Publisher* modemOut, labust::tritech::MTMsgPtr tmsg)
 {
 	using namespace labust::tritech;
-	static DiverMsg msg;
+	//static DiverMsg msg;
 
 	boost::archive::binary_iarchive dataSer(*tmsg->data, boost::archive::no_header);
 	MMCMsg data;
 	dataSer>>data;
 
-	uint64_t* pt = reinterpret_cast<uint64_t*>(&data.data[1]);
-	msg.unpack<DiverMsg::AutoTopside>(*pt);
+	//uint64_t* pt = reinterpret_cast<uint64_t*>(&data.data[1]);
+	//msg.unpack<DiverMsg::AutoTopside>(*pt);
 
-	ROS_INFO("Received USBL message type %d. Lat=%d, Lon=%d",msg.msgType,msg.lat, msg.lon);
+	ROS_INFO("Received USBL message type %d. Bits=%d",data.msgType);
+
+	std::cout<<"Received datammcRangedRepByte package:";
+	for (int i=0; i<data.data.size(); ++i)
+	{
+		std::cout<<int(data.data[i])<<",";
+	}
+	std::cout<<std::endl;
 
 	std_msgs::String modem;
 	modem.data.assign(data.data.begin(), data.data.end());

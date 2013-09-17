@@ -45,36 +45,52 @@ namespace labust
 	namespace simulation
 	{
 		class RBModel;
+
 		/**
 		 * The interface class for the different simulated sensors.
 		 */
 		class SimSensorInterface
 		{
 		public:
+			struct Hook
+			{
+				Hook(const RBModel& model,
+						tf::TransformBroadcaster& broadcaster,
+						tf::TransformListener& listener,
+						bool noisy = false):
+							model(model),
+							broadcaster(broadcaster),
+							listener(listener),
+							noisy(noisy){};
+
+				const RBModel& model;
+				tf::TransformBroadcaster& broadcaster;
+				tf::TransformListener& listener;
+				bool noisy;
+			};
+
 			typedef boost::shared_ptr<SimSensorInterface> Ptr;
 			virtual ~SimSensorInterface(){};
-			virtual void step(const RBModel& model,
-					tf::TransformBroadcaster& broadcaster,
-					tf::TransformListener& listener) = 0;
+			virtual void step(const Hook& data) = 0;
+			virtual void configure(ros::NodeHandle& nh, const std::string& topic_name) = 0;
 		};
 
 		template <class ROSMsg, class functor>
 		class BasicSensor : public SimSensorInterface
 		{
 		public:
-			BasicSensor(ros::NodeHandle& nh, const std::string& topic_name)
-			{
-				pub = nh.advertise<ROSMsg>(topic_name,1);
-			}
-
+			BasicSensor(){};
 			~BasicSensor(){};
 
-			void step(const RBModel& model,
-					tf::TransformBroadcaster& broadcaster,
-					tf::TransformListener& listener)
+			void configure(ros::NodeHandle& nh, const std::string& topic_name)
+			{
+				pub = nh.advertise<ROSMsg>(topic_name,1);
+			};
+
+			void step(const Hook& data)
 			{
 				typename ROSMsg::Ptr msg(new ROSMsg());
-				sensor(msg,model,broadcaster, listener);
+				sensor(msg, data);
 				pub.publish(msg);
 			}
 

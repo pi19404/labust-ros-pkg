@@ -64,6 +64,7 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
 ## Specify additional locations of header files
 include_directories(include include/ ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 

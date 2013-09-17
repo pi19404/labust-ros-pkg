@@ -35,7 +35,10 @@
  *  Created: 01.02.2013.
  *********************************************************************/
 #include <labust/control/VelocityControl.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/MatrixLoader.hpp>
+#include <labust/simulation/matrixfwd.hpp>
+#include <labust/simulation/DynamicsParams.hpp>
+#include <labust/tools/DynamicsLoader.hpp>
 #include <labust/math/NumberManipulation.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
@@ -409,22 +412,24 @@ void VelocityControl::initialize_controller()
 {
 	ROS_INFO("Initializing velocity controller...");
 
-	Eigen::Vector6d closedLoopFreq(Eigen::Vector6d::Ones());
+	typedef Eigen::Matrix<double,6,1> Vector6d;
+	using labust::simulation::vector;
+	vector closedLoopFreq(vector::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/closed_loop_freq", closedLoopFreq);
-	Eigen::Vector6d outputLimit(Eigen::Vector6d::Zero());
+	vector outputLimit(vector::Zero());
 	labust::tools::getMatrixParam(nh,"velocity_controller/output_limits", outputLimit);
-	Eigen::Vector6d disAxis(Eigen::Vector6d::Ones());
+	vector disAxis(vector::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/disable_axis", disAxis);
-	Eigen::Vector6d manAxis(Eigen::Vector6d::Ones());
+	vector manAxis(vector::Ones());
 	labust::tools::getMatrixParam(nh,"velocity_controller/manual_axis", manAxis);
-	Eigen::Vector6d autoTracking(Eigen::Vector6d::Zero());
+	vector autoTracking(vector::Zero());
 	labust::tools::getMatrixParam(nh,"velocity_controller/auto_tracking", autoTracking);
 
-	labust::tools::DynamicsModel model(nh);
-	Eigen::Vector6d alphas(model.added_mass);
-	Eigen::Vector6d alpha_mass;
-	alpha_mass<<model.mass,model.mass,model.mass,
-			model.inertia_matrix.diagonal();
+	labust::simulation::DynamicsParams model;
+	labust::tools::loadDynamicsParams(nh,model);
+	vector alphas(model.Ma.diagonal());
+	vector alpha_mass;
+	alpha_mass<<model.m,model.m,model.m,model.Io.diagonal();
 	alphas += alpha_mass;
 
 	nh.param("velocity_controller/period",Ts,Ts);
@@ -435,8 +440,8 @@ void VelocityControl::initialize_controller()
 		controller[i].closedLoopFreq = closedLoopFreq(i);
 		controller[i].outputLimit = outputLimit(i);
 		controller[i].modelParams[alpha] = alphas(i);
-		controller[i].modelParams[beta] = model.damping(i);
-		controller[i].modelParams[betaa] = model.qdamping(i);
+		controller[i].modelParams[beta] = model.Dlin(i,i);
+		controller[i].modelParams[betaa] = model.Dquad(i,i);
 		PIFFController_tune(&controller[i]);
 		controller[i].autoTracking = autoTracking(i);
 

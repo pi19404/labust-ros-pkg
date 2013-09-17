@@ -1,0 +1,7 @@
+<library path="lib/libusbl_comms">
+ <class name="usbl_comms/USBLManager" type="labust::tritech::USBLManager" base_class_type="nodelet::Nodelet">
+	<description>
+		The nodelet performs USBL-diver/auv message encoding and decoding.
+	</description>
+</class>
+</library>

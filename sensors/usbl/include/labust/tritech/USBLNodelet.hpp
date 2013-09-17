@@ -39,6 +39,7 @@
 #include <labust/tritech/tritechfwd.hpp>
 
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 #include <tf/transform_broadcaster.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -74,6 +75,11 @@ namespace labust
 			 * The main run method.
 			 */
 			void run();
+			/**
+			 * Cleanly stops the main method but leaves on
+			 * the USBL connection.
+			 */
+			void stop();
 
 		protected:
 			/**
@@ -88,6 +94,21 @@ namespace labust
 			 * Handles outgoing messages requests.
 			 */
 			void onOutgoingMsg(const std_msgs::String::ConstPtr msg);
+			/**
+			 * Handles outgoing messages requests.
+			 */
+			void onAutoMode(const std_msgs::Bool::ConstPtr mode);
+			/**
+			 * Send one USBL encoded package.
+			 */
+			void sendUSBLPkg();
+			/**
+			 * Ping timeout.
+			 */
+			int ping_timeout;
+
+
+
 
 			/**
 			 * The USBL device.
@@ -125,20 +146,24 @@ namespace labust
 			/**
 			 * The worker thread.
 			 */
-			boost::thread worker;
+			boost::thread worker, guard;
 
 			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher navPub, dataPub;
+			ros::Publisher navPub, dataPub, usblTimeout;
 			/**
 			 * The outgoing data subscription.
 			 */
-			ros::Subscriber dataSub;
+			ros::Subscriber dataSub, opMode;
 			/**
 			 * USBL frame transformation broadcaster.
 			 */
 			tf::TransformBroadcaster frameBroadcast;
+			/**
+			 * Auto interrogate mode.
+			 */
+			bool autoMode;
 		};
 	}
 }

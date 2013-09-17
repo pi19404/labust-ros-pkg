@@ -30,79 +30,78 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Author: Dula Nad
- *  Created: 02.04.2013.
  *********************************************************************/
-#ifndef USBLMANAGER_HPP_
-#define USBLMANAGER_HPP_
-#include <labust/tritech/tritechfwd.hpp>
-#include <labust/tritech/DiverMsg.hpp>
+/*********************************************************************
+ * Author: Đula Nađ
+ *   Date: 11.12.2012.
+ *********************************************************************/
+#ifndef TRITECHFWD_HPP_
+#define TRITECHFWD_HPP_
 
-#include <nodelet/nodelet.h>
-#include <auv_msgs/NavSts.h>
-#include <std_msgs/String.h>
-#include <ros/ros.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/asio/streambuf.hpp>
 
-#include <boost/thread.hpp>
-
-#include <string>
+#include <sstream>
+#include <vector>
+#include <cstdint>
 
 namespace labust
 {
 	namespace tritech
 	{
-		/**
-		 * The class implements the Tritech USBL manager that allows specifying which
-		 * messages and what data to relay to the modem. It also encodes arrived modem messages.
-		 *
-		 * \todo Add dynamic reconfiguration GUI options
-		 */
-		class USBLManager : public nodelet::Nodelet
+		namespace Nodes
 		{
-		public:
-			/**
-			 * Default constructor.
-			 */
-			USBLManager();
-			/**
-			 * Default destructor.
-			 */
-			~USBLManager();
+		enum Node
+        {
+        ///Scanning sonar ID:2
+        Sonar = 2,
+        ///Attitude sensor ID:75
+        AttitudeSensor = 75,
+        ///MasterModem ID:85
+        MasterModem = 85,
+        ///SlaveModem ID:86
+        SlaveModem = 86,
+        ///USBL head ID:90
+        USBL = 90,
+        ///GPS Devices
+        GPS = 245,
+        ///Main surface unit
+        Surface = 255,
+         mtAll = 255
+		};
+		};
 
-			/**
-			 * Node initialization.
-			 */
-			void onInit();
+		typedef boost::shared_ptr<boost::asio::streambuf> StreamPtr;
 
-		protected:
-			/**
-			 * Handles arrived USBL navigation messages.
-			 */
-			void onNavMsg(const auv_msgs::NavSts::ConstPtr nav);
-			/**
-			 * Handles arrived modem messages.
-			 */
-			void onIncomingMsg(const std_msgs::String::ConstPtr msg);
+		typedef std::vector<uint8_t> ByteVector;
 
-			/**
-			 * The navigation and incoming data publisher.
-			 */
-			ros::Publisher outgoing;
-			/**
-			 * The navigation data subscription.
-			 */
-			ros::Subscriber navData, incoming;
-			/**
-			 * The message encoder.
-			 */
-			DiverMsg encoder;
+		struct MTMsg;
+		typedef boost::shared_ptr<MTMsg> MTMsgPtr;
+
+		struct TCONMsg;
+		typedef boost::shared_ptr<TCONMsg> TCONMsgPtr;
+
+		class TCPDevice;
+		typedef boost::shared_ptr<TCPDevice> TCPDevicePtr;
+
+		class MTDevice;
+		typedef boost::shared_ptr<MTDevice> MTDevicePtr;
+
+		enum AttitudeSensorCmd
+		{
+			attsen_idle = 0,
+			attsen_RunRaw,
+			attsen_RunProc,
+			attsen_Reset,
+			attsen_CalMag,
+			attsen_CalGrv,
+			attsen_CalRate,
+			attsen_CalPress,
+			attsen_CalTemp,
+			attsen_CalCompass
 		};
 	}
 }
 
-/* USBLMANAGER_HPP_ */
+/* TRITECHFWD_HPP_ */
 #endif
-
-
-

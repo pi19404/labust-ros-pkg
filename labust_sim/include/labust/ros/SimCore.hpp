@@ -43,6 +43,8 @@
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <auv_msgs/NavSts.h>
+#include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -63,9 +65,14 @@ namespace labust
 
 		/**
 		 *  This class implements core functionality of the ROS uvsim node.
+		 *
+		 *  \todo Split into policy NavSts or Odom
+		 *  \todo Push the allocation part into the RBModel class.
 		 */
 		class SimCore
 		{
+			///Allocation types
+			typedef enum {X=0,diff} alloc_type;
 		public:
 			/**
 			 * The generic constructor.
@@ -81,6 +88,15 @@ namespace labust
 			 * Start the execution.
 			 */
 			void start();
+
+			/**
+			 * Add a new sensor to the simulation.
+			 */
+			inline void addSensor(SimSensorInterface::Ptr sensor)
+			{
+					boost::mutex::scoped_lock l(sensor_mux);
+					sensors.push_back(sensor);
+			}
 
 		private:
 			/**
@@ -103,6 +119,9 @@ namespace labust
 				labust::tools::pointToVector(msg->wrench.torque, tau, 3);
 
 				//Allocate
+				vector tauAch(tau);
+				model.allocator.allocate(tau,tauAch);
+				tau = tauAch;
 
 				//Publish allocated.
 				typename ROSMsg::Ptr ach(new ROSMsg());
@@ -128,9 +147,43 @@ namespace labust
 			}
 
 			/**
+			 * The helper function for allocation.
+			 *
+			 * \todo Refactor this function to be platform agnostic.
+			 */
+			void allocate();
+
+			/**
 			 * Received the external currents speed that act on the rigid body.
 			 */
 			void onCurrents(const geometry_msgs::TwistStamped::ConstPtr& currents);
+
+			/**
+			 * The method calculates and publishes the needed NavSts.
+			 */
+			void publishNavSts();
+			/**
+			 * The helper method to copy data from vector to NavSts.
+			 */
+			void etaNuToNavSts(const vector& eta, const vector& nu, auv_msgs::NavSts& state);
+
+			/**
+			 * The method calculates and publishes the needed Odometry message.
+			 */
+			void publishOdom();
+			/**
+			 * The helper method to copy data from vector to Odometry message.
+			 */
+			void etaNuToOdom(const vector& eta, const vector& nu, nav_msgs::Odometry& state);
+
+			/**
+			 * The method publishes the main world frames.
+			 */
+			void publishWorld();
+			/**
+			 * The method publishes the base link simulation frame.
+			 */
+			void publishSimBaseLink();
 
 			/**
 			 * The rigid body model implementation.
@@ -159,7 +212,7 @@ namespace labust
 			/**
 			 * The tau and model mutex.
 			 */
-			boost::mutex tau_mux, model_mux;
+			boost::mutex tau_mux, model_mux, sensor_mux;
 			/**
 			 * The runner thread.
 			 */
@@ -176,6 +229,18 @@ namespace labust
 			 * The simulation internal wrap.
 			 */
 			int wrap;
+			/**
+			 * The flag to enable publishing of world frame data.
+			 */
+			bool enablePublishWorld;
+			/**
+			 * The flag to enable publishing of world frame data.
+			 */
+			bool enablePublishSimBaseLink;
+			/**
+			 * The origin latitude and longitude position.
+			 */
+			double originLat, originLon;
 		};
 	}
 }

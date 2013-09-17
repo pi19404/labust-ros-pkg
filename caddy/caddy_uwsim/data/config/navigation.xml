@@ -1,5 +1,4 @@
 <launch>
-  <rosparam command="load" file="$(env YAML_MODEL)" />
   <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="controlled">
       <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
   </node>

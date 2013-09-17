@@ -1,6 +1,6 @@
 #!/bin/bash
-DATAFILE=bvt_sdk_linux_x86_5861.tar.gz
-URL=http://labust-ros-pkg.googlecode.com/files/${DATAFILE}
+DATAFILE=bvt_sdk_6257-ubuntu32bit.tar.gz
+URL=https://www.dropbox.com/s/ptj46xbkucq9jou/${DATAFILE}
 
 if [ ! -f downloaded ];
 then

@@ -31,3 +31,5 @@ downloaded
 */data/media
 logs
 CATKIN_IGNORE
+#Python stuff
+*.pyc

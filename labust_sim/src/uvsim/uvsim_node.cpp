@@ -38,114 +38,33 @@
 #include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
 
-#include <sensor_msgs/Imu.h>
+#include <pluginlib/class_loader.h>
 #include <ros/ros.h>
 
-/*struct sim_imu
-{
-	sim_imu(ros::NodelHandle& nh)
-	{
-
-	}
-
-	void operator()(sensor_msgs::Imu::Ptr& imu,
-			const labust::simulation::RBModel& model,
-			tf::TransformBroadcaster& broadcaster,
-			tf::TransformListener& listener)
-	{
-		using namespace labust::simulation;
-		using namespace Eigen;
-
-		imu->header.stamp = ros::Time::now();
-		imu->header.frame_id = "imu_frame";
-		labust::tools::vectorToPoint(model.NuAcc(), imu->linear_acceleration);
-		labust::tools::vectorToPoint(&model.Nu()[RBModel::p], imu->angular_velocity);
-		Quaternion<double> quat;
-		labust::tools::quaternionFromEulerZYX(model.Eta()(RBModel::phi),
-				model.Eta()(RBModel::theta),
-				model.Eta()(RBModel::psi), quat);
-
-		imu->orientation.x = quat.x();
-		imu->orientation.y = quat.y();
-		imu->orientation.z = quat.z();
-		imu->orientation.w = quat.w();
-
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(0, 0, 0));
-		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
-	}
-};
-
-struct sim_gps
-{
-	void operator()(sensor_msgs::NavSatFix::Ptr& fix,
-			const labust::simulation::RBModel& model,
-			tf::TransformBroadcaster& broadcaster,
-			tf::TransformListener& listener)
-	{
-		using namespace labust::simulation;
-		using namespace Eigen;
-
-		tf::StampedTransform transformLocal, transformDeg;
-
-		try
-		{
-			//In case the origin changes
-			listener.lookupTransform("/worldLatLon", "/world", ros::Time(0), transformDeg);
-			originLat = transformDeg.getOrigin().y();
-			originLon = transformDeg.getOrigin().x();
-		}
-		catch (tf::TransformException& ex)
-		{
-		   ROS_ERROR("%s",ex.what());
-		}
-
-		vector& eta = model.Eta();
-
-		try
-		{
-		    listener.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);
-
-		  	fix->altitude = eta(RBModel::z) - transformLocal.getOrigin().z() ;
-		  	//gps_common::UTMtoLL(transform.getOrigin().y(), transform.getOrigin().x(), utmzone, fix->latitude, fix->longitude);
-		  	std::pair<double, double> diffAngle = labust::tools::meter2deg(eta(VehicleModel6DOF::x),
-		  		eta(VehicleModel6DOF::y),
-		  		//The latitude angle
-		  		originLat);
-
-		  	modelLat = fix->latitude = originLat + diffAngle.first;
-		  	modelLon = fix->longitude = originLon + diffAngle.second;
-		    fix->header.stamp = ros::Time::now();
-		    fix->header.frame_id = "worldLatLon";
-
-				tf::Transform transform;
-				Eigen::Quaternion<float> q;
-				transform.setOrigin(tf::Vector3(eta(VehicleModel6DOF::x),
-						eta(VehicleModel6DOF::y),
-						eta(VehicleModel6DOF::z)));
-				labust::tools::quaternionFromEulerZYX(eta(VehicleModel6DOF::phi),
-						eta(VehicleModel6DOF::theta),
-						eta(VehicleModel6DOF::psi), q);
-				transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-				gpsBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_noisy"));
-		}
-		catch (tf::TransformException& ex)
-		{
-		   ROS_ERROR("%s",ex.what());
-		}
-
-		return fix;
-	}
-};
-*/
+///\todo Edit the class loading to be loaded from the rosparam server.
 int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"uvsim");
+	ros::NodeHandle nh;
+
+	//Sensor loaders
+	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
+		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
+
 	labust::simulation::SimCore simulator;
 
-	ros::NodeHandle nh;
-	//labust::simulation::BasicSensor<sensor_msgs::Imu, sim_imu> imu(nh,"imu");
+	try
+	{
+		using namespace labust::simulation;
+		SimSensorInterface::Ptr sensor = sim_loader.createInstance("labust::simulation::ImuSensor");
+		sensor->configure(nh,"imu");
+		simulator.addSensor(sensor);
+	}
+	catch(pluginlib::PluginlibException& ex)
+	{
+	  //handle the class failing to load
+	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
+	}
 
 	ros::spin();
 	return 0;

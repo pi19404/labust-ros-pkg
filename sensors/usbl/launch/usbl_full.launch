@@ -7,7 +7,4 @@
   <!-- <node pkg="nodelet" type="nodelet" name="usbl_filter" 
   		args="load usbl/USBLFilter usbl_pool">
   </node> -->
-  <node pkg="nodelet" type="nodelet" name="usbl_manager" 
-  	args="load usbl/USBLManager usbl_pool">
-  </node>
 </launch>

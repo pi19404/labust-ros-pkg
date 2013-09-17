@@ -5,7 +5,7 @@ project(cart2)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp
-	message_generation dynamic_reconfigure)
+	message_generation dynamic_reconfigure snippets)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)

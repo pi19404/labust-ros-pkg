@@ -30,53 +30,36 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Dula Nad
-*  Created: 02.04.2013.
 *********************************************************************/
-#include <labust/tritech/USBLManager.hpp>
-#include <pluginlib/class_list_macros.h>
+#ifndef THRUSTERMODELS_HPP_
+#define THRUSTERMODELS_HPP_
 
-PLUGINLIB_DECLARE_CLASS(usbl,USBLManager,labust::tritech::USBLManager, nodelet::Nodelet)
+#include <cmath>
 
-using namespace labust::tritech;
-
-USBLManager::USBLManager(){};
-
-USBLManager::~USBLManager(){};
-
-void USBLManager::onInit()
+namespace labust
 {
-	ros::NodeHandle nh = this->getNodeHandle();
-	navData = nh.subscribe<auv_msgs::NavSts>("usblFiltered",	1, boost::bind(&USBLManager::onNavMsg,this,_1));
-	incoming = nh.subscribe<std_msgs::String>("incoming_data",	1, boost::bind(&USBLManager::onIncomingMsg,this,_1));
-	outgoing = nh.advertise<std_msgs::String>("outgoing_data",1);
-}
-
-void USBLManager::onNavMsg(const auv_msgs::NavSts::ConstPtr nav)
-{
-	NODELET_DEBUG("Received nav message.\n");
-	encoder.latitude = nav->global_position.latitude;
-	encoder.longitude = nav->global_position.longitude;
-	encoder.z = nav->position.depth;
-
-	//Here we select based on the algorithm
-	uint64_t msg = encoder.pack<DiverMsg::PositionInit>();
-	char* p = reinterpret_cast<char*>(&msg);
-	std_msgs::StringPtr out(new std_msgs::String());
-	out->data.assign(p,sizeof(uint64_t));
-	outgoing.publish(out);
-}
-
-void USBLManager::onIncomingMsg(const std_msgs::String::ConstPtr msg)
-{
-	NODELET_DEBUG("Received modem message.\n");
-	if (msg->data.size() > 8)
+	namespace vehicles
 	{
-		std::string data(msg->data);
-		uint64_t* binData = reinterpret_cast<uint64_t*>(&data[0]);
-		encoder.unpack<DiverMsg::AutoDiver>(*binData);
-
-		NODELET_INFO("Recevied message: %d", encoder.msgType);
+		/**
+		 * This class helps calculate the thruster allocation.
+		 */
+		struct AffineThruster
+		{
+			/**
+			 * The method returns the number of revolutions needed to generate the requested thrust.
+			 */
+			inline static int getRevs(double thrust, double Tnn = 1, double _Tnn = 1)
+			{
+				return (thrust >= 0) ? std::ceil(std::sqrt(thrust/Tnn)) : -std::ceil(std::sqrt(-thrust/_Tnn));
+			}
+			
+			inline static double getRevsD(double thrust, double Tnn = 1, double _Tnn = 1)
+			{
+				return (thrust >= 0) ? std::sqrt(thrust/Tnn) : -std::sqrt(-thrust/_Tnn);
+			}
+		};
 	}
 }
+
+/* THRUSTERMODELS_HPP_*/
+#endif

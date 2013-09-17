@@ -37,7 +37,8 @@
 #include <labust/control/CNRRemoteRadio.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
 #include <cart2/SetHLMode.h>
 #include <cart2/HLMessage.h>
 #include <labust/control/crc16.h>

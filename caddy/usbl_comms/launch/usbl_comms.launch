@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="nodelet" type="nodelet" name="usbl_manager"
+        args="standalone usbl_comms/USBLManager">
+  </node>
+</launch>

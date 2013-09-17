@@ -36,6 +36,7 @@
  *********************************************************************/
 #ifndef CONVERSIONS_HPP_
 #define CONVERSIONS_HPP_
+#include <Eigen/Dense>
 
 namespace labust
 {

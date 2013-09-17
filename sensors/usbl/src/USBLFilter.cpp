@@ -67,7 +67,7 @@ void USBLFilter::onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg)
 	tf::StampedTransform transform;
 	try
 	{
-		listener.lookupTransform("local", "usbl", ros::Time(0), transform);
+		listener.lookupTransform("local", "base_link", ros::Time(0), transform);
 	}
 	catch (tf::TransformException& ex)
 	{
@@ -107,7 +107,7 @@ void USBLFilter::run()
 		try
 		{
 			tf::StampedTransform transformDeg;
-			listener.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+			listener.lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
 
 			std::pair<double, double> diffAngle = labust::tools::meter2deg(state(KFilter::xp),
 					state(KFilter::yp),

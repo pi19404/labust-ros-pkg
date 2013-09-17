@@ -4,7 +4,7 @@ project(usbl)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs)
+find_package(catkin REQUIRED COMPONENTS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs tritech_sdk)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread serialization)
@@ -50,7 +50,7 @@ find_package(Boost REQUIRED COMPONENTS thread serialization)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES usbl
-   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs
+   CATKIN_DEPENDS geometry_msgs labust_base roscpp rospy tf nodelet auv_msgs tritech_sdk
 #  DEPENDS system_lib
 )
 
@@ -63,17 +63,19 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++0x")
 ## Your package locations should be listed before other locations
 include_directories(include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
 add_library(usbl-plugs
   src/USBLNodelet.cpp
   src/USBLFilter.cpp
-  src/USBLManager.cpp
 )
 
 ## Declare a cpp executable
 add_executable(modem_node src/test/modem_node.cpp)
+add_executable(msg_encoder src/test/MsgEncoder.cpp)
+add_executable(usbl_sim src/test/usbl_sim.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -83,13 +85,19 @@ add_executable(modem_node src/test/modem_node.cpp)
 target_link_libraries(usbl-plugs
    ${Boost_SERIALIZATION_LIBRARY}
    ${Boost_THREAD_LIBRARY}
-   tritech-sdk
    labust_navcon
    ${catkin_LIBRARIES}
 )
 
 target_link_libraries(modem_node
-   tritech-sdk
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(usbl_sim
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(msg_encoder
    ${catkin_LIBRARIES}
 )
 
