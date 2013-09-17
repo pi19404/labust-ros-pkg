@@ -7,31 +7,37 @@ import os
 import rospy
 
 from qt_gui.plugin import Plugin
-from python_qt_binding import loadUi
+from python_qt_binding import loadUi, QtCore
 from caddy_gui import CaddyGui
 from std_msgs.msg import String, Int32
 from geometry_msgs.msg import Point
 
-class CaddyGuiROS():
+class CaddyGuiROS(QtCore.QObject):
     
     def __init__(self, gui):
+        QtCore.QObject.__init__(self)
         self._gui = gui;
         self._gui.bindHook(self)
         
     def setup(self):
-        #Define event     
+        #Define event
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onDiverText"), self._gui.newChatMessage)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onDiverDefaults"), self._gui.newDefaultMessage)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onDiverOrigin"), self._gui.newOriginPosition)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onManagerState"), self._gui.newManagerState)
+        
         self.diverText = rospy.Subscriber("diver_text",String,
-                            lambda data: 
-                                self._gui.newChatMessage(data.data, "Diver"));
+                            lambda data:
+                                self.emit(QtCore.SIGNAL("onDiverText"),data.data, "Diver"));
         self.defaultMsgs = rospy.Subscriber("diver_defaults",Int32,
                             lambda data:
-                                self._gui.newDefaultMessage(data.data)); 
+                                self.emit(QtCore.SIGNAL("onDiverDefaults"),data.data));
         self.diverOrigin = rospy.Subscriber("diver_origin",Point,
                             lambda data: 
-                                 self._gui.newOriginPosition(data));
+                                self.emit(QtCore.SIGNAL("onDiverOrigin"),data));
         self.managerState = rospy.Subscriber("usbl_current_state",Int32,
                             lambda data:
-                                self._gui.newManagerState(data.data));
+                                self.emit(QtCore.SIGNAL("onManagerState"),data.data));
             
         self.outText = rospy.Publisher("usbl_text", String);
         self.outDefaults = rospy.Publisher("usbl_defaults",Int32);
