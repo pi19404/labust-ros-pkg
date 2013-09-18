@@ -175,14 +175,17 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 
 		navPub.publish(usblOut);
 
-		std_msgs::String::Ptr modem(new std_msgs::String());
-		size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
-		std::cout<<"Modem data byte size "<<size<<" data:";
-		for(int i=0; i<modem_data.data.size(); ++i) std::cout<<int(modem_data.data[i])<<",";
-		std::cout<<std::endl;
-		modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload_size,
-				modem_data.data.begin() + MMCMsg::ranged_payload_size + size + 1);
-		dataPub.publish(modem);
+		if (modem_data.msgType != mmcRangeData)
+		{
+			std_msgs::String::Ptr modem(new std_msgs::String());
+			size_t size = modem_data.data[MMCMsg::ranged_payload_size]/8;
+			std::cout<<"Modem data byte size "<<size<<" data:";
+			for(int i=0; i<modem_data.data.size(); ++i) std::cout<<int(modem_data.data[i])<<",";
+			std::cout<<std::endl;
+			modem->data.assign(modem_data.data.begin() + MMCMsg::ranged_payload_size,
+					modem_data.data.begin() + MMCMsg::ranged_payload_size + size + 1);
+			dataPub.publish(modem);
+		}
 	}
 	else
 	{

@@ -295,6 +295,10 @@ namespace labust
 			 * The diver frame origin.
 			 */
 			double diverOriginLat, diverOriginLon;
+			/**
+			 * The last kml debugging output.
+			 */
+			int lastKmlIdxSent;
 		};
 	}
 }
