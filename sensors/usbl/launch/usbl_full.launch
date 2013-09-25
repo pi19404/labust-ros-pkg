@@ -1,10 +1,17 @@
 <launch>
-  <node pkg="nodelet" type="nodelet" name="usbl_pool"  args="manager"/>
+  <group ns="usbl">
+  <arg name="uvsim_tf_prefix" value="$(optenv TF_PREFIX /)" />
+  <!-- <node pkg="nodelet" type="nodelet" name="usbl_pool"  args="manager">
+	<param name="tf_prefix" value="$(arg uvsim_tf_prefix)"/>
+  </node> -->
 
   <node pkg="nodelet" type="nodelet" name="usbl"
-        args="load usbl/USBLNodelet usbl_pool">
+        args="standalone usbl/USBLNodelet">
+	<param name="tf_prefix" value="$(arg uvsim_tf_prefix)"/>
   </node>
-  <!-- <node pkg="nodelet" type="nodelet" name="usbl_filter" 
-  		args="load usbl/USBLFilter usbl_pool">
-  </node> -->
+  <node pkg="nodelet" type="nodelet" name="usbl_filter" 
+  		args="standalone usbl/USBLFilter">
+	<param name="tf_prefix" value="$(arg uvsim_tf_prefix)"/>
+  </node>
+  </group>
 </launch>

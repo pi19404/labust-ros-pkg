@@ -169,8 +169,8 @@ void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)
 		usblOut->header.stamp = ros::Time::now();
 		usblOut->header.frame_id = "usbl";
 
-		usblOut->point.x = usbl_data.attitudeCorrectedPos[0];
-		usblOut->point.y = usbl_data.attitudeCorrectedPos[1];
+		usblOut->point.x = usbl_data.attitudeCorrectedPos[1];
+		usblOut->point.y = usbl_data.attitudeCorrectedPos[0];
 		usblOut->point.z = usbl_data.attitudeCorrectedPos[2];
 
 		navPub.publish(usblOut);

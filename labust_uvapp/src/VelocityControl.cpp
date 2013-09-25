@@ -376,7 +376,12 @@ void VelocityControl::step()
 //		tau.wrench.force.x = controller[u].output;
 //	}
 
-	tauach=tau;
+	tauach.wrench.force.x  = tau.wrench.force.x;
+	tauach.wrench.force.y  = tau.wrench.force.y;
+	tauach.wrench.force.z  = tau.wrench.force.z;
+	tauach.wrench.torque.x = tau.wrench.torque.x;
+	tauach.wrench.torque.y = tau.wrench.torque.y;
+	tauach.wrench.torque.z = tau.wrench.torque.z;
 
 	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
 	if (controller[v].autoTracking)

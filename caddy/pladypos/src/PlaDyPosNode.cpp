@@ -139,10 +139,10 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 		switch (c)
 		{
 		case '!':
-			ROS_INFO("Message acknowledged.");
+			//ROS_INFO("Message acknowledged.");
 			break;
 		case '?':
-			ROS_INFO("Communication error - received '?'");
+			//ROS_INFO("Communication error - received '?'");
 			break;
 		case '(':
 			is>>ret>>idx>>junk>>value>>delimit;
@@ -150,7 +150,7 @@ void PlaDyPosNode::onReply(const boost::system::error_code& error, const size_t&
 			{
 				++trackC;
 				sensors[idx] = value*sscale[idx];
-				ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
+				//ROS_INFO("Received data: type=%c, idx=%d, value=%d", ret,idx,value);
 
 				if (trackC == sensors.size()-1)
 				{
@@ -202,7 +202,7 @@ void PlaDyPosNode::dynrec(pladypos::ThrusterMappingConfig& config, uint32_t leve
 	{
 		int n[4]={config.rev0, config.rev1, config.rev2, config.rev3};
 		driverMsg(n);
-		ROS_INFO("Revoultion control enabled.");
+		//ROS_INFO("Revoultion control enabled.");
 	}
 }
 
@@ -270,7 +270,7 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 	for (int i=0; i<4;++i)
 	{
 		//This is the quadratic allocation.
-		n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
+		//n[i] = labust::vehicles::AffineThruster::getRevs(tauI(i),1.0/(255*255),1.0/(255*255));
 		//This is the linear allocation.
 		//n[i]=tauI(i)*255; 
 		//This is the compensated quadratic+linear allocation.
@@ -285,8 +285,16 @@ void PlaDyPosNode::onTau(const auv_msgs::BodyForceReq::ConstPtr tau)
 		}
 	}
 
+	//Manual corection
+	//if (n[3] < 0)
+	//{ 
+	//	n[3]*= 1.15;
+	//	n[3] = labust::math::coerce(n[3],-255,255);
+	//}
+	//n[1] *= 0.95;
 
+	
 	driverMsg(n);
 
-	ROS_INFO("Revs: %d %d %d %d\n",n[0],n[1],n[2],n[3]);
+	//ROS_INFO("Revs: %d %d %d %d\n",n[0],n[1],n[2],n[3]);
 }

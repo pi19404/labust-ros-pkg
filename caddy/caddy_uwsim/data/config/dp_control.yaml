@@ -1,7 +1,8 @@
 #The dynamic positioning parameters
-dp_controller/closed_loop_freq: [0.2,0.3]
+dp_controller/closed_loop_freq: [0.2,0.2, 0.3]
 dp_controller/safetyRadius: 3
 dp_controller/sampling: 0.1
+dp_controller/underactuated: false
 
 lf_controller/closed_loop_freq: 0.1
 lf_controller/default_surge: 0
@@ -16,7 +17,7 @@ virtual_target/approach_angle: 35
 virtual_target/openLoopSurge: 0.5
 virtual_target/outer_loop_gains: [0.1, 0.2]
 
-heading_control/heading_closed_loop_freq: 0.4
+heading_control/heading_closed_loop_freq: 0.6
 heading_control/sampling: 0.1
 heading_control/openLoopSurge: 0
 
