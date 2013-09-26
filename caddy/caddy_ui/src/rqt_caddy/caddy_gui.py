@@ -31,6 +31,8 @@ class CaddyGui(QtCore.QObject):
             chatHistory = self._widget.diverChatHistory;
     
         chatHistory.insertPlainText(text)
+        if "\n" in text:
+            chatHistory.insertPlainText("|||")
         
     def newDefaultMessage(self, idx):
         if idx in self.defaultMsgs.keys(): 

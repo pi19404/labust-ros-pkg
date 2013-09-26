@@ -35,6 +35,7 @@
   </group>
 
   <group ns="usbl">
+  	<rosparam command="load" file="$(find caddy_uwsim)/data/config/usblfilterparams.yaml" />
 	<include file="$(find usbl_comms)/launch/usbl_comms.launch" if="$(arg use_usbl_manager)" />
   </group>
 </launch>

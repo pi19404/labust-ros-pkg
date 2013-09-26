@@ -82,6 +82,10 @@ namespace labust
 			 * Handles arrived USBL navigation messages.
 			 */
 			void onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg);
+			/**
+			 * Configure from ROS file.
+			 */
+			void configureModel(ros::NodeHandle& nh);
 
 			/**
 			 * The USBL device.

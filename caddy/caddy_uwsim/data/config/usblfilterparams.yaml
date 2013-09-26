@@ -1,0 +1,9 @@
+#Parameters:	    x     y     u     psi   r
+usbl_filter/Q: "diag([5](0.004,0.004,0.05,0.001,0.01))"
+usbl_filter/W: "diag([5](1,1,1,1,1))"
+usbl_filter/R: "diag([2](16,16))"
+usbl_filter/V: "diag([2](1,1))"
+usbl_filter/P: "diag([5](1000,1000,1000,1000,1000))"
+usbl_filter/x0: "[5](0,0,0,0,0)"
+
+

@@ -61,10 +61,10 @@ CaddyKML::CaddyKML():
   ship.setColor(scolor);
 
   double len(10);
-  ph.param("platform/length",len,len);
+  ph.param("diver_length",len,len);
   vehicle.setId("Vehicle");
   vehicle.setLength(len);
-  ph.param("platform/length",len,10.0);
+  ph.param("platform_length",len,10.0);
   ship.setId("Ship");
   ship.setLength(len);
 }
