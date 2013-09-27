@@ -102,6 +102,7 @@ namespace labust
 			/**
 			 * The worker thread.
 			 */
+
 			boost::thread worker;
 
 			/**
@@ -116,6 +117,15 @@ namespace labust
 			 * Frame transform listener.
 			 */
 			tf::TransformListener listener;
+			/**
+			 * Safety timeout.
+			 */
+			int timeout, iteration;
+			/**
+			 * Maximum diver speed.
+			 */
+			double maxSpeed;
+
 		};
 	}
 }
