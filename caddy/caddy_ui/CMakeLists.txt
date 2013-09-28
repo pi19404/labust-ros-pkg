@@ -4,7 +4,7 @@ project(caddy_ui)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy auv_msgs labust_base rqt_gui rqt_gui_py rqt_gui_cpp)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy auv_msgs labust_base rqt_gui rqt_gui_py rqt_gui_cpp cart2)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread system)

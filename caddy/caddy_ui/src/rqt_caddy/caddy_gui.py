@@ -27,12 +27,14 @@ class CaddyGui(QtCore.QObject):
         chatHistory = QtGui.QTextEdit()
         if source == "Topside":
             chatHistory = self._widget.topsideChatHistory;
-        else:
+        else:        
+            text += "\n"
+            if text.endswith("\n"):
+                text = text[0:len(text)-1] + "|||\n"; 
             chatHistory = self._widget.diverChatHistory;
     
         chatHistory.insertPlainText(text)
-        if "\n" in text:
-            chatHistory.insertPlainText("|||")
+
         
     def newDefaultMessage(self, idx):
         if idx in self.defaultMsgs.keys(): 
@@ -43,6 +45,15 @@ class CaddyGui(QtCore.QObject):
     def newOriginPosition(self, data):
         self._widget.latLabel.setText(str(data.x))
         self._widget.lonLabel.setText(str(data.y))
+        
+    def newPladyposInfo(self,data):
+        if len(data) >= 6:
+            self._widget.p0field.setText(str(data[0]));
+            self._widget.p1field.setText(str(data[1]));
+            self._widget.p2field.setText(str(data[2]));
+            self._widget.p3field.setText(str(data[3]));
+            self._widget.currentField.setText(str(data[4]));
+            self._widget.voltageField.setText(str(data[5]));
         
     def newManagerState(self,data):                      
         if data in self._managerButtons.keys():

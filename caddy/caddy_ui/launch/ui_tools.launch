@@ -11,6 +11,7 @@
 			<remap from="kml_array" to="/usbl/kml_array" />
 		</node>
 		<node pkg="rqt_gui" type="rqt_gui" name="caddy_gui">
+			<remap from="diver_origin" to="/usbl/diver_origin" />
 			<remap from="diver_text" to="/usbl/diver_text" />
 			<remap from="diver_defaults" to="/usbl/diver_defaults" />
 			
@@ -19,6 +20,8 @@
 			
 			<remap from="usbl_force_state" to="/usbl/usbl_force_state" />
 			<remap from="usbl_current_state" to="/usbl/usbl_current_state" />
+
+			<remap from="pladypos_info" to="/pladypos/pladypos_info" />
 		</node>
 	</group>
 </launch>
