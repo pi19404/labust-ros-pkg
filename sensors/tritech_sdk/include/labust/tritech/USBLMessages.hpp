@@ -50,18 +50,20 @@ namespace labust
 		typedef boost::array<float,4> vec4f;
 		typedef boost::array<float,3> vec3f;
 		typedef boost::array<double,3> vec3d;
+		typedef boost::array<int16_t,3> vec3int16;
 	}
 }
 BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec3f , boost::serialization::primitive_type)
 BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec3d , boost::serialization::primitive_type)
 BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec4f , boost::serialization::primitive_type)
 BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec5f , boost::serialization::primitive_type)
+BOOST_CLASS_IMPLEMENTATION(labust::tritech::vec3int16 , boost::serialization::primitive_type)
 
 ///\todo Document the USBLData and USBLDataV2 classes.
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(tritech),USBLData,
 			(size_t, time_ms)
 			(uint8_t,reply_validity)
-	    (vec3f, doa)
+			(vec3f, doa)
 			(float, RMS)
 			(float, usblAngleQuality)
 			(float, usblRangeQuality)
@@ -76,6 +78,16 @@ PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(tritech),USBLData,
 			(vec3d, attitudeCorrectedPos)
 			(vec3d, worldPos)
 			(double, time))
+
+PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(tritech),AttSenData,
+		 (uint8_t, cmd)
+		 (uint32_t, time)
+	     (vec3int16, acc)
+		 (vec3int16, mag)
+		 (vec3int16, gyro)
+		 (int16_t, pressure)
+		 (int16_t, externalTemp)
+		 (int16_t, internalTemp))
 
 PP_LABUST_DEFINE_BOOST_SERIALIZED_STRUCT_CLEAN((labust)(tritech),USBLDataV2,
 	(labust::tritech::USBLData, nav)
