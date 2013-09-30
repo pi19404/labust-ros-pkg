@@ -113,8 +113,8 @@ void USBLFilter::onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg)
 	try
 	{
 		//Take position two seconds from the past
-		ros::Time now(ros::Time::now()), desired(now - ros::Duration(2));
-		listener.lookupTransform("local", "base_link", desired, transform);
+		ros::Time now(ros::Time::now()), desired(now - ros::Duration(0));
+		listener.lookupTransform("local", "base_link", ros::Time(0), transform);
 	}
 	catch (tf::TransformException& ex)
 	{

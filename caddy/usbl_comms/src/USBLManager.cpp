@@ -558,7 +558,7 @@ void USBLManager::onIncomingForceState(const std_msgs::Int32::ConstPtr msg)
 	//Do some checking on the default messages
 	if (msg->data < lastStateNum)
 	{
-		this->changeState(msg->data);
+		this->lastState = msg->data;
 	}
 	else
 	{
