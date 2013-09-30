@@ -43,6 +43,7 @@
 #include <labust/gearth/CustomLineString.hpp>
 #include <labust/gearth/VehiclePolygon.hpp>
 
+#include <ros/ros.h>
 #include <auv_msgs/NavSts.h>
 
 #include <boost/thread/mutex.hpp>
@@ -66,7 +67,6 @@ namespace labust
      */
     class CaddyKML
     {
-    	enum {kml_radius=800};
     public:
       /**
        * Generic constructor.
@@ -91,6 +91,7 @@ namespace labust
       	boost::mutex::scoped_lock l(kml_mux);
         path.addPoint(position);
         vehicle.updatePosition(position,nav->orientation.yaw);
+        diver= *nav;
         this->write();
       }
       /**
@@ -104,6 +105,7 @@ namespace labust
         ship.updatePosition(kmlbase::Vec3(nav->global_position.longitude,
         		nav->global_position.latitude,
         		-nav->position.depth),nav->orientation.yaw);
+        platform = *nav;
         this->write();
       }
       /**
@@ -120,6 +122,10 @@ namespace labust
        * Helper function to add the operating region to the KML file.
        */
       void addOpRegionToDocument(kmldom::DocumentPtr document);
+      /**
+       * Helper function to add the variance region.
+       */
+      void addVarianceRegion(const auv_msgs::NavSts& nav, kmldom::DocumentPtr document);
       /**
        * Vehicle path
        */
@@ -160,6 +166,10 @@ namespace labust
        * The write mutex.
        */
       boost::mutex kml_mux;
+      /**
+       * The navigation stats.
+       */
+      auv_msgs::NavSts diver, platform;
     };
   }
 }
