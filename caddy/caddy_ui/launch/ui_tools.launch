@@ -2,7 +2,7 @@
 	<group ns="uitools">
 		<node pkg="caddy_ui" type="ros2ge" name="ros2ge">
 			<remap from="platform" to="/pladypos/stateHat" />
-			<remap from="diver" to="/usbl/usblFiltered" />
+			<remap from="diver" to="/pladypos/TrackPoint" />
 			<remap from="diver_origin" to="/usbl/diver_origin" />
 			<param name="diver_length" value="1" />
 			<param name="platform_length" value="0.5" />

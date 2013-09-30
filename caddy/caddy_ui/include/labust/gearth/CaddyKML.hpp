@@ -47,6 +47,7 @@
 #include <auv_msgs/NavSts.h>
 
 #include <boost/thread/mutex.hpp>
+#include <boost/thread.hpp>
 
 namespace labust
 {
@@ -92,7 +93,7 @@ namespace labust
         path.addPoint(position);
         vehicle.updatePosition(position,nav->orientation.yaw);
         diver= *nav;
-        this->write();
+        //this->write();
       }
       /**
        * Add a new coordinate of the ship.
@@ -101,12 +102,14 @@ namespace labust
        */
       void addShipPosition(const auv_msgs::NavSts::ConstPtr& nav)
       {
+        kmlbase::Vec3 position(nav->global_position.longitude,
+    	          		nav->global_position.latitude,
+    	          		-nav->position.depth);
       	boost::mutex::scoped_lock l(kml_mux);
-        ship.updatePosition(kmlbase::Vec3(nav->global_position.longitude,
-        		nav->global_position.latitude,
-        		-nav->position.depth),nav->orientation.yaw);
+        ship.updatePosition(position,nav->orientation.yaw);
+        platformPath.addPoint(position);
         platform = *nav;
-        this->write();
+        //this->write();
       }
       /**
        * Update the diver origin.
@@ -116,6 +119,10 @@ namespace labust
        * Write data to the KML file.
        */
       void write();
+      /**
+       * File writer.
+       */
+      void run();
 
     private:
       /**
@@ -129,7 +136,7 @@ namespace labust
       /**
        * Vehicle path
        */
-      CustomLineString<TransparentSegments> path;
+      CustomLineString<TransparentSegments> path, platformPath;
       /**
        * Vehicle polygon.
        */
@@ -170,6 +177,14 @@ namespace labust
        * The navigation stats.
        */
       auv_msgs::NavSts diver, platform;
+      /**
+       * The worker thread.
+       */
+      boost::thread worker;
+      /**
+       * The runner flag.
+       */
+      bool runFlag;
     };
   }
 }

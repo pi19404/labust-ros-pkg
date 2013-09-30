@@ -27,10 +27,10 @@ class CaddyGui(QtCore.QObject):
         chatHistory = QtGui.QTextEdit()
         if source == "Topside":
             chatHistory = self._widget.topsideChatHistory;
-        else:        
-            text += "\n"
-            if text.endswith("\n"):
-                text = text[0:len(text)-1] + "|||\n"; 
+        else:      
+            n = text.find("\n");
+            if n != -1:
+                text = text[0:n] + "|||"+text[n:len(text)]; 
             chatHistory = self._widget.diverChatHistory;
     
         chatHistory.insertPlainText(text)
