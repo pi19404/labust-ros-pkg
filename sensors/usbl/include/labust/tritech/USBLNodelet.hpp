@@ -114,7 +114,7 @@ namespace labust
 			/**
 			 * The USBL device.
 			 */
-			TCPDevicePtr usbl;
+			TCPDevicePtr usbl, attitude;
 			/**
 			 * The USBL address.
 			 */

@@ -73,6 +73,10 @@ void USBLNodelet::onInit()
 	autoMode = (op_mode == "auto");
 	//Connect to the TCPDevice
 	usbl.reset(new TCPDevice(address,port));
+	attitude.reset(new TCPDevice(address,port, 
+		labust::tritech::Nodes::AttitudeSensor,
+		labust::tritech::TCPRequest::atMiniAttSen,
+		127));
 	//Register handlers
 	TCPDevice::HandlerMap map;
 	map[MTMsg::mtAlive] = boost::bind(&USBLNodelet::onTCONMsg,this,_1);
@@ -80,6 +84,7 @@ void USBLNodelet::onInit()
 	map[MTMsg::mtMiniAttData] = boost::bind(&USBLNodelet::onAttMsg, this, _1);
 	//map[MTMsg::mtAMNavDataV2] = map[MTMsg::mtAMNavData];
 	usbl->registerHandlers(map);
+	attitude->registerHandlers(map);
 
 	ros::NodeHandle nh = this->getNodeHandle();
 	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));

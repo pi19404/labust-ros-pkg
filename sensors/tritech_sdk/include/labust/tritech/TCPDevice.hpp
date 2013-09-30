@@ -124,7 +124,10 @@ namespace labust
 			/**
 			 * Default constructor with specified portname and baud rate.
 			 */
-			TCPDevice(const std::string& address, uint32_t port);
+			TCPDevice(const std::string& address, uint32_t port,
+				uint8_t device = Nodes::USBL,
+				uint8_t app_class = TCPRequest::atAMNAV,
+				uint8_t priority = 129);
 			/**
 			 * Generic destructor.
 			 */
@@ -200,6 +203,10 @@ namespace labust
 			 * The handler map.
 			 */
 			HandlerMap handlers;
+			/**
+			 * Device registarion.
+			 */
+			uint8_t device,app_class,priority;
 		};
 	}
 }

@@ -49,11 +49,15 @@
 
 using namespace labust::tritech;
 
-TCPDevice::TCPDevice(const std::string& address, uint32_t port):
+TCPDevice::TCPDevice(const std::string& address, uint32_t port, 
+	uint8_t device, uint8_t app_class, uint8_t priority):
 										socket(io),
 										address(address),
 										port(port),
-										ringBuffer(ringBufferSize)
+										ringBuffer(ringBufferSize),
+  device(device),
+  app_class(app_class),
+  priority(priority)
 {
 	this->_setup();
 
@@ -109,17 +113,13 @@ catch (std::exception& e)
 void TCPDevice::registerDevice(bool attach)
 {
 	///\todo Temporary added registrations
-	uint8_t devices[]={labust::tritech::Nodes::USBL, labust::tritech::Nodes::AttitudeSensor};
-	uint8_t app_class[]={TCPRequest::atAMNAV, TCPRequest::atMiniAttSen};
-	for (int i=0; i<sizeof(devices); ++i)
-	{
 		boost::asio::streambuf output;
 		std::ostream out(&output);
 
 		TCPRequest req;
-		req.app_class = app_class[i];
-		req.node =devices[i];
-		req.priority = 129;
+		req.app_class = app_class;
+		req.node =device;
+		req.priority = priority;
 
 		if (attach)
 		{
@@ -141,7 +141,6 @@ void TCPDevice::registerDevice(bool attach)
 		dataSer << req;
 
 		boost::asio::write(socket,output.data());
-	}
 }
 
 void TCPDevice::start_receive(uint8_t state)
@@ -262,6 +261,7 @@ void TCPDevice::onHeader(StreamPtr data, const boost::system::error_code& error,
 			//				}
 			//			}
 
+			if (msg->msgType == 81) std::cout<<"Received attitude data."<<std::endl;
 			if (msg->msgType == 94)
 			{
 				std::cout<<"Received Nav data:"<<std::endl;
