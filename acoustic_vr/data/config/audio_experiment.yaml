@@ -13,7 +13,7 @@ K_Diter_Time: 1
 AmpDiter: 0 
 #1 - default
 FreqDiter: 1
-RabbitDistance: 3
+RabbitDistance: 0
 #1 . None, 2 - Joystick
 JoyStick_Mode: 1
 PathVelocity: 1

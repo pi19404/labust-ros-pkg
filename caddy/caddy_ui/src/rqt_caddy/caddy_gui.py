@@ -85,7 +85,8 @@ class CaddyGui(QtCore.QObject):
                             4:"Repeat again",
                             5:"Diving out",
                             6:"Next kml set",
-                            7:"End kml"};              
+                            7:"End kml",
+                            8:"InitReq"};              
         
     def _setup_gui(self):
         #Fill default combo box

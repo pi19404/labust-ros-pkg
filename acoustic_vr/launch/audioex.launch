@@ -4,5 +4,7 @@
 			file="$(find acoustic_vr)/data/config/audio_experiment.yaml" />
 		<param name="TexturePath" value="$(find acoustic_vr)/data/media/files/" />
 		<param name="MediaPath" value="$(find acoustic_vr)/data/media/" />
+		<remap from="target_point" to="/pladypos/LFPoint" />
+		<remap from="stateHat" to="/pladypos/stateHat" />
 	</node>
 </launch>

@@ -137,7 +137,11 @@ class MatLogger:
                 'current2',
                 'current3',
                 'current',
-                'voltage');
+                'voltage',
+                'rev0',
+                'rev1',
+                'rev2',
+                'rev3');
         self.imusensLogOrder= ('linear_acceleration.x',
                                'linear_acceleration.y',
                                'linear_acceleration.z',

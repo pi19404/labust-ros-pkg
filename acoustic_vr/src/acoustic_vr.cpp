@@ -29,6 +29,7 @@
 #include <boost/thread.hpp>
 #include <sensor_msgs/Joy.h>
 #include <auv_msgs/NavSts.h>
+#include <geometry_msgs/PointStamped.h>
 
 #include <labust/gui/AAGui.hpp>
 
@@ -996,7 +997,7 @@ namespace FMOD
 		}
 
 		// target or last WP won
-		if ((fabs(xListenerPos) < 0.1 && fabs(zListenerPos) < 0.1) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
+		if ((fabs(xListenerPos) < 2 && fabs(zListenerPos) < 2) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
 		{
 			objects[0].yPos = yListenerPos + 5000;
 			objects[6].yPos = yListenerPos + 5000;
@@ -2068,6 +2069,14 @@ void handleTarget(const auv_msgs::NavSts::ConstPtr& ref)
 	target = *ref;
 }
 
+void handleTarget2(const geometry_msgs::PointStamped::ConstPtr& ref)
+{
+	boost::mutex::scoped_lock l(joyMux);
+	target.position.north = ref->point.x;
+	target.position.east = ref->point.y;
+	target.position.depth = ref->point.z;
+}
+
 void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	boost::mutex::scoped_lock l(joyMux);
@@ -2082,8 +2091,10 @@ int	main(int argc, char **argv)
 	ros::Subscriber manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,&handleManual);
 
 	//Initialze subscribers
-	ros::Subscriber targetRef = nh.subscribe<auv_msgs::NavSts>("target_point", 1,
+	ros::Subscriber targetRef = nh.subscribe<auv_msgs::NavSts>("target_navsts", 1,
 			&handleTarget);
+	ros::Subscriber targetRef2 = nh.subscribe<geometry_msgs::PointStamped>("target_point", 1,
+			&handleTarget2);
 	ros::Subscriber stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat", 1,
 			&handleEstimates);
 	boost::thread t(static_cast<void(*)(void)>(&ros::spin));

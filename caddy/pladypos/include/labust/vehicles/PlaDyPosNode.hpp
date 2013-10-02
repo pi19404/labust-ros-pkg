@@ -163,6 +163,10 @@ namespace labust
 			 * The sensor measurements
 			 */
 			boost::array<float,6> sensors;
+			/**
+			 * The last revolutions.
+			 */
+			int lastRevs[4];
 
 			/**
 			 * Allocation matrix and maximum force, torque.

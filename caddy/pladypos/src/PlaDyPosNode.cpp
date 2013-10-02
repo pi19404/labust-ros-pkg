@@ -190,6 +190,8 @@ void PlaDyPosNode::pubDiagnostics()
 		data->data[i]=sensors[i];
 	}
 
+	for (size_t i=0; i<sizeof(lastRevs); ++i) data->data.push_back(lastRevs[i]);
+
 	diag.publish(status);
 	info.publish(data);
 }
@@ -227,7 +229,11 @@ void PlaDyPosNode::driverMsg(const int n[4])
 	std::ostringstream out;
 
 	//Here we set the thrust
-	for (int i=0; i<4;++i)	out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+	for (int i=0; i<4;++i)
+	{
+		lastRevs[i]=n[i];
+		out<<"(P"<<i<<","<<abs(n[i])<<","<<((n[i]>0)?1:0)<<")";
+	}
 	//Here we request the currents and voltages.
 	for (int i=0; i<6;++i)	out<<"(C"<<i<<")";
 
