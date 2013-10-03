@@ -9,6 +9,7 @@ from auv_msgs.msg import BodyVelocityReq;
 from auv_msgs.msg import BodyForceReq;
 from auv_msgs.msg import NavSts;
 from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
 from cart2.msg import ImuInfo
 from cart2.msg import HLMessage
@@ -178,6 +179,7 @@ class MatLogger:
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
+                      MessageLogger("logger/twistMessages", TwistStamped, self.velLogOrder),
                       MessageLogger("logger/Points", PointStamped, self.pointLogOrder),
                       MessageLogger("logger/imu", Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
