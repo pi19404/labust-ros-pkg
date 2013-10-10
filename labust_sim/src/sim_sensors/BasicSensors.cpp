@@ -38,8 +38,10 @@
 #include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
 #include <labust/simulation/RBModel.hpp>
+#include <labust/tools/GeoUtilities.hpp>
 
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
 #include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
 
@@ -81,11 +83,70 @@ namespace labust
 			}
 		};
 
+		struct sim_gps
+		{
+			void operator()(sensor_msgs::NavSatFix::Ptr& fix,
+					const SimSensorInterface::Hook& data)
+			{
+				using namespace labust::simulation;
+				using namespace Eigen;
+
+				tf::StampedTransform transformLocal, transformDeg;
+
+				try
+				{
+					//In case the origin changes
+					data.listener.lookupTransform("/worldLatLon", "/world", ros::Time(0), transformDeg);
+					data.originLat = transformDeg.getOrigin().y();
+					data.originLon = transformDeg.getOrigin().x();
+				}
+				catch (tf::TransformException& ex)
+				{
+					ROS_ERROR("%s",ex.what());
+				}
+
+				try
+				{
+					//data.listener.lookupTransform("base_link", "gps_frame", ros::Time(0), transformLocal);
+					//lisWorld.lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+
+					const labust::simulation::vector& eta = (data.noisy ? data.model.EtaNoisy():data.model.Eta());
+					fix->altitude = 0;
+					//fix->altitude = eta(RBModel::z) - transformLocal.getOrigin().z();
+					//fix->altitude = eta(RBModel::z) - transformLocal.getOrigin().z();
+					std::pair<double, double> diffAngle = labust::tools::meter2deg(eta(RBModel::x),
+							eta(RBModel::y),
+							//The latitude angle
+							data.originLat);
+
+					fix->latitude = data.originLat + diffAngle.first;
+					fix->longitude = data.originLon + diffAngle.second;
+					fix->header.stamp = ros::Time::now();
+					fix->header.frame_id = "worldLatLon";
+//					if (fix->altitude < 0)
+//					{
+//						fix->status = fix->status.STATUS_NO_FIX;
+//					}
+//					else
+//					{
+//						fix->status = fix->status.STATUS_FIX;
+//					}
+				}
+				catch (tf::TransformException& ex)
+				{
+					ROS_ERROR("%s",ex.what());
+				}
+			}
+		};
+
 		typedef BasicSensor<sensor_msgs::Imu, sim_imu> ImuSensor;
+		typedef BasicSensor<sensor_msgs::NavSatFix, sim_gps> GPSSensor;
 	}
 }
 
 PLUGINLIB_EXPORT_CLASS(labust::simulation::ImuSensor,
+		labust::simulation::SimSensorInterface)
+PLUGINLIB_EXPORT_CLASS(labust::simulation::GPSSensor,
 		labust::simulation::SimSensorInterface)
 
 

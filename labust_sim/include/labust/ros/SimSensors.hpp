@@ -67,6 +67,7 @@ namespace labust
 				tf::TransformBroadcaster& broadcaster;
 				tf::TransformListener& listener;
 				bool noisy;
+				mutable double originLat, originLon;
 			};
 
 			typedef boost::shared_ptr<SimSensorInterface> Ptr;
