@@ -24,9 +24,12 @@ checkout
 *.tar.gz
 *.tar.bz2
 #Ignore simulation non-versioned data 
-*/*/data/robot/
+*/data/robot/
+*/data/robots/
 */*/data/robots/
 downloaded
+*/data/media
+logs
 CATKIN_IGNORE
 #Python stuff
 *.pyc

@@ -9,6 +9,7 @@ import rospy
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi, QtCore
 from caddy_gui import CaddyGui
+from cart2.msg import ImuInfo
 from std_msgs.msg import String, Int32
 from geometry_msgs.msg import Point
 
@@ -25,6 +26,7 @@ class CaddyGuiROS(QtCore.QObject):
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDiverDefaults"), self._gui.newDefaultMessage)
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDiverOrigin"), self._gui.newOriginPosition)
         QtCore.QObject.connect(self, QtCore.SIGNAL("onManagerState"), self._gui.newManagerState)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onPladyposInfo"), self._gui.newPladyposInfo)
         
         self.diverText = rospy.Subscriber("diver_text",String,
                             lambda data:
@@ -38,6 +40,9 @@ class CaddyGuiROS(QtCore.QObject):
         self.managerState = rospy.Subscriber("usbl_current_state",Int32,
                             lambda data:
                                 self.emit(QtCore.SIGNAL("onManagerState"),data.data));
+        self.pladyposInfo = rospy.Subscriber("pladypos_info",ImuInfo,
+                            lambda data:
+                                self.emit(QtCore.SIGNAL("onPladyposInfo"),data.data));
             
         self.outText = rospy.Publisher("usbl_text", String);
         self.outDefaults = rospy.Publisher("usbl_defaults",Int32);
@@ -73,6 +78,7 @@ class CaddyGuiROS(QtCore.QObject):
         self.outDefaults.unregister();
         self.outKml.unregister();
         self.outMode.unregister();
+        self.pladyposInfo.unregister();
 
 class CaddyGuiPlug(Plugin):
 

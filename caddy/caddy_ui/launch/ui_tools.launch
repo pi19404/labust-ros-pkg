@@ -2,21 +2,26 @@
 	<group ns="uitools">
 		<node pkg="caddy_ui" type="ros2ge" name="ros2ge">
 			<remap from="platform" to="/pladypos/stateHat" />
-			<remap from="diver" to="/pladypos/usbl/usblFiltered" />
-			<remap from="diver_origin" to="/pladypos/usbl/diver_origin />
+			<remap from="diver" to="/usbl/usblFiltered" />
+			<remap from="diver_origin" to="/usbl/diver_origin" />
+			<param name="diver_length" value="1" />
+			<param name="platform_length" value="0.5" />
 		</node>
 		<node pkg="caddy_ui" type="kml_upload" name="kml_upload" >
-			<remap from="kml_array" to="/pladypos/usbl/kml_array" />
+			<remap from="kml_array" to="/usbl/kml_array" />
 		</node>
 		<node pkg="rqt_gui" type="rqt_gui" name="caddy_gui">
-			<remap from="diver_text" to="/pladypos/usbl/diver_text" />
-			<remap from="diver_defaults" to="/pladypos/usbl/diver_defaults" />
+			<remap from="diver_origin" to="/usbl/diver_origin" />
+			<remap from="diver_text" to="/usbl/diver_text" />
+			<remap from="diver_defaults" to="/usbl/diver_defaults" />
 			
-			<remap from="usbl_text" to="/pladypos/usbl/usbl_text" />
-			<remap from="usbl_defaults" to="/pladypos/usbl/usbl_defaults" />
+			<remap from="usbl_text" to="/usbl/usbl_text" />
+			<remap from="usbl_defaults" to="/usbl/usbl_defaults" />
 			
-			<remap from="usbl_force_state" to="/pladypos/usbl/force_state" />
-			<remap from="usbl_current_state" to="/pladypos/usbl/current_state" />
+			<remap from="usbl_force_state" to="/usbl/usbl_force_state" />
+			<remap from="usbl_current_state" to="/usbl/usbl_current_state" />
+
+			<remap from="pladypos_info" to="/pladypos/pladypos_info" />
 		</node>
 	</group>
 </launch>

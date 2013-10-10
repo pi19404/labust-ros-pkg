@@ -6,23 +6,23 @@
 		<param name="ModelWrap" value="10" />
 		<remap from="tauIn" to="tauOut" />
 		<remap from="meas" to="meas_sim" />
-		<param name="maxThrust" value="1" />
-		<param name="minThrust" value="-1" />
+		<param name="maxThrust" value="-9.19" />
+		<param name="minThrust" value="-9.19" />
 		<param name="publish_world" value="false" />
 		<param name="use_noise" value="true" unless="$(env NO_NOISE)" />
 
 		<remap from="imu_model" to="imu" />
 		<remap from="fix" to="gps" />
-		<remap from="tauAch" to="tauAchSim" />
+		<!-- <remap from="tauAch" to="tauAchSim" /> -->
 		<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
 	</node>
 
-	<node pkg="pladypos" name="pladypos_node" type="pladypos_node" if="$(env USE_PLADYPOS)" machine="controlled" >
+    <node pkg="pladypos" name="pladypos_node" type="pladypos_node" if="$(env USE_PLADYPOS)" machine="controlled" >
       <param name="PortName" value="/dev/ttyS1" />
       <param name="Baud" value="57600" />
       <param name="maxThrust" value="1"/>
       <param name="minThrust" value="-1"/>
       <remap from="tauIn" to="tauOut" />
-      <remap from="tauAch" to="tauAchSim" />
-     </node>
+      <remap from="tauAch" to="tauAchNode" />
+    </node>
 </launch>

@@ -43,10 +43,14 @@
 
 struct SharedData
 {
+	SharedData():
+	  pins(0),
+	  status(0){};
 	enum {tcpu,tsys,taux};
 	uint16_t tempTypes;
 	float temp[3];
 	bool hasIO;
+	DWORD pins, status;
 };
 
 int init_susi(SharedData& shared)
@@ -78,8 +82,11 @@ int init_susi(SharedData& shared)
 	{
 		//Put all pins as outgoing
 		DWORD mask(0);
-		DWORD pins(0x00FF);
-		SusiIOSetDirectionMulti(pins,&mask);
+		DWORD pins(0xFF);
+		//if (!SusiIOSetDirectionMulti(pins,&mask))
+		{
+		  ROS_ERROR("Unable to set pins to output.");
+		}
 	}
 
 	return 0;
@@ -97,7 +104,7 @@ void getTemperature(SharedData& shared)
 	}
 	if (TAUX & shared.tempTypes)
 	{
-		SusiHWMGetTemperature(TSYS, &shared.temp[SharedData::taux], NULL);
+		SusiHWMGetTemperature(TAUX, &shared.temp[SharedData::taux], NULL);
 	}
 }
 
@@ -105,9 +112,14 @@ void handleGPIO(SharedData& shared, const std_msgs::UInt16::ConstPtr& data)
 {
 	if (shared.hasIO)
 	{
-		DWORD pins = data->data & 0xFF00 > 8;
-		DWORD status = data->data & 0x00FF;
-		SusiIOWriteMulti(pins, status);
+		DWORD pins = (data->data & 0xFF00) >> 8;
+		DWORD status = (data->data & 0x00FF);
+		shared.pins = pins;
+		shared.status = status;
+		ROS_INFO("Set gpio: %d, %d",pins, status);
+		//int result = SusiIOWriteMulti(pins, status);
+		//if (result == FALSE) 
+		//	ROS_INFO("SusiIOWriteMulti() failed\n");
 	}
 }
 
@@ -137,6 +149,7 @@ int main(int argc, char* argv[])
 	status.hardware_id = "AdvantechSUSI";
 	for(int i=0;i<3;++i) status.values.push_back(diagnostic_msgs::KeyValue());
 
+	DWORD mask(0x0);
 	while (ros::ok())
 	{
 		getTemperature(shared);
@@ -151,6 +164,17 @@ int main(int argc, char* argv[])
 			status.values[i].value = out.str();
 		}
 		diagnostics.publish(status);
+		DWORD pins(0xFF);
+		SusiIOSetDirectionMulti(pins,&mask);
+		if (!SusiIOSetDirectionMulti(pins,&mask))
+		{
+		  ROS_ERROR("Unable to set pins to output.");
+		}
+		
+		ROS_INFO("Set gpio: %d, %d",shared.pins, shared.status);
+		int result = SusiIOWriteMulti(0xFF, 0x0);
+		if (result != 0) 
+			ROS_INFO("SusiIOWriteMulti() failed\n");
 
 		rate.sleep();
 		ros::spinOnce();

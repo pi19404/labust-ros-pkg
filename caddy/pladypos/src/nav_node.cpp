@@ -129,7 +129,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),
 				roll,pitch,yaw);*/
-		ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
+		//ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
 
 		rpy(r) = roll;
 		rpy(p) = pitch;
@@ -406,6 +406,7 @@ int main(int argc, char* argv[])
 		meas.orientation_rate.yaw = measurement(KFNav::r);
 		meas.position.north = xy(0);
 		meas.position.east = xy(1);
+		meas.header.stamp = ros::Time::now();
 		stateMeas.publish(meas);
 
 		const KFNav::vector& estimate = nav.getState();

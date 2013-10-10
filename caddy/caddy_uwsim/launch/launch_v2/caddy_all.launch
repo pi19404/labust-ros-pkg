@@ -20,21 +20,22 @@
   	<!-- Add runtime applications -->
   	<group unless="$(arg is_sim)">
   		<include file="$(find pladypos)/launch/pladypos_driver.launch" />
-  		<node pkg="advantech" type="advantech_node" name="advtech_node"/>
+  		<!-- <node pkg="advantech" type="advnode.sh" name="advnode"/> -->
   	</group>
   	
   	<!-- Add simulation applications -->
   	<group if="$(arg is_sim)">
   		<include file="$(find labust_sim)/config/simulator.xml"  />
   	</group>  
+  </group>
+	
+  <group if="$(arg use_usbl)">
+	<include file="$(find usbl)/launch/usbl_full.launch" unless="$(arg is_sim)"/>
+	<include file="$(find usbl)/launch/usbl_sim.launch" if="$(arg is_sim)"/>
+  </group>
 
-		<group ns="usbl" if="$(arg use_usbl)">
-			<include file="$(find usbl)/launch/usbl_full.launch" unless="$(arg is_sim)"/>
-			<include file="$(find usbl)/launch/usbl_sim.launch" if="$(arg is_sim)"/>
-		</group>
-
-		<group ns="usbl">
-			<include file="$(find usbl_comms)/launch/usbl_comms.launch" if="$(arg use_usbl_manager)" />
-		</group>
+  <group ns="usbl">
+  	<rosparam command="load" file="$(find caddy_uwsim)/data/config/usblfilterparams.yaml" />
+	<include file="$(find usbl_comms)/launch/usbl_comms.launch" if="$(arg use_usbl_manager)" />
   </group>
 </launch>

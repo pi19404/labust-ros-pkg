@@ -5,9 +5,10 @@ Created on Feb 04, 2013
 @author: dnad
 '''
 import rospy;
-from auv_msgs.msg import BodyVelocityReq
-from auv_msgs.msg import BodyForceReq
-from auv_msgs.msg import NavSts
+from auv_msgs.msg import BodyVelocityReq;
+from auv_msgs.msg import BodyForceReq;
+from auv_msgs.msg import NavSts;
+from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import Imu
 from cart2.msg import ImuInfo
 from cart2.msg import HLMessage
@@ -149,7 +150,7 @@ class MatLogger:
                                'orientation.w');
         self.imuLogOrder = ('latDeg',
             'latFrac', 'lonDeg', 'lonFrac','status',
-	    'sog','cog','declination',
+            'sog','cog','declination',
             'accel_x', 'accel_y', 'accel_z',
             'gyro_x', 'gyro_y', 'gyro_z',
             'mag_x', 'mag_y', 'mag_z',
@@ -162,6 +163,7 @@ class MatLogger:
                             'radius',
                             'surge',
                             'yaw')     
+        self.pointLogOrder = ('point.x','point.y','point.z')
         isPladypos = rospy.get_param("~use_pladypos",False);             
 
 	loggerOrder=self.cart2LogOrder;
@@ -172,7 +174,8 @@ class MatLogger:
                       MessageLogger("logger/bodyVelReqNames", BodyVelocityReq, self.velLogOrder),
                       MessageLogger("logger/bodyForceReqNames", BodyForceReq, self.forceLogOrder),
                       MessageLogger("logger/HLDiagnostics", HLMessage, self.hlDiagnostics),
-                      #MessageLogger(['imu'], Imu, self.imusensLogOrder),
+                      MessageLogger("logger/Points", PointStamped, self.pointLogOrder),
+                      MessageLogger("logger/imu", Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
                       ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
                              

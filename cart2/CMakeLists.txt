@@ -80,27 +80,27 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
-add_executable(radio_node src/radio_node.cpp)
-add_executable(cart2_node src/cart2_main.cpp)
+#add_executable(radio_node src/radio_node.cpp)
+#add_executable(cart2_node src/cart2_main.cpp)
 add_executable(imu_node src/imu_node.cpp)
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
 #add_executable(vr_node src/vr_node.cpp)
 
-add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
-	include/labust/control/TopsideRadio.hpp
-	include/labust/control/crc16.h)
+#add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
+#	include/labust/control/TopsideRadio.hpp
+#	include/labust/control/crc16.h)
 	
-add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
-	src/crc16.cpp
-	include/labust/control/CNRRemoteRadio.hpp
-	include/labust/control/crc16.h)
+#add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
+#	src/crc16.cpp
+#	include/labust/control/CNRRemoteRadio.hpp
+#	include/labust/control/crc16.h)
 	
-add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
-	include/labust/control/BenchRadio.hpp)
+#add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
+#	include/labust/control/BenchRadio.hpp)
 	
-add_executable(coop_node src/coop_node.cpp)
-add_executable(repost_node src/position_repost.cpp)
+#add_executable(coop_node src/coop_node.cpp)
+#add_executable(repost_node src/position_repost.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -111,44 +111,44 @@ add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(cnr_radio cart2_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(topside_radio
-   ${Boost_SERIALIZATION_LIBRARY}
-   ${Boost_REGEX_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(topside_radio
+#   ${Boost_SERIALIZATION_LIBRARY}
+#   ${Boost_REGEX_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(cnr_radio
-   ${Boost_SERIALIZATION_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(cnr_radio
+#   ${Boost_SERIALIZATION_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(coop_node
-   ${Boost_SYSTEM_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(coop_node
+#   ${Boost_SYSTEM_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(repost_node
-   ${Boost_SYSTEM_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(repost_node
+#   ${Boost_SYSTEM_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(bench_radio
-   ${Boost_SERIALIZATION_LIBRARY}
-   ${Boost_REGEX_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(bench_radio
+#   ${Boost_SERIALIZATION_LIBRARY}
+#   ${Boost_REGEX_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(radio_node
-   ${Boost_SERIALIZATION_LIBRARY}
-   ${Boost_REGEX_LIBRARY}
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(radio_node
+#   ${Boost_SERIALIZATION_LIBRARY}
+#   ${Boost_REGEX_LIBRARY}
+#   ${catkin_LIBRARIES}
+#)
 
-target_link_libraries(cart2_node
-   ${catkin_LIBRARIES}
-   ${Boost_SYSTEM_LIBRARY}
-   ${Boost_THREAD_LIBRARY}
-)
+#target_link_libraries(cart2_node
+#   ${catkin_LIBRARIES}
+#   ${Boost_SYSTEM_LIBRARY}
+#   ${Boost_THREAD_LIBRARY}
+#)
 
 target_link_libraries(imu_node
    ${catkin_LIBRARIES}

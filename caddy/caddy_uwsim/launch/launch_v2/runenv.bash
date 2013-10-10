@@ -1,20 +1,13 @@
 #!/bin/bash
-export ROBOT=sim
-export LOCATION=labos
-export JOYSTICK=/dev/input/js0
-export TF_PREFIX=pladypos
+export ROBOT=real
+export JOYSTICK=/dev/input/js1
+export LOCATION=colentum
+export IS_SIM=0
+export USE_USBL=0
+export USE_USBL_MANAGER=0
+export MODEL=`rospack find snippets`/data/models/pladypos.yaml
 export USE_TF_PREFIX=1
-export NAMESPACE=pladypos
-export USE_UWSIM=0
-export USE_RVIZ=1
-export IS_SIM=1
-export NO_NOISE=1
-export LOGDIR=`pwd`/logs/
-mkdir -p ${LOGDIR}
-export ENABLE_LOGGING=0
-export USE_LOCAL_FIX=1
-export USE_PLADYPOS=0
-export SIM_DIVER=1
-export IS_BART=0
-export SIM_MODEL=`rospack find caddy_uwsim`/data/config/pladypos_model.xml
-export YAML_MODEL=`rospack find caddy_uwsim`/data/config/model.yaml
+export TF_PREFIX=pladypos
+export USE_LOCAL_FIX=0
+export ENABLE_LOGGING=1
+export LOGDIR=~/logs

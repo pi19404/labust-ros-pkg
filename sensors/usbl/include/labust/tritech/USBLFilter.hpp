@@ -82,6 +82,10 @@ namespace labust
 			 * Handles arrived USBL navigation messages.
 			 */
 			void onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg);
+			/**
+			 * Configure from ROS file.
+			 */
+			void configureModel(ros::NodeHandle& nh);
 
 			/**
 			 * The USBL device.
@@ -98,6 +102,7 @@ namespace labust
 			/**
 			 * The worker thread.
 			 */
+
 			boost::thread worker;
 
 			/**
@@ -112,6 +117,15 @@ namespace labust
 			 * Frame transform listener.
 			 */
 			tf::TransformListener listener;
+			/**
+			 * Safety timeout.
+			 */
+			int timeout, iteration;
+			/**
+			 * Maximum diver speed.
+			 */
+			double maxSpeed;
+
 		};
 	}
 }
