@@ -53,12 +53,21 @@ int main(int argc, char* argv[])
 
 	labust::simulation::SimCore simulator;
 
+	typedef std::pair<std::string, std::string> NameTopicPair;
+	std::vector< NameTopicPair >
+		list({
+		NameTopicPair("labust::simulation::ImuSensor","imu"),
+		NameTopicPair("labust::simulation::GPSSensor","fix")});
+
 	try
 	{
 		using namespace labust::simulation;
-		SimSensorInterface::Ptr sensor = sim_loader.createInstance("labust::simulation::ImuSensor");
-		sensor->configure(nh,"imu");
-		simulator.addSensor(sensor);
+		for (auto it = list.begin(); it != list.end(); ++it)
+		{
+			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
+			sensor->configure(nh,it->second);
+			simulator.addSensor(sensor);
+		}
 	}
 	catch(pluginlib::PluginlibException& ex)
 	{

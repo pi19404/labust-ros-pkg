@@ -49,14 +49,18 @@
 
 using namespace labust::tritech;
 
-TCPDevice::TCPDevice(const std::string& address, uint32_t port):
-								socket(io),
-								address(address),
-								port(port),
-								ringBuffer(ringBufferSize)
+TCPDevice::TCPDevice(const std::string& address, uint32_t port, 
+	uint8_t device, uint8_t app_class, uint8_t priority):
+										socket(io),
+										address(address),
+										port(port),
+										ringBuffer(ringBufferSize),
+  device(device),
+  app_class(app_class),
+  priority(priority)
 {
 	this->_setup();
-	
+
 	//Start reading until header start.
 	this->start_receive(Sync);
 	service = boost::thread(boost::bind(&boost::asio::io_service::run,&this->io));
@@ -75,67 +79,68 @@ TCPDevice::~TCPDevice()
 void TCPDevice::_setup()
 try
 {
-  //Resolve the Hostname and service
-  boost::asio::ip::tcp::resolver resolver(io);
-  std::stringstream portStr; 
-  portStr<<port;
-  boost::asio::ip::tcp::resolver::query query(address, portStr.str());
-  //Take the first
-  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
-  std::cout<<endpoint.address().to_string()<<", "<<address<<":"<<portStr.str()<<std::endl;
-  socket.connect(endpoint);
-  ///Added on 17.06.2013. to avoid waiting for seanet to start.
-  ///\todo Refactor this code.
-  while (!socket.is_open())
-  {
-	socket.close();
+	//Resolve the Hostname and service
+	boost::asio::ip::tcp::resolver resolver(io);
+	std::stringstream portStr;
+	portStr<<port;
+	boost::asio::ip::tcp::resolver::query query(address, portStr.str());
+	//Take the first
+	boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+	std::cout<<endpoint.address().to_string()<<", "<<address<<":"<<portStr.str()<<std::endl;
 	socket.connect(endpoint);
-	usleep(1000*1000);
-  }
+	///Added on 17.06.2013. to avoid waiting for seanet to start.
+	///\todo Refactor this code.
+	while (!socket.is_open())
+	{
+		socket.close();
+		socket.connect(endpoint);
+		usleep(1000*1000);
+	}
 
-  if (socket.is_open())
-  {
-	registerDevice(true);
-  }
-  else
-    throw std::runtime_error("TCPDevice::_setup : Socket not open.");
+	if (socket.is_open())
+	{
+		registerDevice(true);
+	}
+	else
+		throw std::runtime_error("TCPDevice::_setup : Socket not open.");
 }
 catch (std::exception& e)
 {
-  std::cerr<<e.what()<<std::endl;
-  throw std::runtime_error("TCPDevice::_setup : error while connecting to host.");
+	std::cerr<<e.what()<<std::endl;
+	throw std::runtime_error("TCPDevice::_setup : error while connecting to host.");
 }
 
 void TCPDevice::registerDevice(bool attach)
 {
-	boost::asio::streambuf output;
-	std::ostream out(&output);
+	///\todo Temporary added registrations
+		boost::asio::streambuf output;
+		std::ostream out(&output);
 
-	TCPRequest req;
-	req.app_class = TCPRequest::atAMNAV;
-	req.node = labust::tritech::Nodes::USBL;
-	req.priority = 129;
+		TCPRequest req;
+		req.app_class = app_class;
+		req.node =device;
+		req.priority = priority;
 
-	if (attach)
-    {
-      std::cout<<"Attach to node "<<int(req.node)<<std::endl;
-      req.command = TCPRequest::scAttachToNode;
-    } 
-    else
-    {
-      std::cout<<"Detach from node "<<int(req.node)<<std::endl;
-      req.command = TCPRequest::scDetachFromNode;
-    }
+		if (attach)
+		{
+			std::cout<<"Attach to node "<<int(req.node)<<std::endl;
+			req.command = TCPRequest::scAttachToNode;
+		}
+		else
+		{
+			std::cout<<"Detach from node "<<int(req.node)<<std::endl;
+			req.command = TCPRequest::scDetachFromNode;
+		}
 
-	//For seanet TCP/IP command
-	out<<'#';
-	out.width(4);
-	out.fill('0');
-	out<<std::uppercase<<std::hex<<req.size;
-	boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
-    dataSer << req;
+		//For seanet TCP/IP command
+		out<<'#';
+		out.width(4);
+		out.fill('0');
+		out<<std::uppercase<<std::hex<<req.size;
+		boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
+		dataSer << req;
 
-	boost::asio::write(socket,output.data());
+		boost::asio::write(socket,output.data());
 }
 
 void TCPDevice::start_receive(uint8_t state)
@@ -147,11 +152,11 @@ void TCPDevice::start_receive(uint8_t state)
 				input.prepare(ringBufferSize),
 				boost::bind(&TCPDevice::onSync,this,_1,_2));
 		break;
-	//case Header:
-	//	boost::asio::async_read(port,
-	//			input.prepare(MTMsg::default_size),
-	//			boost::bind(&MTDevice::onHeader,this,_1,_2));
-	//	break;
+		//case Header:
+		//	boost::asio::async_read(port,
+		//			input.prepare(MTMsg::default_size),
+		//			boost::bind(&MTDevice::onHeader,this,_1,_2));
+		//	break;
 	}
 }
 
@@ -169,7 +174,7 @@ void TCPDevice::onSync(const boost::system::error_code& error, std::size_t bytes
 			size_t len = HexHeader::length(&ringBuffer[1]);
 			uint16_t binLength;
 			memcpy(&binLength, &ringBuffer[5],sizeof(uint16_t));
-			
+
 			//std::cout<<"Size of hex header:"<<len<<std::endl;
 			//std::cout<<"Size of binary:"<<binLength<<std::endl;
 
@@ -181,13 +186,13 @@ void TCPDevice::onSync(const boost::system::error_code& error, std::size_t bytes
 				if (ringBuffer[0] == '@')
 				{
 					StreamPtr data(new boost::asio::streambuf());
-	 				//Return the length bytes
+					//Return the length bytes
 					data->sputc(ringBuffer[5]);
 					data->sputc(ringBuffer[6]);
 					data->pubseekoff(-2,std::ios_base::cur);
 					boost::asio::async_read(socket,
-						data->prepare(len-2),
-						boost::bind(&TCPDevice::onHeader,this,data,_1,_2));
+							data->prepare(len-2),
+							boost::bind(&TCPDevice::onHeader,this,data,_1,_2));
 					return;
 				}
 				else
@@ -236,26 +241,27 @@ void TCPDevice::onHeader(StreamPtr data, const boost::system::error_code& error,
 
 			if (handlers.find(msg->msgType) != handlers.end()) handlers[msg->msgType](msg);
 
-//		  //Debug stuff here
-//			if (msg->msgType == MTMsg::mtAMNavRaw)
-//			{
-//				std::cout<<"Received Raw data:"<<std::endl;
-//				std::cout<<"\tTotal size:"<<msg->data->size()<<std::endl;
-//				std::cout<<"\tMsg size:"<<msg->size<<std::endl;
-//				std::cout<<"\tMsg seq:"<<int(msg->seq)<<std::endl;
-//
-//				std::ostringstream name;
-//				name<<"rawData_"<<int(msg->seq)<<".bin";
-//				std::ofstream log(name.str());
-//				std::istream rst(msg->data.get());
-//				while (!rst.eof())
-//				{
-//					int16_t sample;
-//					rst.read(reinterpret_cast<char*>(&sample),2);
-//					log<<sample<<",";
-//				}
-//			}
+			//		  //Debug stuff here
+			//			if (msg->msgType == MTMsg::mtAMNavRaw)
+			//			{
+			//				std::cout<<"Received Raw data:"<<std::endl;
+			//				std::cout<<"\tTotal size:"<<msg->data->size()<<std::endl;
+			//				std::cout<<"\tMsg size:"<<msg->size<<std::endl;
+			//				std::cout<<"\tMsg seq:"<<int(msg->seq)<<std::endl;
+			//
+			//				std::ostringstream name;
+			//				name<<"rawData_"<<int(msg->seq)<<".bin";
+			//				std::ofstream log(name.str());
+			//				std::istream rst(msg->data.get());
+			//				while (!rst.eof())
+			//				{
+			//					int16_t sample;
+			//					rst.read(reinterpret_cast<char*>(&sample),2);
+			//					log<<sample<<",";
+			//				}
+			//			}
 
+			if (msg->msgType == 81) std::cout<<"Received attitude data."<<std::endl;
 			if (msg->msgType == 94)
 			{
 				std::cout<<"Received Nav data:"<<std::endl;
@@ -263,30 +269,30 @@ void TCPDevice::onHeader(StreamPtr data, const boost::system::error_code& error,
 				std::cout<<"\tMsg size:"<<msg->size<<std::endl;
 				std::cout<<"\tMsg seq:"<<int(msg->seq)<<std::endl;
 
-//				std::cout<<"Got:"<<msg->data->size()<<std::endl;
-//				USBLDataV2 usbl_data;
-//				dataSer>>usbl_data;
-//				std::cout<<"Speed of sound:"<<int(usbl_data.nav.worldPos[2])<<std::endl;
-//				std::cout<<"Speed of sound:"<<usbl_data.nav.range<<std::endl;
-//				std::cout<<"Speed of sound:"<<usbl_data.nav.fixVOS<<std::endl;
-//				std::cout<<"Modem data:"<<int(usbl_data.modem.data[0])<<std::endl;
+				//				std::cout<<"Got:"<<msg->data->size()<<std::endl;
+				//				USBLDataV2 usbl_data;
+				//				dataSer>>usbl_data;
+				//				std::cout<<"Speed of sound:"<<int(usbl_data.nav.worldPos[2])<<std::endl;
+				//				std::cout<<"Speed of sound:"<<usbl_data.nav.range<<std::endl;
+				//				std::cout<<"Speed of sound:"<<usbl_data.nav.fixVOS<<std::endl;
+				//				std::cout<<"Modem data:"<<int(usbl_data.modem.data[0])<<std::endl;
 			}
 
-//			if (msg->msgType == MTMsg::mtMiniModemCmd)
-//			{
-//				std::cout<<"Received Raw data:"<<std::endl;
-//				std::cout<<"Total size:"<<msg->data->size()<<std::endl;
-//				std::cout<<"\tMsg size:"<<msg->size<<std::endl;
-//				std::cout<<"\tMsg seq:"<<int(msg->seq)<<std::endl;
-//
-//				std::istream rst(msg->data.get());
-//				while (!rst.eof())
-//				{
-//					uint8_t c;
-//					rst>>c;
-//					std::cout<<int(c)<<",";
-//				}
-//			}
+			//			if (msg->msgType == MTMsg::mtMiniModemCmd)
+			//			{
+			//				std::cout<<"Received Raw data:"<<std::endl;
+			//				std::cout<<"Total size:"<<msg->data->size()<<std::endl;
+			//				std::cout<<"\tMsg size:"<<msg->size<<std::endl;
+			//				std::cout<<"\tMsg seq:"<<int(msg->seq)<<std::endl;
+			//
+			//				std::istream rst(msg->data.get());
+			//				while (!rst.eof())
+			//				{
+			//					uint8_t c;
+			//					rst>>c;
+			//					std::cout<<int(c)<<",";
+			//				}
+			//			}
 
 			std::cout<<"TCPDevice: node:"<<int(msg->node)<<", msg:"<<int(msg->msgType)<<std::endl;
 		}
@@ -308,15 +314,15 @@ void TCPDevice::send(TCONMsgPtr message)
 	boost::asio::streambuf output;
 	std::ostream out(&output);
 	//prepare header
-  out<<'@';
-  out.width(4);
-  out.fill('0');
-  out<<std::uppercase<<std::hex<<message->size;
-  boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
-  dataSer << (*message);
+	out<<'@';
+	out.width(4);
+	out.fill('0');
+	out<<std::uppercase<<std::hex<<message->size;
+	boost::archive::binary_oarchive dataSer(output, boost::archive::no_header);
+	dataSer << (*message);
 
-  //write header
-  boost::asio::write(socket, output.data());
-  //write data
-  boost::asio::write(socket, message->data->data());
+	//write header
+	boost::asio::write(socket, output.data());
+	//write data
+	boost::asio::write(socket, message->data->data());
 }

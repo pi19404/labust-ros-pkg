@@ -41,6 +41,7 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <geometry_msgs/PointStamped.h>
+#include <std_msgs/Float32MultiArray.h>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -72,12 +73,18 @@ void USBLNodelet::onInit()
 	autoMode = (op_mode == "auto");
 	//Connect to the TCPDevice
 	usbl.reset(new TCPDevice(address,port));
+	attitude.reset(new TCPDevice(address,port, 
+		labust::tritech::Nodes::AttitudeSensor,
+		labust::tritech::TCPRequest::atMiniAttSen,
+		127));
 	//Register handlers
 	TCPDevice::HandlerMap map;
 	map[MTMsg::mtAlive] = boost::bind(&USBLNodelet::onTCONMsg,this,_1);
 	map[MTMsg::mtAMNavDataV2] = boost::bind(&USBLNodelet::onNavMsg,this, _1);
+	map[MTMsg::mtMiniAttData] = boost::bind(&USBLNodelet::onAttMsg, this, _1);
 	//map[MTMsg::mtAMNavDataV2] = map[MTMsg::mtAMNavData];
 	usbl->registerHandlers(map);
+	attitude->registerHandlers(map);
 
 	ros::NodeHandle nh = this->getNodeHandle();
 	dataSub = nh.subscribe<std_msgs::String>("outgoing_data",	0, boost::bind(&USBLNodelet::onOutgoingMsg,this,_1));
@@ -85,6 +92,8 @@ void USBLNodelet::onInit()
 	navPub = nh.advertise<geometry_msgs::PointStamped>("usbl_nav",1);
 	dataPub = nh.advertise<std_msgs::String>("incoming_data",1);
 	usblTimeout = nh.advertise<std_msgs::Bool>("usbl_timeout",1);
+	attRaw = nh.advertise<std_msgs::Float32MultiArray>("usbl_att_raw",1);
+	attData = nh.advertise<geometry_msgs::PointStamped>("usbl_att",1);
 
 	if (autoMode) worker = boost::thread(boost::bind(&USBLNodelet::run,this));
 }
@@ -135,6 +144,27 @@ void USBLNodelet::onTCONMsg(labust::tritech::TCONMsgPtr tmsg)
 	{
 		NODELET_DEBUG("Recevied TCONMsg %d.",tmsg->msgType);
 	}
+}
+
+void USBLNodelet::onAttMsg(labust::tritech::TCONMsgPtr tmsg)
+{
+	boost::archive::binary_iarchive dataSer(*tmsg->data, boost::archive::no_header);
+	AttSenData att_data;
+	dataSer>>att_data;
+
+	geometry_msgs::PointStamped::Ptr attOut(new geometry_msgs::PointStamped());
+	std_msgs::Float32MultiArray::Ptr rawOut(new std_msgs::Float32MultiArray());
+
+	rawOut->data.push_back(att_data.cmd);
+	rawOut->data.push_back(att_data.time);
+	rawOut->data.push_back(att_data.pressure);
+	rawOut->data.push_back(att_data.internalTemp);
+	rawOut->data.push_back(att_data.externalTemp);
+	for (int i=0; i<3; ++i) rawOut->data.push_back(att_data.acc[i]);
+	for (int i=0; i<3; ++i) rawOut->data.push_back(att_data.mag[i]);
+	for (int i=0; i<3; ++i) rawOut->data.push_back(att_data.gyro[i]);
+
+	attRaw.publish(rawOut);
 }
 
 void USBLNodelet::onNavMsg(labust::tritech::TCONMsgPtr tmsg)

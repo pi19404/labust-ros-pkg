@@ -434,6 +434,8 @@ int main(int argc, char* argv[])
 					transformDeg.getOrigin().y());
 			state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
 			state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+			state.origin.latitude = transformDeg.getOrigin().y();
+			state.origin.longitude = transformDeg.getOrigin().x();
 		}
 		catch(tf::TransformException& ex)
 		{

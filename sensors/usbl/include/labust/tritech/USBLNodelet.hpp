@@ -85,6 +85,10 @@ namespace labust
 			/**
 			 * Handles arrived USBL navigation messages.
 			 */
+			void onAttMsg(labust::tritech::TCONMsgPtr tmsg);
+			/**
+			 * Handles arrived USBL navigation messages.
+			 */
 			void onNavMsg(labust::tritech::TCONMsgPtr tmsg);
 			/**
 			 * Handles other USBL messages.
@@ -107,13 +111,10 @@ namespace labust
 			 */
 			int ping_timeout;
 
-
-
-
 			/**
 			 * The USBL device.
 			 */
-			TCPDevicePtr usbl;
+			TCPDevicePtr usbl, attitude;
 			/**
 			 * The USBL address.
 			 */
@@ -151,7 +152,7 @@ namespace labust
 			/**
 			 * The navigation and incoming data publisher.
 			 */
-			ros::Publisher navPub, dataPub, usblTimeout;
+			ros::Publisher navPub, dataPub, usblTimeout, attRaw, attData;
 			/**
 			 * The outgoing data subscription.
 			 */

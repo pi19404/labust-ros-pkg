@@ -58,6 +58,8 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+
 include_directories(include
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}

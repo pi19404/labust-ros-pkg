@@ -5,4 +5,10 @@
  	of the vehicle base on the rigid body model simulation.
   </description>
   </class>
+  <class type="labust::simulation::GPSSensor" base_class_type="labust::simulation::SimSensorInterface">
+  <description>
+ 	This is a simple GPS sensor simulation class. It simulates the latitude and longitude movement based
+ 	on the simulated movements in the local frame.
+  </description>
+  </class>
 </library>
