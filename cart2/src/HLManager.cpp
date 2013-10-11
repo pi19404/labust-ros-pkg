@@ -129,6 +129,11 @@ bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
 		this->point.point.x = location.first;
 		this->point.point.y = location.second;
 	}
+	else if (req.ref_point.header.frame_id == "base_link")
+	{
+		this->point.point.x = stateHat.position.north + req.ref_point.point.x;
+		this->point.point.y = stateHat.position.east + req.ref_point.point.y;
+	}
 	else
 	{
 		this->point = req.ref_point;

@@ -156,6 +156,12 @@ void USBLManager::incoming_def_txt()
 		  NODELET_DEBUG("Kml default validated.");
 		  kmlEndValidation.first = kmlSentAndValid;
 		}
+
+		if (mdef.data == DiverMsg::initReq)
+		{
+		  NODELET_INFO("Init requested. Sending init.");
+		  lastState = initDiver;
+		}
 	
 		diverDefaults.publish(mdef);
 	}
