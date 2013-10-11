@@ -190,7 +190,7 @@ void PlaDyPosNode::pubDiagnostics()
 		data->data[i]=sensors[i];
 	}
 
-	for (size_t i=0; i<sizeof(lastRevs); ++i) data->data.push_back(lastRevs[i]);
+	for (size_t i=0; i<4; ++i) data->data.push_back(lastRevs[i]);
 
 	diag.publish(status);
 	info.publish(data);

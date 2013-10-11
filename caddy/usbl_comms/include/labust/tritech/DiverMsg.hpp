@@ -97,7 +97,7 @@ namespace labust
 			/**
 			 * Default messages enum
 			 */
-			enum {nextKMLSet=6, endOfKML=7};
+			enum {nextKMLSet=6, endOfKML=7, initReq=8};
 			/**
 			 * The list of encoded variables.
 			 */

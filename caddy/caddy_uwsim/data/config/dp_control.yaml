@@ -17,7 +17,7 @@ virtual_target/approach_angle: 35
 virtual_target/openLoopSurge: 0.5
 virtual_target/outer_loop_gains: [0.1, 0.2]
 
-heading_control/heading_closed_loop_freq: 0.6
+heading_control/heading_closed_loop_freq: 0.8
 heading_control/sampling: 0.1
 heading_control/openLoopSurge: 0
 

@@ -11,3 +11,4 @@ export TF_PREFIX=pladypos
 export USE_LOCAL_FIX=0
 export ENABLE_LOGGING=1
 export LOGDIR=~/logs
+export ROSLAUNCH_SSH_UNKNOWN=1

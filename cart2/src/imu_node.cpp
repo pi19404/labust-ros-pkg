@@ -51,6 +51,7 @@
 #include <boost/thread.hpp>
 
 #include <iostream>
+#include <numeric>
 
 struct SharedData
 {
@@ -58,11 +59,13 @@ struct SharedData
 		data_offset=4,
 		checksum = 85,
 		float_offset=9};
+	enum {lat=0, lon=1};
 	ros::Publisher imuPub, gpsPub, imuinfo;
 	tf::Transform imuPos, gpsPos, worldLatLon, world;
 	tf::TransformBroadcaster broadcast;
 	double magnetic_declination;
 	unsigned char buffer[msg_size];
+	std::vector<double> median[2];
 	int gps_pub;
 };
 
@@ -176,8 +179,40 @@ void handleIncoming(SharedData& shared,
 		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
 		static int i=0;
 		++i;
-		if ((status == 'A') && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+//		if ((status == 'A') && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
+		if (status == 'A')
+		{
+			shared.median[SharedData::lat].push_back(gps->latitude);
+			shared.median[SharedData::lon].push_back(gps->longitude);
+			if ((i%shared.gps_pub)==0)
+			{
+				double med[2];
+				for (int i=0; i<2; ++i)
+				{
+					int size = shared.median[i].size();
+					//Median
+//					std::sort(shared.median[i].begin(),shared.median[i].end());
+//					if (size%2)
+//					{
+//						med[i] = shared.median[i][size/2-1];
+//					}
+//					else
+//					{
+//						med[i] = (shared.median[i][size/2] +
+//								shared.median[i][size/2-1])/2;
+//					}
+//
+					//Average
+					med[i] = std::accumulate(shared.median[i].begin(), shared.median[i].end(), 0.0)/size;
+					shared.median[i].clear();
+				};
 
+				gps->latitude = med[SharedData::lat];
+				gps->longitude = med[SharedData::lon];
+				shared.gpsPub.publish(gps);
+			}
+		}
+//
 		//Send the WorldLatLon frame update
 		//shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
 		//shared.broadcast.sendTransform(tf::StampedTransform(shared.world, ros::Time::now(), "world", "local"));
