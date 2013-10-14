@@ -1,0 +1,11 @@
+pladypos_info_t: [std_msgs, Float32MultiArray,['current0',
+                                               'current1',
+                                               'current2',
+                                               'current3',
+                                               'current',  
+                                               'voltage',
+                                               'rev0',
+                                               'rev1',
+                                               'rev2',
+                                               'rev3'], list]
+             
