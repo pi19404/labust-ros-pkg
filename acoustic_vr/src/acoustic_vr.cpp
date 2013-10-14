@@ -920,9 +920,9 @@ namespace FMOD
 		}
 	}*/
 		if (ActualWPindex==1)
-		{TransformDistance = RabbitDistance/distance;}
+		{TransformDistance = 1;//RabbitDistance/distance;}
 		else
-		{TransformDistance = NewDist/distance;}
+		{TransformDistance = NewDist/RabbitDistance;}//distance;}
 
 		//InputStoh1 = (0*sin(2*PI*accumulatedTime)+ sin(PI/8*accumulatedTime)+ 1.5*sin(4*PI/8*accumulatedTime)+ 1.5*sin(7*PI/8*accumulatedTime)+ sin(10*PI/8*accumulatedTime)+ 0*sin(13*PI/8*accumulatedTime))/3;
 		//InputStoh = 12*(r-1);//InputStoh1;
@@ -997,7 +997,7 @@ namespace FMOD
 		}
 
 		// target or last WP won
-		if ((fabs(xListenerPos) < 2 && fabs(zListenerPos) < 2) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
+		if ((fabs(xListenerPos) < 2 && fabs(zListenerPos) < 2 && TaskMode==1) || ((ActualWPindex == NumberOfWP + 1) && JoyStickMode==1))
 		{
 			objects[0].yPos = yListenerPos + 5000;
 			objects[6].yPos = yListenerPos + 5000;
