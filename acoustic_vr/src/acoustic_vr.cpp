@@ -1106,9 +1106,10 @@ namespace FMOD
 		//Ovdje ide iz simulatora dodavanje
 		///////////////////////////////////////////////////////////////////////////////////////////////////
 		boost::mutex::scoped_lock lock(joyMux);
-		ObjectLong = target.position.north + RabbitDistance*cos(target.orientation.yaw);
-		ObjectLat = target.position.east + RabbitDistance*sin(target.orientation.yaw);
+		ObjectLong = target.position.north;// + RabbitDistance*cos(target.orientation.yaw);
+		ObjectLat = target.position.east;// + RabbitDistance*sin(target.orientation.yaw);
 		ObjectDepth = target.position.depth;
+		
 		if (JoyStickMode==2)
 		{yListenerPos = 20;}
 		else
@@ -1117,6 +1118,13 @@ namespace FMOD
 			xListenerPos = (state.position.east /*latLonMap["Easting"]*/ - ObjectLat); //relative to the target
 			yListenerPos = state.position.depth; //rovStatus["Depth"];
 		}
+		
+		NumberOfWP = 2;
+		WPnorth[1] = zListenerPos - fabs(zListenerPos)/(zListenerPos)*5;
+		WPeast[1] = xListenerPos - fabs(xListenerPos)/(xListenerPos)*5;
+		WPnorth[2] = 0;//ObjectLong;
+		WPeast[2] = 0;//ObjectLat;
+		
 		zRotation = state.orientation.roll; //rovStatus["Roll"]; //sve je izmjesano z-naprijed, x-lateral, y-gore/dolje
 		xRotation = state.orientation.pitch; //rovStatus["Pitch"];
 		if (JoyStickMode==1)
