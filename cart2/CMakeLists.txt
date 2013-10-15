@@ -26,7 +26,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 add_message_files(
   FILES
   HLMessage.msg
-  ImuInfo.msg
+	#ImuInfo.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -82,7 +82,7 @@ include_directories(include
 ## Declare a cpp executable
 #add_executable(radio_node src/radio_node.cpp)
 #add_executable(cart2_node src/cart2_main.cpp)
-add_executable(imu_node src/imu_node.cpp)
+#add_executable(imu_node src/imu_node.cpp)
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
 #add_executable(vr_node src/vr_node.cpp)
@@ -105,7 +105,7 @@ add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(hlmanager cart2_generate_messages_cpp)
-add_dependencies(imu_node cart2_generate_messages_cpp)
+#add_dependencies(imu_node cart2_generate_messages_cpp)
 #add_dependencies(topside_radio cart2_gencfg)
 #add_dependencies(topside_radio cart2_generate_messages_cpp)
 #add_dependencies(cnr_radio cart2_generate_messages_cpp)
@@ -150,9 +150,9 @@ add_dependencies(imu_node cart2_generate_messages_cpp)
 #   ${Boost_THREAD_LIBRARY}
 #)
 
-target_link_libraries(imu_node
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(imu_node
+#   ${catkin_LIBRARIES}
+#)
 
 target_link_libraries(hlmanager
    ${catkin_LIBRARIES}

@@ -1,0 +1,11 @@
+<launch>
+  <arg name="logger_dir" value="$(optenv LOGDIR ./)" />
+  <rosparam command="load" file="$(find matlogger)/data/auvmsgs_t.yaml" />
+  <rosparam command="load" file="$(find matlogger)/data/geometrymsgs_t.yaml" />
+  <rosparam command="load" file="$(find matlogger)/data/sensormsgs_t.yaml" />    
+  
+  <node pkg="matlogger" name="logger" type="matlogger2.py">
+     <param name="dir" value="$(arg logger_dir)" />
+  </node>
+</launch>
+             

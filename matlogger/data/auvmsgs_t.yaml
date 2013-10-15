@@ -1,0 +1,31 @@
+navsts_t: [auv_msgs, NavSts,['origin.latitude',
+                               'origin.longitude',
+                               'global_position.latitude',
+                               'global_position.longitude',
+                               'body_velocity.x',
+                               'body_velocity.y',
+                               'body_velocity.z',
+                               'orientation_rate.roll',
+                               'orientation_rate.pitch',
+                               'orientation_rate.yaw',
+                               'position.north',
+                               'position.east',
+                               'position.depth',
+                               'orientation.roll',
+                               'orientation.pitch',
+                               'orientation.yaw']]
+
+bodyvelreq_t: [auv_msgs, BodyVelocityReq,['twist.linear.x',
+                                'twist.linear.y',
+                                'twist.linear.z',
+                                'twist.angular.x',
+                                'twist.angular.y',
+                                'twist.angular.z']]       
+                                
+bodyforcereq_t: [auv_msgs, BodyForceReq,['wrench.force.x',
+                            'wrench.force.y',
+                            'wrench.force.z',
+                            'wrench.torque.x',
+                            'wrench.torque.y',
+                            'wrench.torque.z']]
+             

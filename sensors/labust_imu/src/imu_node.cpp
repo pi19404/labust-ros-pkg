@@ -37,7 +37,8 @@
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/math/NumberManipulation.hpp>
-#include <cart2/ImuInfo.h>
+//#include <cart2/ImuInfo.h>
+#include <std_msgs/Float32MultiArray.h>
 
 #include <std_msgs/String.h>
 #include <sensor_msgs/Imu.h>
@@ -128,7 +129,7 @@ void handleIncoming(SharedData& shared,
 			mag_x, mag_y, mag_z,
 			roll,pitch,yaw,ry,mmm,mm};
 
-		cart2::ImuInfo info;
+		std_msgs::Float32MultiArray info;
 		info.data.resize(mm+6);
 		for (size_t i=0; i<mm+1; ++i) info.data[i+5] = data[i];
 
@@ -270,7 +271,7 @@ int main(int argc, char* argv[])
 	ph.param("gps_pub",shared.gps_pub,1);
 	shared.imuPub = nh.advertise<sensor_msgs::Imu>("imu",1);
 	shared.gpsPub = nh.advertise<sensor_msgs::NavSatFix>("fix",1);
-	shared.imuinfo= nh.advertise<cart2::ImuInfo>("imu_info",1);
+	shared.imuinfo= nh.advertise<std_msgs::Float32MultiArray>("imu_info",1);
 
 	//Configure Imu and GPS position relative to vehicle center of mass
 	Eigen::Vector3d origin(Eigen::Vector3d::Zero()),

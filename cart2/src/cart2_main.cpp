@@ -54,7 +54,8 @@
 #include <labust/tools/TimingTools.hpp>
 #include <std_msgs/Bool.h>
 #include <labust/math/NumberManipulation.hpp>
-#include <cart2/ImuInfo.h>
+//#include <cart2/ImuInfo.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <labust/control/PIDController.hpp>
 
 #include <ros/ros.h>
@@ -748,7 +749,7 @@ int main(int argc, char* argv[])
 	//Setup publishers
 	ros::Publisher tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	ros::Publisher diagnostic = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
-	ros::Publisher rpm_info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
+	ros::Publisher rpm_info = nh.advertise<std_msgs::Float32MultiArray>("cart2_info",1);
 
 	//Get port name from configuration and open.
 	std::string portName("/dev/ttyUSB0");
@@ -756,7 +757,7 @@ int main(int argc, char* argv[])
 	port.open(portName);
 	bool useRPMControl(false);
 	ph.param("UseRPMControl", useRPMControl, useRPMControl);
-	cart2::ImuInfo cart2_info;
+	std_msgs::Float32MultiArray cart2_info;
 	cart2_info.data.resize(9);;
 	float rpm_port(0), rpm_stbd(0), curr_port(0), curr_stbd(0);
 	double Kp(0.0001),Ki(0.001);

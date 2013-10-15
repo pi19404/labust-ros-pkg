@@ -1,0 +1,18 @@
+hldiagnostics_t: [cart2, HLMessage,['mode',
+                            'ref_point.point.x',
+                            'ref_point.point.y',
+                            'ref_point.point.z',
+                            'radius',
+                            'surge',
+                            'yaw']]
+
+cart2_info_t: [std_msgs, Float32MultiArray,[
+                'port_rpm_desired',
+                'stbd_rpm_desired',
+                'port_rpm_meas',
+                'stbd_rpm_meas',
+                'port_curr_desired',
+                'stbd_curr_desired',
+                'current',
+                'temp',
+                'voltage'], list]

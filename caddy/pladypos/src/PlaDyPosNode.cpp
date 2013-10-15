@@ -36,7 +36,8 @@
 #include <labust/math/NumberManipulation.hpp>
 
 #include <diagnostic_msgs/DiagnosticStatus.h>
-#include <cart2/ImuInfo.h>
+//#include <cart2/ImuInfo.h>
+#include <std_msgs/Float32MultiArray.h>
 
 #include <boost/regex.hpp>
 
@@ -73,7 +74,7 @@ void PlaDyPosNode::configure(ros::NodeHandle& nh, ros::NodeHandle& ph)
 	tau = nh.subscribe("tauIn", 1, &PlaDyPosNode::onTau,this);
 	tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
 	diag = nh.advertise<diagnostic_msgs::DiagnosticStatus>("diagnostics",1);
-	info = nh.advertise<cart2::ImuInfo>("pladypos_info",1);
+	info = nh.advertise<std_msgs::Float32MultiArray>("pladypos_info",1);
 	
 	//Initialize max/min tau
 	double maxThrust(1),minThrust(-1);
@@ -177,7 +178,7 @@ void PlaDyPosNode::pubDiagnostics()
 
 	std::string names[6]={"C0","C1","C2","C3","CP","Voltage"};
 	std::ostringstream out;
-	cart2::ImuInfoPtr data(new cart2::ImuInfo());
+	std_msgs::Float32MultiArrayPtr data(new std_msgs::Float32MultiArray());
 	data->data.resize(sensors.size());
 	for (size_t i=0; i<sensors.size(); ++i)
 	{

@@ -1,0 +1,21 @@
+point_stamped_t: [geometry_msgs, PointStamped,['point.x',
+                                  'point.y',
+                                  'point.z']]
+                                  
+point_t: [geometry_msgs, Point,['point.x',
+                                'point.y',
+                                'point.z']]
+                                
+twist_stamped_t: [geometry_msgs, TwistStamped,['twist.linear.x',
+                                'twist.linear.y',
+                                'twist.linear.z',
+                                'twist.angular.x',
+                                'twist.angular.y',
+                                'twist.angular.z']]    
+                                
+twist_stamped_t: [geometry_msgs, Twist,['twist.linear.x',
+                                'twist.linear.y',
+                                'twist.linear.z',
+                                'twist.angular.x',
+                                'twist.angular.y',
+                                'twist.angular.z']]  
