@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package>
+  <name>labust_control</name>
+  <version>0.1.0</version>
+  <description>
+      The labust_control package contains all the low and high-level controllers
+      used for the vehicles and platforms at LABUST.
+  </description>
+
+  <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
+  <license>BSD</license>
+  <!-- <url type="website">http://ros.org/wiki/labust_control</url> -->
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>auv_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>snippets</build_depend>
+  <run_depend>auv_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>snippets</run_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- You can specify that this package is a metapackage here: -->
+    <!-- <metapackage/> -->
+
+    <!-- Other tools can request additional information be placed here -->
+
+  </export>
+</package>

@@ -28,5 +28,6 @@
 	
 	<export>
 	    <labust_sim plugin="${prefix}/plugins.xml" />
+	    <rosdoc config="rosdoc.yaml" />
 	</export>
 </package>
