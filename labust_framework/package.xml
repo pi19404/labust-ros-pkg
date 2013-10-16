@@ -3,19 +3,19 @@
   <name>labust_framework</name>
   <version>0.1.0</version>
   <description>
-      The metapackage for the navigation and control suite. The package also
-      contains the different launch file templates for running supported 
-      vehicles and simulations. 
+      The metapackage for the navigation and control suite for vehicles and simulations. 
   </description>
 
   <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
   <license>BSD</license>
   <!-- <url type="website">http://ros.org/wiki/labust_framework</url> -->
-  <author email="dula.nad@gmail.com">Gyula Nagye</author>
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <run_depend>auv_msgs</run_depend>
-  <run_depend></run_depend>
+  <run_depend>labust_control</run_depend>
+  <run_depend>labust_navigation</run_depend>
+  <run_depend>labust_uvapp</run_depend>
 
   <export>
     <metapackage/>

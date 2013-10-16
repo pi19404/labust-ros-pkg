@@ -157,8 +157,16 @@ namespace labust
 			std::vector<typename Derived::Scalar> temp;
 
 			size_t col(0),row(0);
+			bool expandDiagonal(false);
 			for(size_t i=0; i<data.size(); ++i)
 			{
+				if (i==0 && (data[i].getType() == XmlRpc::XmlRpcValue::TypeString))
+				{
+					std::string matrix_type(static_cast<std::string>(data[i]));
+					std::cout<<"Matrix type: "<<matrix_type<<std::endl;
+					expandDiagonal = (matrix_type == "diagonal");
+					continue;
+				}
 				//Check validity
 				bool doubleType = data[i].getType() == XmlRpc::XmlRpcValue::TypeDouble;
 				bool intType = data[i].getType() == XmlRpc::XmlRpcValue::TypeInt;
@@ -184,7 +192,17 @@ namespace labust
 				}
 			}
 
-			const_cast< Eigen::MatrixBase<Derived>& >(matrix) = matrix.derived().Map(&temp[0],col,row+1).transpose();
+
+			if (expandDiagonal)
+			{
+				Eigen::Map< Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1> > vector(&temp[0],col);
+				Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> max(vector.asDiagonal());
+			  const_cast< Eigen::MatrixBase<Derived>& >(matrix) = max;
+			}
+			else
+			{
+				const_cast< Eigen::MatrixBase<Derived>& >(matrix) = matrix.derived().Map(&temp[0],col,row+1).transpose();
+			}
 
 			return std::make_pair(row,col);
 		}
