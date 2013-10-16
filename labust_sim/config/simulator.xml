@@ -13,6 +13,8 @@
 		<!-- Enable noise -->
 		<param name="use_noise" value="true" 
 		    if="$(optenv SIM_NOISE false)" />
+		<param name="gps_pub" value="5" />
+		<remap from="fix" to="gps" />
 			
 		<!-- This will also adjust the model sampling time
 		<remap from="tauIn" to="tauOut" />
@@ -22,7 +24,6 @@
 		
 
 		<remap from="imu_model" to="imu" />
-		<remap from="fix" to="gps" />
 		<remap from="tauAch" to="tauAchSim" />
 		 -->
 	</node>

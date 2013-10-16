@@ -130,11 +130,10 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 						result.z(),result.w()),
 				roll,pitch,yaw);*/
 		//ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
-
 		rpy(r) = roll;
 		rpy(p) = pitch;
 		rpy(y) = yaw;
-		rpy[newMsg] = 1;
+		rpy(newMsg) = 1;
 
 		//For generic updates
 		newMeas(KFNav::psi) = 1;
@@ -343,6 +342,7 @@ int main(int argc, char* argv[])
 			double inx(0),iny(0);
 			nav.calculateXYInovationVariance(nav.getStateCovariance(),inx,iny);
 			outlier = sqrt(pow(x-xy(0),2) + pow(y-xy(1),2)) > outlierR*sqrt(inx*inx + iny*iny);
+
 			if (outlier)
 			{
 				ROS_INFO("Outlier rejected: meas(%f, %f), estimate(%f,%f), inovationCov(%f,%f)",xy(0),xy(1),x,y,inx,iny);

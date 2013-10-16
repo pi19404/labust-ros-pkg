@@ -56,9 +56,6 @@ void XYModel::initModel()
   ydot = 0;
   //Setup the transition matrix
   derivativeAW();
-  R0 = R;
-  V0 = V;
-
   //std::cout<<"R:"<<R<<"\n"<<V<<std::endl;
 }
 
@@ -131,8 +128,8 @@ const XYModel::output_type& XYModel::update(vector& measurements, vector& newMea
 
 void XYModel::calculateXYInovationVariance(const XYModel::matrix& P, double& xin,double &yin)
 {
-	xin = sqrt(P(xp,xp)) + sqrt(R0(x_m,x_m));
-	yin = sqrt(P(yp,yp)) + sqrt(R0(y_m,y_m));
+	xin = sqrt(P(xp,xp)) + sqrt(R0(xp,xp));
+	yin = sqrt(P(yp,yp)) + sqrt(R0(yp,yp));
 }
 
 void XYModel::step(const input_type& input)

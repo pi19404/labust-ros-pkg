@@ -1,0 +1,30 @@
+<launch>
+    <rosparam command="load" file="$(find caddy_uwsim)/data/config/velocity_control.yaml" />
+    <rosparam command="load" file="$(find caddy_uwsim)/data/config/dp_control.yaml" /> 	    
+    <node pkg="labust_uvapp" type="velocity_control" name="velcon" machine="controlled">
+	<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
+    </node>
+		<node pkg="labust_uvapp" type="dp_control" name="station_keeping" machine="controlled">
+			<remap from="Enable" to="DP_enable" />
+      <remap from="ref" to="nuRef" />
+      <remap from="state" to="stateHat" />
+	  </node>
+		<node pkg="labust_uvapp" type="lf_control" name="line_following" machine="controlled" />
+		<node pkg="labust_uvapp" type="vt_control" name="virtual_target" machine="controlled">
+        <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+    </node>
+    <node pkg="labust_uvapp" type="hdg_control" name="heading_control" machine="controlled" />
+		<!-- <node pkg="labust_uvapp" type="hdg_test" name="heading_control" machine="controlled">
+        <remap from="Enable" to="HDG_enable" />
+        <remap from="ref" to="nuRef" />
+        <remap from="state" to="stateHat" />
+    </node>
+    <node pkg="labust_uvapp" type="lf_test" name="line_following" machine="controlled">
+        <remap from="Enable" to="LF_enable" />
+        <remap from="ref" to="heading_ref" />
+        <remap from="state" to="stateHat" />
+		</node> -->
+    
+		<!-- <node pkg="labust_uvapp" type="execution_test" name="execution_control" machine="controlled"> 
+		</node> -->
+</launch>

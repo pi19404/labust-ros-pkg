@@ -94,7 +94,7 @@ namespace labust
 			 * Measurement noise covariance,
 			 * Measurement noise transformation
 			 */
-			matrix A,B,Q,W,H,R,V;
+			matrix A,B,Q,W,H,R,V,R0,V0;
 			/**
 			 * Model sampling time
 			 */

@@ -167,10 +167,6 @@ namespace labust
        */
       output_type measurement;
       /**
-       * The full update matrix.
-       */
-      matrix R0,V0;
-      /**
        * The NED speeds.
        */
       double xdot,ydot;

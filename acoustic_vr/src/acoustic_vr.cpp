@@ -921,7 +921,7 @@ namespace FMOD
 		}
 	}*/
 		if (ActualWPindex==1)
-		{TransformDistance = 1;//RabbitDistance/distance;}
+		{TransformDistance = 1;}//RabbitDistance/distance;}
 		else
 		{TransformDistance = NewDist/RabbitDistance;}//distance;}
 

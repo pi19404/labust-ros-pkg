@@ -49,8 +49,10 @@ namespace labust
 
   		labust::tools::getMatrixParam(nh, ns+"Q", model.Q);
   		labust::tools::getMatrixParam(nh, ns+"W", model.W);
-  		labust::tools::getMatrixParam(nh, ns+"V", model.V);
-  		labust::tools::getMatrixParam(nh, ns+"R", model.R);
+  		labust::tools::getMatrixParam(nh, ns+"V", model.V0);
+  		labust::tools::getMatrixParam(nh, ns+"R", model.R0);
+  		model.V = model.V0;
+  		model.R = model.R0;
 
   		typename ModelType::matrix P;
   		std::pair<int, int> size = labust::tools::getMatrixParam(nh, ns+"P", P);

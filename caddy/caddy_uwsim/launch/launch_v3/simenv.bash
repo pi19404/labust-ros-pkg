@@ -8,5 +8,5 @@ export TF_PREFIX=pladypos
 export USE_LOCAL_FIX=1
 export USE_USBL_MANAGER=0
 export USE_USBL=0
-export USE_LOCAL_FIX=0
+export USE_LOCAL_FIX=1
 export LOGDIR=./

@@ -1,0 +1,8 @@
+<launch>
+  <machine name="shoreside" address="elitebook" 
+  	env-loader="/home/dnad/Development/catkin_ws/devel/env.sh" 
+        user="dnad" />
+  <machine name="controlled" address="pladypos" 
+	env-loader="$(env HOME)/catkin_ws/devel/env.sh" 
+	default="true" />
+</launch>

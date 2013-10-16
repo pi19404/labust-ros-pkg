@@ -87,6 +87,7 @@ target_link_libraries(acoustic_vr
    SOIL
    glut
    GLU
+   GL
    ${Boost_THREAD_LIBRARY}
 )
 
