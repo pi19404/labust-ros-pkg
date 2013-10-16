@@ -75,6 +75,7 @@ include_directories(
 #   src/${PROJECT_NAME}/labust_imu.cpp
 # )
 add_executable(imu_node src/imu_node.cpp)
+add_dependencies(imu_node ${catkin_EXPORTED_TARGETS})
 
 ## Declare a cpp executable
 # add_executable(labust_imu_node src/labust_imu_node.cpp)

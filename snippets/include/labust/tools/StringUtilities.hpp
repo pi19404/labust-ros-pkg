@@ -30,21 +30,63 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Dula Nad
-*  Created: 01.02.2013.
 *********************************************************************/
-#include <labust/control/BenchRadio.hpp>
+#ifndef STRINGUTILITIES_HPP_
+#define STRINGUTILITIES_HPP_
+#include <string>
+#include <sstream>
 
-int main(int argc, char* argv[])
+namespace labust
 {
-	ros::init(argc,argv,"radio_modem");
-	//Initialize
-	labust::control::BenchRadio radio;
-	//Start execution.
-	radio.start();
-	return 0;
+  namespace tools
+  {
+    /**
+     * The function split the string into two parts separated by a delimiter.
+     *
+     * \param main The string that will be split.
+     * \param token Split delimiter character.
+     * \return The string before the delimiter.
+     */
+    inline std::string chomp(std::string& main, const char token = ',')
+    {
+      int pos=int(main.find(token));
+      std::string part=main.substr(0,pos);
+      main.erase(0,pos + (pos != -1));
+      return part;
+    }
+    /**
+     * The function converts different types into string if
+     * a output operator is defined for the type.
+     *
+     * \param value Value which to convert into a string.
+     *
+     * \tparam MyType Type of the converted object.
+     *
+     * \return Returns the converted object in a string.
+     */
+    template <class MyType>
+    inline std::string to_string(MyType value)
+    {
+      std::stringstream out;
+      out.precision(6);
+      out<<std::fixed<<value;
+      return out.str();
+    }
+    /**
+     * The function returns the checksum of a byte array.
+     *
+     * \param data Address of the range start.
+		 * \param len Length of the range.
+		 *
+		 * \return XOR checksum of the given range.
+     */
+    inline unsigned char getChecksum(const unsigned char* const data, size_t len)
+    {
+      unsigned char calc = 0;
+      for (size_t i=0; i<len; ++i){calc^=data[i];};
+      return calc;
+    }
+  }
 }
-
-
-
+/* STRINGUTILITIES_HPP_ */
+#endif

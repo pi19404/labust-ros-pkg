@@ -4,8 +4,19 @@ project(cart2)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs labust_uvapp
-	message_generation dynamic_reconfigure snippets)
+find_package(catkin REQUIRED COMPONENTS 
+    auv_msgs
+    labust_base 
+    roscpp 
+    rospy 
+    sensor_msgs 
+    std_msgs 
+    tf 
+    diagnostic_msgs
+	message_generation 
+	dynamic_reconfigure 
+	snippets
+	labust_control)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -23,23 +34,23 @@ include_directories(${Eigen_INCLUDE_DIRS})
 #######################################
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  HLMessage.msg
-	#ImuInfo.msg
-)
+#add_message_files(
+#  FILES
+  #HLMessage.msg
+  #ImuInfo.msg
+#)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  SetHLMode.srv
-)
+#add_service_files(
+#  FILES
+#  SetHLMode.srv
+#)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs std_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  geometry_msgs std_msgs
+#)
 
 ###################################################
 ## Dynamic reconfigure
@@ -57,7 +68,7 @@ generate_dynamic_reconfigure_options(cfg/RemoteCommand.cfg)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES cart2
-   CATKIN_DEPENDS auv_msgs labust_base roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs message_runtime dynamic_reconfigure
+   CATKIN_DEPENDS auv_msgs roscpp rospy sensor_msgs std_msgs tf diagnostic_msgs message_runtime dynamic_reconfigure #labust_base
 #  DEPENDS system_lib
 )
 
@@ -80,89 +91,63 @@ include_directories(include
 # )
 
 ## Declare a cpp executable
-#add_executable(radio_node src/radio_node.cpp)
-#add_executable(cart2_node src/cart2_main.cpp)
-#add_executable(imu_node src/imu_node.cpp)
-add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
-	include/labust/control/HLManager.hpp)
-#add_executable(vr_node src/vr_node.cpp)
+add_executable(cart2_node src/cart2_main.cpp)
+add_executable(vr_node src/vr_node.cpp)
 
-#add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
-#	include/labust/control/TopsideRadio.hpp
-#	include/labust/control/crc16.h)
+add_executable(topside_radio src/topside_radio.cpp src/TopsideRadio.cpp src/crc16.cpp
+	include/labust/control/TopsideRadio.hpp
+	include/labust/control/crc16.h)
 	
-#add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
-#	src/crc16.cpp
-#	include/labust/control/CNRRemoteRadio.hpp
-#	include/labust/control/crc16.h)
+add_executable(cnr_radio src/cnr_remote.cpp src/CNRRemoteRadio.cpp
+	src/crc16.cpp
+	include/labust/control/CNRRemoteRadio.hpp
+	include/labust/control/crc16.h)
 	
-#add_executable(bench_radio src/bench_radio.cpp src/BenchRadio.cpp
-#	include/labust/control/BenchRadio.hpp)
-	
-#add_executable(coop_node src/coop_node.cpp)
-#add_executable(repost_node src/position_repost.cpp)
+add_executable(coop_node src/coop_node.cpp)
+add_executable(repost_node src/position_repost.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(hlmanager cart2_generate_messages_cpp)
-#add_dependencies(imu_node cart2_generate_messages_cpp)
-#add_dependencies(topside_radio cart2_gencfg)
-#add_dependencies(topside_radio cart2_generate_messages_cpp)
-#add_dependencies(cnr_radio cart2_generate_messages_cpp)
+add_dependencies(topside_radio ${catkin_EXPORTED_TARGETS})
+add_dependencies(cnr_radio ${catkin_EXPORTED_TARGETS})
+add_dependencies(coop_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(repost_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(cart2_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(vr_node ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-#target_link_libraries(topside_radio
-#   ${Boost_SERIALIZATION_LIBRARY}
-#   ${Boost_REGEX_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(cnr_radio
-#   ${Boost_SERIALIZATION_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(coop_node
-#   ${Boost_SYSTEM_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(repost_node
-#   ${Boost_SYSTEM_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(bench_radio
-#   ${Boost_SERIALIZATION_LIBRARY}
-#   ${Boost_REGEX_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(radio_node
-#   ${Boost_SERIALIZATION_LIBRARY}
-#   ${Boost_REGEX_LIBRARY}
-#   ${catkin_LIBRARIES}
-#)
-
-#target_link_libraries(cart2_node
-#   ${catkin_LIBRARIES}
-#   ${Boost_SYSTEM_LIBRARY}
-#   ${Boost_THREAD_LIBRARY}
-#)
-
-#target_link_libraries(imu_node
-#   ${catkin_LIBRARIES}
-#)
-
-target_link_libraries(hlmanager
+target_link_libraries(topside_radio
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${Boost_REGEX_LIBRARY}
    ${catkin_LIBRARIES}
 )
 
-#target_link_libraries(vr_node
-#   ${catkin_LIBRARIES}
-#   ${Boost_SYSTEM_LIBRARY}
-#   videoray-plug
-#)
+target_link_libraries(cnr_radio
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(coop_node
+   ${Boost_SYSTEM_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(repost_node
+   ${Boost_SYSTEM_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(cart2_node
+   ${catkin_LIBRARIES}
+   ${Boost_SYSTEM_LIBRARY}
+   ${Boost_THREAD_LIBRARY}
+)
+
+target_link_libraries(vr_node
+   ${catkin_LIBRARIES}
+   ${Boost_SYSTEM_LIBRARY}
+   videoray-plug
+)
 
 #############
 ## Install ##

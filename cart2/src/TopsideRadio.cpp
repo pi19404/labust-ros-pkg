@@ -38,8 +38,8 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/MatrixLoader.hpp>
-#include <cart2/SetHLMode.h>
-#include <cart2/HLMessage.h>
+#include <labust_control/SetHLMode.h>
+#include <labust_control/HLMessage.h>
 #include <cmath>
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -98,7 +98,7 @@ void TopsideRadio::onInit()
 		joyIn = nh.subscribe<sensor_msgs::Joy>("joy_in",1,&TopsideRadio::onJoy,this);
 		stateHatPub = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 		stateMeasPub = nh.advertise<auv_msgs::NavSts>("meas",1);
-		info = nh.advertise<cart2::ImuInfo>("cart2_info",1);
+		info = nh.advertise<std_msgs::Float32MultiArray>("cart2_info",1);
 		selectedPoint = nh.advertise<geometry_msgs::PointStamped>("selected_point", 1);
 		selectedNavSts = nh.advertise<auv_msgs::NavSts>("selected_navsts", 1);
 
@@ -112,13 +112,13 @@ void TopsideRadio::onInit()
 	{
 		joyOut = nh.advertise<sensor_msgs::Joy>("joy_out",1);
 		launched = nh.advertise<std_msgs::Bool>("launched",1);
-		hlMsg = nh.advertise<cart2::HLMessage>("hl_message",1);
-		client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+		hlMsg = nh.advertise<labust_control::HLMessage>("hl_message",1);
+		client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
 		stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&TopsideRadio::onStateHat,this);
 		stateMeas = nh.subscribe<auv_msgs::NavSts>("meas",1,&TopsideRadio::onStateMeas,this);
 		sfFrame = nh.subscribe<auv_msgs::NavSts>("sf_diagnostics",1,&TopsideRadio::onSFMeas,this);
 		curMode = nh.subscribe<std_msgs::Int32>("current_mode",1,&TopsideRadio::onCurrentMode,this);
-		cartInfo = nh.subscribe<cart2::ImuInfo>("cart2_info",1,&TopsideRadio::onCartInfo,this);
+		cartInfo = nh.subscribe<std_msgs::Float32MultiArray>("cart2_info",1,&TopsideRadio::onCartInfo,this);
 	}
 
 	populateDataFromConfig();
@@ -210,7 +210,7 @@ void TopsideRadio::onSFMeas(const auv_msgs::NavSts::ConstPtr& meas)
 	cdata.sf_state[psi] = meas->orientation.yaw*100;
 }
 
-void TopsideRadio::onCartInfo(const cart2::ImuInfo::ConstPtr& info)
+void TopsideRadio::onCartInfo(const std_msgs::Float32MultiArray::ConstPtr& info)
 {
 	boost::mutex::scoped_lock l(cdataMux);
 	enum {port_rpm_desired=0,
@@ -394,7 +394,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 				ROS_ERROR("Wrong mode.");
 				return;
 			}
-			cart2::HLMessagePtr msg(new cart2::HLMessage());
+			labust_control::HLMessagePtr msg(new labust_control::HLMessage());
 			bool update = data.mode_update;
 			msg->mode = data.mode;
 			msg->radius = data.radius;
@@ -417,12 +417,12 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			if (!client)
 			{
 				ROS_ERROR("HLManager client not connected. Trying reset.");
-				client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+				client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
 			}
 			else
 			{
 				boost::mutex::scoped_lock l(dataMux);
-				cart2::SetHLMode mode;
+				labust_control::SetHLMode mode;
 				if (update)
 				{
 					lastMode = mode.request.mode = data.mode;
@@ -518,7 +518,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			meas->global_position.latitude = state->origin.latitude + location.first;
 			meas->global_position.longitude = state->origin.longitude + location.second;
 
-			cart2::ImuInfo cinfo;
+			std_msgs::Float32MultiArray cinfo;
 			cinfo.data.resize(4);
 			cinfo.data[0] = cdata.voltage/256.*50;
 			cinfo.data[1] = cdata.temp/256.*100;
@@ -571,11 +571,11 @@ void TopsideRadio::onTimeout()
 	if (!client)
 	{
 		ROS_ERROR("HLManager client not connected. Trying reset.");
-		client = nh.serviceClient<cart2::SetHLMode>("SetHLMode", true);
+		client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
 	}
 	else
 	{
-		cart2::SetHLMode mode;
+		labust_control::SetHLMode mode;
 		mode.request.mode = 0;
 		client.call(mode);
 	}

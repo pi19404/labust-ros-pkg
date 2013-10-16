@@ -37,7 +37,8 @@
 #include <labust/vehicles/VR3Details.hpp>
 #include <labust/vehicles/Allocation.hpp>
 #include <labust/math/NumberManipulation.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/conversions.hpp>
+#include <labust/tools/MatrixLoader.hpp>
 #include <boost/asio.hpp>
 
 #include <ros/ros.h>

@@ -41,7 +41,7 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
-#include <cart2/HLMessage.h>
+#include <labust_control/HLMessage.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
 
@@ -80,7 +80,7 @@ void HLManager::onInit()
 	openLoopSurge = nh.advertise<std_msgs::Float32>("open_loop_surge", 1);
 	curMode = nh.advertise<std_msgs::Int32>("current_mode", 1);
 	refHeading = nh.advertise<std_msgs::Float32>("heading_ref", 1);
-	hlMessagePub = nh.advertise<cart2::HLMessage>("hl_diagnostics", 1);
+	hlMessagePub = nh.advertise<labust_control::HLMessage>("hl_diagnostics", 1);
 	sfPub = nh.advertise<auv_msgs::NavSts>("sf_diagnostics", 1);
 
 	//Initialze subscribers
@@ -111,8 +111,8 @@ void HLManager::onInit()
 	ph.param("LocalFixSim",fixValidated, fixValidated);
 }
 
-bool HLManager::setHLMode(cart2::SetHLMode::Request& req,
-		cart2::SetHLMode::Response& resp)
+bool HLManager::setHLMode(labust_control::SetHLMode::Request& req,
+		labust_control::SetHLMode::Response& resp)
 {
 	if (req.mode >= lastMode)
 	{
@@ -405,7 +405,7 @@ void HLManager::bArtStep()
 		{
 			ROS_INFO("Heading only mode.");
 			//Switch to combined heading
-			cart2::SetHLMode srv;
+			labust_control::SetHLMode srv;
 			srv.request.mode = srv.request.HeadingSurge;
 			srv.request.yaw = stateHat.orientation.yaw-gyroYaw;
 			srv.request.surge = 0;
@@ -416,7 +416,7 @@ void HLManager::bArtStep()
 		{
 			ROS_INFO("Heading + surge mode.");
 			//Switch to combined heading
-			cart2::SetHLMode srv;
+			labust_control::SetHLMode srv;
 			srv.request.mode = srv.request.HeadingSurge;
 			srv.request.yaw = stateHat.orientation.yaw-gyroYaw;
 			srv.request.surge = 0.5;
@@ -427,7 +427,7 @@ void HLManager::bArtStep()
 		{
 			launchDetected = false;
 			//Switch to station keeping
-			cart2::SetHLMode srv;
+			labust_control::SetHLMode srv;
 			srv.request.mode = srv.request.GoToPoint;
 			this->calculateBArtPoint(stateHat.orientation.yaw-gyroYaw);
 			srv.request.ref_point = point;
@@ -457,7 +457,7 @@ void HLManager::step()
 		if (dist < safetyRadius || ((dist < 2*safetyRadius) && (angleDiff > M_PI/2)))
 		{
 			//Switch to station keeping
-			cart2::SetHLMode srv;
+			labust_control::SetHLMode srv;
 			srv.request.mode = srv.request.StationKeeping;
 			srv.request.ref_point = point;
 			this->setHLMode(srv.request, srv.response);

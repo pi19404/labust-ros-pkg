@@ -54,7 +54,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES auv_msgs_sub
-  CATKIN_DEPENDS geometry_msgs sensor_msgs std_msgs message_runtime
+   CATKIN_DEPENDS geometry_msgs sensor_msgs std_msgs message_runtime
 #  DEPENDS system_lib
 )
 

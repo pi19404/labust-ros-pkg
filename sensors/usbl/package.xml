@@ -36,7 +36,8 @@
   <build_depend>nodelet</build_depend>
   <build_depend>auv_msgs</build_depend>
   <build_depend>tritech_sdk</build_depend>
-  
+  <build_depend>snippets</build_depend>
+    
   <run_depend>geometry_msgs</run_depend>
   <run_depend>nodelet</run_depend>
   <run_depend>labust_base</run_depend>

@@ -36,8 +36,6 @@
  *********************************************************************/
 #ifndef CNRRemoteRADIO_HPP_
 #define CNRRemoteRADIO_HPP_
-#include <labust/preprocessor/mem_serialized_struct.hpp>
-#include <labust/tools/StringUtilities.hpp>
 #include <cart2/RadioModemConfig.h>
 
 #include <dynamic_reconfigure/server.h>

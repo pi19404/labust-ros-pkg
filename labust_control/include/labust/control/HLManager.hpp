@@ -36,8 +36,8 @@
 *********************************************************************/
 #ifndef HLMANAGER_HPP_
 #define HLMANAGER_HPP_
-#include <cart2/SetHLMode.h>
-#include <cart2/HLMessage.h>
+#include <labust_control/SetHLMode.h>
+#include <labust_control/HLMessage.h>
 
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
@@ -95,7 +95,7 @@ namespace labust
 			/**
 			 * The C-Art service handler.
 			 */
-			bool setHLMode(cart2::SetHLMode::Request& req, cart2::SetHLMode::Response& resp);
+			bool setHLMode(labust_control::SetHLMode::Request& req, labust_control::SetHLMode::Response& resp);
 			/**
 			 * Handle launch detection.
 			 */
@@ -215,7 +215,7 @@ namespace labust
 			/**
 			 * The HL status message.
 			 */
-			cart2::HLMessage hlDiagnostics;
+			labust_control::HLMessage hlDiagnostics;
 		};
 	}
 }

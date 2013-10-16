@@ -8,6 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
   auv_msgs
   roscpp
   snippets
+  geometry_msgs
+  tf
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -24,24 +27,24 @@ find_package(catkin REQUIRED COMPONENTS
 #######################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+	HLMessage.msg
+)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+	 SetHLMode.srv
+	 EnableControl.srv
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   auv_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+   geometry_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -65,11 +68,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(include)
+include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
+	include/labust/control/HLManager.hpp)
 ## Declare a cpp library
 # add_library(labust_control
 #   src/${PROJECT_NAME}/labust_control.cpp
@@ -81,11 +86,12 @@ include_directories(
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_control_node labust_control_generate_messages_cpp)
+add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(labust_control_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(hlmanager
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

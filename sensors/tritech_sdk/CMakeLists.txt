@@ -4,7 +4,9 @@ project(tritech_sdk)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS labust_base roscpp)
+find_package(catkin REQUIRED COMPONENTS 
+    snippets
+    roscpp)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system thread serialization)
@@ -51,7 +53,7 @@ find_package(Boost REQUIRED COMPONENTS system thread serialization)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES tritech_sdk
-#  CATKIN_DEPENDS labust_base roscpp
+#  CATKIN_DEPENDS snippets roscpp
 #  DEPENDS system_lib
 )
 

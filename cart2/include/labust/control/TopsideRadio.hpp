@@ -39,7 +39,7 @@
 #include <labust/preprocessor/mem_serialized_struct.hpp>
 #include <labust/tools/StringUtilities.hpp>
 #include <cart2/RadioModemConfig.h>
-#include <cart2/ImuInfo.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <labust/control/crc16.h>
 
 #include <dynamic_reconfigure/server.h>
@@ -154,7 +154,7 @@ namespace labust
 			 */
 			void onStateMeas(const auv_msgs::NavSts::ConstPtr& meas);
 			void onSFMeas(const auv_msgs::NavSts::ConstPtr& meas);
-			void onCartInfo(const cart2::ImuInfo::ConstPtr& info);
+			void onCartInfo(const std_msgs::Float32MultiArray::ConstPtr& info);
 			/**
 			 * Handle the measurements.
 			 */

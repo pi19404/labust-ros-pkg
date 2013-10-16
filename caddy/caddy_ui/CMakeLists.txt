@@ -4,7 +4,14 @@ project(caddy_ui)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy auv_msgs labust_base rqt_gui rqt_gui_py rqt_gui_cpp cart2)
+find_package(catkin REQUIRED COMPONENTS 
+    roscpp 
+    rospy 
+    auv_msgs 
+    labust_base 
+    rqt_gui 
+    rqt_gui_py 
+    rqt_gui_cpp)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread system)
@@ -77,6 +84,7 @@ add_executable(kml_upload src/kml_upload.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
+add_dependencies(ros2ge ${catkin_EXPORTED_TARGETS})
 # add_dependencies(caddy_ui_node caddy_ui_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against

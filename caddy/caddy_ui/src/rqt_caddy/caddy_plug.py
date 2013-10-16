@@ -9,7 +9,7 @@ import rospy
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi, QtCore
 from caddy_gui import CaddyGui
-from cart2.msg import ImuInfo
+from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import String, Int32
 from geometry_msgs.msg import Point
 
@@ -40,7 +40,7 @@ class CaddyGuiROS(QtCore.QObject):
         self.managerState = rospy.Subscriber("usbl_current_state",Int32,
                             lambda data:
                                 self.emit(QtCore.SIGNAL("onManagerState"),data.data));
-        self.pladyposInfo = rospy.Subscriber("pladypos_info",ImuInfo,
+        self.pladyposInfo = rospy.Subscriber("pladypos_info",Float32MultiArray,
                             lambda data:
                                 self.emit(QtCore.SIGNAL("onPladyposInfo"),data.data));
             
