@@ -109,6 +109,7 @@ namespace FMOD
 	// varijable koje se upisu "Rucno"
 	double AltitudeSetPoint = 10.0f;
 	bool TrajectoryTracking = false;
+	bool WPupdateFlage=true;
 	double ObjectLat = 43.5;
 	double ObjectLong = 15.5;
 	double ObjectDepth = 20.0f;
@@ -1106,9 +1107,12 @@ namespace FMOD
 		//Ovdje ide iz simulatora dodavanje
 		///////////////////////////////////////////////////////////////////////////////////////////////////
 		boost::mutex::scoped_lock lock(joyMux);
-		ObjectLong = target.position.north + RabbitDistance*cos(target.orientation.yaw);
-		ObjectLat = target.position.east + RabbitDistance*sin(target.orientation.yaw);
+		if ((ObjectLong != target.position.north) || (ObjectLat != target.position.east))
+		{WPupdateFlage=true;}
+		ObjectLong = target.position.north;// + RabbitDistance*cos(target.orientation.yaw);
+		ObjectLat = target.position.east;// + RabbitDistance*sin(target.orientation.yaw);
 		ObjectDepth = target.position.depth;
+		
 		if (JoyStickMode==2)
 		{yListenerPos = 20;}
 		else
@@ -1117,6 +1121,17 @@ namespace FMOD
 			xListenerPos = (state.position.east /*latLonMap["Easting"]*/ - ObjectLat); //relative to the target
 			yListenerPos = state.position.depth; //rovStatus["Depth"];
 		}
+		
+		NumberOfWP = 2;
+		if (WPupdateFlage)
+		{
+			WPnorth[1] = zListenerPos - fabs(zListenerPos)/(zListenerPos)*5;
+			WPeast[1] = xListenerPos - fabs(xListenerPos)/(xListenerPos)*5;
+			WPnorth[2] = 0;//ObjectLong;
+			WPeast[2] = 0;//ObjectLat;
+			WPupdateFlage=false;
+		}
+		
 		zRotation = state.orientation.roll; //rovStatus["Roll"]; //sve je izmjesano z-naprijed, x-lateral, y-gore/dolje
 		xRotation = state.orientation.pitch; //rovStatus["Pitch"];
 		if (JoyStickMode==1)
