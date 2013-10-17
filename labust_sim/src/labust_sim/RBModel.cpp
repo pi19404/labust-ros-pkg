@@ -77,8 +77,8 @@ void RBModel::step(const vector& tau)
 	if (!c2) c2 = 0.1;
 	matrix3 J2;
 	J2<<1,s1*t2,c1*t2,
-			0,0,c1,
-			-s1,s1/c2,c1/c2;
+			0,c1,-s1,
+			0,s1/c2,c1/c2;
 	//Calculate restoring forces
 	restoring_force(J1);
 

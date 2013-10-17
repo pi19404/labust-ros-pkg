@@ -40,6 +40,7 @@
 #include <labust/math/NumberManipulation.hpp>
 
 #include <vector>
+#include <ros/ros.h>
 
 namespace labust
 {
@@ -52,6 +53,7 @@ namespace labust
 		 * \todo Add ability to register an external allocation algorithm when the need arises
 		 * \todo Is it better to have a bunch of preprogramed simple allocation types that have static alllocation data ?
 		 * \todo Split into a compilable cpp when more than one larger class exists for vehicle support
+		 * \todo Remove the ROS_ERROR debug messages and any ROS dependencies
 		 */
 		class ThrustAllocator
 		{
@@ -81,6 +83,8 @@ namespace labust
 
 				tdes = Binv*vi;
 
+				//ROS_ERROR("Before tdes: %f %f %f %f",tdes(0), tdes(1), tdes(2), tdes(3));
+
 				switch (type)
 				{
 				case NoAlloc:
@@ -96,9 +100,25 @@ namespace labust
 					throw std::runtime_error("ThrustAllocator: Undefined allocation type.");
 				}
 
+				//ROS_ERROR("Forces %f %f %f",tdes(0), tdes(1), tdes(2), tdes(3));
 				vi = B*tdes;
 
-				for (int i=0; i<dofs.size(); ++i) 	tauOut(dofs[i])=vi(i);
+				for (int i=0; i<dofs.size(); ++i) tauOut(dofs[i])=vi(i);
+
+//				//Determine coercion
+//				switch (type)
+//				{
+//				case NoAlloc:
+//						//noalloc
+//						break;
+//				case SimpleAlloc:
+//						//for (int i=0; i<dofs.size(); ++i) coercion(tauOut(dofs[i])=vi(i);
+//						break;
+//				case ScaleAlloc:
+//						scale_alloc();
+//						break;
+//				default:
+//				}
 			}
 
 
@@ -117,7 +137,8 @@ namespace labust
 					if ((thrust_groups.cols() == 0) || (thrust_groups.rows() == 0))
 					{
 						//If the table was not specified put all in one group
-						groups.push_back(std::vector<int>(alloc.cols(),1));
+						groups.push_back(std::vector<int>());
+						for(int i=0; i<alloc.cols(); ++i) groups[0].push_back(i);
 						num_thrusters=alloc.cols();
 					}
 					else
@@ -136,6 +157,7 @@ namespace labust
 								}
 						}
 					}
+					group_scales.resize(groups.size());
 
 					this->B=alloc;
 					Binv = B.transpose()*(B*B.transpose()).inverse();
@@ -163,6 +185,8 @@ namespace labust
 
 			inline const Eigen::VectorXd& getThrusterForces(){return tdes;};
 
+			inline const Eigen::VectorXi& getCoercionInformation(){return coercion;};
+
 		protected:
 			/**
 			 * Do simple allocation.
@@ -182,10 +206,12 @@ namespace labust
 			{
 				for (size_t i=0; i<groups.size(); ++i)
 				{
+					//ROS_ERROR("Group size %d",groups[i].size());
 					Eigen::VectorXd ttdes(groups[i].size());
 					//Map from vector into group
 					for (size_t j=0; j<groups[i].size(); ++j) ttdes(j)=tdes(groups[i][j]);
 
+					//ROS_ERROR("Before: %f %f %f %f",ttdes(0), ttdes(1), ttdes(2), ttdes(3));
 					//Scale inside the group
 					double scale_max = 1;
 					for (size_t j=0; j<ttdes.rows();++j)
@@ -193,7 +219,10 @@ namespace labust
 						double scale = fabs((ttdes(j)>0)?ttdes(j)/tmax:ttdes(j)/tmin);
 						if (scale>scale_max) scale_max=scale;
 					}
+					//ROS_ERROR("Scale max: %f",scale_max);
+					group_scales[i] = scale_max;
 					ttdes = ttdes/scale_max;
+					//ROS_ERROR("After: %f %f %f %f",ttdes(0), ttdes(1), ttdes(2), ttdes(3));
 
 					//Map from group to final vector
 					for (size_t j=0; j<groups[i].size(); ++j) tdes(groups[i][j])=ttdes(j);
@@ -208,6 +237,10 @@ namespace labust
 			 * Thruster groups.
 			 */
 			std::vector< std::vector<int> > groups;
+			/**
+			 * The scales per group.
+			 */
+			std::vector<double> group_scales;
 
 			/**
 			 * The allocation matrix.
@@ -221,6 +254,10 @@ namespace labust
 			 * The allocated thrusters.
 			 */
 			Eigen::VectorXd tdes;
+			/**
+			 * The coercion vector.
+			 */
+			Eigen::VectorXi coercion;
 			/**
 			 * Allocation type, number of thrusters.
 			 */

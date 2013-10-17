@@ -8,8 +8,8 @@
   <group ns="pladypos">
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
   	<rosparam command="load" file="$(env MODEL)" />
-  	<rosparam command="load" file="$(find caddy_uwsim)/data/config_v3/navparams2.yaml" />
-  	 	
+  	<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
+  	  	 	
   	<!-- Common nodes -->
   	<include file="$(find caddy_uwsim)/data/config_v3/logging.xml" if="$(optenv ENABLE_LOGGING 0)" />
   	<include file="$(find caddy_uwsim)/data/config_v3/navigation.xml" /> 	
