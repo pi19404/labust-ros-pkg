@@ -1117,16 +1117,20 @@ namespace FMOD
 		{yListenerPos = 20;}
 		else
 		{
-			zListenerPos = -(state.position.north /*latLonMap["Northing"]*/ - ObjectLong); //relative to the target
-			xListenerPos = (state.position.east /*latLonMap["Easting"]*/ - ObjectLat); //relative to the target
+			zListenerPos = -(state.position.north /*latLonMap["Northing"]*/ - 0*ObjectLong); //relative to the target
+			xListenerPos = (state.position.east /*latLonMap["Easting"]*/ - 0*ObjectLat); //relative to the target
 			yListenerPos = state.position.depth; //rovStatus["Depth"];
 		}
 		
 		NumberOfWP = 2;
 		if (WPupdateFlage)
 		{
-			WPnorth[1] = zListenerPos - fabs(zListenerPos)/(zListenerPos)*5;
-			WPeast[1] = xListenerPos - fabs(xListenerPos)/(xListenerPos)*5;
+			double zsign=1;
+			double xsign=1;
+			if (zListenerPos) zsign = fabs(zListenerPos)/(zListenerPos);
+			if (xListenerPos) xsign = fabs(xListenerPos)/(xListenerPos);
+			WPnorth[1] = zListenerPos - zsign*5;
+			WPeast[1] = xListenerPos - xsign*5;
 			WPnorth[2] = 0;//ObjectLong;
 			WPeast[2] = 0;//ObjectLat;
 			WPupdateFlage=false;
@@ -1138,6 +1142,7 @@ namespace FMOD
 		{
 			yRotation = 180*state.orientation.yaw/M_PI; //rovStatus["Heading"];}
 			//std::cout<<yRotation<<" "<<yListenerPos<<" "<<TaskMode<<" "<<GuidanceMode<<std::endl;
+			std::cout<<"Output:"<<zListenerPos<<" "<<xListenerPos<<" "<<ObjectLong<<" "<<ObjectLat<<" "<<WPnorth[1]<<" "<<WPeast[1]<<std::endl;
 			TauX = 0; //rovStatus["TauX"];
 			TauY = 0; //rovStatus["TauY"];
 			TauZ = 0; //rovStatus["TauZ"];
