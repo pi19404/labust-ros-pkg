@@ -12,7 +12,7 @@
   	  	 	
   	<!-- Common nodes -->
   	<include file="$(find caddy_uwsim)/data/config_v3/logging.xml" if="$(optenv ENABLE_LOGGING 0)" />
-  	<include file="$(find caddy_uwsim)/data/config_v3/navigation.xml" /> 	
+  	<include file="$(find caddy_uwsim)/data/config_v3/navigation2.xml" /> 	
   	<include file="$(find caddy_uwsim)/data/config_v3/control.xml" />
    	<include file="$(find caddy_uwsim)/data/config_v3/joy.xml"/>
   	<include file="$(find caddy_uwsim)/data/config_v3/manager.xml" />

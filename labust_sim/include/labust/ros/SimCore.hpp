@@ -117,34 +117,35 @@ namespace labust
 				labust::tools::pointToVector(msg->wrench.torque, tau, 3);
 
 				//Allocate
-				vector tauAch(tau), windup(vector::Zero());
+				vector tauAch(tau);
 				model.allocator.allocate(tau,tauAch);
-				for (int i=0; i<tauAch.size(); ++i) windup(i) = tau(i)!=tauAch(i);
 				tau = tauAch;
 
 				//Publish allocated.
 				typename ROSMsg::Ptr ach(new ROSMsg());
 				labust::tools::vectorToPoint(tau,ach->wrench.force);
 				labust::tools::vectorToPoint(tau,ach->wrench.torque,3);
-				publish_windup(ach, windup);
+				publish_windup(ach, model.allocator.getCoercion());
 				publish_dispatch(ach);
 			}
 
 			/**
 			 * The windup helper function.
 			 */
-			inline void publish_windup(auv_msgs::BodyForceReq::Ptr& tau, const vector& windup)
+			template <class WindupType>
+			inline void publish_windup(auv_msgs::BodyForceReq::Ptr& tau, const WindupType& windup)
 			{
 				labust::tools::vectorToPoint(windup,tau->disable_axis);
 
 				tau->disable_axis.roll = windup(3);
-				tau->disable_axis.roll = windup(3);
-				tau->disable_axis.roll = windup(3);
+				tau->disable_axis.pitch = windup(4);
+				tau->disable_axis.yaw = windup(5);
 			}
 			/**
 			 * The windup helper function.
 			 */
-			inline void publish_windup(geometry_msgs::WrenchStamped::Ptr& tau, const vector& windup){};
+			template <class WindupType>
+			inline void publish_windup(geometry_msgs::WrenchStamped::Ptr& tau, const WindupType& windup){};
 
 			/**
 			 * The helper methods for publish dispatch.

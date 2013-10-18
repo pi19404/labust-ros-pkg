@@ -1,3 +1,6 @@
 <launch>
-    <node pkg="rviz" name="rviz" type="rviz" args="-d $(find ldtravocean)/data/config/tfsetup.rviz"/>
+    <node pkg="rviz" name="rviz" type="rviz" machine="shoreside"/>
+    <node pkg="cart2" name="cart2_marker" type="cart2_rviz.py" machine="shoreside">
+        <remap from="target_point" to="LFPoint" />
+    </node>
 </launch>

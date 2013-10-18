@@ -82,15 +82,19 @@ SET(HPP include/labust/blueview/trackerfwd.hpp
 		include/labust/blueview/AssociatePolicy.hpp
 		include/labust/blueview/ProcessingChain.hpp)
 add_library(${PR_NAME2} ${SRC} ${HPP})
+add_dependencies(${PR_NAME2} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PR_NAME2} ${OpenCV_LIBS} modpbase64 labust_xml labust_navcon)
 
 add_executable(processor_test src/processor_test.cpp)
+add_dependencies(processor_test ${catkin_EXPORTED_TARGETS})
 target_link_libraries(processor_test ${PR_NAME2})
 
 add_executable(bv_processor src/bv_processor.cpp)
+add_dependencies(bv_processor ${catkin_EXPORTED_TARGETS})
 target_link_libraries(bv_processor ${PR_NAME1} ${PR_NAME2} ${catkin_LIBRARIES})
 
 add_executable(bv_monitor src/bv_monitor.cpp)
+add_dependencies(bv_monitor ${catkin_EXPORTED_TARGETS})
 target_link_libraries(bv_monitor ${catkin_LIBRARIES})
 
 

@@ -166,6 +166,7 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 	surge.betaa = params.Dquad(0,0);
 	sway.betaa = params.Dquad(1,1);
 	yaw.betaa = params.Dquad(5,5);
+	nav.setParameters(surge, sway, yaw);
 
 	nav.initModel();
 	labust::navigation::kfModelLoader(nav, nh, "ekfnav");

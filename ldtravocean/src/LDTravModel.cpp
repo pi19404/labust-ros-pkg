@@ -51,7 +51,7 @@ LDTravModel::~LDTravModel(){};
 void LDTravModel::initModel()
 {
   //std::cout<<"Init model."<<std::endl;
-  x = zeros(stateNum);
+  x = vector::Zero(stateNum);
   xdot = 0;
   ydot = 0;
   //Setup the transition matrix
@@ -59,7 +59,7 @@ void LDTravModel::initModel()
   R0 = R;
   V0 = V;
 
-  std::cout<<"R:"<<R<<"\n"<<V<<std::endl;
+  //std::cout<<"R:"<<R<<"\n"<<V<<std::endl;
 }
 
 void LDTravModel::calculateXYInovationVariance(const LDTravModel::matrix& P, double& xin,double &yin)
@@ -89,7 +89,7 @@ void LDTravModel::step(const input_type& input)
 
 void LDTravModel::derivativeAW()
 {
-	A = eye(stateNum);
+	A = matrix::Identity(stateNum, stateNum);
 
 	A(u,u) = 1-Ts*(surge.beta + 2*surge.betaa*fabs(x(u)))/surge.alpha;
 	A(v,v) = 1-Ts*(sway.beta + 2*sway.betaa*fabs(x(v)))/sway.alpha;
@@ -129,9 +129,9 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 	}
 
 	measurement.resize(arrived.size());
-	H = mzeros(arrived.size(),stateNum);
-	R = mzeros(arrived.size(),arrived.size());
-	V = mzeros(arrived.size(),arrived.size());
+	H = matrix::Zero(arrived.size(),stateNum);
+	R = matrix::Zero(arrived.size(),arrived.size());
+	V = matrix::Zero(arrived.size(),arrived.size());
 
 	for (size_t i=0; i<arrived.size();++i)
 	{
@@ -153,6 +153,6 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 
 void LDTravModel::estimate_y(output_type& y)
 {
-  y=prod(H,x);
+  y=H*x;
 }
 

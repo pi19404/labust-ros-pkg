@@ -35,8 +35,8 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
    FILES
-	 SetHLMode.srv
-	 EnableControl.srv
+   SetHLMode.srv
+   EnableControl.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -76,9 +76,18 @@ include_directories(
 add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 	include/labust/control/HLManager.hpp)
 ## Declare a cpp library
-# add_library(labust_control
-#   src/${PROJECT_NAME}/labust_control.cpp
-# )
+add_library(pidtoolkit2
+   src/pidtoolkit/PIDBase.c
+   src/pidtoolkit/PIFFController.c
+   src/pidtoolkit/PSatDController.c
+)
+set_source_files_properties(
+   src/pidtoolkit/PIDBase.c
+   src/pidtoolkit/PIFFController.c
+   src/pidtoolkit/PSatDController.c PROPERTIES LANGUAGE CXX)
+
+add_executable(fdap_controller2 src/FADPControl.cpp)
+add_executable(lf_controller2 src/LFControl.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -87,9 +96,21 @@ add_executable(hlmanager src/hl_node.cpp src/HLManager.cpp
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_control_node labust_control_generate_messages_cpp)
 add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
+add_dependencies(fdap_controller2 ${catkin_EXPORTED_TARGETS})
+add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(lf_controller2
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(fdap_controller2
+  pidtoolkit2
   ${catkin_LIBRARIES}
 )
 

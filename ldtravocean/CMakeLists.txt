@@ -4,7 +4,13 @@ project(ldtravocean)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp labust_base auv_msgs tf labust_uvapp)
+find_package(catkin REQUIRED COMPONENTS 
+    roscpp 
+    snippets 
+    auv_msgs 
+    tf
+    orocos_kdl
+    labust_navigation)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -49,7 +55,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ldtravocean
-   CATKIN_DEPENDS roscpp auv_msgs labust_base tf
+   CATKIN_DEPENDS roscpp auv_msgs tf
 #  DEPENDS system_lib
 )
 
@@ -68,7 +74,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 # )
 
 ## Declare a cpp executable
-add_executable(model_node src/model_node.cpp)
+#add_executable(model_node src/model_node.cpp)
 
 ## Declare a cpp executable
 add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
@@ -78,7 +84,7 @@ add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
 # add_dependencies(ldtravocean_node ${PROJECT_NAME})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(model_node ${catkin_LIBRARIES} labust_xml uvsim-plug)
+#target_link_libraries(model_node ${catkin_LIBRARIES} labust_xml uvsim-plug)
 
 target_link_libraries(ldnav_node ${catkin_LIBRARIES})
 

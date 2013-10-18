@@ -30,52 +30,80 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Created on: 26.06.2013.
- *  Author: Dula Nad
  *********************************************************************/
-#ifndef WINDUPPOLICY_HPP_
-#define WINDUPPOLICY_HPP_
-#include <ros/ros.h>
-
-namespace labust
+#ifndef PIDBASE_H_
+#define PIDBASE_H_
+/**
+ * The extended PT1 model used for vehicle. The model can be used
+ * to auto-tune the PIDController class. The model is defined as:
+ *
+ *  alpha * nu' = (beta + betaa * abs(nu))*nu + tau
+ */
+typedef struct PT1Model
 {
-	namespace control
-	{
-		/**
-		 * The windup policy for the high level ROS controllers.
-		 */
-		template <class WindupType>
-		class WindupPolicy
-		{
-		public:
-			WindupPolicy()
-			{
-				ros::NodeHandle nh;
-				windupSub = nh.subscribe<WindupType>("windup", 1,
-						&WindupPolicy::onWindup,this);
-			}
+	/**
+	 * The inertia parameter.
+	 */
+	float alpha;
+	/**
+	 * The linear drag parameter.
+	 */
+	float beta;
+	/**
+	 * The non-linear drag parameter.
+	 */
+	float betaa;
+} PT1Model;
 
-			void onWindup(const typename WindupType::ConstPtr& windup)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				this->_windup_var = *windup;
-			}
+/**
+ * The PID controller base.
+ * \todo Use doxygen grouping and reduce size
+ * \todo Document difference between auto-windup and ext-windup
+ */
+typedef struct PIDBase
+{
+	/**
+	 * The proportional, integral, derivative,
+	 * filter and tracking gain.
+	 */
+	float Kp, Ki, Kd, Tf, Kt;
+	/**
+	 * Automatic tracking flag.
+	 */
+	char autoWindup;
+	/**
+	 * The windup flag
+	 */
+	char windup;
+	/**
+	 * The maximum output limit. The output saturation is symmetric.
+	 */
+	float outputLimit;
+	/**
+	 * Internal state of the backward euler.
+	 */
+	float internalState, lastRef, lastError, lastFF;
 
-			template <class Base>
-			inline void get_windup(Base* b)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				b->windup(_windup_var);
-			};
+	/**
+	 * The reference, state, output, feedforward, tracking
+	 */
+	float desired, state, output;
 
-		protected:
-			boost::mutex wnd_mux;
-			ros::Subscriber windupSub;
-			WindupType _windup_var;
-		};
-	}
-}
+	/**
+	 * The internal model parameters.
+	 */
+	PT1Model model;
+} PIDBase;
 
-/* WINDUPPOLICY_HPP_ */
+/**
+ * Initialize the controller base. Set all the values to zero
+ * and disable auto windup detection.
+ */
+void PIDBase_init(PIDBase* self);
+
+/**
+ * The helper function for output saturation.
+ */
+float sat(float u, float low, float high);
+/* PIDBASE_H_ */
 #endif

@@ -30,52 +30,60 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Created on: 26.06.2013.
- *  Author: Dula Nad
  *********************************************************************/
-#ifndef WINDUPPOLICY_HPP_
-#define WINDUPPOLICY_HPP_
-#include <ros/ros.h>
-
-namespace labust
+#ifndef PIFFCONTROLLER_H_
+#define PIFFCONTROLLER_H_
+#include <labust/control/PIDBase.h>
+#include <math.h>
+/**
+ * Autotune the PIFF controller based on the supplied
+ * PT1Model and desired closed loop frequency.
+ * \todo Document the binomial autotuning (pole-placement)
+ */
+void PIFF_modelTune(PIDBase* self,
+		const PT1Model* const model,
+		float w);
+/**
+ * Autotune the PIFF controller using the plant model 1.
+ * Valid for higher level controllers.
+ */
+void PIFF_tune(PIDBase* self, float w);
+/**
+ * Calculate one step of the PIFF controller with externally
+ * supplied error and feedforward calculation.
+ */
+void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff);
+/**
+ * Calculate one step of the PIFF controller.
+ */
+inline void PIFF_step(PIDBase* self, float Ts)
 {
-	namespace control
-	{
-		/**
-		 * The windup policy for the high level ROS controllers.
-		 */
-		template <class WindupType>
-		class WindupPolicy
-		{
-		public:
-			WindupPolicy()
-			{
-				ros::NodeHandle nh;
-				windupSub = nh.subscribe<WindupType>("windup", 1,
-						&WindupPolicy::onWindup,this);
-			}
-
-			void onWindup(const typename WindupType::ConstPtr& windup)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				this->_windup_var = *windup;
-			}
-
-			template <class Base>
-			inline void get_windup(Base* b)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				b->windup(_windup_var);
-			};
-
-		protected:
-			boost::mutex wnd_mux;
-			ros::Subscriber windupSub;
-			WindupType _windup_var;
-		};
-	}
+	PIFF_wffStep(self, Ts,
+			self->desired - self->state,
+			(self->model.beta +
+			self->model.betaa*fabs(self->desired))*self->desired);
+}
+/**
+ * Calculate one step of the PIFF controller with externally
+ * supplied error calculation.
+ */
+inline void PIFF_wStep(PIDBase* self, float Ts, float error)
+{
+	PIFF_wffStep(self, Ts,
+			error,
+			(self->model.beta +
+			self->model.betaa*fabs(self->desired))*self->desired);
+}
+/**
+ * Calculate one step of the PIFF controller with externally
+ * supplied feedforward calculation.
+ */
+inline void PIFF_ffStep(PIDBase* self, float Ts, float ff)
+{
+	PIFF_wffStep(self, Ts,
+			self->desired - self->state,
+			ff);
 }
 
-/* WINDUPPOLICY_HPP_ */
+/* PIFFCONTROLLER_H_ */
 #endif

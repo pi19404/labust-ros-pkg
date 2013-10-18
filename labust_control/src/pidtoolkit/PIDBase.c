@@ -30,66 +30,31 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*
-*  Author: Dula Nad
-*  Created: 06.03.2013.
 *********************************************************************/
-#ifndef SCALEALLOCATION_HPP_
-#define SCALEALLOCATION_HPP_
+#include <labust/control/PIDBase.h>
 
-#include <Eigen/Dense>
-
-namespace labust
+void PIDBase_init(PIDBase* self)
 {
-	namespace vehicles
-	{
-		/**
-		 * Performs the allocation for the supplied matrix.
-		 */
-		class ScaleAllocation
-		{
-		public:
-			/**
-			 * Main constructor. Takes the allocation matrix.
-			 */
-			template <class Matrix>
-			ScaleAllocation(const Matrix& B, double tmax, double tmin):
-				B(B),
-				tmax(tmax),
-				tmin(tmin)
-			{
-				Binv = B.transpose()*(B*B.transpose()).inverse();
-			}
+	self->autoWindup = 0;
+	self->outputLimit = 0;
+	self->Kp = self->Ki = 0;
+	self->Kd = self->Tf = 0;
+	self->Kt = 0;
 
-			template <class Matrix>
-			double scale(const Eigen::VectorXf& virtualInput, Matrix* scaled)
-			{
-				Eigen::VectorXf tdes = Binv*virtualInput;
+	self->internalState = self->output = 0;
+	self->desired= self->state =0;
+	self->lastError = self->lastRef = 0;
 
-				double scale_max = 1;
-				for (size_t i=0; i<tdes.rows();++i)
-				{
-					double scale = fabs((tdes(i)>0)?tdes(i)/tmax:tdes(i)/tmin);
-					if (scale>scale_max) scale_max=scale;
-				}
-				tdes = tdes/scale_max;
-				(*scaled) = B*tdes;
+	self->model.alpha = 0;
+	self->model.beta = 0;
+	self->model.betaa = 0;
+}
 
-				return scale_max;
-			}
-
-		private:
-			/**
-			 * The allocation matrix and inverse.
-			 */
-			Eigen::MatrixXf B,Binv;
-			/**
-			 * Maximum and minimum thrust.
-			 */
-			double tmax, tmin;
-		};
-	}
+float sat(float u, float low, float high)
+{
+	if (u < low) return low;
+	if (u > high) return high;
+  return u;
 }
 
 
-#endif /* SCALEALLOCATION_HPP_ */

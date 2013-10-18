@@ -34,99 +34,103 @@
  *  Created on: 26.06.2013.
  *  Author: Dula Nad
  *********************************************************************/
-#ifndef HLCONTROL_HPP_
-#define HLCONTROL_HPP_
-#include <auv_msgs/NavSts.h>
-#include <auv_msgs/BodyVelocityReq.h>
-#include <ros/ros.h>
-
-#include <boost/thread/mutex.hpp>
+#ifndef LINE_HPP_
+#define LINE_HPP_
+#include <Eigen/Dense>
 
 namespace labust
 {
-	namespace control
+	namespace math
 	{
-		struct NoEnable{static const bool enable=true;};
-		struct NoWindup{
-			template <class Base>
-			inline void get_windup(Base b){};
-		};
-
 		/**
-		 * The class contains the ROS template for high level controllers.
-		 *
-		 * \todo Add windup type. Convert into template. EnablePolicy add service, topic option selection.
+		 * This is a helper class for the line calculations.
 		 */
-		template <
-		class Controller,
-		class Enable = NoEnable,
-		class Windup = NoWindup,
-		class OutputType = auv_msgs::BodyVelocityReq,
-		class InputType = auv_msgs::NavSts
-		>
-		class HLControl : public Controller, Enable, Windup
+		class Line
 		{
+			enum {xp,yp,zp};
 		public:
 			/**
-			 * Main constructor
+			 * Default constructor.
 			 */
-			HLControl()
+			Line():
+				Gamma(0),
+				Xi(0),
+				T1(Eigen::Vector3d::Zero()),
+				T2(Eigen::Vector3d::Ones()){};
+			/**
+			 * Calculates the horizontal distance from the line.
+			 */
+			double calculatedH(double x0, double y0, double z0) const
 			{
-				onInit();
+			  double Lp = sqrt((T2(xp)-T1(xp))*(T2(xp)-T1(xp))+(T2(yp)-T1(yp))*(T2(yp)-T1(yp)));
+			  //Note the minus thingy
+			  return ((T2(xp)-T1(xp))*(T1(yp)-y0)-(T1(xp)-x0)*(T2(yp)-T1(yp)))/Lp;
 			}
 			/**
-			 * Initialize and setup controller.
+			 * Calculate the vertical distance from the line.
 			 */
-			void onInit()
+			double calculatedV(double x0, double y0, double z0) const
 			{
-				ros::NodeHandle nh;
-				//Initialize publishers
-				outPub = nh.advertise<OutputType>("out", 1);
+			  double Lp = sqrt(std::pow(T2(xp)-T1(xp),2) + std::pow(T2(yp)-T1(yp),2));
+			  double L = sqrt(Lp*Lp + std::pow(T2(zp) - T1(zp),2));
+			  double n = (T2(xp)-T1(xp))*(x0-T1(xp))+(T2(yp)-T1(yp))*(y0-T1(yp));
+			  n *= -(T2(zp)-T1(zp));
+			  n -= (T1(zp)-z0)*Lp*Lp;
 
-				//Initialze subscribers
-				stateSub = nh.subscribe<InputType>("state", 1,
-						&HLControl::onEstimate,this);
-				trackState = nh.subscribe<InputType>("ref", 1,
-						&HLControl::onRef,this);
-
-				Controller::init();
+			  return n/(Lp*L);
 			}
-
-		private:
-
-			void onRef(const typename InputType::ConstPtr& ref)
+			/**
+			 * Set the line parameters.
+			 *
+			 * \param T1 Position of the line start.
+			 * \param T2 Position of the line end.
+			 */
+			void setLine(const Eigen::Vector3d& T1, const Eigen::Vector3d& T2)
 			{
-				this->ref = *ref;
-			}
+			  this->T1 = T1;
+			  this->T2 = T2;
+			  //select default north line.
+			  if ((T1(0) == T2(0)) && (T1(1) == T2(1))) this->T2(0) = -1;
 
-			void onEstimate(const typename InputType::ConstPtr& estimate)
+			  this->Gamma = atan2(T2(yp) - T1(yp),T2(xp) - T1(xp));
+			  this->Xi = atan2(T2(zp) - T1(zp),
+			  		sqrt(std::pow(T2(xp)-T1(xp),2) + std::pow(T2(yp)-T1(yp),2)));
+			}
+			/**
+			 * Get the line parameter.
+			 */
+			inline const Eigen::Vector3d& getT1()
 			{
-				if (!Enable::enable) return;
-				//Copy into controller
-				Windup::get_windup(this);
-				boost::mutex::scoped_lock l(cnt_mux);
-				outPub.publish(Controller::step(ref, *estimate));
+				return T1;
 			}
+			/**
+			 * Get the line parameter.
+			 */
+			inline const Eigen::Vector3d& getT2()
+			{
+				return T2;
+			}
+			/**
+			 * Get the line elevation angle.
+			 */
+			inline double xi(){return this->Xi;};
+			/**
+			 * Get the line azimuth angle.
+			 */
+			inline double gamma(){return this->Gamma;};
 
+		protected:
 			/**
-			 * The publisher of the TAU message.
+			 * Line orientation.
 			 */
-			ros::Publisher outPub;
+			double Gamma, Xi;
 			/**
-			 * The subscribed topics.
+			 * Line points.
 			 */
-			ros::Subscriber stateSub, trackState;
-			/**
-			 * The desired state to track.
-			 */
-			InputType ref;
-			/**
-			 * Control locker.
-			 */
-			boost::mutex cnt_mux;
+			Eigen::Vector3d T1,T2;
 		};
 	}
 }
 
-/* HLCONTROL_HPP_ */
+/* LINE_HPP_ */
 #endif

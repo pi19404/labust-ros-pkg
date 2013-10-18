@@ -54,6 +54,7 @@ namespace labust
 		 * \todo Is it better to have a bunch of preprogramed simple allocation types that have static alllocation data ?
 		 * \todo Split into a compilable cpp when more than one larger class exists for vehicle support
 		 * \todo Remove the ROS_ERROR debug messages and any ROS dependencies
+		 * \todo Add the windup indication for groups of scaled allocations
 		 */
 		class ThrustAllocator
 		{
@@ -69,6 +70,7 @@ namespace labust
 				Binv(B),
 				tmax(1),
 				tmin(-tmax),
+				coercion(Eigen::VectorXi::Zero(6)),
 				type(NoAlloc),
 				num_thrusters(6){};
 
@@ -88,14 +90,14 @@ namespace labust
 				switch (type)
 				{
 				case NoAlloc:
-						//noalloc
-						break;
+					//noalloc
+					break;
 				case SimpleAlloc:
-						simple_alloc();
-						break;
+					simple_alloc();
+					break;
 				case ScaleAlloc:
-						scale_alloc();
-						break;
+					scale_alloc();
+					break;
 				default:
 					throw std::runtime_error("ThrustAllocator: Undefined allocation type.");
 				}
@@ -105,20 +107,48 @@ namespace labust
 
 				for (int i=0; i<dofs.size(); ++i) tauOut(dofs[i])=vi(i);
 
-//				//Determine coercion
-//				switch (type)
-//				{
-//				case NoAlloc:
-//						//noalloc
-//						break;
-//				case SimpleAlloc:
-//						//for (int i=0; i<dofs.size(); ++i) coercion(tauOut(dofs[i])=vi(i);
-//						break;
-//				case ScaleAlloc:
-//						scale_alloc();
-//						break;
-//				default:
-//				}
+				//Determine coercion for windup
+				switch (type)
+				{
+				case NoAlloc:
+					//noalloc
+					break;
+				case SimpleAlloc:
+					//It is safe to compare these
+					for (int i=0; i<dofs.size(); ++i)
+					{
+						coercion(dofs[i]) = 0;
+						if (tauIn(dofs[i])>tauOut(dofs[i]))	coercion(dofs[i])=1;
+						else if (tauIn(dofs[i])<tauOut(dofs[i]))	coercion(dofs[i])=-1;
+					}
+					break;
+				case ScaleAlloc:
+					//						bool scaling;
+					//						for (int i=0; i<group_scales.size(); ++i) if ((scaling = (group_scales[i]>1))) break;
+					//						if (scaling)
+					//						{
+					//							for (int i=0; i<dofs.size(); ++i)
+					//							{
+					//								if (tauIn(dofs[i])>tauOut(dofs[i]))	coercion(dofs[i])=1;
+					//								else if (tauIn(dofs[i])<tauOut(dofs[i]))	coercion(dofs[i])=-1;
+					//							}
+					//						}
+
+					//Alternative to scaling inspection
+					for (int i=0; i<dofs.size(); ++i)
+					{
+						coercion(dofs[i]) = 0;
+						//If there is deviation between input and output we assume
+						if (fabs(tauIn(dofs[i]) - tauOut(dofs[i])) > 0.01)
+						{
+							if (tauIn(dofs[i])>tauOut(dofs[i]))	coercion(dofs[i])=1;
+							else if (tauIn(dofs[i])<tauOut(dofs[i]))	coercion(dofs[i])=-1;
+						}
+					}
+					break;
+				default:
+					break;
+				}
 			}
 
 
@@ -185,7 +215,7 @@ namespace labust
 
 			inline const Eigen::VectorXd& getThrusterForces(){return tdes;};
 
-			inline const Eigen::VectorXi& getCoercionInformation(){return coercion;};
+			inline const Eigen::VectorXi& getCoercion(){return coercion;};
 
 		protected:
 			/**

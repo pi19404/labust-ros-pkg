@@ -30,52 +30,27 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
- *
- *  Created on: 26.06.2013.
- *  Author: Dula Nad
  *********************************************************************/
-#ifndef WINDUPPOLICY_HPP_
-#define WINDUPPOLICY_HPP_
-#include <ros/ros.h>
-
-namespace labust
+#ifndef PSATDCONTROLLER_H_
+#define PSATDCONTROLLER_H_
+#include <labust/control/PIDBase.h>
+/**
+ * Autotune the PSatD controller.
+ */
+void PSatD_tune(PIDBase* self, float w, float aAngle, float surge);
+/**
+ * Calculate one step of the PIFF controller.
+ */
+void PSatD_dStep(PIDBase* self, float Ts, float derivative);
+/**
+ * Calculate one step of the PIFF controller.
+ */
+inline void PSatD_step(PIDBase* self, float Ts)
 {
-	namespace control
-	{
-		/**
-		 * The windup policy for the high level ROS controllers.
-		 */
-		template <class WindupType>
-		class WindupPolicy
-		{
-		public:
-			WindupPolicy()
-			{
-				ros::NodeHandle nh;
-				windupSub = nh.subscribe<WindupType>("windup", 1,
-						&WindupPolicy::onWindup,this);
-			}
-
-			void onWindup(const typename WindupType::ConstPtr& windup)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				this->_windup_var = *windup;
-			}
-
-			template <class Base>
-			inline void get_windup(Base* b)
-			{
-				boost::mutex::scoped_lock l(wnd_mux);
-				b->windup(_windup_var);
-			};
-
-		protected:
-			boost::mutex wnd_mux;
-			ros::Subscriber windupSub;
-			WindupType _windup_var;
-		};
-	}
+	PSatD_dStep(self,
+			Ts,
+			((self->desired - self->state) - self->lastError)/Ts);
 }
 
-/* WINDUPPOLICY_HPP_ */
+/* PSatDCONTROLLER_H_ */
 #endif

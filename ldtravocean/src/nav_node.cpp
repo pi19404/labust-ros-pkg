@@ -36,10 +36,14 @@
  *********************************************************************/
 #include <labust/navigation/KFCore.hpp>
 #include <labust/navigation/LDTravModel.hpp>
-#include <labust/math/uBlasOperations.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
-#include <labust/tools/rosutils.hpp>
+#include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
+#include <labust/tools/DynamicsLoader.hpp>
+#include <labust/simulation/DynamicsParams.hpp>
+#include <labust/navigation/KFModelLoader.hpp>
+
 
 #include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
@@ -156,83 +160,31 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 {
 	ROS_INFO("Configure navigation.");
 
+	labust::simulation::DynamicsParams params;
+	labust::tools::loadDynamicsParams(nh, params);
+
+	ROS_INFO("Loaded dynamics params.");
+
 	KFNav::ModelParams surge,sway,heave,yaw;
-
-	//Get model parameters
-	std::string modelName("default");
-	nh.param("model_name",modelName,modelName);
-
-	//Inertia and added mass
-	double mass(1);
-	nh.param(modelName+"/dynamics/mass",mass,mass);
-	surge.alpha = mass;
-	sway.alpha = mass;
-	heave.alpha = mass;
-
-	double Ts(0.1);
-	nh.param(modelName+"/dynamics/period",Ts,Ts);
-	nav.setTs(Ts);
-
-	XmlRpc::XmlRpcValue modelParams;
-	nh.getParam(modelName+"/dynamics/inertia_matrix", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	yaw.alpha = static_cast<double>(modelParams[8]);
-
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/added_mass", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	surge.alpha += static_cast<double>(modelParams[0]);
-	sway.alpha += static_cast<double>(modelParams[1]);
-	heave.alpha += static_cast<double>(modelParams[2]);
-	yaw.alpha += static_cast<double>(modelParams[5]);
-
-	//Linear damping
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/damping", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	surge.beta = static_cast<double>(modelParams[0]);
-	sway.beta = static_cast<double>(modelParams[1]);
-	heave.beta = static_cast<double>(modelParams[2]);
-	yaw.beta = static_cast<double>(modelParams[5]);
-
-	//Quadratic damping
-	modelParams.clear();
-	nh.getParam(modelName+"/dynamics/quadratic_damping", modelParams);
-	ROS_ASSERT(modelParams.getType() == XmlRpc::XmlRpcValue::TypeArray);
-	surge.betaa = static_cast<double>(modelParams[0]);
-	sway.betaa = static_cast<double>(modelParams[1]);
-	heave.betaa = static_cast<double>(modelParams[2]);
-	yaw.betaa = static_cast<double>(modelParams[5]);
-
+	surge.alpha = params.m + params.Ma(0,0);
+	sway.alpha = params.m + params.Ma(1,1);
+	heave.alpha = params.m + params.Ma(2,2);
+	yaw.alpha = params.Io(2,2) + params.Ma(5,5);
+	surge.beta = params.Dlin(0,0);
+	sway.beta = params.Dlin(1,1);
+	sway.beta = params.Dlin(2,2);
+	yaw.beta = params.Dlin(5,5);
+	surge.betaa = params.Dquad(0,0);
+	sway.betaa = params.Dquad(1,1);
+	sway.betaa = params.Dquad(2,2);
+	yaw.betaa = params.Dquad(5,5);
 	nav.setParameters(surge,sway,heave,yaw);
 
-	std::string sQ,sW,sV,sR,sP,sx0;
-	nh.getParam(modelName+"/navigation/Q", sQ);
-	nh.getParam(modelName+"/navigation/W", sW);
-	nh.getParam(modelName+"/navigation/V", sV);
-	nh.getParam(modelName+"/navigation/R", sR);
-	nh.getParam(modelName+"/navigation/P", sP);
-	nh.getParam(modelName+"/navigation/x0", sx0);
-	KFNav::matrix Q,W,V,R,P;
-	KFNav::vector x0;
-	boost::numeric::ublas::matrixFromString(sQ,Q);
-	boost::numeric::ublas::matrixFromString(sW,W);
-	boost::numeric::ublas::matrixFromString(sV,V);
-	boost::numeric::ublas::matrixFromString(sR,R);
-	boost::numeric::ublas::matrixFromString(sP,P);
-	std::stringstream ss(sx0);
-	boost::numeric::ublas::operator >>(ss,x0);
+	g_acc = params.g_acc;
+	rho = params.rho;
 
-	nh.getParam(modelName+"/dynamics/gravity", g_acc);
-	nh.getParam(modelName+"/dynamics/density", rho);
-
-	std::cout<<P<<std::endl;
-
-	nav.setStateParameters(W,Q);
-	nav.setMeasurementParameters(V,R);
-	nav.setStateCovariance(P);
 	nav.initModel();
-	nav.setState(x0);
+	labust::navigation::kfModelLoader(nav, nh, "ekfnav");
 }
 
 //consider making 2 corrections based on arrived measurements (async)
@@ -253,10 +205,10 @@ int main(int argc, char* argv[])
 	ros::Publisher currentTwist = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
 	ros::Publisher bodyFlowFrame = nh.advertise<geometry_msgs::TwistStamped>("body_flow_frame_twist",1);
 	//Subscribers
-	KFNav::vector tau(KFNav::zeros(KFNav::inputSize)),
-			measurements(KFNav::zeros(KFNav::stateNum)),
-			newMeasFlag(KFNav::zeros(KFNav::stateNum));
-	KFNav::vector rpy(KFNav::zeros(3+1));
+	KFNav::vector tau(KFNav::vector::Zero(KFNav::inputSize)),
+			measurements(KFNav::vector::Zero(KFNav::stateNum)),
+			newMeasFlag(KFNav::vector::Zero(KFNav::stateNum));
+	KFNav::vector rpy(KFNav::vector::Zero(3+1));
 
 	tf::TransformBroadcaster broadcast;
 	listener = new tf::TransformListener();

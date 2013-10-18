@@ -1,0 +1,29 @@
+<launch>
+  <include file="$(find ldtravocean)/launch/$(env ROBOT).machine" />
+  <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
+  <arg name="use_usbl" value="$(optenv USE_USBL 0)" />     
+  <arg name="use_usbl_manager" value="$(optenv USE_USBL_MANAGER 1)" />     
+  <!-- <include file="$(find ldtravocean)/data/config/uwsim.xml" if="$(env USE_UWSIM)" /> -->
+ 
+  <group ns="pladypos">
+  	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
+  	<rosparam command="load" file="$(env MODEL)" />
+  	<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
+  	  	 	
+  	<!-- Common nodes -->
+  	<include file="$(find ldtravocean)/data/config/logging.xml" if="$(optenv ENABLE_LOGGING 0)" />
+  	<include file="$(find ldtravocean)/data/config/navigation2.xml" /> 	
+  	<include file="$(find ldtravocean)/data/config/control.xml" />
+   	<include file="$(find ldtravocean)/data/config/joy.xml"/>
+  	<include file="$(find ldtravocean)/data/config/manager.xml" />
+  	
+  	<!-- Add runtime applications -->
+  	<group unless="$(arg is_sim)">
+  	</group>
+  	
+  	<!-- Add simulation applications -->
+  	<group if="$(arg is_sim)">
+  		<include file="$(find labust_sim)/config/simulator.xml"  />
+  	</group>  
+  </group>
+</launch>

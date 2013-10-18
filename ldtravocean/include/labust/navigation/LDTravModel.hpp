@@ -46,6 +46,7 @@ namespace labust
      * This class implements a EKF filter for the LDTravOcean ROV.
      *
      * \todo Extract the update method into a separate file for future use.
+     * \todo Extract the ModelParams to a snippet
      */
     class LDTravModel : public SSModel<double>
     {
@@ -157,10 +158,6 @@ namespace labust
        * The newest measurement.
        */
       output_type measurement;
-      /**
-       * The full update matrix.
-       */
-      matrix R0,V0;
       /**
        * The NED speeds.
        */

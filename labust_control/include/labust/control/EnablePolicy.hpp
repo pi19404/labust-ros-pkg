@@ -34,8 +34,8 @@
  *  Created on: 26.06.2013.
  *  Author: Dula Nad
  *********************************************************************/
-#ifndef HLCONTROL_HPP_
-#define HLCONTROL_HPP_
+#ifndef ENABLEPOLICY_HPP_
+#define ENABLEPOLICY_HPP_
 #include <labust_control/EnableControl.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
@@ -52,11 +52,11 @@ namespace labust
 			{
 				ros::NodeHandle nh;
 				enableControl = nh.advertiseService("Enable",
-						&EnablePolicy::onEnableControl, this);
+						&EnableServicePolicy::onEnableControl, this);
 			}
 
-			bool onEnableControl(labust_uvapp::EnableControl::Request& req,
-					labust_uvapp::EnableControl::Response& resp)
+			bool onEnableControl(labust_control::EnableControl::Request& req,
+					labust_control::EnableControl::Response& resp)
 			{
 				this->enable = req.enable;
 				return true;
@@ -80,13 +80,13 @@ namespace labust
 				enable(false)
 			{
 				ros::NodeHandle nh;
-				enableControl = nh.subscribe<std_msgs::Bool>("Enable",
-						&EnablePolicy::onEnableControl, this);
+				enableControl = nh.subscribe<std_msgs::Bool>("Enable",1,
+						&EnableTopicPolicy::onEnableControl, this);
 			}
 
-			void onEnableControl(const std_msgs::Bool::ContsPtr& req)
+			void onEnableControl(const std_msgs::Bool::ConstPtr& req)
 			{
-				this->enable = req.data;
+				this->enable = req->data;
 			}
 
 		protected:
@@ -102,5 +102,5 @@ namespace labust
 	}
 }
 
-/* HLCONTROL_HPP_ */
+/* ENABLEPOLICY_HPP_ */
 #endif

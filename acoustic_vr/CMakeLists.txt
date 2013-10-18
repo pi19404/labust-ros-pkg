@@ -4,7 +4,7 @@ project(acoustic_vr)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp labust_base)
+find_package(catkin REQUIRED COMPONENTS roscpp labust_base auv_msgs)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system thread)
@@ -68,9 +68,11 @@ include_directories(include
 
 ## Declare a cpp library
 add_library(acoustic_vr_temp src/AugmentedAcoustics.cpp)
+add_dependencies(acoustic_vr_temp ${catkin_EXPORTED_TARGETS})
 
 ## Declare a cpp executable
 add_executable(acoustic_vr src/acoustic_vr.cpp src/AAGui.cpp)
+add_dependencies(acoustic_vr ${catkin_EXPORTED_TARGETS})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
