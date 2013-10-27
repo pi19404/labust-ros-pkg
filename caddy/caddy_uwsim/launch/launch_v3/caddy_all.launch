@@ -3,7 +3,7 @@
   <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
   <arg name="use_usbl" value="$(optenv USE_USBL 0)" />     
   <arg name="use_usbl_manager" value="$(optenv USE_USBL_MANAGER 1)" />     
-  <!-- <include file="$(find caddy_uwsim)/data/config_v3/uwsim.xml" if="$(env USE_UWSIM)" /> -->
+  <include file="$(find caddy_uwsim)/data/config_v3/uwsim.xml" if="$(env USE_UWSIM)" />
  
   <group ns="pladypos">
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
@@ -26,9 +26,24 @@
   	<!-- Add simulation applications -->
   	<group if="$(arg is_sim)">
   		<include file="$(find labust_sim)/config/simulator.xml"  />
-  	</group>  
+	</group>  
   </group>
 	
+  <group if="$(optenv SIM_DIVER 0)">
+		<group ns="diver">
+ 			<node pkg="pladypos" type="diver_sim.py" name="diver_kinematic">
+		   		<remap from="TrackPoint" to="stateHat" />
+		   		<remap from="joy" to="/pladypos/joy" />
+				<param name="tf_prefix" value="diver" />
+        	        </node>
+			<node pkg="pladypos" type="NavSts2Odom.py" name="stateHat2uwsim" machine="shoreside" >
+			        <remap from="stateHat" to="stateHat" />
+				<remap from="uwsim_hook" to="uwsim_hook" />	
+				<param name="tf_prefix" value="diver" />
+			</node>
+		</group>
+  </group>
+
   <group if="$(arg use_usbl)">
 	<include file="$(find usbl)/launch/usbl_full.launch" unless="$(arg is_sim)"/>
 	<include file="$(find usbl)/launch/usbl_sim.launch" if="$(arg is_sim)"/>

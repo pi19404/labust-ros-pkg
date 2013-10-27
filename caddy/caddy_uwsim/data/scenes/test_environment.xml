@@ -160,7 +160,25 @@
 			<p>0</p>
 			<y>0</y>
 		</orientation>
-
+		<virtualCamera>
+		      <name>bowtech1</name>
+		      <relativeTo>base_link</relativeTo>
+		      <resw> 640 </resw>
+		      <resh> 480 </resh>
+		      <position>
+		        <x>0.7</x>
+		        <y>0</y>
+		        <z>0.4</z>
+		      </position>
+		      <orientation>
+        		<r>-1.57</r>
+		        <p>3.14159</p>
+		        <y>1.57</y>
+		      </orientation>
+		      <!-- draws the FOV of the camera projected on the scene each 2 seconds -->
+		      <!-- <showpath>2</showpath>  -->
+	   	</virtualCamera>
+	
 		<pressureSensor>
 			<name>diverPressureSensor</name>
 			<relativeTo>base_link</relativeTo>
@@ -176,7 +194,7 @@
 			</orientation>
 			<std>0.02</std>
 		</pressureSensor>
-	</vehicle>
+		</vehicle>
 
 	<object>
 		<name>terrain</name>
@@ -204,6 +222,11 @@
 			<vehicleName> diver </vehicleName>
 			<visualize> 1 </visualize>
 		</ROSOdomToPAT>
+    		<VirtualCameraToROSImage> 
+		      <cameraName>bowtech1</cameraName>
+		      <imageTopic>diver/view</imageTopic>
+		      <infoTopic>diver/view_info</infoTopic>
+		</VirtualCameraToROSImage>
 		<!-- <ImuToROSImu>
 			<name>imu</name>
 			<topic>pladypos/imu</topic>

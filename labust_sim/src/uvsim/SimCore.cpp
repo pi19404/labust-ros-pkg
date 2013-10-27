@@ -107,7 +107,7 @@ void SimCore::onInit()
 
 	odom = nh.advertise<nav_msgs::Odometry>("meas_odom",1);
 	odomn = nh.advertise<nav_msgs::Odometry>("meas_odom_noisy",1);
-  tauAchWrench = nh.advertise<geometry_msgs::WrenchStamped>("tauAchWrench",1);
+	tauAchWrench = nh.advertise<geometry_msgs::WrenchStamped>("tauAchWrench",1);
 
 	double fs(10);
 	ph.param("Rate",fs,fs);

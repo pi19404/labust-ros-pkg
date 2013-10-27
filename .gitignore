@@ -12,6 +12,9 @@ bin/
 */bvt_sdk/include/
 */bvt_sdk/colormaps/
 */bvtsdk
+*/*/bvt_sdk/include/
+*/*/bvt_sdk/colormaps/
+*/*/bvtsdk
 #ignore generated files
 srv_gen/
 msg_gen/

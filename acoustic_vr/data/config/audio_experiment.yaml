@@ -6,22 +6,22 @@ Verbal_angle: 5
 NonLinear_coeff: 1 
 Guidance_Mode: 1
 #1 . 2D mode spatial sound, 2 - 3D mode spatial_speech, 3 - 3D mode full speech, 4 - 2D speech
-Task_Mode: 1
+Task_Mode: 3
 #1 . Target, 2 - Path, 3 - Trajectory tracking
 K_Diter_Time: 1
 #0 - default
 AmpDiter: 0 
 #1 - default
 FreqDiter: 1
-RabbitDistance: 0
+RabbitDistance: 10
 #1 . None, 2 - Joystick
 JoyStick_Mode: 1
-PathVelocity: 1
+PathVelocity: 0.5
 #C is Const, S is Step, V is Variable
 SpeedProfile: "C"
 #1 is linear
 NonLinear_coeff_distance: 1 
-Kintegral: 0.2
+Kintegral: 0
 #0 is Pink, 1 is Click
 Sound: 0 
 PathStartX: -50.0

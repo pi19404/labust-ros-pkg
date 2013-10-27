@@ -8,16 +8,23 @@ import rospy;
 from auv_msgs.msg import NavSts;
 from nav_msgs.msg import Odometry
 import tf
+import math
       
 class MessageTransformer:
     def __init__(self):
         rospy.Subscriber("stateHat", NavSts, self.onNavSts);
         self.pub = rospy.Publisher("uwsim_hook", Odometry);
         self.listener = tf.TransformListener();
+        self.broadcaster = tf.TransformBroadcaster();
+        self.tf_prefix = rospy.get_param("~tf_prefix");
+        self.tf_prefix = "/"+self.tf_prefix;
            
     def onNavSts(self,data):   
+        q = tf.transformations.quaternion_from_euler(math.pi, 0, math.pi/2)
+        self.broadcaster.sendTransform((0,0,0), q.conjugate(), rospy.Time.now(), self.tf_prefix + "/uwsim_frame", self.tf_prefix + "/local");
+        
         try:
-            (trans,rot) = self.listener.lookupTransform('uwsim_frame', 'base_link_sim', rospy.Time(0))
+            (trans,rot) = self.listener.lookupTransform(self.tf_prefix + "/uwsim_frame", self.tf_prefix + "/base_link", rospy.Time(0))
             
             odom = Odometry();  
             odom.twist.twist.linear.x = data.body_velocity.x;
