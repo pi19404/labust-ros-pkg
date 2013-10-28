@@ -54,27 +54,6 @@ namespace labust
 
 		/**
 		 * Reads a vector or matrix list and populates the supplied vector or matrix.
-		 *
-		 * \todo Derive one function for variable and fixed size.
-		 */
-		template <class Derived>
-		inline std::pair<int,int>	getMatrixParam(const ros::NodeHandle& nh,
-				const std::string& name,
-				const Eigen::MatrixBase<Derived>& matrix)
-		{
-			if ((matrix.RowsAtCompileTime <= 0) ||
-					(matrix.ColsAtCompileTime <=0))
-			{
-				return getMatrixParam_variablesize(nh,name,matrix);
-			}
-			else
-			{
-				return getMatrixParam_fixedsize(nh,name,matrix);
-			}
-		}
-
-		/**
-		 * Reads a vector or matrix list and populates the supplied vector or matrix.
 		 */
 		template <class Derived>
 		std::pair<int,int>	getMatrixParam_fixedsize(const ros::NodeHandle& nh,
@@ -205,6 +184,27 @@ namespace labust
 			}
 
 			return std::make_pair(row,col);
+		}
+		
+		/**
+		 * Reads a vector or matrix list and populates the supplied vector or matrix.
+		 *
+		 * \todo Derive one function for variable and fixed size.
+		 */
+		template <class Derived>
+		inline std::pair<int,int>	getMatrixParam(const ros::NodeHandle& nh,
+				const std::string& name,
+				const Eigen::MatrixBase<Derived>& matrix)
+		{
+			if ((matrix.RowsAtCompileTime <= 0) ||
+					(matrix.ColsAtCompileTime <=0))
+			{
+				return getMatrixParam_variablesize(nh,name,matrix);
+			}
+			else
+			{
+				return getMatrixParam_fixedsize(nh,name,matrix);
+			}
 		}
 	}
 }

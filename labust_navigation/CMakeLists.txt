@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   snippets
   sensor_msgs
-  orocos_kdl
+  kdl_conversions
   tf
 )
 
