@@ -13,7 +13,7 @@ twist_stamped_t: [geometry_msgs, TwistStamped,['twist.linear.x',
                                 'twist.angular.y',
                                 'twist.angular.z']]    
                                 
-twist_stamped_t: [geometry_msgs, Twist,['twist.linear.x',
+twist_t: [geometry_msgs, Twist,['twist.linear.x',
                                 'twist.linear.y',
                                 'twist.linear.z',
                                 'twist.angular.x',
