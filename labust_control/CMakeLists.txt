@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf
   message_generation
+  actionlib
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -37,6 +39,14 @@ add_service_files(
    FILES
    SetHLMode.srv
    EnableControl.srv
+   RegisterController.srv
+)
+
+
+## Generate actions
+add_action_files(
+  DIRECTORY action
+  FILES DOFIdentification.action
 )
 
 ## Generate added messages and services with any dependencies listed here
@@ -44,6 +54,7 @@ generate_messages(
    DEPENDENCIES
    std_msgs
    geometry_msgs
+   actionlib_msgs
 )
 
 ###################################
@@ -58,7 +69,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES labust_control
-#  CATKIN_DEPENDS auv_msgs roscpp snippets
+   CATKIN_DEPENDS auv_msgs roscpp snippets actionlib_msgs
 #  DEPENDS system_lib
 )
 
@@ -88,6 +99,10 @@ set_source_files_properties(
 
 add_executable(fdap_controller2 src/FADPControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
+add_executable(ident_node src/ident_node/IdentificationNode.cpp 
+                          src/ident_node/SOIdentification.cpp)
+add_executable(test_ident src/test/test_ident.cpp)
+add_executable(exec_control src/exec_control/ExecControl.cpp)  
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -98,6 +113,9 @@ add_executable(lf_controller2 src/LFControl.cpp)
 add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
 add_dependencies(fdap_controller2 ${catkin_EXPORTED_TARGETS})
 add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
+add_dependencies(ident_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(test_ident ${catkin_EXPORTED_TARGETS})
+add_dependencies(exec_control ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
@@ -114,6 +132,17 @@ target_link_libraries(fdap_controller2
   ${catkin_LIBRARIES}
 )
 
+target_link_libraries(ident_node
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(test_ident
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(exec_control
+  ${catkin_LIBRARIES}
+)
 #############
 ## Install ##
 #############
