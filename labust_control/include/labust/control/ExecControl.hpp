@@ -33,12 +33,18 @@
 *********************************************************************/
 #ifndef EXECCONTROL_HPP_
 #define EXECCONTROL_HPP_
+#include <labust/control/ExecDepGraph.hpp>
+#include <labust/control/ExecPNGraph.hpp>
+#include <labust/control/PNController.hpp>
 #include <labust_control/RegisterController.h>
 
+#include <std_msgs/String.h>
 #include <ros/ros.h>
 
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
+
+#include <Eigen/Dense>
 
 #include <string>
 #include <vector>
@@ -55,6 +61,8 @@ namespace labust
 		 *
 		 * \todo Add full dependency check.
 		 * \todo Add unregister controller option.
+		 * \todo Remove the named maps form helper classes and pass only the controller id number to classes.
+		 * \todo When everythin is working, build dep and pn graphs directly from the petri-net matrices
 		 */
 		class ExecControl
 		{
@@ -64,12 +72,16 @@ namespace labust
 			enum {Kp=0,Ki,Kd,Kt};
 
 			typedef
-			struct
+			struct ControllerInfo
 			{
 				labust_control::RegisterControllerRequest info;
 				int graph_idx;
 				int en_idx;
 				int dis_idx;
+
+				int place_num;
+				int en_t_num;
+				int dis_t_num;
 			} ControllerInfo;
 
 			typedef std::map<std::string, ControllerInfo> ControllerMap;
@@ -92,8 +104,24 @@ namespace labust
 				bool marked;
 			};
 
+			struct RVertexProperty
+			{
+				Eigen::VectorXi marking;
+			};
+
+			struct REdgeProperty
+			{
+				int t;
+				int weight;
+			};
+
 		  typedef boost::adjacency_list<boost::vecS, boost::vecS,
-		  		boost::directedS, VertexProperty> GraphType;
+		  		boost::directedS, VertexProperty,
+		  		boost::property < boost::edge_weight_t, int > > GraphType;
+
+		  typedef boost::adjacency_list<boost::vecS, boost::vecS,
+		  		boost::directedS, RVertexProperty,
+		  		REdgeProperty > RGraphType;
 
 		public:
 			/**
@@ -140,7 +168,11 @@ namespace labust
 			bool onRegisterController(labust_control::RegisterController::Request& req,
 					labust_control::RegisterController::Response& resp);
 			/**
-			 * Builds the dependency graph.
+			 * Activate controller tester.
+			 */
+			void onActivateController(const std_msgs::String::ConstPtr& name);
+			/**
+			 * Builds the petri net graph.
 			 */
 			void addToGraph(const std::string& name = "");
 			/**
@@ -148,6 +180,28 @@ namespace labust
 			 * It is always i->j
 			 */
 			void add_pn_edge(int i, int j, GraphType& graph);
+			/**
+			 * The helper function to find graph transitions.
+			 */
+			void find_path();
+			/**
+			 * Calculates the reachability graph.
+			 */
+			void reachability();
+			/**
+			 * Calculates the firing sequence to enable a desired controller.
+			 */
+			void get_firing(const std::string& name);
+			void get_firing2(const std::string& name);
+			/**
+			 * Add to PN matrix.
+			 */
+			void addToMatrix(const std::string& name);
+			/**
+			 * Helper recursion function
+			 */
+			bool firing_rec(int des_place, std::vector<int>& skip_transitions, std::vector<int>& visited_places);
+			bool firing_rec2(int des_place, std::vector<int>& skip_transitions, std::vector<int>& visited_places);
 //			/**
 //			 * Handle the enable control request.
 //			 */
@@ -226,7 +280,7 @@ namespace labust
 //			/**
 //			 * The subscribed topics.
 //			 */
-//			ros::Subscriber velocityRef, stateHat, manualIn, tauAch, measSub;
+			ros::Subscriber activateController;
 			/**
 			 * High level controller service.
 			 */
@@ -264,6 +318,46 @@ namespace labust
 			 * The controller dependency graph.
 			 */
 			GraphType graph;
+			/**
+			 * The reachability graph
+			 */
+			RGraphType rgraph;
+			/**
+			 * The transition number.
+			 */
+			int tnum;
+			/**
+			 * The place num.
+			 */
+			int pnum;
+			/**
+			 * PN matrices.
+			 */
+			Eigen::MatrixXi Dm,Dp;
+			/*
+			 * The current marking.
+			 */
+			Eigen::VectorXi marking;
+			/**
+			 * Map placenum to name.
+			 */
+			std::map<int, std::string> pname;
+			/**
+			 * The last firing sequence.
+			 */
+			std::vector<int> firing_seq;
+			/**
+			 * The dependency graph tool.
+			 */
+			ExecDepGraph depGraph;
+			/**
+			 * The petri-net graph tool.
+			 */
+			ExecPNGraph pnGraph;
+			/**
+			 * The Petri-Net controller.
+			 */
+			PNController pnCon;
 		};
 	}
 }

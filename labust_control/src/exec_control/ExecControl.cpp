@@ -37,13 +37,17 @@
 #include <labust/control/ExecControl.hpp>
 
 #include <boost/graph/graphviz.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
 
 #include <fstream>
 #include <iostream>
 
 using namespace labust::control;
 
-ExecControl::ExecControl()
+ExecControl::ExecControl():
+		tnum(0),
+		pnum(6),
+		marking(pnum)
 {
 	this->onInit();
 }
@@ -54,12 +58,17 @@ void ExecControl::onInit()
 	registerController = nh.advertiseService("register_controller",
 			&ExecControl::onRegisterController, this);
 
+	activateController = nh.subscribe<std_msgs::String>("activate_cnt",1,
+			&ExecControl::onActivateController, this);
+
 	//Import main vertex names
 	std::string dofs[]={"X","Y","Z","K","M","N"};
 	//Add DOFs to the name list
 	for (int i=X; i<=N;++i)
 	{
 		boost::add_vertex(VertexProperty(dofs[i],VertexProperty::p),graph);
+		marking(i) = 1;
+		pname[i] = dofs[i];
 	}
 }
 
@@ -97,61 +106,58 @@ bool ExecControl::onRegisterController(
 	ROS_INFO("Adding controller %s.",req.name.c_str());
 	resp.accepted = true;
 	controllers[req.name].info = req;
-	addToGraph(req.name);
+	depGraph.addToGraph(req);
+	pnGraph.addToGraph(req);
+	pnCon.addToGraph(req);
+	//addToMatrix(req.name);
 	names.push_back(req.name);
+
+	std::fstream dep_file("dep_graph.dot",std::ios::out);
+	std::fstream pn_file("pn_graph.dot",std::ios::out);
+	std::string temp;
+	depGraph.getDotDesc(temp);
+	dep_file<<temp;
+	pnGraph.getDotDesc(temp);
+	pn_file<<temp;
 
 	return true;
 }
 
-void ExecControl::add_pn_edge(int i, int j, GraphType& graph)
-{
-	assert(((graph[i].type == VertexProperty::p) && (graph[j].type == VertexProperty::t)) ||
-			((graph[i].type == VertexProperty::t)	&& (graph[j].type == VertexProperty::p)) &&
-						"You can only connect places and transitions.");
-	boost::add_edge(i,j, graph);
-}
-
-template <class GraphType>
-class pn_writer {
-public:
-  pn_writer(GraphType& graph):graph(graph){}
-  template <class Vertex>
-  void operator()(std::ostream &out, const Vertex& e) const
-  {
-
-    out << "[label="<< graph[e].name;
-    out << ((graph[e].type == GraphType::vertex_property_type::value_type::t)?", shape=rectangle":"") << "]";
-  }
-private:
-  GraphType& graph;
-};
-
-template <class GraphType>
-pn_writer<GraphType> make_pn_writer(GraphType& graph){return pn_writer<GraphType>(graph);};
-
-void ExecControl::addToGraph(const std::string& name)
+void ExecControl::addToMatrix(const std::string& name)
 {
 	//Build from scratch
 	using namespace boost;
 	ControllerInfo& newcon = controllers[name];
-	newcon.en_idx = add_vertex(VertexProperty(name+"_en", VertexProperty::t), graph);
-	newcon.graph_idx = add_vertex(VertexProperty(name, VertexProperty::p), graph);
-	newcon.dis_idx = add_vertex(VertexProperty(name+"_dis", VertexProperty::t), graph);
-	//Add local connections
-	add_pn_edge(newcon.en_idx, newcon.graph_idx, graph);
-	add_pn_edge(newcon.graph_idx, newcon.dis_idx, graph);
+	newcon.place_num = pnum++;
+	pname[newcon.place_num] = name;
+	marking.conservativeResize(pnum);
+	marking(newcon.place_num) = 0;
+	newcon.en_t_num = tnum++;
+	newcon.dis_t_num = tnum++;
+	std::cout<<"Resize matrix 2."<<std::endl;
+	Dm.conservativeResize(pnum, tnum);
+	Dp.conservativeResize(pnum, tnum);
+	Dm.row(newcon.place_num) = Eigen::VectorXi::Zero(tnum);
+	Dp.row(newcon.place_num) = Eigen::VectorXi::Zero(tnum);
+	Dm.col(newcon.en_t_num)= Eigen::VectorXi::Zero(pnum);
+	Dp.col(newcon.en_t_num)= Eigen::VectorXi::Zero(pnum);
+	Dm.col(newcon.dis_t_num)= Eigen::VectorXi::Zero(pnum);
+	Dp.col(newcon.dis_t_num)= Eigen::VectorXi::Zero(pnum);
+
+	//Add local connection
+	Dm(newcon.place_num, newcon.dis_t_num) = 1;
+	Dp(newcon.place_num, newcon.en_t_num) = 1;
 	//Add basic dependencies.
 	for (int i=0; i<newcon.info.used_dofs.size(); ++i)
 	{
 		if (newcon.info.used_dofs[i])
 		{
-			//ROS_INFO("Add edge %d -> %d.",i,newcon.graph_idx);
-			//add_pn_edge(i,newcon.graph_idx, graph);
-			add_pn_edge(i,newcon.en_idx, graph);
-			add_pn_edge(newcon.dis_idx, i, graph);
+			Dm(i, newcon.en_t_num) = 1;
+			Dp(i, newcon.dis_t_num) = 1;
 		}
 	}
 
+	//Add basic dependencies.
 	for (int i=0; i<newcon.info.used_cnt.size(); ++i)
 	{
 		const std::string& dep = newcon.info.used_cnt[i];
@@ -160,14 +166,211 @@ void ExecControl::addToGraph(const std::string& name)
 		{
 			//ROS_INFO("Add edge %d -> %d.",it->second.graph_idx,newcon.graph_idx);
 			//boost::add_edge(newcon.graph_idx, it->second.graph_idx, graph);
-			add_pn_edge(it->second.graph_idx,newcon.en_idx, graph);
-			add_pn_edge(newcon.dis_idx, it->second.graph_idx, graph);
+			Dm(it->second.place_num, newcon.en_t_num) = 1;
+			Dp(it->second.place_num, newcon.dis_t_num) = 1;
 		}
 	}
 
-	std::fstream file("graph.dot",std::ios::out);
-	//write_graphviz(file, graph, boost::make_label_writer(boost::get(vertex_name_t(), graph)));
-	write_graphviz(file, graph, make_pn_writer(graph));
+	std::cout<<"Current marking:"<<marking<<std::endl;
+	std::cout<<"Current Dm matrix:"<<Dm<<std::endl;
+	std::cout<<"Current Dp matrix:"<<Dp<<std::endl;
+	std::cout<<"Current I matrix:"<<Dp-Dm<<std::endl;
+
+	reachability();
+}
+
+void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
+{
+	if (controllers.find(name->data) != controllers.end())
+	{
+		//firing_seq.clear();
+		//this->get_firing2(name->data);
+		pnCon.get_firing_bfs(name->data);
+	}
+}
+
+bool ExecControl::firing_rec2(int des_place, std::vector<int>& skip_transitions, std::vector<int>& visited_places)
+{
+	visited_places.push_back(des_place);
+
+	//Find all possible transition activators for this place
+	Eigen::VectorXi transitions = Dp.row(des_place);
+	std::vector<int> activators;
+	for (int i=0; i<transitions.size(); ++i)
+	{
+		if (transitions(i))
+		{
+			bool skipped = false;
+			//Filter skipped transitions
+			for (int j=0; j< skip_transitions.size(); ++j)
+			{
+				if ((skipped = (skip_transitions[j] == i))) break;
+			}
+
+			if (!skipped) activators.push_back(i);
+		}
+	}
+
+	std::cout<<"Place "<<pname[des_place]<<" depends on transitions:";
+	for (int i=0; i<activators.size(); ++i)
+	{
+		std::cout<<activators[i]<<", ";
+	}
+	std::cout<<std::endl;
+
+	//If no activators this is a dead-end.
+	if (activators.empty())
+	{
+		std::cout<<"Dead-end."<<std::endl;
+		return false;
+	}
+
+	//For each activator find places
+	bool add_seq = false;
+	for (int i=0; i<activators.size(); ++i)
+	{
+		Eigen::VectorXi t_en = Dm.col(activators[i]);
+		std::vector<int> places;
+		for (int j=0; j<t_en.size(); ++j)
+		{
+			if (t_en(j))
+			{
+
+				bool skipped = false;
+				//Filter skipped transitions
+				for (int k=0; k< visited_places.size(); ++k)
+				{
+					if ((skipped = (visited_places[k] == j))) break;
+				}
+
+				if (!skipped) places.push_back(j);
+			}
+		}
+
+		std::cout<<"Transition "<<activators[i]<<" depends on places:";
+		for (int j=0; j<places.size(); ++j)
+		{
+			std::cout<<pname[places[j]]<<", ";
+		}
+		std::cout<<std::endl;
+
+		bool add_cur_seq=true;
+		for (int j=0; j<places.size(); ++j)
+		{
+			//If place is active add
+			if (!marking(places[j]))
+			{
+				if (!firing_rec2(places[j], skip_transitions, visited_places))
+				{
+					add_cur_seq = false;
+					break;
+				}
+			}
+		}
+
+		if (add_cur_seq && !places.empty())
+		{
+			bool add = true;
+			for (int j=0; j<firing_seq.size(); ++j)
+			{
+				if (firing_seq[j] == activators[i])
+				{
+					add = false;
+					break;
+				}
+			}
+			if (add)
+			{
+				std::cout<<"Adding to firing sequence:"<<activators[i]<<std::endl;
+				firing_seq.push_back(activators[i]);
+				add_seq = true;
+				if (activators[i]%2 == 0)
+				{
+					skip_transitions.push_back(activators[i]+1);
+				}
+				else
+				{
+					skip_transitions.push_back(activators[i]-1);
+				}
+			}
+		}
+	}
+	return add_seq;
+}
+
+bool ExecControl::firing_rec(int des_place, std::vector<int>& skip_transitions, std::vector<int>& visited_places){}
+
+void ExecControl::get_firing(const std::string& name)
+{}
+
+void ExecControl::get_firing2(const std::string& name)
+{
+	std::vector<int> skip_transitions;
+	std::vector<int> visited_places;
+
+	//Desired place to activate
+	int des_place = controllers[name].place_num;
+	firing_rec2(des_place, skip_transitions, visited_places);
+
+	std::cout<<"The firing sequence is:";
+	for (int i=0; i<firing_seq.size(); ++i)
+	{
+		std::cout<<firing_seq[i]<<" ,";
+	}
+	std::cout<<std::endl;
+
+	//Do the firing
+	//Add testing "simulation" of the firing before applying.
+	//Add enable/disable service calls for these.
+	for(int i=0; i<firing_seq.size(); ++i)
+	{
+		Eigen::VectorXi fire = Eigen::VectorXi::Zero(Dm.cols());
+		fire(firing_seq[i]) = 1;
+		marking = marking + (Dp-Dm)*fire;
+		std::cout<<"Transition "<<firing_seq[i]<<" fired, new marking:"<<marking<<std::endl;
+		if (marking(des_place)) break;
+	}
+}
+
+
+void ExecControl::reachability()
+{
+	rgraph.clear();
+	Eigen::VectorXi trans = marking.transpose()*Dm;
+
+	std::cout<<"Transition matrix:"<<trans<<std::endl;
+
+	int last_m = boost::add_vertex(rgraph);
+	rgraph[last_m].marking = marking;
+
+	Eigen::VectorXi fire = Eigen::VectorXi::Zero(trans.size());
+	int tnum = -1;
+	for (int i=0; i<trans.size(); ++i)
+	{
+		if (trans(i)>0)
+		{
+			std::cout<<"Transition "<<i<<" can fire."<<std::endl;
+			fire(i) = 1;
+			tnum = i;
+			break;
+		}
+	}
+
+	//marking = marking + (Dp-Dm)*fire;
+
+	int new_m = boost::add_vertex(rgraph);
+	rgraph[new_m].marking = marking;
+	REdgeProperty prop;
+	prop.t = tnum;
+	prop.weight = 1;
+	//Enable edge
+	boost::add_edge(last_m, new_m, prop, rgraph);
+	prop.t+=1;
+	//Disable edge added so we can skip it in next iteration.
+	boost::add_edge(new_m, last_m, prop, rgraph);
+
+
+	std::cout<<"Transition fired, new marking:"<<marking<<std::endl;
 }
 
 int main(int argc, char* argv[])

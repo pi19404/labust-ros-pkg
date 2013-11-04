@@ -29,6 +29,7 @@
 #include <boost/thread.hpp>
 #include <sensor_msgs/Joy.h>
 #include <auv_msgs/NavSts.h>
+#include <std_msgs/Float32MultiArray.h>
 #include <geometry_msgs/PointStamped.h>
 
 #include <labust/gui/AAGui.hpp>
@@ -50,6 +51,9 @@ LABUST::JoystickData joystickData;
 
 auv_msgs::NavSts state, target;
 labust::gui::AAGui::Ptr gui;
+
+ros::Publisher infopub;
+std::vector<float> configInfo(8,0.0);
 
 namespace FMOD
 {
@@ -86,6 +90,7 @@ double ti=0;
 double Integral=0.0f;
 bool fullscreen = false;
 bool wait = true;
+float LogData[12]={0,0,0,0,0,0,0,0,0,0,0,0};
 
 double forw=0.0f;
 double InputStoh=0.0f;
@@ -1093,10 +1098,14 @@ void doListenerMovement()
 		step=(float)INTERFACE_UPDATETIME/1000*PathVelocity+0.3*(float)INTERFACE_UPDATETIME/1000*PathVelocity*(float)sin(accumulatedTime/3);
 		break;
 	case 'S':
-		if (xListenerPos>0)
-		{step=(float)INTERFACE_UPDATETIME/1000*PathVelocity*1.2;}
+		if (ActualWPindex > 1 && sqrt((xListenerPos - WPeast[ActualWPindex])*(xListenerPos - WPeast[ActualWPindex]) + (zListenerPos-WPnorth[ActualWPindex])*(zListenerPos-WPnorth[ActualWPindex])) < 40)
+		{
+			step=(float)INTERFACE_UPDATETIME/1000*PathVelocity*1.2;
+		}
 		else
-		{step=(float)INTERFACE_UPDATETIME/1000*PathVelocity;}
+		{
+			step=(float)INTERFACE_UPDATETIME/1000*PathVelocity;
+		}
 		break;
 	default:
 		step=(float)INTERFACE_UPDATETIME/1000*PathVelocity;
@@ -1123,8 +1132,8 @@ void doListenerMovement()
 	{
 		if (TaskMode == 1)
 		{
-			zListenerPos = -(state.position.north /*latLonMap["Northing"]*/ - ObjectLong); //relative to the target
-			xListenerPos = (state.position.east /*latLonMap["Easting"]*/ - ObjectLat); //relative to the target
+			zListenerPos = (state.position.north /*latLonMap["Northing"]*/ - ObjectLong); //relative to the target
+			xListenerPos = -(state.position.east /*latLonMap["Easting"]*/ - ObjectLat); //relative to the target
 			yListenerPos = 20;//state.position.depth; //rovStatus["Depth"];
 		}
 		else
@@ -1139,19 +1148,25 @@ void doListenerMovement()
 		if (WPupdateFlage)
 		{
 			ActualWPindex = 1;
-			double zsign=1;
+			WPnorth[2] = -ObjectLong;
+			WPeast[2] = ObjectLat;
+			/*double zsign=1;
 			double xsign=1;
 			if (zListenerPos) zsign = fabs(zListenerPos)/(zListenerPos);
 			if (xListenerPos) xsign = fabs(xListenerPos)/(xListenerPos);
 			WPnorth[1] = zListenerPos - zsign*5;
-			WPeast[1] = xListenerPos - xsign*5;
+			WPeast[1] = xListenerPos - xsign*5;*/
 			if (TaskMode==3)
-				{
-				WPnorth[1] = zListenerPos - zsign*15;
-				WPeast[1] = xListenerPos - xsign*15;
-				}
-			WPnorth[2] = -ObjectLong;
-			WPeast[2] = ObjectLat;
+			{
+				WPnorth[1] = zListenerPos + cos(atan2((WPeast[2]-xListenerPos),(WPnorth[2]-zListenerPos)))*15;
+				WPeast[1] = xListenerPos + sin(atan2((WPeast[2]-xListenerPos),(WPnorth[2]-zListenerPos)))*15;
+			}
+			else
+			{
+				WPnorth[1] = zListenerPos + cos(atan2((WPeast[2]-xListenerPos),(WPnorth[2]-zListenerPos)))*5;
+				WPeast[1] = xListenerPos + sin(atan2((WPeast[2]-xListenerPos),(WPnorth[2]-zListenerPos)))*5;
+			}
+
 			WPupdateFlage=false;
 		}
 
@@ -1161,7 +1176,8 @@ void doListenerMovement()
 		{
 			yRotation = 180*state.orientation.yaw/M_PI; //rovStatus["Heading"];}
 			//std::cout<<yRotation<<" "<<yListenerPos<<" "<<TaskMode<<" "<<GuidanceMode<<std::endl;
-			ROS_ERROR("Output: %f %f %f %f %f %f %f %f %i",zListenerPos,xListenerPos,state.position.north,state.position.east,ObjectLong,ObjectLat,WPnorth[1],WPeast[1],ActualWPindex);
+			ROS_ERROR("Output: %f %f %f %f %f %f %f %f %i",zListenerPos,xListenerPos,state.position.north,state.position.east,WPnorth[ActualWPindex],WPeast[ActualWPindex],RabbitNorth,RabbitEast,ActualWPindex);
+			//ROS_ERROR("Output: %f %f %f %f %f %f %f %f %i",zListenerPos,xListenerPos,RabbitNorth,RabbitEast,RabbitNorth1,RabbitNorth2,PathX,PathY,ActualWPindex);
 			TauX = 0; //rovStatus["TauX"];
 			TauY = 0; //rovStatus["TauY"];
 			TauZ = 0; //rovStatus["TauZ"];
@@ -1186,10 +1202,7 @@ void doListenerMovement()
 			ActualWPindex += 1;}
 		}
 		// Set virtual target (rabbit) position
-		/*
-	PathX = PathStartX*(PathStartY * xListenerPos + PathStartX * zListenerPos)/(PathStartX * PathStartX + PathStartY * PathStartY);
-	PathY = PathStartY*(PathStartY * xListenerPos + PathStartX * zListenerPos)/(PathStartX * PathStartX + PathStartY * PathStartY);
-	DistanceToPath = sqrt((xListenerPos - PathY) * (xListenerPos - PathY) + (zListenerPos - PathX) * (zListenerPos - PathX));*/
+
 		if (TaskMode>1 && ActualWPindex>1)
 		{
 			PathStartY = WPeast[ActualWPindex-1] - WPeast[ActualWPindex];
@@ -1199,8 +1212,8 @@ void doListenerMovement()
 		float kLineAngle = PI/2;
 		if (PathStartX != 0)
 		{
-			float kLine = PathStartY / PathStartX;
-			float kLineAngle = atan2(PathStartY,PathStartX);
+			kLine = PathStartY / PathStartX;
+			kLineAngle = atan2(PathStartY,PathStartX);
 		}
 		aSQR = 1 + kLine*kLine;
 
@@ -1244,7 +1257,7 @@ void doListenerMovement()
 						if ((wait==false || (wait==true && fabs(HE)<10)) && ActualWPindex>1) // if WP is changed recently, wait until heading is cca. inline with path segment
 						{
 							RabbitNorth = RabbitNorthOld - cos(kLineAngle)*step;
-							RabbitEast = RabbitEastOld + sin(kLineAngle)*step;
+							RabbitEast = RabbitEastOld - sin(kLineAngle)*step;
 							wait=false;
 						}
 					}
@@ -1282,7 +1295,7 @@ void doListenerMovement()
 							cSQR = (PathX-WPnorth[ActualWPindex])*(PathX-WPnorth[ActualWPindex])+(PathY-WPeast[ActualWPindex])*(PathY-WPeast[ActualWPindex])+DistanceToPath*DistanceToPath-RabbitDistance*RabbitDistance;
 							RabbitNorth1 = (-bSQR+sqrt(bSQR*bSQR-4*aSQR*cSQR))/(2*aSQR);
 							RabbitNorth2 = (-bSQR-sqrt(bSQR*bSQR-4*aSQR*cSQR))/(2*aSQR);
-							if (abs(RabbitNorth1)<abs(RabbitNorth2))
+							if (fabs(RabbitNorth1)<fabs(RabbitNorth2))
 								{
 								RabbitNorth = RabbitNorth1 + WPnorth[ActualWPindex];
 								RabbitEast = kLine * RabbitNorth1 + WPeast[ActualWPindex];
@@ -1308,10 +1321,18 @@ void doListenerMovement()
 		}
 		if (ActualWPindex == 1) //guidance to the first WP of the path
 		{
-			RabbitNorth = WPnorth[1];
-			RabbitEast = WPeast[1];
-			RabbitNorthOld = RabbitNorth;
-			RabbitEastOld = RabbitEast;
+			if (TaskMode==3) //meaning trajectory tracking
+				{
+				RabbitNorth = zListenerPos + cos(atan2((WPeast[1]-xListenerPos),(WPnorth[1]-zListenerPos)))*RabbitDistance;
+				RabbitEast = xListenerPos + sin(atan2((WPeast[1]-xListenerPos),(WPnorth[1]-zListenerPos)))*RabbitDistance;
+				}
+			else
+				{
+				RabbitNorth = WPnorth[1];
+				RabbitEast = WPeast[1];
+				RabbitNorthOld = RabbitNorth;
+				RabbitEastOld = RabbitEast;
+				}
 		}
 
 		ti += (float)INTERFACE_UPDATETIME / 1000.0f;
@@ -2130,6 +2151,24 @@ void handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	boost::mutex::scoped_lock l(joyMux);
 	state = *estimate;
+	std_msgs::Float32MultiArrayPtr data(new std_msgs::Float32MultiArray());
+
+	LogData[0] = DistanceToPath;
+	LogData[1] = DirectionToTarget;
+	LogData[2] = RabbitNorth;
+	LogData[3] = RabbitEast;
+	LogData[4] = objects[0].zPos;
+	LogData[5] = objects[0].xPos;
+	LogData[6] = objects[6].zPos;;
+	LogData[7] = objects[6].xPos;;
+	LogData[8] = WPnorth[1];
+	LogData[9] = WPeast[1];
+	LogData[10] = WPnorth[2];
+	LogData[11] = WPeast[2];
+
+	data->data.insert(data->data.begin(), &LogData[0], &LogData[12]);
+	data->data.insert(data->data.end(), configInfo.begin(), configInfo.end());
+	infopub.publish(data);
 }
 
 
@@ -2139,6 +2178,7 @@ int	main(int argc, char **argv)
 	ros::NodeHandle nh;
 	ros::Subscriber manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,&handleManual);
 
+	infopub = nh.advertise<std_msgs::Float32MultiArray>("acousticvr_info",1);
 	//Initialze subscribers
 	ros::Subscriber targetRef = nh.subscribe<auv_msgs::NavSts>("target_navsts", 1,
 			&handleTarget);
@@ -2175,6 +2215,9 @@ int	main(int argc, char **argv)
 		ph.param("PathStartY", PathStartY1, PathStartY1);
 		ph.param("RabbitDistance", RabbitDistance, RabbitDistance);
 
+		float LogConfig[8] = {NonLinearCoeff,TaskMode,PathVelocity,SpeedProfile,RabbitDistance,NonLinearCoeffDist,Ki,Sound};
+		configInfo.assign(&LogConfig[0], &LogConfig[8]);
+
 		// Inicijalizacija joysticka
 
 		srand((unsigned)time(0));
@@ -2201,9 +2244,9 @@ int	main(int argc, char **argv)
 		gui->start();
 		//glutMainLoop();
 
-		ros::spin();
+		//ros::spin();
 
-		usleep(1000*1000);
+		//usleep(1000*1000);
 	}
 	catch(std::exception &e)
 	{

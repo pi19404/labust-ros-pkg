@@ -102,7 +102,11 @@ add_executable(lf_controller2 src/LFControl.cpp)
 add_executable(ident_node src/ident_node/IdentificationNode.cpp 
                           src/ident_node/SOIdentification.cpp)
 add_executable(test_ident src/test/test_ident.cpp)
-add_executable(exec_control src/exec_control/ExecControl.cpp)  
+add_executable(exec_control src/exec_control/ExecControl.cpp
+	src/exec_control/ExecDepGraph.cpp
+	src/exec_control/ExecPNGraph.cpp
+	src/exec_control/PNController.cpp)  
+add_executable(test_exec src/test/test_exec.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -116,6 +120,7 @@ add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
 add_dependencies(ident_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(test_ident ${catkin_EXPORTED_TARGETS})
 add_dependencies(exec_control ${catkin_EXPORTED_TARGETS})
+add_dependencies(test_exec ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
@@ -137,6 +142,10 @@ target_link_libraries(ident_node
 )
 
 target_link_libraries(test_ident
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(test_exec
   ${catkin_LIBRARIES}
 )
 
