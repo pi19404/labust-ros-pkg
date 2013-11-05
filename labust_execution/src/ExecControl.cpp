@@ -39,6 +39,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
+#include <std_msgs/String.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -55,6 +57,9 @@ ExecControl::ExecControl():
 void ExecControl::onInit()
 {
 	ros::NodeHandle nh,ph("~");
+	depGraphPub = nh.advertise<std_msgs::String>("dependency_graph",1);
+	pnGraphPub = nh.advertise<std_msgs::String>("petri_net_graph",1);
+
 	registerController = nh.advertiseService("register_controller",
 			&ExecControl::onRegisterController, this);
 
@@ -113,14 +118,19 @@ bool ExecControl::onRegisterController(
 	//addToMatrix(req.name);
 	names.push_back(req.name);
 
+	std_msgs::String out;
 	std::fstream dep_file("dep_graph.dot",std::ios::out);
 	std::fstream pn_file("pn_graph.dot",std::ios::out);
 	std::fstream r_file("r_graph.dot",std::ios::out);
 	std::string temp;
 	depGraph.getDotDesc(temp);
 	dep_file<<temp;
+	out.data = temp;
+	depGraphPub.publish(out);
 	pnGraph.getDotDesc(temp);
 	pn_file<<temp;
+	out.data = temp;
+	pnGraphPub.publish(out);
 	pnCon.getDotDesc(temp);
 	r_file<<temp;
 

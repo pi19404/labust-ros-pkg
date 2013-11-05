@@ -276,7 +276,7 @@ namespace labust
 //			/**
 //			 * The publisher of the TAU message.
 //			 */
-//			ros::Publisher tauOut, tauAchW;
+			ros::Publisher depGraphPub, pnGraphPub;
 //			/**
 //			 * The subscribed topics.
 //			 */

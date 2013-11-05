@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>labust_gui</name>
+  <version>0.1.0</version>
+  <description>
+      The labust_gui package contains graphical user interfaces and utilities for 
+      the navigation and control infrastructure and other projects.
+  </description>
+
+  <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
+  <license>BSD</license>
+  <!-- <url type="website">http://ros.org/wiki/labust_gui</url> -->
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>rqt_gui</build_depend>
+  <build_depend>rqt_gui_py</build_depend>
+  
+  <run_depend>rospy</run_depend>
+  <run_depend>rqt_gui</run_depend>
+  <run_depend>rqt_gui_py</run_depend>
+  
+  <export>
+      <rqt_gui plugin="${prefix}/plugins.xml"/>
+  </export>
+</package>
