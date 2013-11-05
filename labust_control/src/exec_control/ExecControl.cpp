@@ -109,16 +109,20 @@ bool ExecControl::onRegisterController(
 	depGraph.addToGraph(req);
 	pnGraph.addToGraph(req);
 	pnCon.addToGraph(req);
+	pnCon.reachability();
 	//addToMatrix(req.name);
 	names.push_back(req.name);
 
 	std::fstream dep_file("dep_graph.dot",std::ios::out);
 	std::fstream pn_file("pn_graph.dot",std::ios::out);
+	std::fstream r_file("r_graph.dot",std::ios::out);
 	std::string temp;
 	depGraph.getDotDesc(temp);
 	dep_file<<temp;
 	pnGraph.getDotDesc(temp);
 	pn_file<<temp;
+	pnCon.getDotDesc(temp);
+	r_file<<temp;
 
 	return true;
 }
@@ -185,7 +189,22 @@ void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
 	{
 		//firing_seq.clear();
 		//this->get_firing2(name->data);
-		pnCon.get_firing_bfs(name->data);
+		//pnCon.get_firing(name->data);
+		pnCon.get_firing_r(name->data);
+	}
+	else
+	{
+		//A testing example, we can try setting a PN place directly.
+		std::string dofs[]={"X","Y","Z","K","M","N"};
+		//Add DOFs to the name list
+		for (int i=X; i<=N;++i)
+		{
+			if (name->data == dofs[i])
+			{
+				pnCon.get_firing_r(name->data);
+				break;
+			}
+		}
 	}
 }
 
