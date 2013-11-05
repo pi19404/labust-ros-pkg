@@ -36,7 +36,7 @@
  *********************************************************************/
 #ifndef ENABLEPOLICY_HPP_
 #define ENABLEPOLICY_HPP_
-#include <labust_control/EnableControl.h>
+#include <navcon_msgs/EnableControl.h>
 #include <std_msgs/Bool.h>
 #include <ros/ros.h>
 
@@ -55,8 +55,8 @@ namespace labust
 						&EnableServicePolicy::onEnableControl, this);
 			}
 
-			bool onEnableControl(labust_control::EnableControl::Request& req,
-					labust_control::EnableControl::Response& resp)
+			bool onEnableControl(navcon_msgs::EnableControl::Request& req,
+					navcon_msgs::EnableControl::Response& resp)
 			{
 				this->enable = req.enable;
 				return true;

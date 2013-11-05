@@ -36,8 +36,8 @@
 *********************************************************************/
 #ifndef HLMANAGER_HPP_
 #define HLMANAGER_HPP_
-#include <labust_control/SetHLMode.h>
-#include <labust_control/HLMessage.h>
+#include <navcon_msgs/SetHLMode.h>
+#include <navcon_msgs/HLMessage.h>
 
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
@@ -95,7 +95,7 @@ namespace labust
 			/**
 			 * The C-Art service handler.
 			 */
-			bool setHLMode(labust_control::SetHLMode::Request& req, labust_control::SetHLMode::Response& resp);
+			bool setHLMode(navcon_msgs::SetHLMode::Request& req, navcon_msgs::SetHLMode::Response& resp);
 			/**
 			 * Handle launch detection.
 			 */
@@ -215,7 +215,7 @@ namespace labust
 			/**
 			 * The HL status message.
 			 */
-			labust_control::HLMessage hlDiagnostics;
+			navcon_msgs::HLMessage hlDiagnostics;
 		};
 	}
 }

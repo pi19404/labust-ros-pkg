@@ -37,7 +37,7 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
-#include <labust_control/DOFIdentificationAction.h>
+#include <navcon_msgs/DOFIdentificationAction.h>
 
 int main (int argc, char **argv)
 {
@@ -45,7 +45,7 @@ int main (int argc, char **argv)
 
   // create the action client
   // true causes the client to spin its own thread
-  actionlib::SimpleActionClient<labust_control::DOFIdentificationAction> ac("Identification", true);
+  actionlib::SimpleActionClient<navcon_msgs::DOFIdentificationAction> ac("Identification", true);
 
   ROS_INFO("Waiting for action server to start.");
   // wait for the action server to start
@@ -53,7 +53,7 @@ int main (int argc, char **argv)
 
   ROS_INFO("Action server started, sending goal.");
   // send a goal to the action
-  labust_control::DOFIdentificationGoal goal;
+  navcon_msgs::DOFIdentificationGoal goal;
   goal.dof = goal.Surge;
   goal.command = 1;
   goal.hysteresis = 0.5;

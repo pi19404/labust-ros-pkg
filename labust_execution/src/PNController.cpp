@@ -62,7 +62,7 @@ PNController::PNController():
 	}
 }
 
-void PNController::addToGraph(const labust_control::RegisterControllerRequest& info)
+void PNController::addToGraph(const navcon_msgs::RegisterControllerRequest& info)
 {
 	PlaceInfo& newcon=nameMap[info.name];
 	newcon.place_num = pnum++;

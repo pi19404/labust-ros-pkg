@@ -31,9 +31,9 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#ifndef EXECDEPGRAPH_HPP_
-#define EXECDEPGRAPH_HPP_
-#include <labust_control/RegisterController.h>
+#ifndef EXECPNGRAPH_HPP_
+#define EXECPNGRAPH_HPP_
+#include <navcon_msgs/RegisterController.h>
 
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -48,25 +48,57 @@ namespace labust
 	namespace control
 	{
 		/**
-		 * The class contains implementation of the mission execution dependency graph.
+		 * The class contains implementation of the mission execution Petri Net graph.
 		 */
-		class ExecDepGraph
+		class ExecPNGraph
 		{
-			typedef boost::property<boost::vertex_name_t, std::string> VertexProperty;
+			struct VertexProperty
+			{
+				enum {p=0, t=1};
+
+				VertexProperty():
+					name("uninitialized"),
+					type(0),
+					marked(false){};
+
+				VertexProperty(const std::string& name, int type):
+					name(name),
+					type(type),
+					marked(false){};
+
+				std::string name;
+				int type;
+				bool marked;
+			};
+
 			typedef boost::property < boost::edge_weight_t, int > EdgeProperty;
 			typedef boost::adjacency_list<boost::vecS, boost::vecS,
 		  		boost::directedS, VertexProperty,
 		  		EdgeProperty > GraphType;
+
+			struct PlaceInfo
+			{
+				PlaceInfo():
+					place_num(-1),
+					enable_t(-1),
+					disable_t(-1){};
+
+				GraphType::vertex_descriptor
+				place_num,
+				enable_t,
+				disable_t;
+			};
+
 		public:
 			/**
 			 * Main constructor
 			 */
-			ExecDepGraph();
+			ExecPNGraph();
 
 			/**
 			 * Add controller to the dependency graph.
 			 */
-			void addToGraph(const labust_control::RegisterControllerRequest& info);
+			void addToGraph(const navcon_msgs::RegisterControllerRequest& info);
 			/**
 			 * Find the path between to controllers.
 			 */
@@ -79,6 +111,52 @@ namespace labust
 
 		private:
 			/**
+			 * Adds a place to the petri-net graph.
+			 */
+			inline GraphType::vertex_descriptor
+			add_place(const std::string& name)
+			{
+				return boost::add_vertex(
+						VertexProperty(name,VertexProperty::p),graph);
+			}
+			/**
+			 * Adds a transition to the petri-net graph.
+			 */
+			inline GraphType::vertex_descriptor
+			add_transition(const std::string& name)
+			{
+				return boost::add_vertex(
+						VertexProperty(name,VertexProperty::t),graph);
+			}
+			/**
+			 * Adds a checked edge to the petri-net graph.
+			 */
+			inline std::pair<GraphType::edge_descriptor, bool>
+			add_edge(GraphType::vertex_descriptor from,
+					GraphType::vertex_descriptor to, int weight = 1)
+			{
+				assert(((graph[from].type == VertexProperty::p) &&
+						(graph[to].type == VertexProperty::t)) ||
+						((graph[from].type == VertexProperty::t)
+						&& (graph[to].type == VertexProperty::p)) &&
+						"You can only connect places and transitions.");
+				return boost::add_edge(from,to, weight, graph);
+			}
+			/**
+			 * The graphviz writer class for the PN graph.
+			 */
+			struct pn_writer {
+				pn_writer(GraphType& graph):graph(graph){}
+				template <class Vertex>
+				void operator()(std::ostream &out, const Vertex& e) const
+				{
+
+					out << "[label="<< graph[e].name;
+					out << ((graph[e].type == GraphType::vertex_property_type::value_type::t)?", shape=rectangle":"") << "]";
+				}
+				GraphType& graph;
+			};
+			/**
 			 * The controller dependency graph.
 			 */
 			GraphType graph;
@@ -86,10 +164,10 @@ namespace labust
 			 * The name to vertice map.
 			 */
 			std::map<std::string,
-				GraphType::vertex_descriptor> nameMap;
+				PlaceInfo> nameMap;
 		};
 	}
 }
 
-/* EXECDEPGRAPH_HPP_ */
+/* EXECPNGRAPH_HPP_ */
 #endif

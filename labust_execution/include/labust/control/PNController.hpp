@@ -33,7 +33,7 @@
 *********************************************************************/
 #ifndef PNCONTROLLER_HPP_
 #define PNCONTROLLER_HPP_
-#include <labust_control/RegisterController.h>
+#include <navcon_msgs/RegisterController.h>
 
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -88,7 +88,7 @@ namespace labust
 			/**
 			 * Add controller to the petri-net.
 			 */
-			void addToGraph(const labust_control::RegisterControllerRequest& info);
+			void addToGraph(const navcon_msgs::RegisterControllerRequest& info);
 			/**
 			 * Get the firing sequence for the named controller.
 			 */

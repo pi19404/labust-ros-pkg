@@ -50,7 +50,7 @@ ExecPNGraph::ExecPNGraph()
 	for (int i=0; i<6;++i)	nameMap[dofs[i]].place_num = add_place(dofs[i]);
 }
 
-void ExecPNGraph::addToGraph(const labust_control::RegisterControllerRequest& info)
+void ExecPNGraph::addToGraph(const navcon_msgs::RegisterControllerRequest& info)
 {
 	//Build from scratch
 	using namespace boost;

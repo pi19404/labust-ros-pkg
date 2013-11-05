@@ -73,8 +73,8 @@ void ExecControl::onInit()
 }
 
 bool ExecControl::onRegisterController(
-		labust_control::RegisterController::Request& req,
-		labust_control::RegisterController::Response& resp)
+		navcon_msgs::RegisterController::Request& req,
+		navcon_msgs::RegisterController::Response& resp)
 {
 	//Check if controller with same name exists.
 	if (controllers.find(req.name) != controllers.end())
