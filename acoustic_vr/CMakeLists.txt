@@ -86,6 +86,7 @@ target_link_libraries(acoustic_vr
    labust_xml 
    fmodevent 
    fmodeventnet 
+   fmodex
    SOIL
    glut
    GLU

@@ -38,8 +38,8 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/MatrixLoader.hpp>
-#include <labust_control/SetHLMode.h>
-#include <labust_control/HLMessage.h>
+#include <navcon_msgs/SetHLMode.h>
+#include <navcon_msgs/HLMessage.h>
 #include <cmath>
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -112,8 +112,8 @@ void TopsideRadio::onInit()
 	{
 		joyOut = nh.advertise<sensor_msgs::Joy>("joy_out",1);
 		launched = nh.advertise<std_msgs::Bool>("launched",1);
-		hlMsg = nh.advertise<labust_control::HLMessage>("hl_message",1);
-		client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+		hlMsg = nh.advertise<navcon_msgs::HLMessage>("hl_message",1);
+		client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 		stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&TopsideRadio::onStateHat,this);
 		stateMeas = nh.subscribe<auv_msgs::NavSts>("meas",1,&TopsideRadio::onStateMeas,this);
 		sfFrame = nh.subscribe<auv_msgs::NavSts>("sf_diagnostics",1,&TopsideRadio::onSFMeas,this);
@@ -394,7 +394,7 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 				ROS_ERROR("Wrong mode.");
 				return;
 			}
-			labust_control::HLMessagePtr msg(new labust_control::HLMessage());
+			navcon_msgs::HLMessagePtr msg(new navcon_msgs::HLMessage());
 			bool update = data.mode_update;
 			msg->mode = data.mode;
 			msg->radius = data.radius;
@@ -417,12 +417,12 @@ void TopsideRadio::onIncomingData(const boost::system::error_code& error, const 
 			if (!client)
 			{
 				ROS_ERROR("HLManager client not connected. Trying reset.");
-				client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+				client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 			}
 			else
 			{
 				boost::mutex::scoped_lock l(dataMux);
-				labust_control::SetHLMode mode;
+				navcon_msgs::SetHLMode mode;
 				if (update)
 				{
 					lastMode = mode.request.mode = data.mode;
@@ -571,11 +571,11 @@ void TopsideRadio::onTimeout()
 	if (!client)
 	{
 		ROS_ERROR("HLManager client not connected. Trying reset.");
-		client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+		client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 	}
 	else
 	{
-		labust_control::SetHLMode mode;
+		navcon_msgs::SetHLMode mode;
 		mode.request.mode = 0;
 		client.call(mode);
 	}

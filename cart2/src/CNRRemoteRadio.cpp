@@ -39,8 +39,8 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
-#include <labust_control/SetHLMode.h>
-#include <labust_control/HLMessage.h>
+#include <navcon_msgs/SetHLMode.h>
+#include <navcon_msgs/HLMessage.h>
 #include <labust/control/crc16.h>
 
 #include <boost/archive/binary_oarchive.hpp>
@@ -109,8 +109,8 @@ void CNRRemoteRadio::onInit()
 	posOut = nh.advertise<auv_msgs::NavSts>("bart_position",1);
 	posCOut = nh.advertise<auv_msgs::NavSts>("cart_position",1);
 	launched = nh.advertise<std_msgs::Bool>("launched",1);
-	hlMsg = nh.advertise<labust_control::HLMessage>("hl_message",1);
-	client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+	hlMsg = nh.advertise<navcon_msgs::HLMessage>("hl_message",1);
+	client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 	stateHat = nh.subscribe<auv_msgs::NavSts>("stateHat",1,&CNRRemoteRadio::onStateHat,this);
 	//stateMeas = nh.subscribe<auv_msgs::NavSts>("meas",1,&CNRRemoteRadio::onStateMeas,this);
 	curMode = nh.subscribe<std_msgs::Int32>("current_mode",1,&CNRRemoteRadio::onCurrentMode,this);
@@ -242,11 +242,11 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 				if (wasLaunched)
 				{
 					//Stop the vehicle
-					labust_control::SetHLMode mode;
+					navcon_msgs::SetHLMode mode;
 					while (!client)
 					{
 						ROS_ERROR("HLManager client not connected. Trying reset.");
-						client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+						client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 					}
 
 					ROS_INFO("Was launched - Request stop launch.");
@@ -266,11 +266,11 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 				{
 						ROS_INFO("Request stop launch.");
 						//Stop the vehicle
-						labust_control::SetHLMode mode;
+						navcon_msgs::SetHLMode mode;
 						while (!client)
 						{
 							ROS_ERROR("HLManager client not connected. Trying reset.");
-							client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+							client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 						}
 
 						client.call(mode);
@@ -290,8 +290,8 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 		{
 			lastmode = buffer[mode_field];
 			std::bitset<8> modes(buffer[mode_field]);
-			labust_control::HLMessagePtr msg(new labust_control::HLMessage());
-			labust_control::SetHLMode mode;
+			navcon_msgs::HLMessagePtr msg(new navcon_msgs::HLMessage());
+			navcon_msgs::SetHLMode mode;
 
 			if (modes[stopbit])
 			{
@@ -397,7 +397,7 @@ void CNRRemoteRadio::onIncomingData(const boost::system::error_code& error, cons
 			if (!client)
 			{
 				ROS_ERROR("HLManager client not connected. Trying reset.");
-				client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+				client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 			}
 			else
 			{
@@ -479,11 +479,11 @@ void CNRRemoteRadio::onTimeout()
 	if (!client)
 	{
 		ROS_ERROR("HLManager client not connected. Trying reset.");
-		client = nh.serviceClient<labust_control::SetHLMode>("SetHLMode", true);
+		client = nh.serviceClient<navcon_msgs::SetHLMode>("SetHLMode", true);
 	}
 	else
 	{
-		labust_control::SetHLMode mode;
+		navcon_msgs::SetHLMode mode;
 		mode.request.mode = 0;
 		client.call(mode);
 	}
