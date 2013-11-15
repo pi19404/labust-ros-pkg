@@ -33,7 +33,10 @@
 *********************************************************************/
 #ifndef PNCONTROLLER_HPP_
 #define PNCONTROLLER_HPP_
-#include <labust_control/RegisterController.h>
+#include <navcon_msgs/RegisterController.h>
+
+#include <boost/config.hpp>
+#include <boost/graph/adjacency_list.hpp>
 
 #include <Eigen/Dense>
 
@@ -47,6 +50,20 @@ namespace labust
 	{
 		/**
 		 * The class contains implementation of Petri-Net builder and controller.
+		 * \todo Add multiple desired places setup
+		 * \todo Add place turn-off option
+		 * \todo Add additional state enabled place in parallel with the control place.
+		 * \todo Add weighted transitions for multi DOF controllers ?
+		 * \todo Add simulation step for activation to detect wrong firing sequences.
+		 * \todo Extract reachability graph building and ploting
+		 * \todo Extract debugging information and structure it in a debug class
+		 * \todo Possible optimizations: Incremental graph building
+		 * \todo Possible optimizations: BFS only on a subset of the graph ?
+		 * \todo Possible optimizations: Spin-off BFS for the new state in a thread to have it ready in advance
+		 * \todo Recommended optimizations: Reachability calculation memory/time/copying/std::find usage
+		 * \todo Add detection of faulty controller registrations or setups.
+		 *       -analyze if they have indirect dependencies to DOFs
+		 * \todo Possible optimizations: Find sequences that can fire simultaneously
 		 */
 		class PNController
 		{
@@ -71,7 +88,7 @@ namespace labust
 			/**
 			 * Add controller to the petri-net.
 			 */
-			void addToGraph(const labust_control::RegisterControllerRequest& info);
+			void addToGraph(const navcon_msgs::RegisterControllerRequest& info);
 			/**
 			 * Get the firing sequence for the named controller.
 			 */
@@ -79,19 +96,21 @@ namespace labust
 			/**
 			 * Get the firing sequence for the named controller.
 			 */
-			void get_firing_bfs(const std::string& name);
+			void get_firing_r(const std::string& name);
+			/**
+			 * Calculates the reachability graph.
+			 */
+			void reachability();
+			/**
+			 * Get the reachability graph DOT description.
+			 */
+			void getDotDesc(std::string& desc);
 
 		private:
 			/**
 			 * Firing sequence recursive calculation.
 			 */
 			bool firing_rec(int des_place,
-					std::set<int>& skip_transitions,
-					std::set<int>& visited_places);
-			/**
-			 * Firing sequence recursive calculation.
-			 */
-			bool firing_rec_bfs(int des_place,
 					std::set<int>& skip_transitions,
 					std::set<int>& visited_places);
 
@@ -119,6 +138,71 @@ namespace labust
 			 * The last firing sequence.
 			 */
 			std::vector<int> firing_seq;
+
+			//Reachability graph stuff
+			struct VertexProperty
+			{
+				Eigen::VectorXi marking;
+			};
+
+			struct EdgeProperty
+			{
+			  typedef boost::edge_property_tag kind;
+				EdgeProperty():
+					t_num(-1),
+					weight(1){};
+				EdgeProperty(int t_num):
+					t_num(t_num),
+					weight(1){};
+
+				int t_num;
+				int weight;
+			};
+
+			typedef boost::adjacency_list<boost::vecS, boost::vecS,
+		  		boost::directedS, VertexProperty,
+		  		boost::property<boost::edge_name_t, int> > GraphType;
+
+			struct pn_writer
+			{
+				pn_writer(GraphType& graph):graph(graph){}
+				template <class Vertex>
+				void operator()(std::ostream &out, const Vertex& e) const
+				{
+					out << "[label= \"(";
+					for(int i=0; i<graph[e].marking.size();++i)
+					{
+						out<<graph[e].marking[i]<<",";
+					}
+					out<< ")\"]";
+				}
+				GraphType& graph;
+			};
+
+			template<class PropertyMap, class NameMap>
+			struct edge_writer {
+			  edge_writer(PropertyMap edge_map, NameMap map):
+			  	edge_map(edge_map),
+			  	map(map){};
+			  template <class Edge>
+			  void operator()(std::ostream &out, const Edge& e) const
+			  {
+			    out << "[label=\"" << map.at(edge_map[e]) << "\"]";
+			  }
+			  PropertyMap edge_map;
+			  NameMap map;
+			};
+
+			template<class PropertyMap, class NameMap>
+			edge_writer<PropertyMap, NameMap> make_edge_writer(PropertyMap pmap, NameMap map)
+			{
+				return edge_writer<PropertyMap, NameMap>(pmap,map);
+			}
+
+			GraphType rgraph;
+
+			std::vector<Eigen::VectorXi> all_markings;
+			std::vector<GraphType::vertex_descriptor> all_idx;
 		};
 	}
 }

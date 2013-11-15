@@ -6,13 +6,10 @@ project(labust_control)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   auv_msgs
+  navcon_msgs
   roscpp
   snippets
-  geometry_msgs
   tf
-  message_generation
-  actionlib
-  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -29,33 +26,28 @@ find_package(catkin REQUIRED COMPONENTS
 #######################################
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-	HLMessage.msg
-)
+#add_message_files(
+#  FILES
+#)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   SetHLMode.srv
-   EnableControl.srv
-   RegisterController.srv
-)
+#add_service_files(
+#   FILES
+#)
 
 
 ## Generate actions
-add_action_files(
-  DIRECTORY action
-  FILES DOFIdentification.action
-)
+#add_action_files(
+#  FILES
+#)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-   geometry_msgs
-   actionlib_msgs
-)
+#generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+#   geometry_msgs
+#   actionlib_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -69,7 +61,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES labust_control
-   CATKIN_DEPENDS auv_msgs roscpp snippets actionlib_msgs
+   CATKIN_DEPENDS auv_msgs roscpp snippets navcon_msgs
 #  DEPENDS system_lib
 )
 
@@ -99,14 +91,6 @@ set_source_files_properties(
 
 add_executable(fdap_controller2 src/FADPControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
-add_executable(ident_node src/ident_node/IdentificationNode.cpp 
-                          src/ident_node/SOIdentification.cpp)
-add_executable(test_ident src/test/test_ident.cpp)
-add_executable(exec_control src/exec_control/ExecControl.cpp
-	src/exec_control/ExecDepGraph.cpp
-	src/exec_control/ExecPNGraph.cpp
-	src/exec_control/PNController.cpp)  
-add_executable(test_exec src/test/test_exec.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -117,10 +101,6 @@ add_executable(test_exec src/test/test_exec.cpp)
 add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
 add_dependencies(fdap_controller2 ${catkin_EXPORTED_TARGETS})
 add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
-add_dependencies(ident_node ${catkin_EXPORTED_TARGETS})
-add_dependencies(test_ident ${catkin_EXPORTED_TARGETS})
-add_dependencies(exec_control ${catkin_EXPORTED_TARGETS})
-add_dependencies(test_exec ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
@@ -134,22 +114,6 @@ target_link_libraries(lf_controller2
 
 target_link_libraries(fdap_controller2
   pidtoolkit2
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(ident_node
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(test_ident
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(test_exec
-  ${catkin_LIBRARIES}
-)
-
-target_link_libraries(exec_control
   ${catkin_LIBRARIES}
 )
 #############

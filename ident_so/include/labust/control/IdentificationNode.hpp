@@ -38,7 +38,7 @@
 
 #include <auv_msgs/NavSts.h>
 #include <actionlib/server/simple_action_server.h>
-#include <labust_control/DOFIdentificationAction.h>
+#include <navcon_msgs/DOFIdentificationAction.h>
 #include <ros/ros.h>
 
 #include <Eigen/Dense>
@@ -61,11 +61,11 @@ namespace labust
 			enum {X=0,Y,Z,K,M,N};
 			enum {alpha=0,beta,betaa};
 
-			typedef labust_control::DOFIdentificationAction Action;
+			typedef navcon_msgs::DOFIdentificationAction Action;
 			typedef actionlib::SimpleActionServer<Action> ActionServer;
 			typedef boost::shared_ptr<ActionServer> ActionServerPtr;
-			typedef labust_control::DOFIdentificationGoal Goal;
-			typedef labust_control::DOFIdentificationResult Result;
+			typedef navcon_msgs::DOFIdentificationGoal Goal;
+			typedef navcon_msgs::DOFIdentificationResult Result;
 
 		public:
 			/**

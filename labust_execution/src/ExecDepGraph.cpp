@@ -50,7 +50,7 @@ ExecDepGraph::ExecDepGraph()
 	for (int i=0; i<6;++i) nameMap[dofs[i]] = boost::add_vertex(dofs[i], graph);
 }
 
-void ExecDepGraph::addToGraph(const labust_control::RegisterControllerRequest& info)
+void ExecDepGraph::addToGraph(const navcon_msgs::RegisterControllerRequest& info)
 {
 	//Build from scratch
 	using namespace boost;

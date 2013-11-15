@@ -35,15 +35,15 @@
 *  Created: 01.02.2013.
 *********************************************************************/
 #include <ros/ros.h>
-#include <labust_control/RegisterController.h>
+#include <navcon_msgs/RegisterController.h>
 
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "test_ident");
   ros::NodeHandle nh;
 
-  ros::ServiceClient client = nh.serviceClient<labust_control::RegisterController>("register_controller");
-  labust_control::RegisterController srv;
+  ros::ServiceClient client = nh.serviceClient<navcon_msgs::RegisterController>("register_controller");
+  navcon_msgs::RegisterController srv;
 
   //Add manual
   std::string manuals[]={"manualX","manualY","manualZ","manualN"};

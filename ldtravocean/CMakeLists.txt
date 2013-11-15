@@ -82,6 +82,7 @@ add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
 
 ## Add dependencies to the executable
 # add_dependencies(ldtravocean_node ${PROJECT_NAME})
+add_dependencies(ldnav_node ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 #target_link_libraries(model_node ${catkin_LIBRARIES} labust_xml uvsim-plug)

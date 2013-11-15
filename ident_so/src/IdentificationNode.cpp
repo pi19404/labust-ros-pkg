@@ -155,7 +155,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 		//Send feedback about progress
 		if (ident.hasSwitched())
 		{
-			labust_control::DOFIdentificationFeedback feedback;
+			navcon_msgs::DOFIdentificationFeedback feedback;
 			feedback.dof = goal->dof;
 			feedback.error = ident.avgError();
 			feedback.oscillation_num = ++oscnum/2;

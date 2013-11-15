@@ -36,7 +36,7 @@
 #include <labust/control/ExecDepGraph.hpp>
 #include <labust/control/ExecPNGraph.hpp>
 #include <labust/control/PNController.hpp>
-#include <labust_control/RegisterController.h>
+#include <navcon_msgs/RegisterController.h>
 
 #include <std_msgs/String.h>
 #include <ros/ros.h>
@@ -74,7 +74,7 @@ namespace labust
 			typedef
 			struct ControllerInfo
 			{
-				labust_control::RegisterControllerRequest info;
+				navcon_msgs::RegisterControllerRequest info;
 				int graph_idx;
 				int en_idx;
 				int dis_idx;
@@ -165,8 +165,8 @@ namespace labust
 			/**
 			 * Handle controller registration.
 			 */
-			bool onRegisterController(labust_control::RegisterController::Request& req,
-					labust_control::RegisterController::Response& resp);
+			bool onRegisterController(navcon_msgs::RegisterController::Request& req,
+					navcon_msgs::RegisterController::Response& resp);
 			/**
 			 * Activate controller tester.
 			 */
@@ -276,7 +276,7 @@ namespace labust
 //			/**
 //			 * The publisher of the TAU message.
 //			 */
-//			ros::Publisher tauOut, tauAchW;
+			ros::Publisher depGraphPub, pnGraphPub;
 //			/**
 //			 * The subscribed topics.
 //			 */
