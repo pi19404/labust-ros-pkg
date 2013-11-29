@@ -6,11 +6,10 @@ project(labust_control)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   auv_msgs
+  navcon_msgs
   roscpp
   snippets
-  geometry_msgs
   tf
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -27,24 +26,28 @@ find_package(catkin REQUIRED COMPONENTS
 #######################################
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-	HLMessage.msg
-)
+#add_message_files(
+#  FILES
+#)
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   SetHLMode.srv
-   EnableControl.srv
-)
+#add_service_files(
+#   FILES
+#)
+
+
+## Generate actions
+#add_action_files(
+#  FILES
+#)
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-   DEPENDENCIES
-   std_msgs
-   geometry_msgs
-)
+#generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+#   geometry_msgs
+#   actionlib_msgs
+#)
 
 ###################################
 ## catkin specific configuration ##
@@ -58,7 +61,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES labust_control
-#  CATKIN_DEPENDS auv_msgs roscpp snippets
+   CATKIN_DEPENDS auv_msgs roscpp snippets navcon_msgs
 #  DEPENDS system_lib
 )
 
@@ -113,7 +116,6 @@ target_link_libraries(fdap_controller2
   pidtoolkit2
   ${catkin_LIBRARIES}
 )
-
 #############
 ## Install ##
 #############

@@ -31,76 +31,49 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created on: 26.06.2013.
  *  Author: Dula Nad
+ *  Created: 30.10.2013.
  *********************************************************************/
-#ifndef ENABLEPOLICY_HPP_
-#define ENABLEPOLICY_HPP_
-#include <navcon_msgs/EnableControl.h>
-#include <std_msgs/Bool.h>
-#include <ros/ros.h>
+#include <labust/control/ExecDepGraph.hpp>
 
-namespace labust
+#include <boost/graph/graphviz.hpp>
+
+#include <sstream>
+
+using namespace labust::control;
+
+ExecDepGraph::ExecDepGraph()
 {
-	namespace control
-	{
-		class EnableServicePolicy
-		{
-		public:
-			EnableServicePolicy():
-				enable(false)
-			{
-				ros::NodeHandle nh;
-				enableControl = nh.advertiseService("Enable",
-						&EnableServicePolicy::onEnableControl, this);
-			}
-
-			bool onEnableControl(navcon_msgs::EnableControl::Request& req,
-					navcon_msgs::EnableControl::Response& resp)
-			{
-				this->enable = req.enable;
-				return true;
-			}
-
-		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::ServiceServer enableControl;
-		};
-
-		class EnableTopicPolicy
-		{
-		public:
-			EnableTopicPolicy():
-				enable(false)
-			{
-				ros::NodeHandle nh;
-				enableControl = nh.subscribe<std_msgs::Bool>("Enable",1,
-						&EnableTopicPolicy::onEnableControl, this);
-			}
-
-			void onEnableControl(const std_msgs::Bool::ConstPtr& req)
-			{
-				this->enable = req->data;
-			}
-
-		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::Subscriber enableControl;
-		};
-	}
+	//Add the basic vertices.
+	std::string dofs[]={"X","Y","Z","K","M","N"};
+	//Add DOFs to the name list
+	for (int i=0; i<6;++i) nameMap[dofs[i]] = boost::add_vertex(dofs[i], graph);
 }
 
-/* ENABLEPOLICY_HPP_ */
-#endif
+void ExecDepGraph::addToGraph(const navcon_msgs::RegisterControllerRequest& info)
+{
+	//Build from scratch
+	using namespace boost;
+	GraphType::vertex_descriptor curr_vert = boost::add_vertex(info.name,graph);
+	nameMap[info.name] = curr_vert;
+	//Add basic dependencies.
+	for (int i=0; i<info.used_dofs.size(); ++i)
+		if (info.used_dofs[i]) boost::add_edge(curr_vert,i, 1, graph);
+
+	//Add advanced dependencies
+	for (int i=0; i<info.used_cnt.size(); ++i)
+		boost::add_edge(curr_vert,nameMap[info.used_cnt[i]], 1, graph);
+}
+
+void ExecDepGraph::getDotDesc(std::string& desc)
+{
+	using namespace boost;
+	//Construct a label writer.
+	std::ostringstream out;
+	write_graphviz(out, graph,
+			make_label_writer(get(vertex_name_t(), graph)));
+	desc = out.str();
+}
+
+void ExecDepGraph::findPath(const std::string& start, const std::string& end,
+		std::list<std::string>& path){}

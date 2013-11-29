@@ -31,76 +31,70 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  Created on: 26.06.2013.
  *  Author: Dula Nad
+ *  Created: 30.10.2013.
  *********************************************************************/
-#ifndef ENABLEPOLICY_HPP_
-#define ENABLEPOLICY_HPP_
-#include <navcon_msgs/EnableControl.h>
-#include <std_msgs/Bool.h>
-#include <ros/ros.h>
+#include <labust/control/ExecPNGraph.hpp>
 
-namespace labust
+#include <boost/graph/graphviz.hpp>
+
+#include <sstream>
+
+using namespace labust::control;
+
+ExecPNGraph::ExecPNGraph()
 {
-	namespace control
+	//Add the basic vertices.
+	std::string dofs[]={"X","Y","Z","K","M","N"};
+	//Add DOFs to the name list
+	for (int i=0; i<6;++i)	nameMap[dofs[i]].place_num = add_place(dofs[i]);
+}
+
+void ExecPNGraph::addToGraph(const navcon_msgs::RegisterControllerRequest& info)
+{
+	//Build from scratch
+	using namespace boost;
+	GraphType::vertex_descriptor curr_place = add_place(info.name),
+			curr_en_t = add_transition(info.name+"_enable"),
+			curr_dis_t = add_transition(info.name+"_disable");
+
+	nameMap[info.name].place_num = curr_place;
+	nameMap[info.name].enable_t = curr_en_t;
+	nameMap[info.name].disable_t = curr_dis_t;
+
+	//Add local connections.
+	add_edge(curr_en_t, curr_place);
+	add_edge(curr_place, curr_dis_t);
+
+	//Add basic dependencies.
+	for (int i=0; i<info.used_dofs.size(); ++i)
 	{
-		class EnableServicePolicy
+		if (info.used_dofs[i])
 		{
-		public:
-			EnableServicePolicy():
-				enable(false)
-			{
-				ros::NodeHandle nh;
-				enableControl = nh.advertiseService("Enable",
-						&EnableServicePolicy::onEnableControl, this);
-			}
+			add_edge(i,curr_en_t);
+			add_edge(curr_dis_t, i);
+		}
+	}
 
-			bool onEnableControl(navcon_msgs::EnableControl::Request& req,
-					navcon_msgs::EnableControl::Response& resp)
-			{
-				this->enable = req.enable;
-				return true;
-			}
-
-		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::ServiceServer enableControl;
-		};
-
-		class EnableTopicPolicy
-		{
-		public:
-			EnableTopicPolicy():
-				enable(false)
-			{
-				ros::NodeHandle nh;
-				enableControl = nh.subscribe<std_msgs::Bool>("Enable",1,
-						&EnableTopicPolicy::onEnableControl, this);
-			}
-
-			void onEnableControl(const std_msgs::Bool::ConstPtr& req)
-			{
-				this->enable = req->data;
-			}
-
-		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::Subscriber enableControl;
-		};
+	//Add advanced dependencies
+	for (int i=0; i<info.used_cnt.size(); ++i)
+	{
+		GraphType::vertex_descriptor place_num =
+				nameMap[info.used_cnt[i]].place_num;
+		add_edge(place_num,curr_en_t);
+		add_edge(curr_dis_t, place_num);
 	}
 }
 
-/* ENABLEPOLICY_HPP_ */
-#endif
+void ExecPNGraph::getDotDesc(std::string& desc)
+{
+	using namespace boost;
+	//Construct a label writer.
+	std::ostringstream out;
+	write_graphviz(out, graph,
+			pn_writer(graph));
+	desc = out.str();
+}
+
+void ExecPNGraph::findPath(const std::string& start, const std::string& end,
+		std::list<std::string>& path){}

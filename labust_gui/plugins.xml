@@ -1,0 +1,13 @@
+<library path="src">
+  <class name="EMonitorRqt" type="emonitor.emonitor_rqt.EMonitorRqt" 
+      base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Monitor of the internal execution control. 
+    </description>
+    <qtgui>
+      <label>EMonitor</label>
+      <icon type="theme">system-search</icon>
+      <statustip>Execution control monitor.</statustip>
+    </qtgui>
+  </class>
+</library>
