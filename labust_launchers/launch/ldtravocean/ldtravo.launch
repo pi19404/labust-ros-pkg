@@ -13,7 +13,7 @@
   	  	
   	  	<remap from="tauAch" to="/ldtravo/tauAch" /> 
   	  	  		
-  		<include file="$(find labust_launchers)/config/navigation/navigation2D.xml" />
+  		<include file="$(find labust_launchers)/config/ldtravo/navigation3D.xml" />
   	<!-- </group> -->
   	
   	<!-- <group ns="control"> -->
@@ -43,7 +43,7 @@
 		<remap from="tauIn" to="/ldtravo/tauOut" />
 		<remap from="tauAch" to="/ldtravo/tauAch" />
 			
-  		<include file="$(find labust_launchers)/config/simulator/simulator.xml" />
+  		<include file="$(find labust_launchers)/config/ldtravo/simulator.xml" />
   	</group>
   	<!-- </group> -->  	
   </group>

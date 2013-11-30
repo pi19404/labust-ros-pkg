@@ -62,9 +62,6 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-execute_process(COMMAND sh scripts/download_models.sh 
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-	
 ## Specify additional locations of header files
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 

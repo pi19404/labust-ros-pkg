@@ -49,6 +49,24 @@ namespace labust
 {
 	namespace simulation
 	{
+		struct sim_pressure
+		{
+			void operator()(sensor_msgs::FluidPressure::Ptr& pressure,
+					const SimSensorInterface::Hook& data)
+			{
+				using namespace labust::simulation;
+				using namespace Eigen;
+
+				pressure->header.stamp = ros::Time::now();
+				pressure->header.frame_id = "local";
+
+				const labust::simulation::vector& nu =
+						data.noisy?data.model.NuNoisy():data.model.Nu();
+
+				pressure->fluid_pressure = data.model.getPressure(nu(RBModel::z));
+			}
+		};
+
 		struct sim_imu
 		{
 			void operator()(sensor_msgs::Imu::Ptr& imu,
@@ -168,6 +186,7 @@ namespace labust
 		};
 
 		typedef BasicSensor<sensor_msgs::Imu, sim_imu> ImuSensor;
+		typedef BasicSensor<sensor_msgs::FluidePressure, sim_pressure> PressureSensor;
 		//typedef BasicSensor<sensor_msgs::NavSatFix, GPSSim> GPSSensor;
 	}
 }

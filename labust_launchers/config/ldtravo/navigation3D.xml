@@ -1,0 +1,6 @@
+<launch> 
+  <node pkg="ldtravocean" type="ldnav_node" name="ekf_nav" machine="controlled">
+  <!-- <node pkg="pladypos" type="nav_node" name="ekf_nav" machine="controlled"> -->
+      <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+  </node>
+</launch>

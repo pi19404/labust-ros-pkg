@@ -83,7 +83,7 @@ void handleGPS(KFNav::vector& measurement, KFNav::vector& newFlag, const sensor_
 	try
 	{
 		listener->lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
-		listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+		listener->lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
 
 		std::pair<double,double> posxy =
 				labust::tools::deg2meter(data->latitude - transformDeg.getOrigin().y(),
@@ -261,6 +261,7 @@ int main(int argc, char* argv[])
 		meas.orientation.yaw = rpy(2);
 		meas.position.north = measurements(KFNav::xp);
 		meas.position.east = measurements(KFNav::yp);
+		meas.position.depth = measurements(KFNav::zp);
 		meas.body_velocity.x = measurements(KFNav::u);
 		meas.body_velocity.y = measurements(KFNav::v);
 		meas.body_velocity.z = measurements(KFNav::w);
@@ -286,7 +287,7 @@ int main(int argc, char* argv[])
 		try
 		{
 			tf::StampedTransform transformDeg;
-			listener->lookupTransform("worldLatLon", "local", ros::Time(0), transformDeg);
+			listener->lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
 
 			std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
 					state.position.east,
