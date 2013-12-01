@@ -74,7 +74,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 #add_executable(model_node src/model_node.cpp)
 
 ## Declare a cpp executable
-add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
+add_executable(ldnav_node src/Estimator3D.cpp src/LDTravModel.cpp
 	include/labust/navigation/LDTravModel.hpp)
 
 ## Add dependencies to the executable

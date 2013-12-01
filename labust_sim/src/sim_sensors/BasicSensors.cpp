@@ -42,6 +42,7 @@
 
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/FluidPressure.h>
 #include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
 
@@ -186,7 +187,7 @@ namespace labust
 		};
 
 		typedef BasicSensor<sensor_msgs::Imu, sim_imu> ImuSensor;
-		typedef BasicSensor<sensor_msgs::FluidePressure, sim_pressure> PressureSensor;
+		typedef BasicSensor<sensor_msgs::FluidPressure, sim_pressure> PressureSensor;
 		//typedef BasicSensor<sensor_msgs::NavSatFix, GPSSim> GPSSensor;
 	}
 }

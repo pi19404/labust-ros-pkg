@@ -34,47 +34,88 @@
  *  Author: Dula Nad
  *  Created: 01.02.2013.
  *********************************************************************/
-#include <labust/ros/SimCore.hpp>
-#include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
 
-#include <pluginlib/class_loader.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 #include <ros/ros.h>
 
-///\todo Edit the class loading to be loaded from the rosparam server.
+#include <boost/thread.hpp>
+
+struct LLNode
+{
+	LLNode():
+		originLat(0),
+		originLon(0),
+		fixValidated(false),
+		fixCount(0)
+	{
+		ros::NodeHandle nh,ph("~");
+		nh.param("LocalOriginLat",originLat,originLat);
+		nh.param("LocalOriginLon",originLon,originLon);
+		ph.param("LocalFixSim",fixValidated, fixValidated);
+
+		gps_raw = nh.subscribe<sensor_msgs::NavSatFix>("gps",1,&LLNode::onGps, this);
+
+		runner = boost::thread(boost::bind(&LLNode::publishFrame, this));
+	}
+
+	~LLNode()
+	{
+		runner.join();
+	}
+
+	void onGps(const sensor_msgs::NavSatFix::ConstPtr& fix)
+	{
+		//In case we didn't have a fix on launch, but now we got 10 fixes in 15 sec.
+		if (!fixValidated)
+		{
+			originLat = fix->latitude;
+			originLon = fix->longitude;
+			fixValidated = true;
+		}
+	};
+
+	void publishFrame()
+	{
+		ros::Rate rate(1);
+		while (ros::ok())
+		{
+			tf::Transform transform;
+			if (fixValidated)
+			{
+				transform.setOrigin(tf::Vector3(originLon, originLat, 0));
+				transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+				broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+			}
+
+			transform.setOrigin(tf::Vector3(0, 0, 0));
+			Eigen::Quaternion<float> q;
+			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
+			transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
+
+			rate.sleep();
+		}
+	}
+
+private:
+	ros::Subscriber gps_raw;
+	tf::TransformBroadcaster broadcaster;
+	double originLat, originLon;
+	bool fixValidated;
+	int fixCount;
+	boost::thread runner;
+};
+
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"uvsim");
+	ros::init(argc,argv,"llnode");
 	ros::NodeHandle nh;
-
-	//Sensor loaders
-//	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
-//		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
-
-	labust::simulation::SimCore simulator;
-
-//	typedef std::pair<std::string, std::string> NameTopicPair;
-//	std::vector< NameTopicPair >
-//		list({
-//		NameTopicPair("labust::simulation::ImuSensor","imu"),
-//		NameTopicPair("labust::simulation::GPSSensor","fix")});
-//
-//	try
-//	{
-//		using namespace labust::simulation;
-//		for (auto it = list.begin(); it != list.end(); ++it)
-//		{
-//			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
-//			sensor->configure(nh,it->second);
-//			simulator.addSensor(sensor);
-//		}
-//	}
-//	catch(pluginlib::PluginlibException& ex)
-//	{
-//	  //handle the class failing to load
-//	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
-//	}
-
+	LLNode llnode;
 	ros::spin();
 	return 0;
 }
+
+

@@ -34,47 +34,74 @@
  *  Author: Dula Nad
  *  Created: 01.02.2013.
  *********************************************************************/
-#include <labust/ros/SimCore.hpp>
-#include <labust/ros/SimSensors.hpp>
-#include <labust/tools/conversions.hpp>
-
-#include <pluginlib/class_loader.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Vector3.h>
+#include <sensor_msgs/Imu.h>
+#include <std_msgs/Float32.h>
+#include <tf/transform_broadcaster.h>
 #include <ros/ros.h>
 
-///\todo Edit the class loading to be loaded from the rosparam server.
+#include <boost/thread/mutex.hpp>
+
+struct ImuSim
+{
+	ImuSim()
+	{
+		ros::NodeHandle nh;
+		odom = nh.subscribe<nav_msgs::Odometry>("meas_odom",1,&ImuSim::onOdom, this);
+		acc = nh.subscribe<geometry_msgs::Vector3>("nuacc_ideal",1,&ImuSim::onAcc, this);
+
+		imu_pub = nh.advertise<sensor_msgs::Imu>("imu",1);
+		depth_pub = nh.advertise<std_msgs::Float32>("depth",1);
+	}
+
+	void onOdom(const typename nav_msgs::Odometry::ConstPtr& msg)
+	{
+		sensor_msgs::Imu::Ptr imu(new sensor_msgs::Imu());
+		imu->header.stamp = ros::Time::now();
+		imu->header.frame_id = "base_link";
+		imu->angular_velocity = msg->twist.twist.angular;
+		imu->orientation = msg->pose.pose.orientation;
+
+		{
+			boost::mutex::scoped_lock l(acc_mux);
+			imu->linear_acceleration = nuacc;
+		}
+
+		imu_pub.publish(imu);
+
+		std_msgs::Float32::Ptr depth(new std_msgs::Float32());
+		depth->data = msg->pose.pose.position.z;
+		depth_pub.publish(depth);
+
+		//Publish the imu_frame location
+		tf::Transform transform;
+		transform.setOrigin(tf::Vector3(0, 0, 0));
+		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
+	    broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
+	}
+
+	void onAcc(const typename geometry_msgs::Vector3::ConstPtr& msg)
+	{
+		boost::mutex::scoped_lock l(acc_mux);
+		nuacc = *msg;
+	}
+
+private:
+	ros::Subscriber odom, acc;
+	ros::Publisher imu_pub, depth_pub;
+	boost::mutex acc_mux;
+	geometry_msgs::Vector3 nuacc;
+	tf::TransformBroadcaster broadcaster;
+};
+
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"uvsim");
+	ros::init(argc,argv,"imu_sim");
 	ros::NodeHandle nh;
-
-	//Sensor loaders
-//	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
-//		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
-
-	labust::simulation::SimCore simulator;
-
-//	typedef std::pair<std::string, std::string> NameTopicPair;
-//	std::vector< NameTopicPair >
-//		list({
-//		NameTopicPair("labust::simulation::ImuSensor","imu"),
-//		NameTopicPair("labust::simulation::GPSSensor","fix")});
-//
-//	try
-//	{
-//		using namespace labust::simulation;
-//		for (auto it = list.begin(); it != list.end(); ++it)
-//		{
-//			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
-//			sensor->configure(nh,it->second);
-//			simulator.addSensor(sensor);
-//		}
-//	}
-//	catch(pluginlib::PluginlibException& ex)
-//	{
-//	  //handle the class failing to load
-//	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
-//	}
-
+	ImuSim imu;
 	ros::spin();
 	return 0;
 }
+
+

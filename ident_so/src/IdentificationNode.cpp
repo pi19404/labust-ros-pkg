@@ -78,7 +78,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		lastSampleTime = ros::Time::now();
 		ROS_INFO("Estimated rate: %f",dT);
 		measurements(x) += meas->body_velocity.x*dT;
-		measurements(y) = meas->body_velocity.y*dT;
+		measurements(y) += meas->body_velocity.y*dT;
 	}
 	else
 	{

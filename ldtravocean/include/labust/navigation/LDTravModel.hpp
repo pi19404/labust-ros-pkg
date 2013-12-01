@@ -80,10 +80,6 @@ namespace labust
       enum {inputSize = 4};
       enum {measSize = 7};
       enum {X=0,Y,Z,N};
-//      enum {u_m=0,v_m,w_m,x_m,y_m,z_m,psi_m};
-//      enum {xpsi_m=0, ypsi_m, xypsipsi_m};
-//      enum {upsi_m=0, vpsi_m, wpsi_m, psipsi_m};
-//      enum {psiOnly_m = 0};
         
       /**
        * The default constructor.
@@ -126,7 +122,7 @@ namespace labust
       {
     	  this->surge = surge;
     	  this->sway = sway;
-    	  this->sway = heave;
+    	  this->heave = heave;
     	  this->yaw = yaw;
       }
 

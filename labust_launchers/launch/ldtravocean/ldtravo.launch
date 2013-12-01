@@ -4,47 +4,17 @@
 
   <group ns="ldtravo">
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
+  	<rosparam command="load" file="$(env MODEL)" />
   	
-  	<include file="$(find labust_launchers)/config/control/joy.xml"/>
-  	
-  	<!-- <group ns="navigation"> -->
-  		<rosparam command="load" file="$(env MODEL)" />
-  	  	<rosparam command="load" file="$(find labust_launchers)/config/ldtravo/navparams.yaml" />
-  	  	
-  	  	<remap from="tauAch" to="/ldtravo/tauAch" /> 
-  	  	  		
-  		<include file="$(find labust_launchers)/config/ldtravo/navigation3D.xml" />
-  	<!-- </group> -->
-  	
-  	<!-- <group ns="control"> -->
-  		<rosparam command="load" file="$(env MODEL)" />
-  		<rosparam command="load"
-			file="$(find labust_launchers)/config/ldtravo/velocity_control.yaml" />
-		<rosparam command="load"
-			file="$(find labust_launchers)/config/ldtravo/dp_control.yaml" />
-			
-		<remap from="stateHat" to="/ldtravo/stateHat" />
-		<remap from="state" to="/ldtravo/stateHat" /> 
-  		
-  		<include file="$(find labust_launchers)/config/control/control_all.xml" />
-  		
-  		<!-- The simple execution manager -->
-  		<rosparam command="load" file="$(find labust_launchers)/config/ldtravo/manager.yaml" />
-  		<include file="$(find labust_launchers)/config/control/manager.xml" />
-  	<!-- </group> -->
-  	
-  	<!-- <group ns="simulation" if="$(arg is_sim)"> -->
+  	<!-- Add the simulation elements -->
   	<group if="$(arg is_sim)">
-  		<rosparam command="load" file="$(env MODEL)" />
-  		<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
-  		
-  		<remap from="fix" to="/ldtravo/gps" />
-  		<remap from="imu" to="/ldtravo/imu" />
-		<remap from="tauIn" to="/ldtravo/tauOut" />
-		<remap from="tauAch" to="/ldtravo/tauAch" />
-			
-  		<include file="$(find labust_launchers)/config/ldtravo/simulator.xml" />
+		<include file="$(find labust_launchers)/launch/ldtravocean/simulator.launch" />
   	</group>
-  	<!-- </group> -->  	
+  	
+  	<!-- Add the navigation -->
+  	<include file="$(find labust_launchers)/launch/ldtravocean/navigation.launch"/>
+    	
+  	<!-- Add the controllers -->
+  	<include file="$(find labust_launchers)/launch/ldtravocean/control.launch"/>
   </group>
 </launch>

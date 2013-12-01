@@ -1,0 +1,11 @@
+<launch>
+	<rosparam command="load"
+		file="$(find labust_launchers)/launch/ldtravocean/config/control.yaml" />
+		
+	<!-- Manual control input -->
+	<include file="$(find labust_launchers)/config/control/joy.xml"/>
+		
+	<node pkg="labust_uvapp" type="velocity_control" name="velcon">
+		<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
+	</node>
+</launch>

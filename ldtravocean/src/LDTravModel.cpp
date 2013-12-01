@@ -79,7 +79,7 @@ void LDTravModel::step(const input_type& input)
   ydot = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
   x(xp) += Ts * xdot;
   x(yp) += Ts * ydot;
-  x(w) += Ts * x(w);
+  x(zp) += Ts * x(w);
   x(psi) += Ts * x(r);
 
   xk_1 = x;

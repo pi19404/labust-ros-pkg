@@ -1,0 +1,37 @@
+<launch>
+	<rosparam command="load" file="$(env MODEL)" />
+  	<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
+  		
+  	<!-- Dynamic simulation node -->
+  	<node pkg="labust_sim" type="uvsim" name="uvsim">    	    
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<param name="publish_world" value="false" />
+		<param name="publish_sim_base" value="true" />
+		<param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
+		
+		<param name="maxThrust" value="100" />
+		<param name="minThrust" value="-100" />
+		
+		<remap from="tauIn" to="tauOut" />
+	</node>
+  		
+  	<!-- IMU sensor simulation node -->
+  	<node pkg="labust_sim" type="imu_sim" name="imu_sim">
+  		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
+  		<param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
+  	</node>		
+  	<!-- GPSsensor simulation node -->
+  	<node pkg="labust_sim" type="gps_sim" name="gps_sim">
+  		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
+  		<!-- <remap from="fix" to="gps" /> -->
+  		<param name="gps_height" value="0.8" />
+  		<param name="gps_pub" value="1" />
+  		<param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
+  	</node>	
+  	<!-- DVLsensor simulation node -->
+  	<node pkg="labust_sim" type="dvl_sim" name="dvl_sim">
+  		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
+  		<!-- <remap from="dvl" to="nu_dvl" /> -->
+  	</node>	
+</launch>

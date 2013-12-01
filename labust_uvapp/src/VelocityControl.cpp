@@ -219,8 +219,10 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 void VelocityControl::handleMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 {
 	//Copy into controller
-	measurement[u] = meas->position.north;
-	measurement[v] = meas->position.east;
+	double dT = (ros::Time::now() - lastMeas).toSec();
+	ROS_INFO("Estimated rate for integration: %f",dT);
+	measurement[u] += meas->body_velocity.x*dT;
+	measurement[v] += meas->body_velocity.y*dT;
 	measurement[w] = meas->position.depth;
 	measurement[p] = meas->orientation.roll;
 	measurement[q] = meas->orientation.pitch;
@@ -266,6 +268,8 @@ double VelocityControl::doIdentification(int i)
 		ident[i].reset(new SOIdentification());
 		ident[i]->setRelay(C,X);
 		ident[i]->Ref(ref);
+		//Reset measurement
+		measurement[i] = 0;
 		ROS_INFO("Started indentification of %s DOF.",dofName[i].c_str());
 	}
 

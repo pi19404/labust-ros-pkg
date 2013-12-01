@@ -48,19 +48,32 @@ namespace labust
   		if (!ns.empty() && (ns.at(ns.length()-1) != '/')) ns+="/";
 
   		labust::tools::getMatrixParam(nh, ns+"Q", model.Q);
-  		labust::tools::getMatrixParam(nh, ns+"W", model.W);
-  		labust::tools::getMatrixParam(nh, ns+"V", model.V0);
+  		model.W = ModelType::matrix::Identity(model.Q.rows(), model.Q.cols());
   		labust::tools::getMatrixParam(nh, ns+"R", model.R0);
-  		model.V = model.V0;
+  		model.V0 = ModelType::matrix::Identity(model.R.rows(), model.R.cols());
+  		model.H0 = ModelType::matrix::Identity(model.R.rows(), model.Q.cols());
+
+  		//Optional parameters
+  		if (nh.hasParam(ns+"W"))	labust::tools::getMatrixParam(nh, ns+"W", model.W);
+  		if (nh.hasParam(ns+"V"))	labust::tools::getMatrixParam(nh, ns+"V", model.V0);
+  		if (nh.hasParam(ns+"H"))	labust::tools::getMatrixParam(nh, ns+"H", model.H0);
+  		if (nh.hasParam(ns+"P"))
+  		{
+  			typename ModelType::matrix P;
+  			labust::tools::getMatrixParam(nh, ns+"P", P);
+  			model.setStateCovariance(P);
+  		}
+  		if (nh.hasParam(ns+"x0"))
+  		{
+  			typename ModelType::vector x0;
+  			labust::tools::getMatrixParam(nh, ns+"x0", x0);
+  			model.setState(x0);
+  		}
+
+  		//Set changeable
   		model.R = model.R0;
-
-  		typename ModelType::matrix P;
-  		std::pair<int, int> size = labust::tools::getMatrixParam(nh, ns+"P", P);
- 			if ((size.first != -1) && (size.second != -1)) model.setStateCovariance(P);
-
-  		typename ModelType::vector x0;
-  		size = labust::tools::getMatrixParam(nh, ns+"x0", x0);
-  		if ((size.first != -1) && (size.second != -1)) model.setState(x0);
+  		model.V = model.V0;
+  		model.H = model.H0;
 
   		nh.param("sampling_time",model.Ts,0.1);
   	}

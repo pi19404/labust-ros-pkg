@@ -110,6 +110,7 @@ void handleImu(KFNav::vector& rpy,  const sensor_msgs::Imu::ConstPtr& data)
 {
 	enum {r,p,y,newMsg};
 	double roll,pitch,yaw;
+	static labust::math::unwrap unwrap;
 
 	tf::StampedTransform transform;
 	try
@@ -125,12 +126,12 @@ void handleImu(KFNav::vector& rpy,  const sensor_msgs::Imu::ConstPtr& data)
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),
 				roll,pitch,yaw);*/
-		ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
+		//ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
 
 		rpy(r) = roll;
 		rpy(p) = pitch;
-		rpy(y) = yaw;
-		rpy[newMsg] = 1;
+		rpy(y) = unwrap(yaw);
+		rpy(newMsg) = 1;
 	}
 	catch (tf::TransformException& ex)
 	{
@@ -150,9 +151,9 @@ void handleDvl(KFNav::vector& measurement, KFNav::vector& newFlag,
 };
 
 void handlePressure(KFNav::vector& measurement, KFNav::vector& newFlag,
-		const sensor_msgs::FluidPressure::ConstPtr& data)
+		const std_msgs::Float32::ConstPtr& data)
 {
-	measurement(KFNav::zp) = data->fluid_pressure/(g_acc*rho);
+	measurement(KFNav::zp) = data->data;
 	newFlag(KFNav::zp)=1;
 };
 
@@ -298,7 +299,7 @@ int main(int argc, char* argv[])
 		}
 		catch(tf::TransformException& ex)
 		{
-			ROS_ERROR("%s",ex.what());
+			ROS_WARN("Unable to set global position. %s",ex.what());
 		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
