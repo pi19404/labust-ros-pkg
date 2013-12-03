@@ -100,11 +100,13 @@ add_executable(lf_controller2 src/LFControl.cpp)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_control_node labust_control_generate_messages_cpp)
-add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
-add_dependencies(fadp_controller2 ${catkin_EXPORTED_TARGETS})
-add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
-add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
-add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
+ add_dependencies(fadp_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
