@@ -213,10 +213,6 @@ namespace labust
 			 */
 			tf::TransformBroadcaster broadcast;
 			/**
-			 * The frame transform listener.
-			 */
-			tf::TransformListener listener;
-			/**
 			 * Subscriptions to input virtual forces and currents.
 			 */
 			ros::Subscriber tauIn, tauInWrench, currentsSub;

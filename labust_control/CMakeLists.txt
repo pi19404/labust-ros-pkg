@@ -89,7 +89,9 @@ set_source_files_properties(
    src/pidtoolkit/PIFFController.c
    src/pidtoolkit/PSatDController.c PROPERTIES LANGUAGE CXX)
 
-add_executable(fdap_controller2 src/FADPControl.cpp)
+add_executable(fadp_controller2 src/FADPControl.cpp)
+add_executable(hdg_controller2 src/HDGControl.cpp)
+add_executable(alt_controller2 src/ALTControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
 
 ## Declare a cpp executable
@@ -99,8 +101,10 @@ add_executable(lf_controller2 src/LFControl.cpp)
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_control_node labust_control_generate_messages_cpp)
 add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
-add_dependencies(fdap_controller2 ${catkin_EXPORTED_TARGETS})
+add_dependencies(fadp_controller2 ${catkin_EXPORTED_TARGETS})
 add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
+add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
+add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(hlmanager
@@ -112,7 +116,17 @@ target_link_libraries(lf_controller2
   ${catkin_LIBRARIES}
 )
 
-target_link_libraries(fdap_controller2
+target_link_libraries(fadp_controller2
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(alt_controller2
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(hdg_controller2
   pidtoolkit2
   ${catkin_LIBRARIES}
 )

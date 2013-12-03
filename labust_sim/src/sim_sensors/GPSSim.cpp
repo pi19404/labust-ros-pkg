@@ -74,17 +74,17 @@ struct GPSSim
 		try
 		{
 			//Get the GPS position
-			listener.lookupTransform("base_link", "gps_frame",
+			listener.lookupTransform("local", "gps_frame",
 					ros::Time(0), transformLocal);
-			double originLat = transformDeg.getOrigin().y();
-			double originLon = transformDeg.getOrigin().x();
 			//In case the origin changes
 			listener.waitForTransform("/worldLatLon", "/world",
 					ros::Time(0), ros::Duration(5.0));
 			listener.lookupTransform("/worldLatLon", "/world",
 					ros::Time(0), transformDeg);
+			double originLat = transformDeg.getOrigin().y();
+			double originLon = transformDeg.getOrigin().x();
 
-			fix->altitude = -(transformLocal.getOrigin().z() + msg->pose.pose.position.z);
+			fix->altitude = -transformLocal.getOrigin().z();
 			std::pair<double, double> diffAngle =
 					labust::tools::meter2deg(msg->pose.pose.position.x,
 					msg->pose.pose.position.y,

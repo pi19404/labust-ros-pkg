@@ -46,12 +46,14 @@ struct DvlSim
 {
 	DvlSim():
 		maxBottomLock(100),
-		maxDepth(100)
+		maxDepth(100),
+		dvl_pub(1)
 	{
 		ros::NodeHandle nh,ph("~");
 
 		ph.param("MaxBottomLock",maxBottomLock, maxBottomLock);
 		ph.param("MaxDepth", maxDepth, maxDepth);
+		ph.param("DvlPub", dvl_pub, dvl_pub);
 
 		odom = nh.subscribe<nav_msgs::Odometry>("meas_odom",1,&DvlSim::onOdom, this);
 		dvl_nu = nh.advertise<geometry_msgs::TwistStamped>("dvl",1);
@@ -63,40 +65,46 @@ struct DvlSim
 
 	void onOdom(const typename nav_msgs::Odometry::ConstPtr& msg)
 	{
-		double dT = (ros::Time::now() - lastTime).toSec();
-		lastTime = ros::Time::now();
-		geometry_msgs::TwistStamped::Ptr dvl(new geometry_msgs::TwistStamped());
-		dvl->header.stamp = ros::Time::now();
-		dvl->header.frame_id = msg->header.frame_id;
-		double pos[3],v[3];
-		labust::tools::pointToVector(msg->pose.pose.position, pos);
-		for (int i=0; i<3; ++i)
-		{
-			v[i] = (pos[i] - last_pos[i])/dT;
-			last_pos[i] = pos[i];
-		}
-		labust::tools::vectorToPoint(v, dvl->twist.linear);
-		dvl_ned.publish(dvl);
+		static int i=0;
+		i=++i%dvl_pub;
 
-		dvl.reset(new geometry_msgs::TwistStamped());
-		dvl->header.stamp = ros::Time::now();
-		dvl->header.frame_id = msg->child_frame_id;
-		//Calculate body-fixed speeds
-		tf::Quaternion q;
-		tf::quaternionMsgToTF(msg->pose.pose.orientation, q);
-		tf::Transform t;
-		t.setRotation(q);
-		tf::Vector3 nu = t.getBasis().transpose() * tf::Vector3(v[0],v[1],v[2]);
-		dvl->twist.linear.x = nu.x();
-		dvl->twist.linear.y = nu.y();
-		dvl->twist.linear.z = nu.z();
-		dvl_nu.publish(dvl);
-
-		if ((maxDepth - msg->pose.pose.position.z) < maxBottomLock)
+		if (i == 0)
 		{
-			std_msgs::Float32::Ptr altitude(new std_msgs::Float32());
-			altitude->data = maxDepth - msg->pose.pose.position.z;
-			altitude_pub.publish(altitude);
+			double dT = (ros::Time::now() - lastTime).toSec();
+			lastTime = ros::Time::now();
+			geometry_msgs::TwistStamped::Ptr dvl(new geometry_msgs::TwistStamped());
+			dvl->header.stamp = ros::Time::now();
+			dvl->header.frame_id = msg->header.frame_id;
+			double pos[3],v[3];
+			labust::tools::pointToVector(msg->pose.pose.position, pos);
+			for (int i=0; i<3; ++i)
+			{
+				v[i] = (pos[i] - last_pos[i])/dT;
+				last_pos[i] = pos[i];
+			}
+			labust::tools::vectorToPoint(v, dvl->twist.linear);
+			dvl_ned.publish(dvl);
+
+			dvl.reset(new geometry_msgs::TwistStamped());
+			dvl->header.stamp = ros::Time::now();
+			dvl->header.frame_id = msg->child_frame_id;
+			//Calculate body-fixed speeds
+			tf::Quaternion q;
+			tf::quaternionMsgToTF(msg->pose.pose.orientation, q);
+			tf::Transform t;
+			t.setRotation(q);
+			tf::Vector3 nu = t.getBasis().transpose() * tf::Vector3(v[0],v[1],v[2]);
+			dvl->twist.linear.x = nu.x();
+			dvl->twist.linear.y = nu.y();
+			dvl->twist.linear.z = nu.z();
+			dvl_nu.publish(dvl);
+
+			if ((maxDepth - msg->pose.pose.position.z) < maxBottomLock)
+			{
+				std_msgs::Float32::Ptr altitude(new std_msgs::Float32());
+				altitude->data = maxDepth - msg->pose.pose.position.z;
+				altitude_pub.publish(altitude);
+			}
 		}
 	}
 
@@ -105,6 +113,7 @@ private:
 	ros::Publisher dvl_nu, altitude_pub, dvl_ned;
 	ros::Time lastTime;
 	double last_pos[3];
+	int dvl_pub;
 	double maxBottomLock, maxDepth;
 };
 

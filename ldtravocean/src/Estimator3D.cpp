@@ -130,6 +130,7 @@ void Estimator3D::onAltitude(const std_msgs::Float32::ConstPtr& data)
 {
 	//measurement(KFNav::zp) = data->data;
 	//newMeas(KFNav::zp) = 1;
+	alt = data->data;
 };
 
 void Estimator3D::processMeasurements()
@@ -163,6 +164,7 @@ void Estimator3D::processMeasurements()
 	meas->position.north = measurements(KFNav::xp);
 	meas->position.east = measurements(KFNav::yp);
 	meas->position.depth = measurements(KFNav::zp);
+	meas->altitude = alt;
 
 	meas->orientation.roll = imu.orientation()[ImuHandler::roll];
 	meas->orientation.pitch = imu.orientation()[ImuHandler::pitch];
@@ -191,6 +193,7 @@ void Estimator3D::publishState()
 	state->position.north = estimate(KFNav::xp);
 	state->position.east = estimate(KFNav::yp);
 	state->position.depth = estimate(KFNav::zp);
+	state->altitude = alt;
 
 	state->orientation.roll = imu.orientation()[ImuHandler::roll];
 	state->orientation.pitch = imu.orientation()[ImuHandler::pitch];

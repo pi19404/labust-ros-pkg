@@ -44,6 +44,7 @@ void PIDBase_init(PIDBase* self)
 	self->internalState = self->output = 0;
 	self->desired= self->state =0;
 	self->lastError = self->lastRef = 0;
+	self->lastFF = 0;
 
 	self->model.alpha = 0;
 	self->model.beta = 0;

@@ -50,11 +50,11 @@ namespace labust
 {
 	namespace control{
 		///The fully actuated dynamic positioning controller
-		struct FADPControl
+		struct ALTControl
 		{
 			enum {x=0,y};
 
-			FADPControl():Ts(0.1), uff(0), vff(0){};
+			ALTControl():Ts(0.1){};
 
 			void init()
 			{
@@ -65,76 +65,63 @@ namespace labust
   		void windup(const auv_msgs::BodyForceReq& tauAch)
 			{
 				//Copy into controller
-				con[x].windup = tauAch.disable_axis.x;
-				con[y].windup = tauAch.disable_axis.y;
+				con.windup = tauAch.disable_axis.z;
 			};
 
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
-				con[x].desired =  ref.position.north;
-				con[y].desired =  ref.position.east;
+				con.desired = ref.position.depth;
+				//Check if altitude or depth reference
+				if (ref.position.depth < 0)
+				{
+					//Altitude mode
+					con.state = -state.altitude;
+				}
+				else
+				{
+					//Depth mode
+					con.state = state.position.depth;
+				}
 
-				///\todo There are more options for this ?
-				uff = ref.body_velocity.x*cos(ref.orientation.yaw);
-				vff = ref.body_velocity.x*sin(ref.orientation.yaw);
-
-				con[x].state = state.position.north;
-				con[y].state = state.position.east;
-
-				PIFF_ffStep(&con[x],Ts, uff);
-				PIFF_ffStep(&con[y],Ts, vff);
+				//Zero feed-forward
+				PIFF_ffStep(&con,Ts,0);
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
-				nu->goal.requester = "fadp_controller";
-
-				ROS_ERROR("Output %f %f %f %f",uff,vff,con[x].output, con[y].output);
-
-				Eigen::Vector2f out, in;
-				Eigen::Matrix2f R;
-				in<<con[x].output,con[y].output;
-				double yaw(state.orientation.yaw);
-				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
-				out = R.transpose()*in;
-
-				nu->twist.linear.x = out[0];
-				nu->twist.linear.y = out[1];
+				nu->goal.requester = "alt_controller";
+				nu->twist.linear.z = con.output;
 
 				return nu;
 			}
 
 			void initialize_controller()
 			{
-				ROS_INFO("Initializing dynamic positioning controller...");
+				ROS_INFO("Initializing depth/altitude controller...");
 
 				ros::NodeHandle nh;
-				Eigen::Vector3d closedLoopFreq(Eigen::Vector3d::Ones());
-				labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
-				nh.param("dp_controller/sampling",Ts,Ts);
+				double closedLoopFreq(1);
+				nh.param("alt_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
+				nh.param("alt_controller/sampling",Ts,Ts);
 
-				enum {Kp=0, Ki, Kd, Kt};
-				for (size_t i=0; i<2;++i)
-				{
-					PIDBase_init(&con[i]);
-					PIFF_tune(&con[i], float(closedLoopFreq(i)));
-				}
+				PIDBase_init(&con);
+				PIFF_tune(&con, float(closedLoopFreq));
 
-				ROS_INFO("Dynamic positioning controller initialized.");
+				ROS_INFO("Depth/Altitude controller initialized.");
 			}
 
 		private:
-			PIDBase con[2];
+			ros::Subscriber alt_sub;
+			PIDBase con;
 			double Ts;
-			double uff,vff;
 		};
 	}}
 
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"fadp_control");
+	ros::init(argc,argv,"alt_control");
 
-	labust::control::HLControl<labust::control::FADPControl,
+	labust::control::HLControl<labust::control::ALTControl,
 	labust::control::EnableServicePolicy,
 	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
 	ros::spin();

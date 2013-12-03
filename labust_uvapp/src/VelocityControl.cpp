@@ -116,7 +116,7 @@ bool VelocityControl::handleEnableControl(labust_uvapp::EnableControl::Request& 
 
 void VelocityControl::updateDynRecConfig()
 {
-	ROS_INFO("Updating the dynamic reconfigure parameters. %d");
+	ROS_INFO("Updating the dynamic reconfigure parameters.");
 
 	config.Surge_mode = axis_control[u];
 	config.Sway_mode = axis_control[v];
@@ -337,6 +337,11 @@ void VelocityControl::step()
 			controller[i].output = tauManual[i];
 			break;
 		case controlAxis:
+			ROS_DEBUG("Controller %d : %f %f %f",
+					i,
+					controller[i].desired,
+					controller[i].state,
+					controller[i].output);
 			PIFFController_step(&controller[i], Ts);
 			break;
 		case identAxis:
@@ -365,21 +370,6 @@ void VelocityControl::step()
 	tau.wrench.torque.y = controller[q].output;
 	tau.wrench.torque.z = controller[r].output;
 
-//	if (axis_control[u] == controlAxis)
-//	{
-//		double ulimit(1.0);
-//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-//		if (fabs(controller[u].desired) > ulimit) controller[u].desired = controller[u].desired/fabs(controller[u].desired)*ulimit;
-//		tau.wrench.force.x = controller[u].desired;
-//	}
-//	else
-//	{
-//		double ulimit(1.0);
-//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-//		if (fabs(controller[u].output) > ulimit) controller[u].output = controller[u].output/fabs(controller[u].output)*ulimit;
-//		tau.wrench.force.x = controller[u].output;
-//	}
-
 	tauach.wrench.force.x  = tau.wrench.force.x;
 	tauach.wrench.force.y  = tau.wrench.force.y;
 	tauach.wrench.force.z  = tau.wrench.force.z;
@@ -388,11 +378,7 @@ void VelocityControl::step()
 	tauach.wrench.torque.z = tau.wrench.torque.z;
 
 	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
-	if (controller[v].autoTracking)
-	{
-		ROS_INFO("WINDUP SWAY");
-		 tauach.disable_axis.y = controller[v].windup;
-	}	
+	if (controller[v].autoTracking) tauach.disable_axis.y = controller[v].windup;
 	if (controller[w].autoTracking) tauach.disable_axis.z = controller[w].windup;
 	if (controller[p].autoTracking) tauach.disable_axis.roll = controller[p].windup;
 	if (controller[q].autoTracking) tauach.disable_axis.pitch = controller[q].windup;

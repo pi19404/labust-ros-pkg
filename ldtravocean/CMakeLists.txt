@@ -10,7 +10,9 @@ find_package(catkin REQUIRED COMPONENTS
     auv_msgs 
     tf
     kdl_conversions
-    labust_navigation)
+    labust_navigation
+    rqt_gui
+    rqt_gui_py)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
@@ -19,7 +21,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and scripts declared therein get installed
-# catkin_python_setup()
+catkin_python_setup()
 
 #######################################
 ## Declare ROS messages and services ##

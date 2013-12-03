@@ -136,6 +136,10 @@ namespace labust
 			 * The transform broadcaster.
 			 */
 			tf::TransformBroadcaster broadcaster;
+			/**
+			 * Temporary altitude storage.
+			 */
+			double alt;
 		};
 	}
 }
