@@ -1,3 +1,6 @@
+#Manual controllers
+nu_manual/maximum_speeds: [1,1,1,0,0,0.5]
+ref_manual/maximum_speeds: [1,1,1,0,0,0.5]
 #DP controller
 dp_controller/closed_loop_freq: [0.2,0.2]
 #Alt/Depth controller

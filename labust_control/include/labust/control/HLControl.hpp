@@ -38,6 +38,7 @@
 #define HLCONTROL_HPP_
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyVelocityReq.h>
+#include <navcon_msgs/ConfigureAxes.h>
 #include <ros/ros.h>
 
 #include <boost/thread/mutex.hpp>
@@ -52,6 +53,44 @@ namespace labust
 			inline void get_windup(Base b){};
 		};
 
+		struct DisableAxis
+		{
+			DisableAxis()
+			{
+				for (int i=0; i<6; ++i) disable_axis[i]=1;
+			}
+			bool disable_axis[6];
+		};
+
+		///\todo Reverse the disable/enable axes logic at one time ?
+		class ConfigureAxesPolicy
+		{
+		public:
+			ConfigureAxesPolicy()
+			{
+				ros::NodeHandle nh;
+				configureAxes = nh.advertiseService("ConfigureAxes",
+						&ConfigureAxesPolicy::onConfiguration, this);
+			}
+
+			bool onConfiguration(navcon_msgs::ConfigureAxes::Request& req,
+					navcon_msgs::ConfigureAxes::Response& resp)
+			{
+				this->disable_axis = req.disable_axis;
+				return true;
+			}
+
+		protected:
+			/**
+			 * Axes setup.
+			 */
+			auv_msgs::Bool6Axis disable_axis;
+			/**
+			 * High level controller service.
+			 */
+			ros::ServiceServer configureAxes;
+		};
+
 		/**
 		 * The class contains the ROS template for high level controllers.
 		 *
@@ -62,7 +101,8 @@ namespace labust
 		class Enable = NoEnable,
 		class Windup = NoWindup,
 		class OutputType = auv_msgs::BodyVelocityReq,
-		class InputType = auv_msgs::NavSts
+		class InputType = auv_msgs::NavSts,
+		class ReferenceType = auv_msgs::NavSts
 		>
 		class HLControl : public Controller, Enable, Windup
 		{
@@ -83,10 +123,10 @@ namespace labust
 				//Initialize publishers
 				outPub = nh.advertise<OutputType>("out", 1);
 
-				//Initialze subscribers
+				//Initialize subscribers
 				stateSub = nh.subscribe<InputType>("state", 1,
 						&HLControl::onEstimate,this);
-				trackState = nh.subscribe<InputType>("ref", 1,
+				trackState = nh.subscribe<ReferenceType>("ref", 1,
 						&HLControl::onRef,this);
 
 				Controller::init();
@@ -94,8 +134,9 @@ namespace labust
 
 		private:
 
-			void onRef(const typename InputType::ConstPtr& ref)
+			void onRef(const typename ReferenceType::ConstPtr& ref)
 			{
+				boost::mutex::scoped_lock l(cnt_mux);
 				this->ref = *ref;
 			}
 
@@ -119,7 +160,11 @@ namespace labust
 			/**
 			 * The desired state to track.
 			 */
-			InputType ref;
+			ReferenceType ref;
+			/**
+			 * The disabled axis.
+			 */
+			bool disabled_axis[6];
 			/**
 			 * Control locker.
 			 */

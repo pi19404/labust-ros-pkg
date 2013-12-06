@@ -36,90 +36,76 @@
  *********************************************************************/
 #include <labust/control/HLControl.hpp>
 #include <labust/control/EnablePolicy.hpp>
-#include <labust/control/WindupPolicy.hpp>
-#include <labust/control/PIFFController.h>
-#include <labust/math/NumberManipulation.hpp>
+#include <labust/control/ManControl.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
 
-#include <Eigen/Dense>
-#include <auv_msgs/BodyForceReq.h>
-#include <ros/ros.h>
+#include <auv_msgs/BodyVelocityReq.h>
 
 namespace labust
 {
 	namespace control{
-		///The heading controller
-		struct HDGControl : DisableAxis
+		///The nu manual controller
+		template <class Enable>
+		struct NuManual : public Enable, ConfigureAxesPolicy
 		{
-			enum {x=0,y};
-
-			HDGControl():Ts(0.1){};
+			NuManual():
+			nu_max(Eigen::Vector6d::Zero())
+			{this->init();};
 
 			void init()
 			{
 				ros::NodeHandle nh;
-				initialize_controller();
+				joy = nh.subscribe<sensor_msgs::Joy>("joy", 1,
+						&NuManual::onJoy,this);
+				nuRef = nh.advertise<auv_msgs::BodyVelocityReq>("nuRef", 1);
+
+				initialize_manual();
 			}
 
-  		void windup(const auv_msgs::BodyForceReq& tauAch)
+			void onJoy(const sensor_msgs::Joy::ConstPtr& joyIn)
 			{
-				//Copy into controller
-				con.windup = tauAch.disable_axis.yaw;
-			};
+				if (!Enable::enable) return;
+				auv_msgs::BodyVelocityReq::Ptr nu(new auv_msgs::BodyVelocityReq());
+				Eigen::Vector6d mapped;
+				mapper.remap(*joyIn, mapped);
 
-			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
-					const auv_msgs::NavSts& state)
-			{
-				con.desired = ref.orientation.yaw;
-				con.state = state.orientation.yaw;
-
-				float errorWrap = labust::math::wrapRad(
-					con.desired - con.state);
-				//Zero feed-forward
-				PIFF_wffStep(&con,Ts, errorWrap, 0);
-
-				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
-				nu->goal.requester = "hdg_controller";
-				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
+				nu->header.frame_id = "base_link";
+				nu->goal.requester = "nu_manual";
+				nu->disable_axis = this->disable_axis;
 
-				nu->twist.angular.z = con.output;
+				mapped = nu_max.cwiseProduct(mapped);
+				labust::tools::vectorToPoint(mapped, nu->twist.linear);
+				labust::tools::vectorToPoint(mapped, nu->twist.angular, 3);
 
-				return nu;
+				nuRef.publish(nu);
 			}
 
-			void initialize_controller()
+			void initialize_manual()
 			{
-				ROS_INFO("Initializing heading controller...");
+				ROS_INFO("Initializing manual nu controller...");
 
 				ros::NodeHandle nh;
-				double closedLoopFreq(1);
-				nh.param("hdg_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
-				nh.param("hdg_controller/sampling",Ts,Ts);
+				labust::tools::getMatrixParam(nh,"nu_manual/maximum_speeds", nu_max);
 
-				disable_axis[5] = 0;
-
-				PIDBase_init(&con);
-				PIFF_tune(&con, float(closedLoopFreq));
-
-				ROS_INFO("Heading controller initialized.");
+				ROS_INFO("Manual nu controller initialized.");
 			}
 
 		private:
-			ros::Subscriber alt_sub;
-			PIDBase con;
-			double Ts;
+			Eigen::Vector6d nu_max;
+			ros::Subscriber joy;
+			ros::Publisher nuRef;
+			JoystickMapping mapper;
 		};
-	}}
+	}
+}
 
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"hdg_control");
+	ros::init(argc,argv,"nu_manual");
 
-	labust::control::HLControl<labust::control::HDGControl,
-	labust::control::EnableServicePolicy,
-	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
+	labust::control::NuManual<labust::control::EnableServicePolicy> controller;
 	ros::spin();
 
 	return 0;
