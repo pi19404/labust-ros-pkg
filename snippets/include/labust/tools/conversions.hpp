@@ -64,6 +64,31 @@ namespace labust
 			point.z = vec[offset+2];
 		}
 
+		/**
+		 * The class offers mapping from auv_msgs disable_axis structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToDisableAxis(const Iterator& vec, Point& point)
+		{
+			point.x = vec[0];
+			point.y = vec[1];
+			point.z = vec[2];
+			point.roll = vec[3];
+			point.pitch = vec[4];
+			point.yaw = vec[5];
+		}
+
+		template <class Point, class Iterator>
+		void disableAxisToVector(Point& point, const Iterator& vec)
+		{
+			vec[0] = point.x;
+			vec[1] = point.y;
+			vec[2] = point.z;
+			vec[3] = point.roll;
+			vec[4] = point.pitch;
+			vec[5] = point.yaw;
+		}
+
 		template <class T>
 		void quaternionFromEulerZYX(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
 		{

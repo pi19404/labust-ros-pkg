@@ -7,6 +7,7 @@ project(labust_control)
 find_package(catkin REQUIRED COMPONENTS
   auv_msgs
   navcon_msgs
+  sensor_msgs
   roscpp
   snippets
   tf
@@ -61,7 +62,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES labust_control
-   CATKIN_DEPENDS auv_msgs roscpp snippets navcon_msgs
+   CATKIN_DEPENDS auv_msgs roscpp snippets navcon_msgs sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -93,6 +94,9 @@ add_executable(fadp_controller2 src/FADPControl.cpp)
 add_executable(hdg_controller2 src/HDGControl.cpp)
 add_executable(alt_controller2 src/ALTControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
+add_executable(nu_manual src/NuManual.cpp)
+add_executable(ref_manual src/RefManual.cpp)
+add_executable(async_merger src/AsyncMerger.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -106,12 +110,16 @@ if (DEFINED catkin_EXPORTED_TARGETS)
  add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(nu_manual ${catkin_EXPORTED_TARGETS})
+ add_dependencies(ref_manual ${catkin_EXPORTED_TARGETS})
+ add_dependencies(async_merger ${catkin_EXPORTED_TARGETS})
 endif()
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(hlmanager
-  ${catkin_LIBRARIES}
-)
+target_link_libraries(hlmanager  ${catkin_LIBRARIES})
+target_link_libraries(nu_manual ${catkin_LIBRARIES})
+target_link_libraries(ref_manual ${catkin_LIBRARIES})
+target_link_libraries(async_merger ${catkin_LIBRARIES})
 
 target_link_libraries(lf_controller2
   pidtoolkit2

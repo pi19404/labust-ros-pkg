@@ -40,6 +40,7 @@
 #include <labust/control/PIFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <Eigen/Dense>
 #include <auv_msgs/BodyForceReq.h>
@@ -50,11 +51,11 @@ namespace labust
 {
 	namespace control{
 		///The fully actuated dynamic positioning controller
-		struct FADPControl
+		struct FADPControl : DisableAxis
 		{
 			enum {x=0,y};
 
-			FADPControl():Ts(0.1), uff(0), vff(0){};
+			FADPControl():Ts(0.1){};
 
 			void init()
 			{
@@ -72,12 +73,18 @@ namespace labust
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
-				con[x].desired =  ref.position.north;
-				con[y].desired =  ref.position.east;
+				con[x].desired = ref.position.north;
+				con[y].desired = ref.position.east;
 
 				///\todo There are more options for this ?
-				uff = ref.body_velocity.x*cos(ref.orientation.yaw);
-				vff = ref.body_velocity.x*sin(ref.orientation.yaw);
+				Eigen::Vector2f out, in;
+				Eigen::Matrix2f R;
+				in<<ref.body_velocity.x,ref.body_velocity.y;
+				double yaw(ref.orientation.yaw);
+				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
+				out = R*in;
+				double uff = out(x);
+				double vff = out(y);
 
 				con[x].state = state.position.north;
 				con[y].state = state.position.east;
@@ -88,13 +95,12 @@ namespace labust
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
 				nu->goal.requester = "fadp_controller";
+				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				ROS_ERROR("Output %f %f %f %f",uff,vff,con[x].output, con[y].output);
+				//ROS_ERROR("Output %f %f %f %f",uff,vff,con[x].output, con[y].output);
 
-				Eigen::Vector2f out, in;
-				Eigen::Matrix2f R;
 				in<<con[x].output,con[y].output;
-				double yaw(state.orientation.yaw);
+				yaw = state.orientation.yaw;
 				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
 				out = R.transpose()*in;
 
@@ -113,6 +119,9 @@ namespace labust
 				labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
 				nh.param("dp_controller/sampling",Ts,Ts);
 
+				disable_axis[x] = 0;
+				disable_axis[y] = 0;
+
 				enum {Kp=0, Ki, Kd, Kt};
 				for (size_t i=0; i<2;++i)
 				{
@@ -126,7 +135,7 @@ namespace labust
 		private:
 			PIDBase con[2];
 			double Ts;
-			double uff,vff;
+
 		};
 	}}
 

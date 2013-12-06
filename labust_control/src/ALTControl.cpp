@@ -40,6 +40,7 @@
 #include <labust/control/PIFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <Eigen/Dense>
 #include <auv_msgs/BodyForceReq.h>
@@ -49,8 +50,8 @@
 namespace labust
 {
 	namespace control{
-		///The fully actuated dynamic positioning controller
-		struct ALTControl
+		///The altitude/depth controller
+		struct ALTControl : DisableAxis
 		{
 			enum {x=0,y};
 
@@ -90,6 +91,8 @@ namespace labust
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
 				nu->goal.requester = "alt_controller";
+				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
+
 				nu->twist.linear.z = con.output;
 
 				return nu;
@@ -103,6 +106,8 @@ namespace labust
 				double closedLoopFreq(1);
 				nh.param("alt_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
 				nh.param("alt_controller/sampling",Ts,Ts);
+
+				disable_axis[2] = 0;
 
 				PIDBase_init(&con);
 				PIFF_tune(&con, float(closedLoopFreq));

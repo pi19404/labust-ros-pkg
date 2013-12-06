@@ -14,13 +14,13 @@ class RqtPluginMeta(Plugin):
                  name,
                  GuiT, 
                  RosT, 
-                 resource = "" 
+                 resource = ""
                  ):
         super(RqtPluginMeta, self).__init__(context)
         # Give QObjects reasonable names
         self.setObjectName(name)
         
-        if resource == "": resource=_resource(name)       
+        if resource == "": resource=_resource(name, file)      
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
         parser = ArgumentParser()
@@ -78,7 +78,12 @@ class RqtPluginMeta(Plugin):
 def _resource(name):
     return os.path.join(os.path.dirname(
                         os.path.realpath(__file__)), 
-                        "resource/" + name + ".ui")                  
+                        "resource/" + name + ".ui")    
+    
+def resource_rpath(name, file):
+    return os.path.join(os.path.dirname(
+                        os.path.realpath(file)), 
+                        "resource/" + name + ".ui")             
         
 def launch_standalone(name,
                       GuiT, 
