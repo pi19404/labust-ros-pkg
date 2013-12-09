@@ -102,6 +102,10 @@ namespace labust
 			 */
 			void reachability();
 			/**
+			 * Calculates the reachability graph incrementaly.
+			 */
+			void addToRGraph(const std::string& name);
+			/**
 			 * Get the reachability graph DOT description.
 			 */
 			void getDotDesc(std::string& desc);
@@ -199,7 +203,7 @@ namespace labust
 				return edge_writer<PropertyMap, NameMap>(pmap,map);
 			}
 
-			GraphType rgraph;
+			GraphType rgraph, rgraph2;
 
 			std::vector<Eigen::VectorXi> all_markings;
 			std::vector<GraphType::vertex_descriptor> all_idx;

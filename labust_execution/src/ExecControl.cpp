@@ -114,7 +114,15 @@ bool ExecControl::onRegisterController(
 	depGraph.addToGraph(req);
 	pnGraph.addToGraph(req);
 	pnCon.addToGraph(req);
-	pnCon.reachability();
+
+	ros::Time now = ros::Time::now();
+	//pnCon.reachability();
+	double classic_dT = (ros::Time::now() - now).toSec();
+	now = ros::Time::now();
+	pnCon.addToRGraph(req.name);
+	double incremental_dT = (ros::Time::now() - now).toSec();
+
+	//pnCon.addToRGraph();
 	//addToMatrix(req.name);
 	names.push_back(req.name);
 
@@ -133,6 +141,9 @@ bool ExecControl::onRegisterController(
 	pnGraphPub.publish(out);
 	pnCon.getDotDesc(temp);
 	r_file<<temp;
+
+	std::ofstream prof_file("profile.csv", std::ios::app);
+	prof_file<<classic_dT<<","<<incremental_dT<<std::endl;
 
 	return true;
 }

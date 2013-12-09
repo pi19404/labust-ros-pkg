@@ -108,6 +108,8 @@ void PNController::addToGraph(const navcon_msgs::RegisterControllerRequest& info
 	}
 
 	I=Dp-Dm;
+
+	//this->addToRGraph(info.name);
 }
 
 bool PNController::firing_rec(int des_place,
@@ -446,6 +448,143 @@ void PNController::get_firing_r(const std::string& name)
   std::cout<<"end"<<std::endl;
 
   marking = m_new;
+}
+
+void PNController::addToRGraph(const std::string& name)
+{
+	typedef GraphType::vertex_descriptor IntType;
+	//If first call populate with default resources
+	if (all_markings.size() == 0)
+	{
+		Eigen::VectorXi m0=Eigen::VectorXi::Zero(6);
+		for (int i=0; i<6;++i) m0(i) = 1;
+
+		typedef GraphType::vertex_descriptor IntType;
+		std::queue<Eigen::VectorXi> new_markings;
+		std::queue<IntType> new_idx;
+
+		all_markings.push_back(m0);
+		all_idx.push_back(boost::add_vertex(rgraph));
+		rgraph[all_idx.back()].marking = m0;
+	}
+
+	//Otherwise do the default
+	PlaceInfo& newcon=nameMap[name];
+
+	std::queue<Eigen::VectorXi> triggers;
+	std::queue<IntType> triggers_idx;
+
+	for(int i=0; i<all_markings.size(); ++i)
+	{
+		//Extend all current markings
+		all_markings[i].conservativeResize(newcon.place_num+1);
+		all_markings[i](newcon.place_num) = 0;
+		rgraph[all_idx[i]].marking = all_markings[i];
+
+		//Check if a new transition can trigger with this marking.
+		Eigen::VectorXi all_trans = all_markings[i].transpose()*Dm;
+		if (all_trans(newcon.enable_t) == Dm.col(newcon.enable_t).sum())
+		{
+			triggers.push(all_markings[i]);
+			triggers_idx.push(all_idx[i]);
+		}
+	}
+
+	Eigen::VectorXi fire = Eigen::VectorXi::Zero(Dm.cols());
+	fire(newcon.enable_t) = 1;
+
+	std::queue<Eigen::VectorXi> new_markings;
+	std::queue<IntType> new_idx;
+
+	//Add enable/disable trigger pairs
+	while(!triggers.empty())
+	{
+		Eigen::VectorXi m = triggers.front();
+		IntType idx = triggers_idx.front();
+		triggers.pop();
+		triggers_idx.pop();
+		Eigen::VectorXi newmarking = m + I*fire;
+
+		//Add new marking
+		IntType nidx = boost::add_vertex(rgraph);
+		all_markings.push_back(newmarking);
+		all_idx.push_back(nidx);
+		new_markings.push(newmarking);
+		new_idx.push(nidx);
+
+		rgraph[nidx].marking = newmarking;
+		boost::add_edge(idx, nidx, newcon.enable_t,rgraph);
+		//boost::add_edge(nidx, idx, newcon.disable_t,rgraph);
+	}
+
+	std::vector<Eigen::VectorXi> visited;
+	std::vector<IntType> visited_idx;
+
+	//Revisit other transitions
+	while (!new_markings.empty())
+		{
+			Eigen::VectorXi m;
+			IntType idx;
+			bool foundNew = false;
+			do
+			{
+				m = new_markings.front();
+				idx = new_idx.front();
+				new_markings.pop();
+				new_idx.pop();
+				foundNew = !(std::find(visited.begin(),visited.end(),m) != visited.end());
+			}
+			while ((!foundNew) && (!new_markings.empty()));
+
+			if (!foundNew) break;
+			std::cout<<"Selected new marking:"<<m<<std::endl;
+			visited.push_back(m);
+			visited_idx.push_back(idx);
+			if (std::find(all_markings.begin(),all_markings.end(),m) == all_markings.end())
+			{
+				all_markings.push_back(m);
+				all_idx.push_back(idx);
+			}
+
+			//Check for enabled transitions
+			Eigen::VectorXi all_trans = m.transpose()*Dm;
+			for (int i=0; i<all_trans.size(); ++i)
+			{
+				if (all_trans(i) == Dm.col(i).sum())
+				{
+					std::cout<<"Transition "<<transitionMap[i]<<" is enabled.";
+					std::cout<<"("<<all_trans(i)<<", "<<Dm.col(i).sum()<<")"<<std::endl;
+					Eigen::VectorXi fire = Eigen::VectorXi::Zero(Dm.cols());
+					fire(i) = 1;
+					Eigen::VectorXi newmarking = m + I*fire;
+
+					//Check if we already found this marking.
+					std::vector<Eigen::VectorXi>::iterator it;
+					it = std::find(all_markings.begin(),all_markings.end(),newmarking);
+
+					if (it == all_markings.end())
+					{
+						//New marking
+						IntType nidx = boost::add_vertex(rgraph);
+						new_markings.push(newmarking);
+						new_idx.push(nidx);
+						all_markings.push_back(newmarking);
+						all_idx.push_back(nidx);
+						rgraph[nidx].marking = newmarking;
+						boost::add_edge(idx, nidx,
+								i,rgraph);
+					}
+					else
+					{
+						//Old marking
+						//Possibly suboptimal
+						int old_idx = it - all_markings.begin();
+						boost::add_edge(idx, all_idx[old_idx],
+								i,rgraph);
+					}
+				}
+			}
+		}
 }
 
 void PNController::reachability()
