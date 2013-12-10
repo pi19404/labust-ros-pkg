@@ -8,6 +8,7 @@ import rospy;
 from auv_msgs.msg import BodyVelocityReq;
 from auv_msgs.msg import BodyForceReq;
 from auv_msgs.msg import NavSts;
+from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu
@@ -168,6 +169,26 @@ class MatLogger:
                             'radius',
                             'surge',
                             'yaw')     
+	self.acousticLogOrder = ('DistanceToPath',
+		'DirectionToTarget',
+		'RabbitNorth',
+		'RabbitEast',
+		'objects0zPos',
+		'objects0xPos',
+		'objects6zPos',
+		'objects6xPos',
+		'WPnorth1',
+		'WPeast1',
+		'WPnorth2',
+		'WPeast2',
+		'NonLinearCoeff',
+		'TaskMode',
+		'PathVelocity',
+		'SpeedProfile',
+		'RabbitDistance',
+		'NonLinearCoeffDist',
+		'Ki',
+		'Sound');
         self.pointLogOrder = ('point.x','point.y','point.z')
         isPladypos = rospy.get_param("~use_pladypos",False);             
 
@@ -183,7 +204,8 @@ class MatLogger:
                       MessageLogger("logger/Points", PointStamped, self.pointLogOrder),
                       MessageLogger("logger/imu", Imu, self.imusensLogOrder),
                       ListLogger("logger/cart2_info", ImuInfo, loggerOrder),
-                      ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder)];
+                      ListLogger("logger/imu_info", ImuInfo, self.imuLogOrder),
+                      ListLogger("logger/acoustic_info", Float32MultiArray, self.acousticLogOrder)];
                              
         from datetime import datetime;
         name = rospy.get_param("~filename","log");
