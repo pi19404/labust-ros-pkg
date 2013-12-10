@@ -83,7 +83,7 @@ void VelocityControl::onInit()
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1,
 			&VelocityControl::handleWindup,this);
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
-			&VelocityControl::handleManual,this, ros::TransportHints().unreliable());
+			&VelocityControl::handleManual,this);
 	//Configure service
 	highLevelSelect = nh.advertiseService("ConfigureVelocityController",
 			&VelocityControl::handleServerConfig, this);
