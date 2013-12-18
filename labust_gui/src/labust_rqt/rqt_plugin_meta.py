@@ -78,7 +78,7 @@ class RqtPluginMeta(Plugin):
 def _resource(name):
     return os.path.join(os.path.dirname(
                         os.path.realpath(__file__)), 
-                        "resource/" + name + ".ui")    
+                        "resource", name+".ui")    
     
 def resource_rpath(name, file):
     return os.path.join(os.path.dirname(
@@ -93,7 +93,7 @@ def launch_standalone(name,
     import python_qt_binding as pyqt
     from python_qt_binding import QtGui
     app = QtGui.QApplication(sys.argv)
-    rospy.init_node(name)
+    rospy.init_node(name, sys.argv)
     gui = GuiT()
     ros = RosT()
     

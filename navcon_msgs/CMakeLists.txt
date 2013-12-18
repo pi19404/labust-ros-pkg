@@ -58,6 +58,7 @@ add_service_files(
    EnableControl.srv
    RegisterController.srv
    ConfigureAxes.srv
+   ConfigureVelocityController.srv
 )
 
 ## Generate actions in the 'action' folder

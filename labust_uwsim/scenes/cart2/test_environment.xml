@@ -160,13 +160,17 @@
 		<position>
 			<x> 0</x>
 			<y> 0 </y>
-			<z> 0 </z>
+			<z> 5 </z>
 		</position>
 		<orientation>
 			<r>0</r>
 			<p>0</p>
 			<y>0</y>
 		</orientation>
+	        <physics>
+		  <mass> 0 </mass>
+	          <collisionShapeType> trimesh </collisionShapeType>
+		</physics>
 	</object>
 
 	<rosInterfaces>

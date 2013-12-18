@@ -19,12 +19,16 @@
   <build_depend>rqt_gui_py</build_depend>
   <build_depend>auv_msgs</build_depend>
   <build_depend>navcon_msgs</build_depend>
+  <build_depend>labust_uvapp</build_depend>
+  <build_depend>actionlib</build_depend>
   
   <run_depend>rospy</run_depend>
   <run_depend>rqt_gui</run_depend>
   <run_depend>rqt_gui_py</run_depend>
   <run_depend>auv_msgs</run_depend>
   <run_depend>navcon_msgs</run_depend>
+  <run_depend>labust_uvapp</run_depend>
+  <run_depend>actionlib</run_depend>
   
   <export>
       <rqt_gui plugin="${prefix}/plugins.xml"/>

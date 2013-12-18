@@ -194,7 +194,11 @@ void IdentificationNode::setTau(int elem, double value)
 {
 	labust::simulation::vector tauvec = labust::simulation::vector::Zero();
 	tauvec(elem) = value;
+	std::ostringstream out("ident_");
+	out<<elem;
 	auv_msgs::BodyForceReqPtr tau(new auv_msgs::BodyForceReq());
+	tau->header.stamp = ros::Time::now();
+	tau->goal.requester = out.str();
 	labust::tools::vectorToPoint(tauvec,tau->wrench.force);
 	labust::tools::vectorToPoint(tauvec,tau->wrench.torque,3);
 	tauOut.publish(tau);

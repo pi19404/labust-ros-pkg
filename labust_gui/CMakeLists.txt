@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
   rqt_gui_py
   auv_msgs
   navcon_msgs
+  labust_uvapp
+  actionlib
 )
 
 ## System dependencies are found with CMake's conventions
