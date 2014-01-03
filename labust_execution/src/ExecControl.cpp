@@ -114,12 +114,14 @@ bool ExecControl::onRegisterController(
 	depGraph.addToGraph(req);
 	pnGraph.addToGraph(req);
 	pnCon.addToGraph(req);
+	pnCon.addToPNGraph(req);
 
 	ros::Time now = ros::Time::now();
 	//pnCon.reachability();
 	double classic_dT = (ros::Time::now() - now).toSec();
 	now = ros::Time::now();
-	pnCon.addToRGraph(req.name);
+	//pnCon.addToRGraph2(req.name);
+	//pnCon.addToRGraph(req.name);
 	double incremental_dT = (ros::Time::now() - now).toSec();
 
 	//pnCon.addToRGraph();
@@ -135,7 +137,7 @@ bool ExecControl::onRegisterController(
 	dep_file<<temp;
 	out.data = temp;
 	depGraphPub.publish(out);
-	pnGraph.getDotDesc(temp);
+	pnCon.getDotDesc2(temp);
 	pn_file<<temp;
 	out.data = temp;
 	pnGraphPub.publish(out);
@@ -211,7 +213,8 @@ void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
 		//firing_seq.clear();
 		//this->get_firing2(name->data);
 		//pnCon.get_firing(name->data);
-		pnCon.get_firing_r(name->data);
+		//pnCon.get_firing_r(name->data);
+		pnCon.get_firing_pn(name->data);
 	}
 	else
 	{
@@ -222,7 +225,8 @@ void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
 		{
 			if (name->data == dofs[i])
 			{
-				pnCon.get_firing_r(name->data);
+				//pnCon.get_firing_r(name->data);
+				pnCon.get_firing_pn(name->data);
 				break;
 			}
 		}
