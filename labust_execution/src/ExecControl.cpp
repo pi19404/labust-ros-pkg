@@ -112,16 +112,20 @@ bool ExecControl::onRegisterController(
 	resp.accepted = true;
 	controllers[req.name].info = req;
 	depGraph.addToGraph(req);
-	pnGraph.addToGraph(req);
-	pnCon.addToGraph(req);
-	pnCon.addToPNGraph(req);
+	//pnGraph.addToGraph(req);
+	//pnCon.addToPNGraph(req);
 
 	ros::Time now = ros::Time::now();
+	pnCon.addToGraph(req);
+	double addgraph_dT = (ros::Time::now() - now).toSec();
+	now = ros::Time::now();
+	pnCon.addToPNGraph(req);
+	double addpngraph_dT = (ros::Time::now() - now).toSec();
 	//pnCon.reachability();
 	double classic_dT = (ros::Time::now() - now).toSec();
 	now = ros::Time::now();
 	//pnCon.addToRGraph2(req.name);
-	//pnCon.addToRGraph(req.name);
+	pnCon.addToRGraph(req.name);
 	double incremental_dT = (ros::Time::now() - now).toSec();
 
 	//pnCon.addToRGraph();
@@ -145,7 +149,7 @@ bool ExecControl::onRegisterController(
 	r_file<<temp;
 
 	std::ofstream prof_file("profile.csv", std::ios::app);
-	prof_file<<classic_dT<<","<<incremental_dT<<std::endl;
+	prof_file<<addgraph_dT<<","<<addpngraph_dT<<","<<classic_dT<<","<<incremental_dT<<std::endl;
 
 	return true;
 }
