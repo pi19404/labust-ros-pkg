@@ -41,9 +41,12 @@
 #include <labust/archive/delimited_oarchive.hpp>
 #include <labust/preprocessor/clean_serializator.hpp>
 #include <labust/tools/conversions.hpp>
+#include <labust/math/NumberManipulation.hpp>
 
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float32.h>
+#include <auv_msgs/RPY.h>
 
 #include <boost/bind.hpp>
 #include <boost/regex.hpp>
@@ -66,7 +69,9 @@ int labust::navigation::error_code(const NQRes& data)
 
 NavQuestNode::NavQuestNode():
 					io(),
-					port(io)
+					port(io),
+					useFixed(true),
+					base_orientation(0)
 {
 	this->onInit();
 }
@@ -79,7 +84,7 @@ NavQuestNode::~NavQuestNode()
 
 void NavQuestNode::onInit()
 {
-	ros::NodeHandle nh;
+	ros::NodeHandle nh, ph("~");
 	ros::Rate r(1);
 	bool setupOk(false);
 	while (!(setupOk = this->setup_port()) && ros::ok())
@@ -102,6 +107,11 @@ void NavQuestNode::onInit()
 		speed_pub["water_velo_earth"].reset(
 				new TwistPublisher(nh, "water_velo_earth", "local"));
 		lock = nh.advertise<std_msgs::Bool>("dvl_bottom",1);
+		altitude = nh.advertise<std_msgs::Float32>("altitude",1);
+		imuPub = nh.advertise<auv_msgs::RPY>("dvl_rpy",1);
+
+		useFixed = ph.getParam("fixed_orientation", base_orientation);
+		nh.param("magnetic_declination",magnetic_declination, 0.0);
 
 		//Start the receive cycle
 		this->start_receive();
@@ -162,12 +172,47 @@ void NavQuestNode::publishDvlData(const NQRes& data)
 	(*speed_pub["water_velo_instrument"])(data.water_velo_instrument);
 	(*speed_pub["water_velo_earth"])(data.water_velo_earth);
 
+	//Bottom lock flag
 	enum{valid_flag=3};
 	bool water_lock= (data.velo_instrument[valid_flag]==2) || (data.velo_earth[valid_flag]==2);
 	bool valid=data.velo_instrument[valid_flag] && data.velo_earth[valid_flag];
 	std_msgs::Bool bottom_lock;
 	bottom_lock.data = !water_lock && valid;
 	lock.publish(bottom_lock);
+
+	//Altitude
+	if (data.altitude_estimate > 0)
+	{
+		std_msgs::Float32Ptr alt(new std_msgs::Float32());
+		alt->data = data.altitude_estimate;
+		altitude.publish(alt);
+	}
+
+	//TF frame
+	//Either use a fixed rotation here or the DVL measurements
+	enum {roll=0, pitch, yaw};
+	tf::Transform transform;
+	transform.setOrigin(tf::Vector3(0,0,0));
+	if (useFixed)
+	{
+		transform.setRotation(tf::createQuaternionFromRPY(0,0, base_orientation));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "dvl_frame"));
+	}
+	else
+	{
+		Eigen::Quaternion<float> quat;
+		labust::tools::quaternionFromEulerZYX(data.rph[roll],
+				data.rph[pitch],
+				labust::math::wrapRad(data.rph[yaw] + magnetic_declination), quat);
+		transform.setRotation(tf::Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
+		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "dvl_frame"));
+	}
+
+	//RPY
+	auv_msgs::RPY::Ptr rpy(new auv_msgs::RPY());
+	rpy->roll = data.rph[roll];
+	rpy->pitch = data.rph[pitch];
+	rpy->yaw = data.rph[yaw];
 }
 
 void NavQuestNode::conditionDvlData(const NQRes& data)

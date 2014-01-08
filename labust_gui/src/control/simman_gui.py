@@ -43,7 +43,9 @@ class SimManGui(QtGui.QWidget):
         self.statusNorth.setText("{:.2f}".format(data.position.north))
         self.statusEast.setText("{:.2f}".format(data.position.east))
         self.statusDepth.setText("{:.2f}".format(data.position.depth))
-        self.statusHeading.setText("{:.2f}".format(math.degrees(data.orientation.yaw)))
+        hdg = math.degrees(data.orientation.yaw)
+        if hdg < 0: hdg += 360
+        self.statusHeading.setText("{:.2f}".format(hdg))
         self.statusAltitude.setText("{:.2f}".format(data.altitude))
         
         self._update_refs(data)
@@ -125,7 +127,9 @@ class SimManGui(QtGui.QWidget):
         
     def _update_refs(self,data):
         if not self.headingEnable.isChecked():
-            self.headingRef.setValue(math.degrees(data.orientation.yaw))
+            hdg = math.degrees(data.orientation.yaw)
+            if hdg < 0: hdg += 360
+            self.headingRef.setValue(hdg)
         if not self.depthEnable.isChecked():
             self.depthRef.setValue(data.position.depth)
             
@@ -302,8 +306,8 @@ class SimManROS(QtCore.QObject):
             elif selection == 1:
                 self._stateRef.position.north = self._stateHat.position.north + x
                 self._stateRef.position.east = self._stateHat.position.east + y
-                self.northRef.value(0.0)
-                self.eastRef.value(0.0)
+                #self.northRef.value(0.0)
+                #self.eastRef.value(0.0)
             elif selection == 2:
                 import numpy
                 yaw = self._stateHat.orientation.yaw
@@ -313,8 +317,8 @@ class SimManROS(QtCore.QObject):
                 ne = numpy.dot(R,xy)
                 self._stateRef.position.north = self._stateHat.position.north + ne[0]
                 self._stateRef.position.east = self._stateHat.position.east + ne[1]
-                self.northRef.value(0.0)
-                self.eastRef.value(0.0)
+                #self.northRef.value(0.0)
+                #self.eastRef.value(0.0)
                 
             self._update_stateRef()
             

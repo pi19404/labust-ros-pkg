@@ -118,7 +118,26 @@ void DvlHandler::configure(ros::NodeHandle& nh)
 
 void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 {
-	if (data->header.frame_id == "base_link")
+	if (data->header.frame_id == "dvl_frame")
+	{
+		try
+		{
+			tf::StampedTransform transform;
+			listener.lookupTransform("base_link", "dvl_frame", ros::Time(0), transform);
+
+			tf::Vector3 speed(data->twist.linear.x, data->twist.linear.y, data->twist.linear.z);
+			tf::Vector3 body_speed = transform.getBasis()*speed;
+
+			uvw[u] = body_speed.x();
+			uvw[v] = body_speed.y();
+			uvw[w] = body_speed.z();
+		}
+		catch (std::exception& ex)
+		{
+			ROS_WARN("DVL measurement failure:",ex.what());
+		}
+	}
+	else if (data->header.frame_id == "base_link")
 	{
 		uvw[u] = data->twist.linear.x;
 		uvw[v] = data->twist.linear.y;
