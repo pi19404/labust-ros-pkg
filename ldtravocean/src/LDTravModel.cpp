@@ -41,7 +41,8 @@
 
 using namespace labust::navigation;
 
-LDTravModel::LDTravModel()
+LDTravModel::LDTravModel():
+		dvlNonLinear(false)
 {
 	this->initModel();
 };
@@ -128,15 +129,29 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 		}
 	}
 
+	if (dvlNonLinear) derivativeH();
+
 	measurement.resize(arrived.size());
 	H = matrix::Zero(arrived.size(),stateNum);
+	y = vector::Zero(arrived.size());
 	R = matrix::Zero(arrived.size(),arrived.size());
 	V = matrix::Zero(arrived.size(),arrived.size());
 
 	for (size_t i=0; i<arrived.size();++i)
 	{
 		measurement(i) = dataVec[i];
-		H(i,arrived[i]) = 1;
+
+		if (dvlNonLinear)
+		{
+			H.row(i)=Hnl.row(arrived[i]);
+			y(i) = ynl(arrived[i]);
+		}
+		else
+		{
+			H(i,arrived[i]) = 1;
+			y(i) = x(arrived[i]);
+		}
+
 		for (size_t j=0; j<arrived.size(); ++j)
 		{
 			R(i,j)=R0(arrived[i],arrived[j]);
@@ -153,6 +168,24 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 
 void LDTravModel::estimate_y(output_type& y)
 {
-  y=H*x;
+  y=this->y;
+}
+
+void LDTravModel::derivativeH()
+{
+	Hnl=matrix::Identity(stateNum,stateNum);
+	ynl = Hnl*x;
+
+	//Correct the nonlinear part
+	ynl(u) = x(u)+x(xc)*cos(x(psi))+x(yc)*sin(x(psi));
+	ynl(v) = x(v)-x(xc)*sin(x(psi))+x(yc)*cos(x(psi));
+
+	//Correct for the nonlinear parts
+	Hnl(u,xc) = cos(x(psi));
+	Hnl(u,yc) = sin(x(psi));
+	Hnl(v,xc) = -sin(x(psi));
+	Hnl(v,yc) = cos(x(psi));
+	Hnl(u,psi) = -x(xc)*sin(x(psi)) + x(yc)*cos(x(psi));
+	Hnl(v,psi) = -x(xc)*cos(x(psi)) - x(yc)*sin(x(psi));
 }
 

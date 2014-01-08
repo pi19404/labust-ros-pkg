@@ -137,6 +137,8 @@ namespace labust
       	ydot = this->ydot;
       }
 
+      inline void useNonlinearDvl(bool flag){this->dvlNonLinear = flag;};
+
     protected:
      /**
        * Calculate the Jacobian matrices.
@@ -146,6 +148,10 @@ namespace labust
         * Calculate the Jacobian matrices.
         */
        void derivativeHV(int num);
+       /**
+        * Calculate the nonlinear H derivative.
+        */
+       void derivativeH();
       /**
        * The model parameters.
        */
@@ -158,6 +164,18 @@ namespace labust
        * The NED speeds.
        */
       double xdot,ydot;
+      /**
+       * The DVL linear/nonlinear flag.
+       */
+      bool dvlNonLinear;
+      /**
+       * The nonlinear H.
+       */
+      matrix Hnl;
+      /**
+       * The nonlinear and final y.
+       */
+      vector ynl,y;
     };
   }
 }

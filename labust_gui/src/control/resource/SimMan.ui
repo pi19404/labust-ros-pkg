@@ -193,7 +193,7 @@
      <rect>
       <x>0</x>
       <y>20</y>
-      <width>251</width>
+      <width>258</width>
       <height>82</height>
      </rect>
     </property>
@@ -256,7 +256,14 @@
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QDoubleSpinBox" name="eastRef"/>
+        <widget class="QDoubleSpinBox" name="eastRef">
+         <property name="minimum">
+          <double>-100.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>100.000000000000000</double>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
