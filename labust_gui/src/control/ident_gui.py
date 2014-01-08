@@ -16,20 +16,23 @@ from labust_rqt.rqt_plugin_meta import RqtPluginMeta
 from labust_uvapp.srv import ConfigureVelocityController
 from navcon_msgs.msg import DOFIdentificationAction, DOFIdentificationGoal
 from navcon_msgs.msg import DOFIdentificationResult, DOFIdentificationFeedback
+from navcon_msgs.msg import ModelParamsUpdate
 
 from std_msgs.msg import String
 from actionlib import SimpleActionClient, SimpleGoalState
 
-class IdentSetup:
-    dof = 0
-    ref = 0.0
-    amp = 0.0
-    hyst = 0.0
-    Ts = 0.1     
-    
+class IdentSetup():
+    def __init__(self):
+        self.dof = 0
+        self.ref = 0.0
+        self.amp = 0.0
+        self.hyst = 0.0
+        self.Ts = 0.1
+            
 class IdentificationGui(QtGui.QWidget):
     
-    onStartIdent = QtCore.pyqtSignal(bool, IdentSetup.__type__, name='onStartIdent')
+    onStartIdent = QtCore.pyqtSignal(bool, object, name='onStartIdent')
+    onTune = QtCore.pyqtSignal(object, bool, name='onTune')
     
     def __init__(self):
         #Init the base class
@@ -46,9 +49,11 @@ class IdentificationGui(QtGui.QWidget):
     
     def _connect_signals(self, ros):
         self.onStartIdent.connect(ros.onIdentGuiReq)
+        self.onTune.connect(ros.onModelUpdate)
         
         self.startIdent.clicked.connect(self._startIdent_pressed)
         self.stopIdent.clicked.connect(self._stopIdent_pressed)
+        self.tuneButton.clicked.connect(self._tuneButton_pressed)
             
     @QtCore.pyqtSlot(bool)
     def onActionLib(self, data):
@@ -57,39 +62,58 @@ class IdentificationGui(QtGui.QWidget):
         self.loadButton.setEnabled(not data)       
         
     @QtCore.pyqtSlot(object, object)
-    def onActionResult(self, state, resul):
+    def onActionResult(self, state, result):
         print("Finished with state:", state)
-        result = DOFIdentificationResult()
-        self.resAlpha = result.alpha
-        self.resBeta = result.beta
-        self.resBetaa = result.betaa
-        self.resDelta = result.delta
-        self.resWn = result.wn        
+        print("Result:",result)
+        self.resAlpha.setText("{:.3f}".format(result.alpha))
+        self.resBeta.setText("{:.3f}".format(result.beta))
+        self.resBetaa.setText("{:.3f}".format(result.betaa))
+        self.resDelta.setText("{:.3f}".format(result.delta))
+        self.resWn.setText("{:.3f}".format(result.wn))
+               
+        self.lastResult = result;  
+        self.tuneButton.setEnabled(True)   
+        self._ident_state(False)           
         
     @QtCore.pyqtSlot(object)
     def onActionFeed(self, feedback):
+         print("Feedback:",feedback)
          self.fbDof.setText(str(feedback.dof))
          self.fbOsc.setText(str(feedback.oscillation_num))
-         self.fbError.setText(str(feedback.error * 100)+" %")
+         self.fbError.setText("{:.2f}".format(feedback.error * 100)+" %")
         
     @QtCore.pyqtSlot()
-    def _startIdent_pressed(self):
-        if self.useActionlib.isChecked():
-            self.canTune = False
-            self.tuneButton.setEnabled(self.canTune)
-            
+    def _startIdent_pressed(self):           
         tmp = IdentSetup()
         tmp.dof = self.dofCombo.currentIndex()
         tmp.ref = self.identRef.value()
         tmp.amp = self.identAmp.value()
         tmp.hyst = self.identHyst.value()
+        
+        self._ident_state(True)
+        self._clear_results()
+        
         self.onStartIdent.emit(True, tmp)
+        
+    def _ident_state(self, onoff):
+        self.startIdent.setEnabled(not onoff)
+        self.stopIdent.setEnabled(onoff)
+    
+    def _clear_results(self):
+        self.resAlpha.setText('0.00')
+        self.resBeta.setText('0.00')
+        self.resBetaa.setText('0.00')
+        self.resDelta.setText('0.00')
+        self.resWn.setText('0.00')       
     
     @QtCore.pyqtSlot()   
     def _stopIdent_pressed(self):
         self.onStartIdent.emit(False, IdentSetup())
-          
-    
+        
+    @QtCore.pyqtSlot()
+    def _tuneButton_pressed(self):
+        self.onTune.emit(self.lastResult, self.useLinear.isChecked())
+                    
     def _setup(self):
         self.dofCombo.addItem("X")
         self.dofCombo.addItem("Y")
@@ -99,7 +123,8 @@ class IdentificationGui(QtGui.QWidget):
         self.dofCombo.addItem("N")   
         
         self.canTune = False
-        self.tuneButton.setEnabled(self.canTune)  
+        self.tuneButton.setEnabled(False)
+        self.stopIdent.setEnabled(False)
 
 
 class IdentificationROS(QtCore.QObject):
@@ -122,7 +147,7 @@ class IdentificationROS(QtCore.QObject):
             self._subscribe()
             pass
         
-        @QtCore.pyqtSlot(bool, IdentSetup.__type__)
+        @QtCore.pyqtSlot(bool, object)
         def onIdentGuiReq(self, active, setup):
             if setup.dof < 0 or setup.dof >= 6:
                 print("DOF select {} is invalid. Ignoring.".format(dof))
@@ -132,13 +157,24 @@ class IdentificationROS(QtCore.QObject):
                 self._actionIdent(active, setup)
             else:
                 self._velconIdent(active, setup)
-
+        @QtCore.pyqtSlot(object, bool)
+        def onModelUpdate(self, result, use_linear):
+            update = ModelParamsUpdate()
+            update.dof = result.dof
+            update.alpha = result.alpha
+            update.beta = result.beta
+            update.betaa = result.betaa
+            update.delta = result.delta
+            update.wn = result.wn
+            update.use_linear = use_linear
+            self.model_update.publish(update)          
                 
         def _velconIdent(self, active, setup):
             velcon = [0,0,0,0,0,0]
             '''Identification is number 3'''
             if active: 
                 velcon[setup.dof] = 3
+                print(setup.amp)
                 rospy.set_param(self.velconName + "/" + 
                                 self.names[setup.dof] +
                                 "_ident_amplitude",setup.amp);
@@ -157,22 +193,27 @@ class IdentificationROS(QtCore.QObject):
                     print("Service call failed: %s"%e)
                     
         def _actionIdent(self, active, setup):
+            #This is for using the velocity controller with external ident
+            self._velconIdent(active,setup)
             if not active:
-                self.ac.cancelAllGoals()
+                self.ac.cancel_all_goals()
                 return
             
             goal = DOFIdentificationGoal()
             goal.dof = setup.dof
             goal.command = setup.amp
             goal.reference = setup.ref
-            goal.sampling_rate = setup.Ts
+            goal.hysteresis = setup.hyst
+            goal.sampling_rate = 1/setup.Ts
             
-            self._ac_onResult = lambda state, data: self.onActionResult.emit(state,data)
+            #self._ac_onResult = lambda state, data: self._velconIdent(false,setup) self.onActionResult.emit(state,data)
             self._ac_onActive = lambda: print("Goal reported activation.")
             self._ac_onFeed = lambda data: self.onActionFeed.emit(data)            
-            self.ac.sendGoal(goal, self._ac_onResult, self._ac_onActive, self._ac_onFeed)
-            
-            pass
+            self.ac.send_goal(goal, self._ac_onResult, self._ac_onActive, self._ac_onFeed)
+                        
+        def _ac_onResult(self, state, data):
+            self._velconIdent(False,None) 
+            self.onActionResult.emit(state,data)      
         
         def unload(self):
             pass
@@ -183,8 +224,9 @@ class IdentificationROS(QtCore.QObject):
             self.onActionResult.connect(gui.onActionResult)
             
         def _subscribe(self):
-            self.useAction = rospy.get_param("~use_action",False)
+            self.useAction = rospy.get_param("~use_action",True)
             self.velconName = rospy.get_param("~velcon_name","velcon")
+            self.model_update = rospy.Publisher("model_update", ModelParamsUpdate)
             
             if self.useAction:
                 '''Configure action server'''

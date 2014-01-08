@@ -44,6 +44,8 @@
 
 using namespace labust::control;
 
+const char dofNames[]={'X','Y','Z','K','M','N'};
+
 IdentificationNode::IdentificationNode():
 				measurements(Eigen::Matrix<double,6,1>::Zero()),
 				integrateUV(true)
@@ -76,7 +78,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		boost::mutex::scoped_lock l(measmux);
 		double dT = (ros::Time::now() - lastSampleTime).toSec();
 		lastSampleTime = ros::Time::now();
-		ROS_INFO("Estimated rate: %f",dT);
+		//ROS_INFO("Estimated rate: %f",dT);
 		measurements(x) += meas->body_velocity.x*dT;
 		measurements(y) += meas->body_velocity.y*dT;
 	}
@@ -118,7 +120,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 	ident.setRelay(goal->command,goal->hysteresis);
 	ident.Ref(goal->reference);
 
-	ROS_INFO("Started identification of %d DOF.",goal->dof);
+	ROS_INFO("Started identification of %c DOF.",dofNames[goal->dof]);
 
 	//Reset the integrals
 	if (integrateUV)
@@ -159,6 +161,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 			feedback.dof = goal->dof;
 			feedback.error = ident.avgError();
 			feedback.oscillation_num = ++oscnum/2;
+			aserver->publishFeedback(feedback);
 		}
 
 		//Set the feedback value
@@ -172,6 +175,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 	{
 		const std::vector<double>& params = ident.parameters();
 		Result result;
+		result.dof = goal->dof;
 		result.alpha = params[SOIdentification::alpha];
 		result.beta = params[SOIdentification::kx];
 		result.betaa = params[SOIdentification::kxx];
@@ -194,8 +198,8 @@ void IdentificationNode::setTau(int elem, double value)
 {
 	labust::simulation::vector tauvec = labust::simulation::vector::Zero();
 	tauvec(elem) = value;
-	std::ostringstream out("ident_");
-	out<<elem;
+	std::ostringstream out;
+	out<<"ident_"<<dofNames[elem];
 	auv_msgs::BodyForceReqPtr tau(new auv_msgs::BodyForceReq());
 	tau->header.stamp = ros::Time::now();
 	tau->goal.requester = out.str();

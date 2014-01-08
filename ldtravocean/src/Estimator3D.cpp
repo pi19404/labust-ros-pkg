@@ -58,7 +58,8 @@ using namespace labust::navigation;
 Estimator3D::Estimator3D():
 		tauIn(KFNav::vector::Zero(KFNav::inputSize)),
 		measurements(KFNav::vector::Zero(KFNav::stateNum)),
-		newMeas(KFNav::vector::Zero(KFNav::stateNum)){this->onInit();};
+		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
+		alt(0){this->onInit();};
 
 void Estimator3D::onInit()
 {
@@ -73,6 +74,7 @@ void Estimator3D::onInit()
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, &Estimator3D::onTau,this);
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&Estimator3D::onDepth, this);
 	altitude = nh.subscribe<std_msgs::Float32>("altitude", 1, &Estimator3D::onAltitude, this);
+	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &Estimator3D::onModelUpdate,this);
 
 	//Configure handlers.
 	gps.configure(nh);
@@ -89,27 +91,45 @@ void Estimator3D::configureNav(KFNav& nav, ros::NodeHandle& nh)
 
 	ROS_INFO("Loaded dynamics params.");
 
-	KFNav::ModelParams surge,sway,heave,yaw;
-	surge.alpha = params.m + params.Ma(0,0);
-	surge.beta = params.Dlin(0,0);
-	surge.betaa = params.Dquad(0,0);
+	this->params[X].alpha = params.m + params.Ma(0,0);
+	this->params[X].beta = params.Dlin(0,0);
+	this->params[X].betaa = params.Dquad(0,0);
 
-	sway.alpha = params.m + params.Ma(1,1);
-	sway.beta = params.Dlin(1,1);
-	sway.betaa = params.Dquad(1,1);
+	this->params[Y].alpha = params.m + params.Ma(1,1);
+	this->params[Y].beta = params.Dlin(1,1);
+	this->params[Y].betaa = params.Dquad(1,1);
 
-	heave.alpha = params.m + params.Ma(2,2);
-	heave.beta = params.Dlin(2,2);
-	heave.betaa = params.Dquad(2,2);
+	this->params[Z].alpha = params.m + params.Ma(2,2);
+	this->params[Z].beta = params.Dlin(2,2);
+	this->params[Z].betaa = params.Dquad(2,2);
 
-	yaw.alpha = params.Io(2,2) + params.Ma(5,5);
-	yaw.beta = params.Dlin(5,5);
-	yaw.betaa = params.Dquad(5,5);
+	this->params[N].alpha = params.Io(2,2) + params.Ma(5,5);
+	this->params[N].beta = params.Dlin(5,5);
+	this->params[N].betaa = params.Dquad(5,5);
 
-	nav.setParameters(surge,sway,heave,yaw);
+	nav.setParameters(this->params[X],this->params[Y],
+			this->params[Z],this->params[N]);
 
 	nav.initModel();
 	labust::navigation::kfModelLoader(nav, nh, "ekfnav");
+}
+
+void Estimator3D::onModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update)
+{
+	ROS_INFO("Updating the model parameters for %d DoF.",update->dof);
+	params[update->dof].alpha = update->alpha;
+	if (update->use_linear)
+	{
+		params[update->dof].beta = update->beta;
+		params[update->dof].betaa = 0;
+	}
+	else
+	{
+		params[update->dof].beta = 0;
+		params[update->dof].betaa = update->betaa;
+	}
+	nav.setParameters(this->params[X],this->params[Y],
+			this->params[Z],this->params[N]);
 }
 
 void Estimator3D::onTau(const auv_msgs::BodyForceReq::ConstPtr& tau)

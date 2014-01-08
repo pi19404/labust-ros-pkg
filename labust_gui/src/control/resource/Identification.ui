@@ -243,6 +243,16 @@
       </spacer>
      </item>
      <item>
+      <widget class="QCheckBox" name="useLinear">
+       <property name="text">
+        <string>Use Linear</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
         <widget class="QPushButton" name="loadButton">

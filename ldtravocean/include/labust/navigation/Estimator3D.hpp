@@ -37,6 +37,7 @@
 #include <labust/navigation/LDTravModel.hpp>
 #include <labust/navigation/SensorHandlers.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <navcon_msgs/ModelParamsUpdate.h>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -54,6 +55,7 @@ namespace labust
 	 	 */
 		class Estimator3D
 		{
+			enum{X=0,Y,Z,K,M,N, DoF};
 			typedef labust::navigation::KFCore<labust::navigation::LDTravModel> KFNav;
 		public:
 			/**
@@ -75,6 +77,10 @@ namespace labust
 			 * Helper function for navigation configuration.
 			 */
 			void configureNav(KFNav& nav, ros::NodeHandle& nh);
+			/**
+			 * On model updates.
+			 */
+			void onModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update);
 			/**
 			 * Handle input forces and torques.
 			 */
@@ -119,7 +125,7 @@ namespace labust
 			/**
 			 * Sensors and input subscribers.
 			 */
-			ros::Subscriber tauAch, depth, altitude;
+			ros::Subscriber tauAch, depth, altitude, modelUpdate;
 			/**
 			 * The GPS handler.
 			 */
@@ -140,6 +146,10 @@ namespace labust
 			 * Temporary altitude storage.
 			 */
 			double alt;
+			/**
+			 * Model parameters
+			 */
+			KFNav::ModelParams params[DoF];
 		};
 	}
 }

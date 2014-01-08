@@ -40,6 +40,7 @@
 #include <labust/simulation/DynamicsParams.hpp>
 #include <labust/tools/DynamicsLoader.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
 #include <boost/bind.hpp>
@@ -63,6 +64,7 @@ VelocityControl::VelocityControl():
 			timeout(0.5),
 			joy_scale(1),
 			Ts(0.1),
+			externalIdent(false),
 			server(serverMux)
 {this->onInit();}
 
@@ -84,6 +86,8 @@ void VelocityControl::onInit()
 			&VelocityControl::handleWindup,this);
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
 			&VelocityControl::handleManual,this, ros::TransportHints().unreliable());
+	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1,
+			&VelocityControl::handleModelUpdate,this);
 	//Configure service
 	highLevelSelect = nh.advertiseService("ConfigureVelocityController",
 			&VelocityControl::handleServerConfig, this);
@@ -92,6 +96,14 @@ void VelocityControl::onInit()
 
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
+	nh.param("velocity_controller/external_ident",externalIdent, externalIdent);
+
+	if (externalIdent)
+	{
+		identExt = nh.subscribe<auv_msgs::BodyForceReq>("tauIdent",1,
+					&VelocityControl::handleExt,this);
+		for (int i=0; i<5; ++i) tauExt[i] = 0;
+	}
 
 	//Configure the dynamic reconfigure server
 	server.setCallback(boost::bind(&VelocityControl::dynrec_cb, this, _1, _2));
@@ -164,6 +176,25 @@ void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 	lastMan = ros::Time::now();
 }
 
+void VelocityControl::handleModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update)
+{
+	ROS_INFO("Updating controller parameters for %d DoF",update->dof);
+	controller[update->dof].modelParams[alpha] = update->alpha;
+	if (update->use_linear)
+	{
+		controller[update->dof].modelParams[beta] = update->beta;
+		controller[update->dof].modelParams[betaa] = 0;
+	}
+	else
+	{
+		controller[update->dof].modelParams[beta] = 0;
+		controller[update->dof].modelParams[betaa] = update->betaa;
+	}
+
+	//Tune controller
+	PIFFController_tune(&controller[update->dof]);
+}
+
 void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
 {
 	this->config = config;
@@ -199,6 +230,12 @@ void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
 	if (!controller[r].autoTracking) controller[r].windup = tau->disable_axis.yaw;
 };
 
+void VelocityControl::handleExt(const auv_msgs::BodyForceReq::ConstPtr& tau)
+{
+	labust::tools::pointToVector(tau->wrench.force, tauExt);
+	labust::tools::pointToVector(tau->wrench.torque, tauExt, 3);
+};
+
 void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	//Copy into controller
@@ -220,7 +257,7 @@ void VelocityControl::handleMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 {
 	//Copy into controller
 	double dT = (ros::Time::now() - lastMeas).toSec();
-	ROS_INFO("Estimated rate for integration: %f",dT);
+	//ROS_INFO("Estimated rate for integration: %f",dT);
 	measurement[u] += meas->body_velocity.x*dT;
 	measurement[v] += meas->body_velocity.y*dT;
 	measurement[w] = meas->position.depth;
@@ -345,7 +382,7 @@ void VelocityControl::step()
 			PIFFController_step(&controller[i], Ts);
 			break;
 		case identAxis:
-			controller[i].output = doIdentification(i);
+			controller[i].output = externalIdent?tauExt[i]:doIdentification(i);
 			break;
 		case directAxis:
 			controller[i].output = controller[i].desired;

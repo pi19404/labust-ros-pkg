@@ -37,7 +37,7 @@
 #include <labust/control/HLControl.hpp>
 #include <labust/control/EnablePolicy.hpp>
 #include <labust/control/WindupPolicy.hpp>
-#include <labust/control/PIFFController.h>
+#include <labust/control/PSatDController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -86,7 +86,8 @@ namespace labust
 				}
 
 				//Zero feed-forward
-				PIFF_ffStep(&con,Ts,0);
+				//PIFF_ffStep(&con,Ts,0);
+				PSatD_dStep(&con, Ts, state.body_velocity.z);
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
@@ -110,7 +111,9 @@ namespace labust
 				disable_axis[2] = 0;
 
 				PIDBase_init(&con);
-				PIFF_tune(&con, float(closedLoopFreq));
+				//PIFF_tune(&con, float(closedLoopFreq));
+				PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+				con.outputLimit = 1000;
 
 				ROS_INFO("Depth/Altitude controller initialized.");
 			}
@@ -126,9 +129,12 @@ int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"alt_control");
 
+//	labust::control::HLControl<labust::control::ALTControl,
+//	labust::control::EnableServicePolicy,
+//	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
+	//Without integral element
 	labust::control::HLControl<labust::control::ALTControl,
-	labust::control::EnableServicePolicy,
-	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
+	labust::control::EnableServicePolicy> controller;
 	ros::spin();
 
 	return 0;

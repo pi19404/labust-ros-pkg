@@ -11,6 +11,11 @@
 	   <remap from="Enable" to="REF_enable" />
 	</node>
 
+	<!-- Identification control -->
+	<node pkg="ident_so" type="ident_so" name="identification">
+	   <remap from="tauOut" to="tauIdent" />
+ 	</node>
+
 	<!-- Velocity controller -->
 	<node pkg="labust_uvapp" type="velocity_control" name="velcon">
 		<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
