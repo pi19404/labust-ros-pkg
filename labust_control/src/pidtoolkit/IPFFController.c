@@ -31,31 +31,65 @@
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
-#include <labust/control/PIDBase.h>
+#include <labust/control/IPFFController.h>
+#include <math.h>
 
-void PIDBase_init(PIDBase* self)
+void IPFF_modelTune(PIDBase* self,
+		const PT1Model* const model,
+		float w)
 {
-	self->autoWindup = 0;
-	self->outputLimit = 0;
-	self->Kp = self->Ki = 0;
-	self->Kd = self->Tf = 0;
-	self->Kt = 0;
+	self->Kp = 2*w*model->alpha-model->beta;
+	self->Ki = model->alpha*w*w;
+	self->Kd = self->Kt = self->Tf = 0;
 
-	self->internalState = self->output = 0;
-	self->desired= self->state =0;
-	self->lastError = self->lastRef = 0;
-	self->lastFF = self->lastState = 0;
-
-	self->model.alpha = 0;
-	self->model.beta = 0;
-	self->model.betaa = 0;
+	self->model.alpha = model->alpha;
+	self->model.beta = model->beta;
+	self->model.betaa = model->betaa;
 }
 
-float sat(float u, float low, float high)
+void IPFF_tune(PIDBase* self, float w)
 {
-	if (u < low) return low;
-	if (u > high) return high;
-  return u;
+	self->Kp = 2*w;
+	self->Ki = w*w;
+	self->Kd = self->Kt = self->Tf = 0;
 }
+
+void IPFF_wffStep(PIDBase* self, float Ts, float error, float ff)
+{
+	//Perform windup test if automatic mode is enabled.
+	if (self->autoWindup == 1)
+	{
+		self->windup = (self->internalState > self->output) && (error>0);
+		self->windup = (self->windup) ||
+				((self->internalState < self->output) && (error<0));
+	}
+	else
+	{
+		//Experimental
+		//self->windup = ((self->windup >0) && (error>0)) ||
+		//		((self->windup <0) && (error<0));
+	}
+
+	//Proportional term
+	self->internalState += self->Kp*(self->state-self->lastState);
+	//Integral term
+	//Disabled if windup is in progress.
+  if (!self->windup) self->internalState += self->Ki*Ts*error;
+	//Feed forward term
+	self->internalState += ff - self->lastFF;
+	//Set final output
+	self->output = self->internalState;
+
+	if (self->autoWindup == 1)
+	{
+		self->output = sat(self->output,-self->outputLimit, self->outputLimit);
+	}
+
+	self->lastError = error;
+	self->lastRef = self->desired;
+	self->lastFF = ff;
+	self->lastState = self->state;
+}
+
 
 

@@ -150,6 +150,10 @@ namespace labust
 			 * Model parameters
 			 */
 			KFNav::ModelParams params[DoF];
+			/**
+			 * The flag to indicate existing yaw-rate measurements.
+			 */
+			bool useYawRate;
 		};
 	}
 }

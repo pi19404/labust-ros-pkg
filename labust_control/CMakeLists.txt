@@ -84,11 +84,13 @@ add_library(pidtoolkit2
    src/pidtoolkit/PIDBase.c
    src/pidtoolkit/PIFFController.c
    src/pidtoolkit/PSatDController.c
+   src/pidtoolkit/IPFFController.c
 )
 set_source_files_properties(
    src/pidtoolkit/PIDBase.c
    src/pidtoolkit/PIFFController.c
-   src/pidtoolkit/PSatDController.c PROPERTIES LANGUAGE CXX)
+   src/pidtoolkit/PSatDController.c 
+   src/pidtoolkit/IPFFController.c PROPERTIES LANGUAGE CXX)
 
 add_executable(fadp_controller2 src/FADPControl.cpp)
 add_executable(hdg_controller2 src/HDGControl.cpp)

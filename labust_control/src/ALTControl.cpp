@@ -38,6 +38,7 @@
 #include <labust/control/EnablePolicy.hpp>
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PSatDController.h>
+#include <labust/control/IPFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -55,7 +56,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			ALTControl():Ts(0.1){};
+			ALTControl():Ts(0.1), useIP(false){};
 
 			void init()
 			{
@@ -74,10 +75,13 @@ namespace labust
 			{
 				con.desired = ref.position.depth;
 				//Check if altitude or depth reference
+				float wd = state.body_velocity.z;
 				if (ref.position.depth < 0)
 				{
 					//Altitude mode
 					con.state = -state.altitude;
+					//\todo Check this if derivative has ok sign.
+					wd = -wd;
 				}
 				else
 				{
@@ -87,7 +91,15 @@ namespace labust
 
 				//Zero feed-forward
 				//PIFF_ffStep(&con,Ts,0);
-				PSatD_dStep(&con, Ts, state.body_velocity.z);
+				//\todo Check the derivative sign
+				if (useIP)
+				{
+					IPFF_ffStep(&con, Ts, 0);
+				}
+				else
+				{
+					PSatD_dStep(&con, Ts, wd);
+				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
@@ -107,13 +119,21 @@ namespace labust
 				double closedLoopFreq(1);
 				nh.param("alt_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
 				nh.param("alt_controller/sampling",Ts,Ts);
+				nh.param("alt_controller/use_ip",useIP,useIP);
 
 				disable_axis[2] = 0;
 
 				PIDBase_init(&con);
 				//PIFF_tune(&con, float(closedLoopFreq));
-				PSatD_tune(&con, float(closedLoopFreq), 0, 1);
-				con.outputLimit = 1000;
+				if (useIP)
+				{
+					IPFF_tune(&con, float(closedLoopFreq));
+				}
+				else
+				{
+					PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+					con.outputLimit = 1000;
+				}
 
 				ROS_INFO("Depth/Altitude controller initialized.");
 			}
@@ -122,6 +142,7 @@ namespace labust
 			ros::Subscriber alt_sub;
 			PIDBase con;
 			double Ts;
+			bool useIP;
 		};
 	}}
 
@@ -129,12 +150,10 @@ int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"alt_control");
 
-//	labust::control::HLControl<labust::control::ALTControl,
-//	labust::control::EnableServicePolicy,
-//	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
-	//Without integral element
 	labust::control::HLControl<labust::control::ALTControl,
-	labust::control::EnableServicePolicy> controller;
+	labust::control::EnableServicePolicy,
+	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
+
 	ros::spin();
 
 	return 0;
