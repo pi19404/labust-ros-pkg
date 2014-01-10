@@ -21,6 +21,7 @@ export TF_PREFIX=ldtravo
 
 #Logging env variables
 export LOGDIR=./
+export ENABLE_LOGGING=1
 
 #For SSH sessions
 export ROSLAUNCH_SSH_UNKNOWN=1

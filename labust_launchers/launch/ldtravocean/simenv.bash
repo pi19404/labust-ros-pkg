@@ -20,4 +20,5 @@ export USE_TF_PREFIX=1
 export TF_PREFIX=ldtravo
 
 #Logging env variables
+export ENABLE_LOGGING=1
 export LOGDIR=./

@@ -1,0 +1,9 @@
+#             Type+LogOrder    Topic names             
+log_data: [['navsts_t',       ['stateHat', 'meas', 'sf_diagnostics', 'usblFiltered', 'TrackPoint']], 
+           ['bodyvelreq_t',   ['nuRefMerged']],
+           ['bodyforcereq_t', ['tauOut', 'tauAch']],
+           ['twist_stamped_t',['currentsHat','dvl','velo_instrument','velo_earth','wvelo_instrument','wvelo_earth']],
+           ['pladypos_info_t',['pladypos_info']],
+           ['imu_info_t',     ['imu_info']],
+           ['imu_t',          ['imu']]]
+           

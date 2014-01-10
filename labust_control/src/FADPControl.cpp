@@ -38,6 +38,7 @@
 #include <labust/control/EnablePolicy.hpp>
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PIFFController.h>
+#include <labust/control/IPFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -55,7 +56,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			FADPControl():Ts(0.1){};
+			FADPControl():Ts(0.1), useIP(false){};
 
 			void init()
 			{
@@ -89,8 +90,16 @@ namespace labust
 				con[x].state = state.position.north;
 				con[y].state = state.position.east;
 
-				PIFF_ffStep(&con[x],Ts, uff);
-				PIFF_ffStep(&con[y],Ts, vff);
+				if (useIP)
+				{
+					IPFF_ffStep(&con[x],Ts, uff);
+					IPFF_ffStep(&con[y],Ts, vff);
+				}
+				else
+				{
+					PIFF_ffStep(&con[x],Ts, uff);
+					PIFF_ffStep(&con[y],Ts, vff);
+				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
@@ -118,6 +127,7 @@ namespace labust
 				Eigen::Vector3d closedLoopFreq(Eigen::Vector3d::Ones());
 				labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
 				nh.param("dp_controller/sampling",Ts,Ts);
+				nh.param("dp_controller/use_ip",useIP,useIP);
 
 				disable_axis[x] = 0;
 				disable_axis[y] = 0;
@@ -135,7 +145,7 @@ namespace labust
 		private:
 			PIDBase con[2];
 			double Ts;
-
+			bool useIP;
 		};
 	}}
 

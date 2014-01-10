@@ -71,7 +71,7 @@ void IPFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 	}
 
 	//Proportional term
-	self->internalState += self->Kp*(self->state-self->lastState);
+	self->internalState -= self->Kp*(self->state-self->lastState);
 	//Integral term
 	//Disabled if windup is in progress.
   if (!self->windup) self->internalState += self->Ki*Ts*error;
