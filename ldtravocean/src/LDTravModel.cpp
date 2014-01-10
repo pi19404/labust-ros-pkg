@@ -42,7 +42,7 @@
 using namespace labust::navigation;
 
 LDTravModel::LDTravModel():
-		dvlNonLinear(false)
+		dvlModel(0)
 {
 	this->initModel();
 };
@@ -101,7 +101,7 @@ void LDTravModel::derivativeAW()
 
 	A(xp,u) = Ts*cos(x(psi));
 	A(xp,v) = -Ts*sin(x(psi));
-	A(xp,psi) = Ts*(-x(u)*sin(x(psi) - x(v)*sin(x(psi))));
+	A(xp,psi) = Ts*(-x(u)*sin(x(psi) - x(v)*cos(x(psi))));
 	A(xp,xc) = Ts;
 
 	A(yp,u) = Ts*sin(x(psi));
@@ -129,7 +129,7 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 		}
 	}
 
-	if (dvlNonLinear) derivativeH();
+	if (dvlModel != 0) derivativeH();
 
 	measurement.resize(arrived.size());
 	H = matrix::Zero(arrived.size(),stateNum);
@@ -141,7 +141,7 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 	{
 		measurement(i) = dataVec[i];
 
-		if (dvlNonLinear)
+		if (dvlModel != 0)
 		{
 			H.row(i)=Hnl.row(arrived[i]);
 			y(i) = ynl(arrived[i]);
@@ -176,16 +176,40 @@ void LDTravModel::derivativeH()
 	Hnl=matrix::Identity(stateNum,stateNum);
 	ynl = Hnl*x;
 
-	//Correct the nonlinear part
-	ynl(u) = x(u)+x(xc)*cos(x(psi))+x(yc)*sin(x(psi));
-	ynl(v) = x(v)-x(xc)*sin(x(psi))+x(yc)*cos(x(psi));
+	switch (dvlModel)
+	{
+	case 1:
+		//Correct the nonlinear part
+		ynl(u) = x(u)+x(xc)*cos(x(psi))+x(yc)*sin(x(psi));
+		ynl(v) = x(v)-x(xc)*sin(x(psi))+x(yc)*cos(x(psi));
 
-	//Correct for the nonlinear parts
-	Hnl(u,xc) = cos(x(psi));
-	Hnl(u,yc) = sin(x(psi));
-	Hnl(v,xc) = -sin(x(psi));
-	Hnl(v,yc) = cos(x(psi));
-	Hnl(u,psi) = -x(xc)*sin(x(psi)) + x(yc)*cos(x(psi));
-	Hnl(v,psi) = -x(xc)*cos(x(psi)) - x(yc)*sin(x(psi));
+		//Correct for the nonlinear parts
+		Hnl(u,u) = 1;
+		Hnl(u,xc) = cos(x(psi));
+		Hnl(u,yc) = sin(x(psi));
+		Hnl(u,psi) = -x(xc)*sin(x(psi)) + x(yc)*cos(x(psi));
+
+		Hnl(v,v) = 1;
+		Hnl(v,xc) = -sin(x(psi));
+		Hnl(v,yc) = cos(x(psi));
+		Hnl(v,psi) = -x(xc)*cos(x(psi)) - x(yc)*sin(x(psi));
+		break;
+	case 2:
+		//Correct the nonlinear part
+	  y(u) = x(u)*cos(x(psi)) - x(v)*sin(x(psi)) + x(xc);
+	  y(v) = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
+
+	  //Correct for the nonlinear parts
+		Hnl(u,xc) = 1;
+		Hnl(u,u) = cos(x(psi));
+		Hnl(u,v) = -sin(x(psi));
+		Hnl(u,psi) = -x(u)*sin(x(psi)) - x(v)*cos(x(psi));
+
+		Hnl(v,yc) = 1;
+		Hnl(v,u) = sin(x(psi));
+		Hnl(v,v) = cos(x(psi));
+		Hnl(v,psi) = x(u)*cos(x(psi)) - x(v)*sin(x(psi));
+		break;
+	}
 }
 

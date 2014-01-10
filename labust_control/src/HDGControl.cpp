@@ -38,6 +38,7 @@
 #include <labust/control/EnablePolicy.hpp>
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PIFFController.h>
+#include <labust/control/IPFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -54,7 +55,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			HDGControl():Ts(0.1){};
+			HDGControl():Ts(0.1),useIP(false){};
 
 			void init()
 			{
@@ -72,12 +73,19 @@ namespace labust
 					const auv_msgs::NavSts& state)
 			{
 				con.desired = ref.orientation.yaw;
-				con.state = state.orientation.yaw;
+				con.state = (useIP?unwrap(state.orientation.yaw):state.orientation.yaw);
 
 				float errorWrap = labust::math::wrapRad(
 					con.desired - con.state);
 				//Zero feed-forward
-				PIFF_wffStep(&con,Ts, errorWrap, 0);
+				if (useIP)
+				{
+					IPFF_wffStep(&con,Ts, errorWrap, 0);
+				}
+				else
+				{
+					PIFF_wffStep(&con,Ts, errorWrap, 0);
+				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
@@ -97,6 +105,7 @@ namespace labust
 				double closedLoopFreq(1);
 				nh.param("hdg_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
 				nh.param("hdg_controller/sampling",Ts,Ts);
+				nh.param("hdg_controller/use_ip",useIP,useIP);
 
 				disable_axis[5] = 0;
 
@@ -110,6 +119,8 @@ namespace labust
 			ros::Subscriber alt_sub;
 			PIDBase con;
 			double Ts;
+			bool useIP;
+			labust::math::unwrap unwrap;
 		};
 	}}
 

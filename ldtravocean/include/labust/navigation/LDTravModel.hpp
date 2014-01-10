@@ -137,7 +137,7 @@ namespace labust
       	ydot = this->ydot;
       }
 
-      inline void useNonlinearDvl(bool flag){this->dvlNonLinear = flag;};
+      inline void useDvlModel(int flag){this->dvlModel = flag;};
 
     protected:
      /**
@@ -167,7 +167,7 @@ namespace labust
       /**
        * The DVL linear/nonlinear flag.
        */
-      bool dvlNonLinear;
+      int dvlModel;
       /**
        * The nonlinear H.
        */

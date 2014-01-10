@@ -59,11 +59,12 @@ Estimator3D::Estimator3D():
 		tauIn(KFNav::vector::Zero(KFNav::inputSize)),
 		measurements(KFNav::vector::Zero(KFNav::stateNum)),
 		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
-		alt(0){this->onInit();};
+		alt(0),
+		useYawRate(false){this->onInit();};
 
 void Estimator3D::onInit()
 {
-	ros::NodeHandle nh;
+	ros::NodeHandle nh, ph("~");
 	//Configure the navigation
 	configureNav(nav,nh);
 	//Publishers
@@ -75,6 +76,12 @@ void Estimator3D::onInit()
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&Estimator3D::onDepth, this);
 	altitude = nh.subscribe<std_msgs::Float32>("altitude", 1, &Estimator3D::onAltitude, this);
 	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &Estimator3D::onModelUpdate,this);
+
+	//Get DVL model
+	int dvl_model(0);
+	ph.param("dvl_model",dvl_model, dvl_model);
+	nav.useDvlModel(dvl_model);
+	ph.param("imu_with_yaw_rate",useYawRate,useYawRate);
 
 	//Configure handlers.
 	gps.configure(nh);
@@ -160,11 +167,16 @@ void Estimator3D::processMeasurements()
 	{
 		measurements(KFNav::xp) = gps.position().first;
 		measurements(KFNav::yp) = gps.position().second;
+		ROS_INFO("Position measurements arrived.");
 	}
 	//Imu measurements
 	if ((newMeas(KFNav::psi) = imu.newArrived()))
 	{
 		measurements(KFNav::psi) = imu.orientation()[ImuHandler::yaw];
+		if ((newMeas(KFNav::r) = useYawRate))
+		{
+			measurements(KFNav::r) = imu.orientation()[ImuHandler::r];
+		}
 	}
 	//DVL measurements
 	//if ((newMeas(KFNav::u) = newMeas(KFNav::v) = newMeas(KFNav::w) = dvl.NewArrived()))
@@ -189,6 +201,7 @@ void Estimator3D::processMeasurements()
 	meas->orientation.roll = imu.orientation()[ImuHandler::roll];
 	meas->orientation.pitch = imu.orientation()[ImuHandler::pitch];
 	meas->orientation.yaw = labust::math::wrapRad(measurements(KFNav::psi));
+	if (useYawRate)	meas->orientation_rate.yaw = measurements(KFNav::r);
 
 	meas->origin.latitude = gps.origin().first;
 	meas->origin.longitude = gps.origin().second;
