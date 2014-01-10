@@ -134,7 +134,9 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 		}
 		catch (std::exception& ex)
 		{
-			ROS_WARN("DVL measurement failure:",ex.what());
+			ROS_WARN("DVL measurement failure:%s",ex.what());
+			isNew = false;
+			return;
 		}
 	}
 	else if (data->header.frame_id == "base_link")
@@ -142,8 +144,6 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 		uvw[u] = data->twist.linear.x;
 		uvw[v] = data->twist.linear.y;
 		uvw[w] = data->twist.linear.z;
-
-		isNew = true;
 	}
 	else if (data->header.frame_id == "local")
 	{
@@ -156,7 +156,12 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 		uvw[u] = result.x();
 		uvw[v] = result.y();
 		uvw[w] = result.z();
-
-		isNew = true;
 	}
+	else
+	{
+		isNew = false;
+		return;
+	}
+
+	isNew = true;
 }

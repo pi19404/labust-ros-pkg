@@ -81,6 +81,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		//ROS_INFO("Estimated rate: %f",dT);
 		measurements(x) += meas->body_velocity.x*dT;
 		measurements(y) += meas->body_velocity.y*dT;
+		ROS_INFO("Estimated pos: Ts=%f, x=%f, y=%f",dT, measurements(x), measurements(y));
 	}
 	else
 	{

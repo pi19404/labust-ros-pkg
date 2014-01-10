@@ -1,6 +1,7 @@
 <launch>
-  <include file="$(find labust_launchers)/launch/caddy/$(env ROBOT).machine" />
+  <include file="$(find labust_launchers)/launch/ldtravocean/$(env ROBOT).machine" />
   <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
+  <arg name="use_pl" value="$(optenv IS_PLADYPOS 0)" />     
 
   <group ns="ldtravo">
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
@@ -10,6 +11,13 @@
   	<group if="$(arg is_sim)">
 		<include file="$(find labust_launchers)/launch/ldtravocean/simulator.launch" />
   	</group>
+
+	<!-- Add the DVL/imu testing platform -->
+  	<group if="$(arg use_pl)">
+		<include file="$(find labust_launchers)/launch/caddy/pladypos_dvl.launch" />
+  	</group>
+
+ 	<!-- Add the real vehicle -->
   	
   	<!-- Add the navigation -->
   	<include file="$(find labust_launchers)/launch/ldtravocean/navigation.launch"/>

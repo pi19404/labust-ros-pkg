@@ -42,7 +42,7 @@
 using namespace labust::navigation;
 
 LDTravModel::LDTravModel():
-		dvlNonLinear(false)
+		dvlNonLinear(true)
 {
 	this->initModel();
 };

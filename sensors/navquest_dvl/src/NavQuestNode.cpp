@@ -99,11 +99,11 @@ void NavQuestNode::onInit()
 		beam_pub["velo_rad"].reset(new NavQuestBP(nh, "velo_rad"));
 		beam_pub["wvelo_rad"].reset(new NavQuestBP(nh, "wvelo_rad"));
 		speed_pub["velo_instrument"].reset(
-				new TwistPublisher(nh, "velo_instrument", "base_link"));
+				new TwistPublisher(nh, "velo_instrument", "dvl_frame"));
 		speed_pub["velo_earth"].reset(
 				new TwistPublisher(nh, "velo_earth", "local"));
 		speed_pub["water_velo_instrument"].reset(
-				new TwistPublisher(nh, "water_velo_instrument", "base_link"));
+				new TwistPublisher(nh, "water_velo_instrument", "dvl_frame"));
 		speed_pub["water_velo_earth"].reset(
 				new TwistPublisher(nh, "water_velo_earth", "local"));
 		lock = nh.advertise<std_msgs::Bool>("dvl_bottom",1);
@@ -201,18 +201,19 @@ void NavQuestNode::publishDvlData(const NQRes& data)
 	else
 	{
 		Eigen::Quaternion<float> quat;
-		labust::tools::quaternionFromEulerZYX(data.rph[roll],
-				data.rph[pitch],
-				labust::math::wrapRad(data.rph[yaw] + magnetic_declination), quat);
+		labust::tools::quaternionFromEulerZYX(labust::math::wrapRad(data.rph[roll]/180*M_PI),
+				labust::math::wrapRad(data.rph[pitch]/180*M_PI),
+				labust::math::wrapRad(data.rph[yaw]/180*M_PI + magnetic_declination), quat);
 		transform.setRotation(tf::Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
 		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "dvl_frame"));
 	}
 
 	//RPY
 	auv_msgs::RPY::Ptr rpy(new auv_msgs::RPY());
-	rpy->roll = data.rph[roll];
-	rpy->pitch = data.rph[pitch];
-	rpy->yaw = data.rph[yaw];
+	rpy->roll = labust::math::wrapRad(data.rph[roll]/180*M_PI);
+	rpy->pitch = labust::math::wrapRad(data.rph[pitch]/180*M_PI);
+	rpy->yaw = labust::math::wrapRad(data.rph[yaw]/180*M_PI);
+	imuPub.publish(rpy);
 }
 
 void NavQuestNode::conditionDvlData(const NQRes& data)
