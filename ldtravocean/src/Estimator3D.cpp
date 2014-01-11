@@ -175,7 +175,7 @@ void Estimator3D::processMeasurements()
 		measurements(KFNav::psi) = imu.orientation()[ImuHandler::yaw];
 		if ((newMeas(KFNav::r) = useYawRate))
 		{
-			measurements(KFNav::r) = imu.orientation()[ImuHandler::r];
+			measurements(KFNav::r) = imu.rate()[ImuHandler::r];
 		}
 	}
 	//DVL measurements

@@ -164,6 +164,16 @@ bool NavQuestNode::test_header(const std::string& match, const std::string& stre
 void NavQuestNode::publishDvlData(const NQRes& data)
 {
 	geometry_msgs::TwistStamped::Ptr twist(new geometry_msgs::TwistStamped());
+	
+	bool testDVL = data.velo_instrument[0] == data.velo_instrument[1];
+	testDVL = testDVL && (data.velo_instrument[1] == data.velo_instrument[2]);
+	testDVL = testDVL && (data.velo_instrument[2] == 0);
+
+	if (testDVL)
+	{
+	  ROS_INFO("All zero dvl. Skipping measurement.");
+	  return;
+	}
 
 	(*beam_pub["velo_rad"])(data.velo_rad);
 	(*beam_pub["wvelo_rad"])(data.wvelo_rad);
@@ -179,6 +189,7 @@ void NavQuestNode::publishDvlData(const NQRes& data)
 	std_msgs::Bool bottom_lock;
 	bottom_lock.data = !water_lock && valid;
 	lock.publish(bottom_lock);
+	ROS_INFO("Has bottom lock %d", bottom_lock.data);
 
 	//Altitude
 	if (data.altitude_estimate > 0)
