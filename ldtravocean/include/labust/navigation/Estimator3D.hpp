@@ -154,6 +154,10 @@ namespace labust
 			 * The flag to indicate existing yaw-rate measurements.
 			 */
 			bool useYawRate;
+			/**
+			 * The DVL model selector.
+			 */
+			int dvl_model;
 		};
 	}
 }

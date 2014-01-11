@@ -60,7 +60,8 @@ Estimator3D::Estimator3D():
 		measurements(KFNav::vector::Zero(KFNav::stateNum)),
 		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
 		alt(0),
-		useYawRate(false){this->onInit();};
+		useYawRate(false),
+		dvl_model(0){this->onInit();};
 
 void Estimator3D::onInit()
 {
@@ -78,7 +79,6 @@ void Estimator3D::onInit()
 	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &Estimator3D::onModelUpdate,this);
 
 	//Get DVL model
-	int dvl_model(0);
 	ph.param("dvl_model",dvl_model, dvl_model);
 	nav.useDvlModel(dvl_model);
 	ph.param("imu_with_yaw_rate",useYawRate,useYawRate);
@@ -182,8 +182,48 @@ void Estimator3D::processMeasurements()
 	//if ((newMeas(KFNav::u) = newMeas(KFNav::v) = newMeas(KFNav::w) = dvl.NewArrived()))
 	if ((newMeas(KFNav::u) = newMeas(KFNav::v) = dvl.newArrived()))
 	{
-		measurements(KFNav::u) = dvl.body_speeds()[DvlHandler::u];
-		measurements(KFNav::v) = dvl.body_speeds()[DvlHandler::v];
+		double vx = dvl.body_speeds()[DvlHandler::u];
+		double vy = dvl.body_speeds()[DvlHandler::v];
+
+		double rvx(0),rvy(0);
+		//Calculate the measured value
+		//This depends on the DVL model
+		switch (dvl_model)
+		{
+		case 0:
+			rvx = nav.getInovationCovariance()(KFNav::u, KFNav::u);
+			rvy = nav.getInovationCovariance()(KFNav::v, KFNav::v);
+			break;
+		case 1:
+			rvx = nav.getInovationCovariance()(KFNav::u, KFNav::u) +
+				nav.getInovationCovariance()(KFNav::u, KFNav::xc) +
+				nav.getInovationCovariance()(KFNav::u, KFNav::yc);
+			rvy = nav.getInovationCovariance()(KFNav::v, KFNav::v) +
+				nav.getInovationCovariance()(KFNav::v, KFNav::xc) +
+				nav.getInovationCovariance()(KFNav::v, KFNav::yc);
+		default:
+			break;
+		}
+
+		if (fabs((vx - nav.getState()(KFNav::u))) > fabs(rvx))
+		{
+			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vx, nav.getState()(KFNav::u), fabs(rvx));
+			newMeas(KFNav::u) = false;
+		}
+		else
+		{
+			measurements(KFNav::u) = vx;
+		}
+
+		if (fabs((vy - nav.getState()(KFNav::v))) > fabs(rvy))
+		{
+			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vy, nav.getState()(KFNav::v), fabs(rvy));
+			newMeas(KFNav::v) = false;
+		}
+		else
+		{
+			measurements(KFNav::v) = vy;
+		}
 		//measurements(KFNav::w) = dvl.body_speeds()[DvlHandler::w];
 	}
 
