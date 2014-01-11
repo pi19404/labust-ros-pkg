@@ -66,6 +66,8 @@ namespace labust
 				this->surge = surge->data;
 			}
 
+			void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state){};
+
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{

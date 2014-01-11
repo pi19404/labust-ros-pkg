@@ -69,6 +69,12 @@ namespace labust
 				con.windup = tauAch.disable_axis.yaw;
 			};
 
+  		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
+  		{
+  			con.internalState = 0;
+  			con.lastState = useIP?unwrap(state.orientation.yaw):state.orientation.yaw;
+  		};
+
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
