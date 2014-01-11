@@ -18,7 +18,7 @@
 
 	<!-- Velocity controller -->
 	<node pkg="labust_uvapp" type="velocity_control" name="velcon">
-		<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
+		<remap from="tauAchVelCon" to="tauAch" />
 		<!-- <remap from="stateHat" to="meas_ideal" /> -->
 		<remap from="nuRef" to="nuRefMerged" />
 	</node>

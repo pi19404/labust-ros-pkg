@@ -15,6 +15,7 @@
 
 	<!-- Add the DVL/imu testing platform -->
   	<group if="$(arg use_pl)">
+		<remap from="tauAch" to="tauAchPl" />
 		<include file="$(find labust_launchers)/launch/caddy/pladypos_dvl.launch" />
   	</group>
 

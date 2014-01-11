@@ -114,6 +114,8 @@ void DvlHandler::configure(ros::NodeHandle& nh)
 {
 	nu_dvl = nh.subscribe<geometry_msgs::TwistStamped>("dvl", 1,
 			&DvlHandler::onDvl, this);
+
+	uvw[u] = uvw[v] = uvw[w] = 0;
 }
 
 void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)

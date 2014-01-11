@@ -69,6 +69,12 @@ void LDTravModel::calculateXYInovationVariance(const LDTravModel::matrix& P, dou
 	yin = sqrt(P(yp,yp)) + sqrt(R0(yp,yp));
 }
 
+void LDTravModel::calculateUVInovationVariance(const LDTravModel::matrix& P, double& uin,double &vin)
+{
+	uin = sqrt(P(u,u)) + sqrt(R0(v,v));
+	vin = sqrt(P(v,v)) + sqrt(R0(v,v));
+}
+
 void LDTravModel::step(const input_type& input)
 {
   x(u) += Ts*(-surge.Beta(x(u))/surge.alpha*x(u) + 1/surge.alpha * input(X));

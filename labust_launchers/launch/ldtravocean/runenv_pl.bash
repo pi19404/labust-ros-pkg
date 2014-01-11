@@ -20,7 +20,7 @@ export USE_TF_PREFIX=1
 export TF_PREFIX=ldtravo
 
 #Logging env variables
-export LOGDIR=./
+export LOGDIR=/home/stdops/logs
 export ENABLE_LOGGING=1
 
 #For SSH sessions

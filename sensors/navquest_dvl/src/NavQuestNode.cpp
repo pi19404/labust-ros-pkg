@@ -42,6 +42,7 @@
 #include <labust/preprocessor/clean_serializator.hpp>
 #include <labust/tools/conversions.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/StringUtilities.hpp>
 
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Bool.h>
@@ -169,10 +170,29 @@ void NavQuestNode::publishDvlData(const NQRes& data)
 	testDVL = testDVL && (data.velo_instrument[1] == data.velo_instrument[2]);
 	testDVL = testDVL && (data.velo_instrument[2] == 0);
 
+	//Data validity
+	bool beamValidity = true;
+	for (int i=0; i<4; ++i)
+	{
+	  beamValidity = beamValidity && (data.beam_status[i] == 1);
+	  //ROS_INFO("Beam validity %d: %d", i, data.beam_status[i]);
+	  //ROS_INFO("Water vel credit %d: %f", i, data.wvelo_credit[i]);
+	}
+
 	if (testDVL)
 	{
-	  ROS_INFO("All zero dvl. Skipping measurement.");
+	  ROS_INFO("All zero dvl. Ignore measurement.");
 	  return;
+	}
+	
+	if (!beamValidity)
+	{
+	  //ROS_INFO("One or more beams are invalid. Ignore measurement: %f %f", data.velo_instrument[0]/1000, data.velo_instrument[1]/1000);
+	  return;
+	}
+	else
+	{
+	  ROS_INFO("Beams are valid. Accept measurement: %f %f", data.velo_instrument[0]/1000, data.velo_instrument[1]/1000);
 	}
 
 	(*beam_pub["velo_rad"])(data.velo_rad);
@@ -189,7 +209,7 @@ void NavQuestNode::publishDvlData(const NQRes& data)
 	std_msgs::Bool bottom_lock;
 	bottom_lock.data = !water_lock && valid;
 	lock.publish(bottom_lock);
-	ROS_INFO("Has bottom lock %d", bottom_lock.data);
+	//ROS_INFO("Has bottom lock %d", bottom_lock.data);
 
 	//Altitude
 	if (data.altitude_estimate > 0)
@@ -242,16 +262,18 @@ void NavQuestNode::onDvlData(const boost::system::error_code& e,
 		if (test_header("$#NQ.RES", data))
 		{
 			NQRes dvl_data;
+			int chk = labust::tools::getChecksum(reinterpret_cast<unsigned char*>(&data[15]), data.size()-3-15);
 			std::istringstream is;
 			is.rdbuf()->pubsetbuf(&data[0],size);
 			labust::archive::delimited_iarchive ia(is);
 			ia>>dvl_data;
 
 			if (error_code(dvl_data) == 0) publishDvlData(dvl_data);
+			ROS_INFO("Calculated checksum:calc=%d, recvd=%d", chk, dvl_data.checksum);
 
-			ROS_INFO("DVL decoded: header:%s, error:%s.",
-					dvl_data.header.c_str(),
-					dvl_data.error_code.c_str());
+			//ROS_INFO("DVL decoded: header:%s, error:%s.",
+			//		dvl_data.header.c_str(),
+			//		dvl_data.error_code.c_str());
 		}
 	}
 	else

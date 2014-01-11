@@ -184,28 +184,28 @@ void Estimator3D::processMeasurements()
 	{
 		double vx = dvl.body_speeds()[DvlHandler::u];
 		double vy = dvl.body_speeds()[DvlHandler::v];
+		double vxe = nav.getState()(KFNav::u); 
+		double vye = nav.getState()(KFNav::v); 
 
-		double rvx(0),rvy(0);
+		double rvx(10),rvy(10);
 		//Calculate the measured value
-		//This depends on the DVL model
+		//This depends on the DVL model actually, but lets assume
+		nav.calculateUVInovationVariance(nav.getStateCovariance(), rvx, rvy);
+
+		double cpsi = cos(nav.getState()(KFNav::psi));
+		double spsi = sin(nav.getState()(KFNav::psi));
+		double xc = nav.getState()(KFNav::xc);
+		double yc = nav.getState()(KFNav::yc);
 		switch (dvl_model)
 		{
-		case 0:
-			rvx = nav.getInovationCovariance()(KFNav::u, KFNav::u);
-			rvy = nav.getInovationCovariance()(KFNav::v, KFNav::v);
-			break;
-		case 1:
-			rvx = nav.getInovationCovariance()(KFNav::u, KFNav::u) +
-				nav.getInovationCovariance()(KFNav::u, KFNav::xc) +
-				nav.getInovationCovariance()(KFNav::u, KFNav::yc);
-			rvy = nav.getInovationCovariance()(KFNav::v, KFNav::v) +
-				nav.getInovationCovariance()(KFNav::v, KFNav::xc) +
-				nav.getInovationCovariance()(KFNav::v, KFNav::yc);
-		default:
-			break;
+		  case 1:
+		    vxe += xc*cpsi + yc*spsi;
+		    vye += -xc*spsi + yc*cpsi;
+		    break;
+		default: break;
 		}
 
-		if (fabs((vx - nav.getState()(KFNav::u))) > fabs(rvx))
+		if (fabs((vx - vxe)) > fabs(rvx))
 		{
 			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vx, nav.getState()(KFNav::u), fabs(rvx));
 			newMeas(KFNav::u) = false;
@@ -215,7 +215,7 @@ void Estimator3D::processMeasurements()
 			measurements(KFNav::u) = vx;
 		}
 
-		if (fabs((vy - nav.getState()(KFNav::v))) > fabs(rvy))
+		if (fabs((vy - vye)) > fabs(rvy))
 		{
 			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vy, nav.getState()(KFNav::v), fabs(rvy));
 			newMeas(KFNav::v) = false;
