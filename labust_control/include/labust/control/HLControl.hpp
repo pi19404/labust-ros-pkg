@@ -142,10 +142,20 @@ namespace labust
 
 			void onEstimate(const typename InputType::ConstPtr& estimate)
 			{
-				if (!Enable::enable) return;
+				if (!Enable::enable)
+				{
+					lastEn = false;
+					return;
+				}
+
 				//Copy into controller
 				Windup::get_windup(this);
 				boost::mutex::scoped_lock l(cnt_mux);
+				if (Enable::enable && !lastEn)
+				{
+					this->reset(ref, *estimate);
+					lastEn = true;
+				}
 				outPub.publish(Controller::step(ref, *estimate));
 			}
 
@@ -164,7 +174,7 @@ namespace labust
 			/**
 			 * The disabled axis.
 			 */
-			bool disabled_axis[6];
+			bool disabled_axis[6], lastEn;
 			/**
 			 * Control locker.
 			 */

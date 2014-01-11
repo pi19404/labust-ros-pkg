@@ -70,6 +70,19 @@ namespace labust
 				con.windup = tauAch.disable_axis.z;
 			};
 
+  		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
+  		{
+  			con.internalState = 0;
+  			if (ref.position.depth < 0)
+  			{
+  				con.lastState = -state.altitude;
+  			}
+  			else
+  			{
+  				con.lastState = state.position.depth;
+  			}
+  		};
+
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
