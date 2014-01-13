@@ -58,11 +58,14 @@ using namespace labust::navigation;
 Estimator3D::Estimator3D():
 		tauIn(KFNav::vector::Zero(KFNav::inputSize)),
 		measurements(KFNav::vector::Zero(KFNav::stateNum)),
-		newMeas(KFNav::vector::Zero(KFNav::stateNum)){this->onInit();};
+		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
+		alt(0),
+		useYawRate(false),
+		dvl_model(0){this->onInit();};
 
 void Estimator3D::onInit()
 {
-	ros::NodeHandle nh;
+	ros::NodeHandle nh, ph("~");
 	//Configure the navigation
 	configureNav(nav,nh);
 	//Publishers
@@ -73,6 +76,12 @@ void Estimator3D::onInit()
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, &Estimator3D::onTau,this);
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&Estimator3D::onDepth, this);
 	altitude = nh.subscribe<std_msgs::Float32>("altitude", 1, &Estimator3D::onAltitude, this);
+	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &Estimator3D::onModelUpdate,this);
+
+	//Get DVL model
+	ph.param("dvl_model",dvl_model, dvl_model);
+	nav.useDvlModel(dvl_model);
+	ph.param("imu_with_yaw_rate",useYawRate,useYawRate);
 
 	//Configure handlers.
 	gps.configure(nh);
@@ -89,27 +98,45 @@ void Estimator3D::configureNav(KFNav& nav, ros::NodeHandle& nh)
 
 	ROS_INFO("Loaded dynamics params.");
 
-	KFNav::ModelParams surge,sway,heave,yaw;
-	surge.alpha = params.m + params.Ma(0,0);
-	surge.beta = params.Dlin(0,0);
-	surge.betaa = params.Dquad(0,0);
+	this->params[X].alpha = params.m + params.Ma(0,0);
+	this->params[X].beta = params.Dlin(0,0);
+	this->params[X].betaa = params.Dquad(0,0);
 
-	sway.alpha = params.m + params.Ma(1,1);
-	sway.beta = params.Dlin(1,1);
-	sway.betaa = params.Dquad(1,1);
+	this->params[Y].alpha = params.m + params.Ma(1,1);
+	this->params[Y].beta = params.Dlin(1,1);
+	this->params[Y].betaa = params.Dquad(1,1);
 
-	heave.alpha = params.m + params.Ma(2,2);
-	heave.beta = params.Dlin(2,2);
-	heave.betaa = params.Dquad(2,2);
+	this->params[Z].alpha = params.m + params.Ma(2,2);
+	this->params[Z].beta = params.Dlin(2,2);
+	this->params[Z].betaa = params.Dquad(2,2);
 
-	yaw.alpha = params.Io(2,2) + params.Ma(5,5);
-	yaw.beta = params.Dlin(5,5);
-	yaw.betaa = params.Dquad(5,5);
+	this->params[N].alpha = params.Io(2,2) + params.Ma(5,5);
+	this->params[N].beta = params.Dlin(5,5);
+	this->params[N].betaa = params.Dquad(5,5);
 
-	nav.setParameters(surge,sway,heave,yaw);
+	nav.setParameters(this->params[X],this->params[Y],
+			this->params[Z],this->params[N]);
 
 	nav.initModel();
 	labust::navigation::kfModelLoader(nav, nh, "ekfnav");
+}
+
+void Estimator3D::onModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update)
+{
+	ROS_INFO("Updating the model parameters for %d DoF.",update->dof);
+	params[update->dof].alpha = update->alpha;
+	if (update->use_linear)
+	{
+		params[update->dof].beta = update->beta;
+		params[update->dof].betaa = 0;
+	}
+	else
+	{
+		params[update->dof].beta = 0;
+		params[update->dof].betaa = update->betaa;
+	}
+	nav.setParameters(this->params[X],this->params[Y],
+			this->params[Z],this->params[N]);
 }
 
 void Estimator3D::onTau(const auv_msgs::BodyForceReq::ConstPtr& tau)
@@ -140,18 +167,63 @@ void Estimator3D::processMeasurements()
 	{
 		measurements(KFNav::xp) = gps.position().first;
 		measurements(KFNav::yp) = gps.position().second;
+		ROS_INFO("Position measurements arrived.");
 	}
 	//Imu measurements
 	if ((newMeas(KFNav::psi) = imu.newArrived()))
 	{
 		measurements(KFNav::psi) = imu.orientation()[ImuHandler::yaw];
+		if ((newMeas(KFNav::r) = useYawRate))
+		{
+			measurements(KFNav::r) = imu.rate()[ImuHandler::r];
+		}
 	}
 	//DVL measurements
 	//if ((newMeas(KFNav::u) = newMeas(KFNav::v) = newMeas(KFNav::w) = dvl.NewArrived()))
 	if ((newMeas(KFNav::u) = newMeas(KFNav::v) = dvl.newArrived()))
 	{
-		measurements(KFNav::u) = dvl.body_speeds()[DvlHandler::u];
-		measurements(KFNav::v) = dvl.body_speeds()[DvlHandler::v];
+		double vx = dvl.body_speeds()[DvlHandler::u];
+		double vy = dvl.body_speeds()[DvlHandler::v];
+		double vxe = nav.getState()(KFNav::u); 
+		double vye = nav.getState()(KFNav::v); 
+
+		double rvx(10),rvy(10);
+		//Calculate the measured value
+		//This depends on the DVL model actually, but lets assume
+		nav.calculateUVInovationVariance(nav.getStateCovariance(), rvx, rvy);
+
+		double cpsi = cos(nav.getState()(KFNav::psi));
+		double spsi = sin(nav.getState()(KFNav::psi));
+		double xc = nav.getState()(KFNav::xc);
+		double yc = nav.getState()(KFNav::yc);
+		switch (dvl_model)
+		{
+		  case 1:
+		    vxe += xc*cpsi + yc*spsi;
+		    vye += -xc*spsi + yc*cpsi;
+		    break;
+		default: break;
+		}
+
+		if (fabs((vx - vxe)) > fabs(rvx))
+		{
+			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vx, nav.getState()(KFNav::u), fabs(rvx));
+			newMeas(KFNav::u) = false;
+		}
+		else
+		{
+			measurements(KFNav::u) = vx;
+		}
+
+		if (fabs((vy - vye)) > fabs(rvy))
+		{
+			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vy, nav.getState()(KFNav::v), fabs(rvy));
+			newMeas(KFNav::v) = false;
+		}
+		else
+		{
+			measurements(KFNav::v) = vy;
+		}
 		//measurements(KFNav::w) = dvl.body_speeds()[DvlHandler::w];
 	}
 
@@ -169,6 +241,7 @@ void Estimator3D::processMeasurements()
 	meas->orientation.roll = imu.orientation()[ImuHandler::roll];
 	meas->orientation.pitch = imu.orientation()[ImuHandler::pitch];
 	meas->orientation.yaw = labust::math::wrapRad(measurements(KFNav::psi));
+	if (useYawRate)	meas->orientation_rate.yaw = measurements(KFNav::r);
 
 	meas->origin.latitude = gps.origin().first;
 	meas->origin.longitude = gps.origin().second;

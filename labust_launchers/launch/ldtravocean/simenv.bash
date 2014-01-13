@@ -7,7 +7,7 @@ export LOCATION=labos
 export USE_LOCAL_FIX=1
 
 #Input sensors
-export JOYSTICK=/dev/input/js1
+export JOYSTICK=/dev/input/js0
 
 #Simulation env variables
 export IS_SIM=1
@@ -20,4 +20,5 @@ export USE_TF_PREFIX=1
 export TF_PREFIX=ldtravo
 
 #Logging env variables
+export ENABLE_LOGGING=1
 export LOGDIR=./

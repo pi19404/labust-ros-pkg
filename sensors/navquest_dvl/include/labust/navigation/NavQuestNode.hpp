@@ -35,6 +35,8 @@
 #define NAVQUESTNODE_HPP_
 #include <labust/navigation/NavQuestMessages.hpp>
 #include <labust/navigation/BeamPublisher.hpp>
+
+#include <tf/transform_broadcaster.h>
 #include <ros/ros.h>
 
 #include <boost/asio.hpp>
@@ -117,7 +119,24 @@ namespace labust
 			/**
 			 * The speed publishers.
 			 */
-			ros::Publisher imuPub, lock;
+			ros::Publisher imuPub, lock, altitude;
+			/**
+			 * The transform broadcaster.
+			 */
+			tf::TransformBroadcaster broadcast;
+			/**
+			 * Fixed rotation flag.
+			 */
+			bool useFixed;
+			/**
+			 * Fixed rotation value.
+			 */
+			double base_orientation;
+			/**
+			 * Magnetic declination.
+			 */
+			double magnetic_declination;
+
 
 			/**
 			 * Hardware i/o service.
@@ -135,6 +154,7 @@ namespace labust
 			 * The input buffer.
 			 */
 			boost::asio::streambuf buffer;
+
 		};
 	}
 }

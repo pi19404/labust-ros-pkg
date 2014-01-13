@@ -114,17 +114,38 @@ void DvlHandler::configure(ros::NodeHandle& nh)
 {
 	nu_dvl = nh.subscribe<geometry_msgs::TwistStamped>("dvl", 1,
 			&DvlHandler::onDvl, this);
+
+	uvw[u] = uvw[v] = uvw[w] = 0;
 }
 
 void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 {
-	if (data->header.frame_id == "base_link")
+	if (data->header.frame_id == "dvl_frame")
+	{
+		try
+		{
+			tf::StampedTransform transform;
+			listener.lookupTransform("base_link", "dvl_frame", ros::Time(0), transform);
+
+			tf::Vector3 speed(data->twist.linear.x, data->twist.linear.y, data->twist.linear.z);
+			tf::Vector3 body_speed = transform.getBasis()*speed;
+
+			uvw[u] = body_speed.x();
+			uvw[v] = body_speed.y();
+			uvw[w] = body_speed.z();
+		}
+		catch (std::exception& ex)
+		{
+			ROS_WARN("DVL measurement failure:%s",ex.what());
+			isNew = false;
+			return;
+		}
+	}
+	else if (data->header.frame_id == "base_link")
 	{
 		uvw[u] = data->twist.linear.x;
 		uvw[v] = data->twist.linear.y;
 		uvw[w] = data->twist.linear.z;
-
-		isNew = true;
 	}
 	else if (data->header.frame_id == "local")
 	{
@@ -137,7 +158,12 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 		uvw[u] = result.x();
 		uvw[v] = result.y();
 		uvw[w] = result.z();
-
-		isNew = true;
 	}
+	else
+	{
+		isNew = false;
+		return;
+	}
+
+	isNew = true;
 }

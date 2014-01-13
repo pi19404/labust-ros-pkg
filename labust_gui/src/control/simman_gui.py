@@ -10,8 +10,8 @@ import rospy
 import labust_gui
 import math
 
-from python_qt_binding import QtCore, QtGui
-from labust_rqt.rqt_plugin_meta import RqtPluginMeta
+from python_qt_binding import loadUi,QtCore, QtGui
+from qt_gui.plugin import Plugin
 
 from std_msgs.msg import String
 from auv_msgs.msg import Bool6Axis
@@ -43,7 +43,9 @@ class SimManGui(QtGui.QWidget):
         self.statusNorth.setText("{:.2f}".format(data.position.north))
         self.statusEast.setText("{:.2f}".format(data.position.east))
         self.statusDepth.setText("{:.2f}".format(data.position.depth))
-        self.statusHeading.setText("{:.2f}".format(math.degrees(data.orientation.yaw)))
+        hdg = math.degrees(data.orientation.yaw)
+        if hdg < 0: hdg += 360
+        self.statusHeading.setText("{:.2f}".format(hdg))
         self.statusAltitude.setText("{:.2f}".format(data.altitude))
         
         self._update_refs(data)
@@ -74,7 +76,7 @@ class SimManGui(QtGui.QWidget):
                                                     self.emit(QtCore.SIGNAL("onHeadingUpdate"), 
                                                     self.headingRef.value()))
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDepthUpdate"), ros.onDepthUpdate)
-        self.headingRef.editingFinished.connect(lambda: 
+        self.depthRef.editingFinished.connect(lambda: 
                                                     self.emit(QtCore.SIGNAL("onDepthUpdate"), 
                                                     self.depthRef.value()))
         
@@ -125,7 +127,11 @@ class SimManGui(QtGui.QWidget):
         
     def _update_refs(self,data):
         if not self.headingEnable.isChecked():
-            self.headingRef.setValue(math.degrees(data.orientation.yaw))
+            hdg = math.degrees(data.orientation.yaw)
+            if hdg < 0: hdg += 360
+            self.headingRef.setValue(hdg)
+        if not self.depthEnable.isChecked():
+            self.depthRef.setValue(data.position.depth)
             
     def _booststrap(self):
         self.headingEnable.setChecked(False)
@@ -242,7 +248,7 @@ class HLManager:
         self._invoke_velcon_cfg()
          
     def _invoke_enabler(self, name, data):
-        rospy.wait_for_service(name)
+        rospy.wait_for_service(name, timeout=5.0)
         try:
             enabler = rospy.ServiceProxy(name, EnableControl)
             enabler(data)
@@ -300,8 +306,8 @@ class SimManROS(QtCore.QObject):
             elif selection == 1:
                 self._stateRef.position.north = self._stateHat.position.north + x
                 self._stateRef.position.east = self._stateHat.position.east + y
-                self.northRef.value(0.0)
-                self.eastRef.value(0.0)
+                #self.northRef.value(0.0)
+                #self.eastRef.value(0.0)
             elif selection == 2:
                 import numpy
                 yaw = self._stateHat.orientation.yaw
@@ -311,8 +317,8 @@ class SimManROS(QtCore.QObject):
                 ne = numpy.dot(R,xy)
                 self._stateRef.position.north = self._stateHat.position.north + ne[0]
                 self._stateRef.position.east = self._stateHat.position.east + ne[1]
-                self.northRef.value(0.0)
-                self.eastRef.value(0.0)
+                #self.northRef.value(0.0)
+                #self.eastRef.value(0.0)
                 
             self._update_stateRef()
             
@@ -359,15 +365,40 @@ class SimManROS(QtCore.QObject):
             self._stateRefPub.unregister()
 
 
-class SimManRqt(RqtPluginMeta):
+class SimManRqt(Plugin):
     def __init__(self, context):
         name = "SimMan"
-        resource = rqt_plugin_meta.resource_rpath(name, __file__)
-        super(SimManRqt, self).__init__(context = context,
-                                                name = name,
-                                                GuiT = SimManGui,
-                                                RosT = SimManROS,
-                                                resource = resource);
+        resource = os.path.join(os.path.dirname(
+                        os.path.realpath(__file__)), 
+                        "resource/" + name + ".ui")
+        GuiT = SimManGui
+        RosT = SimManROS
+        
+        super(SimManRqt, self).__init__(context)
+        self.setObjectName(name)
+
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
+        parser.add_argument("-q", "--quiet", action="store_true",
+                      dest="quiet",
+                      help="Put plugin in silent mode")
+        args, unknowns = parser.parse_known_args(context.argv())
+        if not args.quiet:
+            print "arguments: ", args
+            print "unknowns: ", unknowns
+
+        # Create QWidget
+        self._gui = GuiT()
+        self._ros = RosT()
+
+        loadUi(resource, self._gui)
+        self._ros.setup(self._gui)
+        self._gui.setup(name + "Rqt", self._ros)
+
+        if context.serial_number() > 1:
+            self._widget.setWindowTitle(self._widget.windowTitle() + 
+                                        (" (%d)" % context.serial_number()))
+        context.add_widget(self._gui) 
 
 if __name__ == '__main__':
     from labust_rqt import rqt_plugin_meta

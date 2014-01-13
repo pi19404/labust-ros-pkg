@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="labust_imu" type="imu_node" name="imu" machine="controlled">
+  <node pkg="labust_imu" type="imu_node" name="imu">
     <param name="PortName" value="/dev/ttyS0" />
     <param name="Baud" value="115200" />
     <param name="gps_pub" value="5" />
