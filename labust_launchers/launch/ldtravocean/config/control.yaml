@@ -13,3 +13,8 @@ velocity_controller/auto_tracking: [0.0,0.0,0.0,1.0,1.0,0.0]
 velocity_controller/output_limits: [100.0,100.0,100.0,0.0,0.0,100.0]
 velocity_controller/Ts: 0.1
 velocity_controller/timeout: 2.0
+velocity_controller/Surge_joy_scale : 100.0
+velocity_controller/Heave_joy_scale : 100.0
+velocity_controller/Sway_joy_scale : 100.0
+velocity_controller/Yaw_joy_scale : 100.0
+

@@ -3,12 +3,14 @@
 		file="$(find labust_launchers)/launch/ldtravocean/config/control.yaml" />
 
 	<!-- Manual control input -->
-	<include file="$(find labust_launchers)/config/control/joy.xml" />
+<!--	<include file="$(find labust_launchers)/config/control/joy.xml" /> -->
 	<node pkg="labust_control" type="nu_manual" name="ManualNuRef">
 	   <remap from="Enable" to="NU_enable" />
+	   <remap from="joy" to="joy_opto"/>
 	</node>
 	<node pkg="labust_control" type="ref_manual" name="ManualStateRef" >
 	   <remap from="Enable" to="REF_enable" />
+	   <remap from="joy" to="joy_opto"/>
 	</node>
 
 	<!-- Velocity controller -->
@@ -16,6 +18,8 @@
 		<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
 		<remap from="stateHat" to="meas_ideal" />
 		<remap from="nuRef" to="nuRefMerged" />
+		<remap from="joy" to="joy_opto" />
+		
 	</node>
 
 	<!-- High-level controllers -->

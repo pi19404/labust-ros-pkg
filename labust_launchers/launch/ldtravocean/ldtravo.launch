@@ -16,5 +16,12 @@
     	
   	<!-- Add the controllers -->
   	<include file="$(find labust_launchers)/launch/ldtravocean/control.launch"/>
+	
+	<!-- add the opto22 bridge node -->
+	<include file="$(find labust_launchers)/launch/ldtravocean/opto22.launch"/>
+	
+	<!-- add the navquest dvl node -->
+	<include file="$(find labust_launchers)/launch/ldtravocean/dvl.launch"/>
+	
   </group>
 </launch>

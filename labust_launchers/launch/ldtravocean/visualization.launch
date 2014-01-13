@@ -1,6 +1,6 @@
 <launch>
     <node pkg="uwsim" name="uwsim" type="uwsim" 
-  args="--configfile $(find labust_uwsim)/scenes/ldtravocean/test_environment.xml 
+  args="--disableShaders --configfile $(find labust_uwsim)/scenes/ldtravocean/test_environment.xml 
   --dataPath  $(find labust_uwsim)/urdf/ldtravocean/"/>
     
     <node pkg="labust_uwsim" type="NavSts2Odom.py" name="ldtravo2uwsim">

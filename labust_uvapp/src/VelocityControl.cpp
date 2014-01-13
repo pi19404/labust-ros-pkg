@@ -244,11 +244,11 @@ void VelocityControl::safetyTest()
 	for (int i=u; i<=r;++i)
 	{
 		bool cntChannel = (refTimeout || estTimeout) && (axis_control[i] == controlAxis);
-		if (cntChannel) ROS_WARN("Timeout on the control channel. Controlled axes will be disabled.");
+		if (cntChannel) ROS_WARN("Timeout on the control channel: %d. Controlled axes will be disabled.",i);
 		bool measChannel = measTimeout && (axis_control[i] == identAxis);
-		if (measChannel) ROS_WARN("Timeout on the measurement channel. Stopping identifications in progress.");
+		if (measChannel) ROS_WARN("Timeout on the measurement channel: %d. Stopping identifications in progress.",i);
 		bool manChannel = manTimeout && (axis_control[i] == manualAxis);
-		if (manChannel) ROS_WARN("Timeout on the manual channel. Manual axes will be disabled.");
+		if (manChannel) ROS_WARN("Timeout on the manual channel: %d. Manual axes will be disabled.",i);
 
 		suspend_axis[i] = (cntChannel || measChannel || manChannel);
 	}

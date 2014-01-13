@@ -1,0 +1,7 @@
+<launch>
+  	<!-- DVLsensor simulation node -->
+  	<node pkg="navquest_dvl" type="navquest_socket_node" name="dvl_navquest">
+  		<remap from="meas_odom" to="meas_odom_navquest" />
+  		<!-- <remap from="dvl" to="nu_dvl" /> -->
+  	</node>	
+</launch>
