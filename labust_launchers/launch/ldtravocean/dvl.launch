@@ -3,5 +3,8 @@
   	<node pkg="navquest_dvl" type="navquest_socket_node" name="dvl_navquest">
   		<remap from="meas_odom" to="meas_odom_navquest" />
   		<!-- <remap from="dvl" to="nu_dvl" /> -->
+	        <param name="fixed_orientation" value="3.14159" />
+        	<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+        	<remap from="velo_instrument" to="dvl" />
   	</node>	
 </launch>

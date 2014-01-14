@@ -81,6 +81,11 @@ include_directories(
 add_executable(navquest_node 
 	src/NavQuestNode.cpp
 	src/DVLdataClass.cpp)
+
+add_executable(navquest_socket_node 
+	src/NavQuestSocketNode.cpp
+	src/DVLdataClass.cpp)	
+
 add_executable(serialization_test src/test/serialization_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -89,6 +94,13 @@ add_executable(serialization_test src/test/serialization_test.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(navquest_node
+   ${Boost_THREAD_LIBRARY}
+   ${Boost_REGEX_LIBRARY}
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(navquest_socket_node
    ${Boost_THREAD_LIBRARY}
    ${Boost_REGEX_LIBRARY}
    ${Boost_SERIALIZATION_LIBRARY}

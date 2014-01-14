@@ -3,7 +3,7 @@
   		file="$(find labust_launchers)/launch/ldtravocean/config/navparams.yaml" />
     <node pkg="ldtravocean" type="ldnav_node" name="ekf_nav">
       <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
-      <param name="imu_with_yaw_rate" value="true" />
+      <param name="imu_with_yaw_rate" value="false" />
       <param name="dvl_model" value="1" />
       <remap from="gps" to="nogps" />
     </node>

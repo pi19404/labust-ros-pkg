@@ -210,20 +210,16 @@ void Estimator3D::processMeasurements()
 			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vx, nav.getState()(KFNav::u), fabs(rvx));
 			newMeas(KFNav::u) = false;
 		}
-		else
-		{
-			measurements(KFNav::u) = vx;
-		}
+		measurements(KFNav::u) = vx;
+
 
 		if (fabs((vy - vye)) > fabs(rvy))
 		{
 			ROS_INFO("Outlier rejected: meas=%f, est=%f, tolerance=%f", vy, nav.getState()(KFNav::v), fabs(rvy));
 			newMeas(KFNav::v) = false;
 		}
-		else
-		{
-			measurements(KFNav::v) = vy;
-		}
+		measurements(KFNav::v) = vy;
+
 		//measurements(KFNav::w) = dvl.body_speeds()[DvlHandler::w];
 	}
 
