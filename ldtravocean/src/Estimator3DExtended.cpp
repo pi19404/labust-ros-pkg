@@ -317,9 +317,11 @@ void Estimator3D::publishState()
 
 void Estimator3D::start()
 {
-	double fs=5;
-	ros::Rate rate(fs);
-	nav.setTs(1/fs);
+	ros::NodeHandle ph("~");
+	double Ts(0.1);
+	ph.param("Ts",Ts,Ts);
+	ros::Rate rate(1/Ts);
+	nav.setTs(Ts);
 
 	while (ros::ok())
 	{
