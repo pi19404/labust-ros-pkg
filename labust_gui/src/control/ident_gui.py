@@ -30,6 +30,7 @@ class IdentSetup():
         self.Ts = 0.1
         self.yawCheck = False
         self.depthCheck = False
+        self.positionCheck = False
             
 class IdentificationGui(QtGui.QWidget):
     
@@ -93,6 +94,7 @@ class IdentificationGui(QtGui.QWidget):
         tmp.hyst = self.identHyst.value()
         tmp.yawCheck = self.yawCheck.isChecked()
         tmp.depthCheck = self.depthCheck.isChecked()
+        tmp.positionCheck = self.positionCheck.isChecked()
         
         self._ident_state(True)
         self._clear_results()
@@ -190,6 +192,9 @@ class IdentificationROS(QtCore.QObject):
                                 "_ident_ref",setup.ref);
                 if setup.depthCheck: velcon[2] = 2;
                 if setup.yawCheck: velcon[5] = 2;
+                if setup.positionCheck: 
+                    velcon[0] = 2;
+                    velcon[1] = 2;
             
             try:
                 configurer = rospy.ServiceProxy("ConfigureVelocityController", 

@@ -85,15 +85,20 @@ add_library(pidtoolkit2
    src/pidtoolkit/PIFFController.c
    src/pidtoolkit/PSatDController.c
    src/pidtoolkit/IPFFController.c
+   src/pidtoolkit/PIDFFController.c
+   src/pidtoolkit/IPDFFController.c
 )
 set_source_files_properties(
    src/pidtoolkit/PIDBase.c
    src/pidtoolkit/PIFFController.c
    src/pidtoolkit/PSatDController.c 
-   src/pidtoolkit/IPFFController.c PROPERTIES LANGUAGE CXX)
+   src/pidtoolkit/IPFFController.c
+   src/pidtoolkit/PIDFFController.c
+   src/pidtoolkit/IPDFFController.c PROPERTIES LANGUAGE CXX)
 
 add_executable(fadp_controller2 src/FADPControl.cpp)
 add_executable(hdg_controller2 src/HDGControl.cpp)
+add_executable(hdg_controller_direct src/HDGControlDirect.cpp)
 add_executable(alt_controller2 src/ALTControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
 add_executable(nu_manual src/NuManual.cpp)
@@ -111,6 +116,7 @@ if (DEFINED catkin_EXPORTED_TARGETS)
  add_dependencies(fadp_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(lf_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(hdg_controller_direct ${catkin_EXPORTED_TARGETS})
  add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(nu_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(ref_manual ${catkin_EXPORTED_TARGETS})
@@ -139,6 +145,11 @@ target_link_libraries(alt_controller2
 )
 
 target_link_libraries(hdg_controller2
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(hdg_controller_direct
   pidtoolkit2
   ${catkin_LIBRARIES}
 )

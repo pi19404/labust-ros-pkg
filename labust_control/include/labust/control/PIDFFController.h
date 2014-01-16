@@ -31,80 +31,67 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
-#ifndef PIDBASE_H_
-#define PIDBASE_H_
+#ifndef PIDFFCONTROLLER_H_
+#define PIDFFCONTROLLER_H_
+#include <labust/control/PIDBase.h>
+#include <math.h>
 /**
- * The extended PT1 model used for vehicle. The model can be used
- * to auto-tune the PIDController class. The model is defined as:
- *
- *  alpha * nu' = (beta + betaa * abs(nu))*nu + tau
+ * Autotune the PIDFF controller based on the supplied
+ * PT1Model and desired closed loop frequency.
+ * \todo Document the binomial autotuning (pole-placement)
  */
-typedef struct PT1Model
+void PIDFF_modelTune(PIDBase* self,
+		const PT1Model* const model,
+		float w);
+/**
+ * Autotune the PIDFF controller using the plant model 1.
+ * Valid for higher level controllers.
+ */
+void PIDFF_tune(PIDBase* self, float w);
+
+/**
+ * Calculate one step of the PIDFF controller with externally
+ * supplied error, feedforward and derivative calculation.
+ */
+void PIDFF_dwffStep(PIDBase* self, float Ts, float error, float ff, float ds);
+
+/**
+ * Calculate one step of the PIDFF controller with externally
+ * supplied error and feedforward calculation.
+ */
+void PIDFF_wffStep(PIDBase* self, float Ts, float error, float ff);
+
+/**
+ * Calculate one step of the PIDFF controller.
+ */
+inline void PIDFF_step(PIDBase* self, float Ts)
 {
-	/**
-	 * The inertia parameter.
-	 */
-	float alpha;
-	/**
-	 * The linear drag parameter.
-	 */
-	float beta;
-	/**
-	 * The non-linear drag parameter.
-	 */
-	float betaa;
-} PT1Model;
-
+	PIDFF_wffStep(self, Ts,
+			self->desired - self->state,
+			(self->model.beta +
+			self->model.betaa*fabs(self->desired))*self->desired);
+}
 /**
- * The PID controller base.
- * \todo Use doxygen grouping and reduce size
- * \todo Document difference between auto-windup and ext-windup
- * \todo Rename lastError, lastState to yk_1, ek_1,ek_2 etc.
+ * Calculate one step of the PIDFF controller with externally
+ * supplied error calculation.
  */
-typedef struct PIDBase
+inline void PIDFF_wStep(PIDBase* self, float Ts, float error)
 {
-	/**
-	 * The proportional, integral, derivative,
-	 * filter and tracking gain.
-	 */
-	float Kp, Ki, Kd, Tf, Kt;
-	/**
-	 * Automatic tracking flag.
-	 */
-	char autoWindup;
-	/**
-	 * The windup flag
-	 */
-	char windup;
-	/**
-	 * The maximum output limit. The output saturation is symmetric.
-	 */
-	float outputLimit;
-	/**
-	 * Internal state of the backward euler.
-	 */
-	float internalState, lastRef, lastError, lastFF, lastState, llastError, llastState, lastDerivative;
-
-	/**
-	 * The reference, state, output, feedforward, tracking
-	 */
-	float desired, state, output;
-
-	/**
-	 * The internal model parameters.
-	 */
-	PT1Model model;
-} PIDBase;
-
+	PIDFF_wffStep(self, Ts,
+			error,
+			(self->model.beta +
+			self->model.betaa*fabs(self->desired))*self->desired);
+}
 /**
- * Initialize the controller base. Set all the values to zero
- * and disable auto windup detection.
+ * Calculate one step of the PIDFF controller with externally
+ * supplied feedforward calculation.
  */
-void PIDBase_init(PIDBase* self);
+inline void PIDFF_ffStep(PIDBase* self, float Ts, float ff)
+{
+	PIDFF_wffStep(self, Ts,
+			self->desired - self->state,
+			ff);
+}
 
-/**
- * The helper function for output saturation.
- */
-float sat(float u, float low, float high);
-/* PIDBASE_H_ */
+/* PIDFFCONTROLLER_H_ */
 #endif

@@ -3,6 +3,7 @@
   <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
   <arg name="use_pl" value="$(optenv IS_PLADYPOS 0)" />
   <arg name="en_logging" value="$(optenv ENABLE_LOGGING 0)" />     
+  <arg name="use_direct" value="$(optenv USE_DIRECT 0)" />     
 
   <group ns="ldtravo">
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
@@ -25,7 +26,8 @@
   	<include file="$(find labust_launchers)/launch/ldtravocean/navigation.launch"/>
     	
   	<!-- Add the controllers -->
-  	<include file="$(find labust_launchers)/launch/ldtravocean/control.launch"/>
+  	<include file="$(find labust_launchers)/launch/ldtravocean/control.launch" unless="$(arg use_direct)"/>
+  	<include file="$(find labust_launchers)/launch/ldtravocean/control_direct.launch" if="$(arg use_direct)" />
 	
 	<!-- add the opto22 bridge node -->
 	<include file="$(find labust_launchers)/launch/ldtravocean/opto22.launch"/>
