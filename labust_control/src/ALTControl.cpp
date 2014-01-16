@@ -109,6 +109,7 @@ namespace labust
 				if (useIP)
 				{
 					IPFF_ffStep(&con, Ts, 0);
+					ROS_INFO("Current state=%f, desired=%f, windup=%d", con.state, con.desired, con.windup);
 				}
 				else
 				{
@@ -121,7 +122,14 @@ namespace labust
 				nu->goal.requester = "alt_controller";
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				nu->twist.linear.z = con.output;
+				if (ref.position.depth < 0)
+				{
+					nu->twist.linear.z = -con.output;
+				}
+				else
+				{
+					nu->twist.linear.z = con.output;
+				}
 
 				return nu;
 			}
@@ -147,9 +155,7 @@ namespace labust
 				else
 				{
 					PSatD_tune(&con, float(closedLoopFreq), 0, 1);
-					con.outputLimit = 180;
-					con.Kd=0;
-					con.Kp = 180;
+					con.outputLimit = 1;
 				}
 
 				ROS_INFO("Depth/Altitude controller initialized.");
