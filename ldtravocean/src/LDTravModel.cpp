@@ -80,13 +80,15 @@ void LDTravModel::step(const input_type& input)
   x(u) += Ts*(-surge.Beta(x(u))/surge.alpha*x(u) + 1/surge.alpha * input(X));
   x(v) += Ts*(-sway.Beta(x(v))/sway.alpha*x(v) + 1/sway.alpha * input(Y));
   x(w) += Ts*(-heave.Beta(x(w))/heave.alpha*x(w) + 1/heave.alpha * (input(Z) + x(buoyancy)));
-  x(r) += Ts*(-yaw.Beta(x(r))/yaw.alpha*x(r) + 1/yaw.alpha * input(N) + x(b));
+  x(r) += Ts*(-yaw.Beta(x(r))/yaw.alpha*x(r) + 1/yaw.alpha * input(N) + 0*x(b));
 
   xdot = x(u)*cos(x(psi)) - x(v)*sin(x(psi)) + x(xc);
   ydot = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
   x(xp) += Ts * xdot;
   x(yp) += Ts * ydot;
-  x(zp) += Ts * x(w);
+  //x(zp) += Ts * x(w);
+  //The altitude hack
+  x(zp) -= Ts * x(w);
   x(psi) += Ts * x(r);
 
   xk_1 = x;
@@ -103,7 +105,7 @@ void LDTravModel::derivativeAW()
 	A(w,w) = 1-Ts*(heave.beta + 2*heave.betaa*fabs(x(w)))/heave.alpha;
 	A(w,buoyancy) = Ts/heave.alpha;
 	A(r,r) = 1-Ts*(yaw.beta + 2*yaw.betaa*fabs(x(r)))/yaw.alpha;
-	A(r,b) = Ts;
+	A(r,b) = 0*Ts;
 
 	A(xp,u) = Ts*cos(x(psi));
 	A(xp,v) = -Ts*sin(x(psi));
@@ -115,7 +117,9 @@ void LDTravModel::derivativeAW()
 	A(yp,psi) = Ts*(x(u)*cos(x(psi)) - x(v)*sin(x(psi)));
 	A(yp,yc) = Ts;
 
-	A(zp,w) = Ts;
+	//A(zp,w) = Ts;
+	//The altitude hack
+	A(zp,w) = -Ts;
 
 	A(psi,r) = Ts;
 }

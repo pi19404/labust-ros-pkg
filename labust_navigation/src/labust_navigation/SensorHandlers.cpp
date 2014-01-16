@@ -130,6 +130,15 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 			tf::Vector3 speed(data->twist.linear.x, data->twist.linear.y, data->twist.linear.z);
 			tf::Vector3 body_speed = transform.getBasis()*speed;
 
+			//Add compensation for excentralized DVL
+			tf::Vector3 origin=transform.getOrigin();
+			if (origin.x() != 0 || origin.y() != 0)
+			{
+				double ang = atan2(origin.y(), origin.x());
+				double vm = r*sqrt(origin.x()*origin.x() + origin.y()*origin.y());
+				body_speed -= tf::Vector3(vm*sin(ang),vm*cos(ang),0);
+			}
+
 			uvw[u] = body_speed.x();
 			uvw[v] = body_speed.y();
 			uvw[w] = body_speed.z();

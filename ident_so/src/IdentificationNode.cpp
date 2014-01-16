@@ -44,7 +44,7 @@
 
 using namespace labust::control;
 
-const char dofNames[]={'X','Y','Z','K','M','N'};
+const char dofNames[]={'X','Y','Z','K','M','N','Alt'};
 
 IdentificationNode::IdentificationNode():
 				measurements(Eigen::Matrix<double,6,1>::Zero()),
@@ -89,7 +89,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		measurements(x) = meas->position.north;
 		measurements(y) = meas->position.east;
 	}
-	measurements(z) = meas->position.depth;
+	measurements(z) = meas->altitude;
 	measurements(roll) = meas->orientation.roll;
 	measurements(pitch) = meas->orientation.pitch;
 	measurements(yaw) = meas->orientation.yaw;

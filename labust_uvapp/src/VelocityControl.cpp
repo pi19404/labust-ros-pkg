@@ -464,7 +464,7 @@ void VelocityControl::initialize_controller()
 	alpha_mass<<model.m,model.m,model.m,model.Io.diagonal();
 	alphas += alpha_mass;
 
-	nh.param("velocity_controller/period",Ts,Ts);
+	nh.param("velocity_controller/Ts",Ts,Ts);
 
 	for (int32_t i = u; i <=r; ++i)
 	{

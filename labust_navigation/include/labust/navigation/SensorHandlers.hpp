@@ -119,13 +119,17 @@ namespace labust
 		public:
 			enum {u=0,v,w};
 
+			DvlHandler():r(0){};
+
 			void configure(ros::NodeHandle& nh);
 
 			inline const double* body_speeds() const {return uvw;};
 
+			inline void current_r(double yaw_rate) {r = yaw_rate;};
+
 		private:
 			void onDvl(const geometry_msgs::TwistStamped::ConstPtr& data);
-			double uvw[3];
+			double uvw[3], r;
 			ros::Subscriber nu_dvl;
 			tf::TransformListener listener;
 		};
