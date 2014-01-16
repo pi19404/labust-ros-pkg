@@ -62,12 +62,14 @@ void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 		self->windup = (self->internalState > self->output) && (error>0);
 		self->windup = (self->windup) ||
 				((self->internalState < self->output) && (error<0));
+		//Set the wind-up sign for cascade controllers.
+		if ((self->windup) && (self->internalState < self->output))	self->windup = -1;
 	}
 	else
 	{
 		//Experimental
-		//self->windup = ((self->windup >0) && (error>0)) ||
-		//		((self->windup <0) && (error<0));
+		self->windup = ((self->windup > 0) && (error > 0)) ||
+				((self->windup < 0) && (error < 0));
 	}
 
 	//Proportional term
