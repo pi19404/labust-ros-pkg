@@ -13,9 +13,9 @@ rb: [0, 0, -0.64] # The location vector of the buoyancy
 # Matrix (3x3) or diagonal elements (1x3)
 inertia_matrix: [25, 50, 313.449] 
 # Matrix (6x6) or diagonal elements (1x6)
-added_mass: [180, 375, 80, 15, 30, 0]
+added_mass: [180, 375, 1500, 15, 30, 0]
 # Matrix (6x6) or diagonal elements (1x6)
-linear_damping: [45, 65, 100, 400, 300, 41.0896]
+linear_damping: [45, 65, 220.82, 400, 300, 41.0896]
 # Matrix (6x6) or diagonal elements (1x6)
 quadratic_damping: [0,0,0,0,0,0] 
 

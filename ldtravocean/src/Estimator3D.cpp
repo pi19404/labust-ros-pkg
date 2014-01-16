@@ -149,14 +149,14 @@ void Estimator3D::onTau(const auv_msgs::BodyForceReq::ConstPtr& tau)
 
 void Estimator3D::onDepth(const std_msgs::Float32::ConstPtr& data)
 {
-	measurements(KFNav::zp) = data->data;
-	newMeas(KFNav::zp) = 1;
+	//measurements(KFNav::zp) = data->data;
+	//newMeas(KFNav::zp) = 1;
 };
 
 void Estimator3D::onAltitude(const std_msgs::Float32::ConstPtr& data)
 {
-	//measurement(KFNav::zp) = data->data;
-	//newMeas(KFNav::zp) = 1;
+	measurements(KFNav::zp) = data->data;
+	newMeas(KFNav::zp) = 1;
 	alt = data->data;
 };
 
@@ -231,7 +231,8 @@ void Estimator3D::processMeasurements()
 
 	meas->position.north = measurements(KFNav::xp);
 	meas->position.east = measurements(KFNav::yp);
-	meas->position.depth = measurements(KFNav::zp);
+	//Altitude hack
+	//meas->position.depth = measurements(KFNav::zp);
 	meas->altitude = alt;
 
 	meas->orientation.roll = imu.orientation()[ImuHandler::roll];
@@ -261,8 +262,10 @@ void Estimator3D::publishState()
 
 	state->position.north = estimate(KFNav::xp);
 	state->position.east = estimate(KFNav::yp);
-	state->position.depth = estimate(KFNav::zp);
+	//state->position.depth = estimate(KFNav::zp);
+	//The altitude hack
 	state->altitude = alt;
+	state->altitude = estimate(KFNav::zp);
 
 	state->orientation.roll = imu.orientation()[ImuHandler::roll];
 	state->orientation.pitch = imu.orientation()[ImuHandler::pitch];
@@ -298,11 +301,16 @@ void Estimator3D::publishState()
 
 void Estimator3D::start()
 {
-	ros::Rate rate(10);
+	ros::NodeHandle ph("~");
+	double Ts(0.1);
+	ph.param("Ts",Ts,Ts);
+	ros::Rate rate(1/Ts);
+	nav.setTs(Ts);
 
 	while (ros::ok())
 	{
 		nav.predict(tauIn);
+		dvl.current_r(nav.getState()(KFNav::r));
 		processMeasurements();
 		bool newArrived(false);
 		for(size_t i=0; i<newMeas.size(); ++i)	if ((newArrived = newMeas(i))) break;

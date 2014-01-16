@@ -8,7 +8,10 @@
       <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
       <param name="imu_with_yaw_rate" value="false" />
       <param name="dvl_model" value="1" />
+      <param name="Ts" value="0.2" />
+       
       <remap from="gps" to="nogps" />
+      <remap from="altitude" to="altitude_opto" />
     </node>
 
     <node pkg="ldtravocean" type="ldnavex_node" name="ekf_nav" if="$(arg use_extended)">

@@ -220,7 +220,9 @@ void NavQuestSocketNode::publishDvlData(const NQRes& data)
 	//Either use a fixed rotation here or the DVL measurements
 	enum {roll=0, pitch, yaw};
 	tf::Transform transform;
-	transform.setOrigin(tf::Vector3(0,0,0));
+	//Moved 1.4m from the rotation origin.
+	transform.setOrigin(tf::Vector3(1.4,0,0));
+	//transform.setOrigin(tf::Vector3(0,0,0));
 	if (useFixed)
 	{
 		transform.setRotation(tf::createQuaternionFromRPY(0,0, base_orientation));

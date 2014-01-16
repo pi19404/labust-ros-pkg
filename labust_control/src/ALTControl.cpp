@@ -75,7 +75,7 @@ namespace labust
   			con.internalState = 0;
   			if (ref.position.depth < 0)
   			{
-  				con.lastState = -state.altitude;
+  				con.lastState = state.altitude;
   			}
   			else
   			{
@@ -92,7 +92,8 @@ namespace labust
 				if (ref.position.depth < 0)
 				{
 					//Altitude mode
-					con.state = -state.altitude;
+					con.desired = -ref.position.depth;
+					con.state = state.altitude;
 					//\todo Check this if derivative has ok sign.
 					wd = -wd;
 				}
@@ -111,7 +112,8 @@ namespace labust
 				}
 				else
 				{
-					PSatD_dStep(&con, Ts, wd);
+					PSatD_dStep(&con, Ts, 0);
+					ROS_INFO("Current state=%f, desired=%f", con.state, con.desired);
 				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
@@ -145,7 +147,9 @@ namespace labust
 				else
 				{
 					PSatD_tune(&con, float(closedLoopFreq), 0, 1);
-					con.outputLimit = 1000;
+					con.outputLimit = 180;
+					con.Kd=0;
+					con.Kp = 180;
 				}
 
 				ROS_INFO("Depth/Altitude controller initialized.");
