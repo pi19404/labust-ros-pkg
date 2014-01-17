@@ -100,6 +100,7 @@ add_executable(fadp_controller2 src/FADPControl.cpp)
 add_executable(hdg_controller2 src/HDGControl.cpp)
 add_executable(hdg_controller_direct src/HDGControlDirect.cpp)
 add_executable(alt_controller2 src/ALTControl.cpp)
+add_executable(pitch_controller src/PitchControl.cpp)
 add_executable(lf_controller2 src/LFControl.cpp)
 add_executable(nu_manual src/NuManual.cpp)
 add_executable(ref_manual src/RefManual.cpp)
@@ -118,6 +119,7 @@ if (DEFINED catkin_EXPORTED_TARGETS)
  add_dependencies(hdg_controller2 ${catkin_EXPORTED_TARGETS})
  add_dependencies(hdg_controller_direct ${catkin_EXPORTED_TARGETS})
  add_dependencies(alt_controller2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(pitch_controller ${catkin_EXPORTED_TARGETS})
  add_dependencies(nu_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(ref_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(async_merger ${catkin_EXPORTED_TARGETS})
@@ -140,6 +142,11 @@ target_link_libraries(fadp_controller2
 )
 
 target_link_libraries(alt_controller2
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(pitch_controller
   pidtoolkit2
   ${catkin_LIBRARIES}
 )

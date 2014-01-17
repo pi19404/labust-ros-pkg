@@ -47,6 +47,8 @@ class SimManGui(QtGui.QWidget):
         if hdg < 0: hdg += 360
         self.statusHeading.setText("{:.2f}".format(hdg))
         self.statusAltitude.setText("{:.2f}".format(data.altitude))
+        self.statusRoll.setText("{:.2f}".format(math.degrees(data.orientation.roll)))
+        self.statusPitch.setText("{:.2f}".format(math.degrees(data.orientation.pitch)))
         
         self._update_refs(data)
         
@@ -69,6 +71,11 @@ class SimManGui(QtGui.QWidget):
                                                       self.depthRef.value()))
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDPEnable"), ros.onDPEnable)  
         self.dpEnable.toggled.connect(self._onDpEnable)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onPitchEnable"), ros.onPitchEnable)
+        self.pitchEnable.toggled.connect(lambda state: 
+                                           self.emit(QtCore.SIGNAL("onPitchEnable"), 
+                                           state, 
+                                           self.pitchRef.value()))
                                        
         
         QtCore.QObject.connect(self, QtCore.SIGNAL("onHeadingUpdate"), ros.onHeadingUpdate)
@@ -132,6 +139,8 @@ class SimManGui(QtGui.QWidget):
             self.headingRef.setValue(hdg)
         if not self.depthEnable.isChecked():
             self.depthRef.setValue(data.position.depth)
+        if not self.pitchEnable.isChecked():
+            self.pitchRef.setValue(math.degrees(data.orientation.pitch)) 
             
     def _booststrap(self):
         self.headingEnable.setChecked(False)
@@ -162,7 +171,8 @@ class HLManager:
                        "ALT":"ALT_enable",
                        "DP":"FADP_enable",
                        "NU":"NU_enable",
-                       "REF":"REF_enable"};
+                       "REF":"REF_enable",
+                       "PITCH":"PITCH_enable"};
         for v in self.enablers.values():
            self._invoke_enabler(v, False) 
                        
@@ -185,6 +195,7 @@ class HLManager:
                     
                 if not self.altEnable: self.velcon[2] = 1
                 if not self.hdgEnable: self.velcon[5] = 1
+                if not self.pitchEnable: self.velcon[4] = 1
             elif selection == 1:
                 for i,e in enumerate(self.velcon):
                     if (e != 2): self.velcon[i]=2
@@ -197,7 +208,7 @@ class HLManager:
         
         #Roll and pitch are not controlled               
         self.velcon[3] = 0
-        self.velcon[4] = 0
+        #self.velcon[4] = 0
         self._invoke_manual_nu_cfg()
         self._invoke_velcon_cfg()
                      
@@ -224,6 +235,20 @@ class HLManager:
         else:
             self.man_nu.z = 0
             self.velcon[2] = 0
+            self.manual_control(self.manualEnable, self.manualSelection)
+
+        self._invoke_manual_nu_cfg()
+        self._invoke_velcon_cfg()
+        
+    def pitch_control(self, state):
+        self.pitchEnable = state
+        self._invoke_enabler(self.enablers["PITCH"], state)
+        if state:
+            self.man_nu.pitch = 1
+            self.velcon[4] = 2
+        else:
+            self.man_nu.pitch = 0
+            self.velcon[4] = 0
             self.manual_control(self.manualEnable, self.manualSelection)
 
         self._invoke_manual_nu_cfg()
@@ -299,6 +324,10 @@ class SimManROS(QtCore.QObject):
             self._stateRef.position.depth = depth
             self._update_stateRef()
             
+        def onPitchUpdate(self, pitch):
+            self._stateRef.orientation.pitch = math.radians(pitch)
+            self._update_stateRef()
+            
         def onMoveBaseRef(self, x, y, selection):
             if selection == 0:
                 self._stateRef.position.north = x
@@ -331,6 +360,11 @@ class SimManROS(QtCore.QObject):
             #Invoke the enable services
             self.manager.depth_control(state);
             self.onDepthUpdate(depth)  
+        
+        def onPitchEnable(self, state, depth):
+            #Invoke the enable services
+            self.manager.pitch_control(state);
+            self.onPitchUpdate(depth)  
             
         def onDPEnable(self, state):
             #Invoke the enable services

@@ -23,6 +23,7 @@
        
       <remap from="gps" to="nogps" />
       <remap from="altitude" to="altitude_opto" />
+      <!-- <remap from="depth" to="depth_opto" /> -->
     </node>
 
     <node pkg="labust_navigation" type="llnode" name="tf_frame_node">

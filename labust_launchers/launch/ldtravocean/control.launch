@@ -40,6 +40,9 @@
 		<node pkg="labust_control" type="alt_controller2" name="alt_depth_control">
 			<remap from="Enable" to="ALT_enable" />
 		</node>
+		<node pkg="labust_control" type="pitch_controller" name="pitch_control">
+			<remap from="Enable" to="PITCH_enable" />
+		</node>
 		<node pkg="labust_control" type="hdg_controller2" name="hdg_control">
 			<remap from="Enable" to="HDG_enable" />
 		</node>
