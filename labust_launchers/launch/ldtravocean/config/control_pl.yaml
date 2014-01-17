@@ -9,7 +9,7 @@ dp_controller/Ts: 0.1
 alt_controller/closed_loop_freq: 0.15
 alt_controller/use_ip: true
 #Heading controller
-hdg_controller/closed_loop_freq: 0.15
+hdg_controller/closed_loop_freq: 0.1
 hdg_controller/use_ip: false
 hdg_controller/Ts: 0.1
 #Velocity controller

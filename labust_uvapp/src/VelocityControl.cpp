@@ -414,12 +414,36 @@ void VelocityControl::step()
 	tauach.wrench.torque.y = tau.wrench.torque.y;
 	tauach.wrench.torque.z = tau.wrench.torque.z;
 
-	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
-	if (controller[v].autoTracking) tauach.disable_axis.y = controller[v].windup;
-	if (controller[w].autoTracking) tauach.disable_axis.z = controller[w].windup;
-	if (controller[p].autoTracking) tauach.disable_axis.roll = controller[p].windup;
-	if (controller[q].autoTracking) tauach.disable_axis.pitch = controller[q].windup;
-	if (controller[r].autoTracking) tauach.disable_axis.yaw = controller[r].windup;
+	if (controller[u].autoTracking)
+	{
+		tauach.disable_axis.x = controller[u].windup;
+		tauach.windup.x = controller[u].windup;
+	}
+	if (controller[v].autoTracking)
+	{
+		tauach.disable_axis.y = controller[v].windup;
+		tauach.windup.y = controller[v].windup;
+	}
+	if (controller[w].autoTracking)
+	{
+		tauach.disable_axis.z = controller[w].windup;
+		tauach.windup.z = controller[w].windup;
+	}
+	if (controller[p].autoTracking)
+	{
+		tauach.disable_axis.roll = controller[p].windup;
+		tauach.windup.roll = controller[p].windup;
+	}
+	if (controller[q].autoTracking)
+	{
+		tauach.disable_axis.pitch = controller[q].windup;
+		tauach.windup.pitch = controller[q].windup;
+	}
+	if (controller[r].autoTracking)
+	{
+		tauach.disable_axis.yaw = controller[r].windup;
+		tauach.windup.yaw = controller[r].windup;
+	}
 
 	//Restart values
 	//newReference = newEstimate = false;
