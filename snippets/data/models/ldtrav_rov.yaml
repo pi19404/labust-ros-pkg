@@ -4,7 +4,7 @@ gravity: 9.81
 fluid_density: 1025.0
 
 # The bounding ellipsoid parameters (ax, ay, az) used for buoyancy calculation
-bounding_ellipsoid: [0.5,0.5,0.5]
+bounding_ellipsoid: [0.412,0.412,0.412]
 
 # The dynamic parameters 
 

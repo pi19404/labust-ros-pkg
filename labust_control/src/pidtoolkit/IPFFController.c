@@ -66,8 +66,8 @@ void IPFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 	else
 	{
 		//Experimental
-		//self->windup = ((self->windup >0) && (error>0)) ||
-		//		((self->windup <0) && (error<0));
+		self->windup = ((self->extWindup >0) && (error>0)) ||
+				((self->extWindup <0) && (error<0));
 	}
 
 	//Proportional term

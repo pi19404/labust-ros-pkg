@@ -36,6 +36,8 @@
 void PIDBase_init(PIDBase* self)
 {
 	self->autoWindup = 0;
+	self->windup = 0;
+	self->extWindup = 0;
 	self->outputLimit = 0;
 	self->Kp = self->Ki = 0;
 	self->Kd = self->Tf = 0;
