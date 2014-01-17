@@ -44,7 +44,7 @@ void PIDBase_init(PIDBase* self)
 	self->Kt = 0;
 
 	self->internalState = self->output = 0;
-	self->desired= self->state =0;
+	self->desired = self->state =0;
 	self->lastError = self->lastRef = 0;
 	self->lastFF = self->lastState = 0;
 	self->llastError = self->llastState = 0;

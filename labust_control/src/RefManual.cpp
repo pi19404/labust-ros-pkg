@@ -79,6 +79,7 @@ namespace labust
 				{
 					this->baseRef.position = state->position;
 					this->baseRef.orientation = state->orientation;
+					this->baseRef.position.depth = -state->altitude;
 				}
 				stateReady = Enable::enable;
 			}
@@ -103,12 +104,14 @@ namespace labust
 
 				baseRef.position.north += out(u);
 				baseRef.position.east += out(v);
+				//baseRef.position.depth += mapped[w]*Ts*nu_max(w);
 				baseRef.position.depth += mapped[w]*Ts*nu_max(w);
 				baseRef.orientation.roll += mapped[p]*Ts*nu_max(p);
 				baseRef.orientation.pitch += mapped[q]*Ts*nu_max(q);
 				baseRef.orientation.yaw += mapped[r]*Ts*nu_max(r);
-				baseRef.body_velocity.x = mapped[u]*nu_max[u]*Ts;
-				baseRef.body_velocity.y = mapped[v]*nu_max[v]*Ts;
+				baseRef.body_velocity.x = mapped[u]*nu_max[u];
+				baseRef.body_velocity.y = mapped[v]*nu_max[v];
+				baseRef.body_velocity.z = mapped[w]*nu_max[w];
 
 				stateRef.publish(baseRef);
 			}

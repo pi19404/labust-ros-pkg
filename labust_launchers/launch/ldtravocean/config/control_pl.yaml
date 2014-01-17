@@ -8,8 +8,9 @@ dp_controller/Ts: 0.1
 #Alt/Depth controller
 alt_controller/closed_loop_freq: 0.15
 alt_controller/use_ip: true
+alt_controller/min_altitude: 0.5
 #Heading controller
-hdg_controller/closed_loop_freq: 0.1
+hdg_controller/closed_loop_freq: 0.15
 hdg_controller/use_ip: false
 hdg_controller/Ts: 0.1
 #Velocity controller

@@ -56,7 +56,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			ALTControl():Ts(0.1), useIP(false){};
+			ALTControl():Ts(0.1), useIP(false), minAltitude(5){};
 
 			void init()
 			{
@@ -124,7 +124,7 @@ namespace labust
 				//\todo Check the derivative sign
 				if (useIP)
 				{
-					IPFF_ffStep(&con, Ts, 0);
+					IPFF_ffStep(&con, Ts, ref.body_velocity.z);
 					ROS_INFO("Current state=%f, desired=%f, windup=%d", con.state, con.desired, con.windup);
 				}
 				else
@@ -147,6 +147,13 @@ namespace labust
 					nu->twist.linear.z = con.output;
 				}
 
+				//Safety
+				if (state.altitude < minAltitude)
+				{
+					con.internalState = 0;
+					nu->twist.linear.z = 0;
+				}
+
 				return nu;
 			}
 
@@ -159,6 +166,7 @@ namespace labust
 				nh.param("alt_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
 				nh.param("alt_controller/sampling",Ts,Ts);
 				nh.param("alt_controller/use_ip",useIP,useIP);
+				nh.param("alt_controller/min_altitude",minAltitude,minAltitude);
 
 				disable_axis[2] = 0;
 
@@ -183,6 +191,7 @@ namespace labust
 			double Ts;
 			bool useIP;
 			double lastRef;
+			double minAltitude;
 		};
 	}}
 
