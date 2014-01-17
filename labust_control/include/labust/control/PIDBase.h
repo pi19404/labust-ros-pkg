@@ -75,7 +75,7 @@ typedef struct PIDBase
 	/**
 	 * The windup flag
 	 */
-	char windup;
+	char windup, extWindup;
 	/**
 	 * The maximum output limit. The output saturation is symmetric.
 	 */

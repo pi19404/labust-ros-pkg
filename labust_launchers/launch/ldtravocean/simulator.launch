@@ -14,6 +14,7 @@
 		<param name="minThrust" value="-100" />
 		
 		<remap from="tauIn" to="tauOut" />
+		<remap from="tauAch" to="tauAchOther" />
 	</node>
   		
   	<!-- IMU sensor simulation node -->

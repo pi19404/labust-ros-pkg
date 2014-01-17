@@ -67,12 +67,14 @@ namespace labust
   		void windup(const auv_msgs::BodyForceReq& tauAch)
 			{
 				//Copy into controller
-				con.windup = tauAch.disable_axis.z;
+				//con.windup = tauAch.disable_axis.z;
+  			con.extWindup = tauAch.windup.z;
 			};
 
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
   		{
   			con.internalState = 0;
+  			lastRef = ref.position.depth;
   			if (ref.position.depth < 0)
   			{
   				con.lastState = state.altitude;
@@ -87,6 +89,20 @@ namespace labust
 					const auv_msgs::NavSts& state)
 			{
 				con.desired = ref.position.depth;
+
+				//check setup
+				if ((lastRef > 0) && (ref.position.depth < 0))
+				{
+					con.lastState = state.altitude;
+					con.lastRef = -ref.position.depth;
+				}
+				else if ((lastRef < 0) && (ref.position.depth > 0))
+				{
+					con.lastState = state.position.depth;
+					con.lastRef = ref.position.depth;
+				}
+				lastRef = ref.position.depth;
+
 				//Check if altitude or depth reference
 				float wd = state.body_velocity.z;
 				if (ref.position.depth < 0)
@@ -166,6 +182,7 @@ namespace labust
 			PIDBase con;
 			double Ts;
 			bool useIP;
+			double lastRef;
 		};
 	}}
 
