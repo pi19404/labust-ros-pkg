@@ -1,8 +1,8 @@
 <launch>
-  <machine name="shoreside" address="dnad-elitebook" 
+  <machine name="shoreside" address="localhost" 
   	env-loader="~/Development/ros/devel/env.sh"
   	user="dnad" />
-  <machine name="controlled" address="pladypos" 
+  <machine name="controlled" address="localhost" 
 	env-loader="$(env HOME)/catkin_ws/devel/env.sh" 
 	default="true" />
 </launch>

@@ -14,7 +14,8 @@
   	<include file="$(find caddy_uwsim)/data/config/logging.xml" if="$(optenv ENABLE_LOGGING 0)" />
   	<include file="$(find caddy_uwsim)/data/config/navigation.xml" /> 	
   	<include file="$(find caddy_uwsim)/data/config/control.xml" />
-   	<include file="$(find caddy_uwsim)/data/config/joy.xml" />
+   	<!-- Joystick disabled in favor of multi-master -->
+	<!-- <include file="$(find caddy_uwsim)/data/config/joy.xml" /> -->
   	<include file="$(find caddy_uwsim)/data/config/manager.xml" />
   	
   	<!-- Add runtime applications -->
@@ -38,4 +39,8 @@
   	<rosparam command="load" file="$(find caddy_uwsim)/data/config/usblfilterparams.yaml" />
 	<include file="$(find usbl_comms)/launch/usbl_comms.launch" if="$(arg use_usbl_manager)" />
   </group>
+
+  <!-- Add multi-master support -->
+  <node pkg="master_discovery_fkie" type="zeroconf" name="master_discovery" />
+  <node pkg="master_sync_fkie" type="master_sync" name="master_sync" />
 </launch>
