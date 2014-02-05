@@ -63,6 +63,9 @@ namespace labust
 		 *
 		 * We leave the matrix size generic for now. Usually these could be supplied directly in the
 		 * template.
+		 *
+		 * \todo Deprecate R0/R as there can be only one of them and by selecting V/V0 appropriately we
+		 * can achieve the same result with one matrix less.
 		 */
 		template <class precission = double>
 		class SSModel : boost::noncopyable
@@ -94,7 +97,7 @@ namespace labust
 			 * Measurement noise covariance,
 			 * Measurement noise transformation
 			 */
-			matrix A,B,Q,W,H,R,V,R0,V0;
+			matrix A,B,Q,W,H,R,V,H0,R0,V0;
 			/**
 			 * Model sampling time
 			 */

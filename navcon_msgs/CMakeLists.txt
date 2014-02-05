@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   std_msgs
+  auv_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,6 +49,8 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
    FILES
    HLMessage.msg
+   ModelParamsUpdate.msg
+   PIDParamsUpdate.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -56,6 +59,8 @@ add_service_files(
    SetHLMode.srv
    EnableControl.srv
    RegisterController.srv
+   ConfigureAxes.srv
+   ConfigureVelocityController.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -70,6 +75,7 @@ generate_messages(
    actionlib_msgs
    geometry_msgs
    std_msgs
+   auv_msgs
 )
 
 ###################################

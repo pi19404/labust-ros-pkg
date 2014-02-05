@@ -41,7 +41,8 @@
 
 using namespace labust::navigation;
 
-LDTravModel::LDTravModel()
+LDTravModel::LDTravModel():
+		dvlModel(0)
 {
 	this->initModel();
 };
@@ -68,18 +69,26 @@ void LDTravModel::calculateXYInovationVariance(const LDTravModel::matrix& P, dou
 	yin = sqrt(P(yp,yp)) + sqrt(R0(yp,yp));
 }
 
+void LDTravModel::calculateUVInovationVariance(const LDTravModel::matrix& P, double& uin,double &vin)
+{
+	uin = sqrt(P(u,u)) + sqrt(R0(v,v));
+	vin = sqrt(P(v,v)) + sqrt(R0(v,v));
+}
+
 void LDTravModel::step(const input_type& input)
 {
   x(u) += Ts*(-surge.Beta(x(u))/surge.alpha*x(u) + 1/surge.alpha * input(X));
   x(v) += Ts*(-sway.Beta(x(v))/sway.alpha*x(v) + 1/sway.alpha * input(Y));
   x(w) += Ts*(-heave.Beta(x(w))/heave.alpha*x(w) + 1/heave.alpha * (input(Z) + x(buoyancy)));
-  x(r) += Ts*(-yaw.Beta(x(r))/yaw.alpha*x(r) + 1/yaw.alpha * input(N) + x(b));
+  x(r) += Ts*(-yaw.Beta(x(r))/yaw.alpha*x(r) + 1/yaw.alpha * input(N) + 0*x(b));
 
   xdot = x(u)*cos(x(psi)) - x(v)*sin(x(psi)) + x(xc);
   ydot = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
   x(xp) += Ts * xdot;
   x(yp) += Ts * ydot;
-  x(w) += Ts * x(w);
+  //x(zp) += Ts * x(w);
+  //The altitude hack
+  x(zp) -= Ts * x(w);
   x(psi) += Ts * x(r);
 
   xk_1 = x;
@@ -96,11 +105,11 @@ void LDTravModel::derivativeAW()
 	A(w,w) = 1-Ts*(heave.beta + 2*heave.betaa*fabs(x(w)))/heave.alpha;
 	A(w,buoyancy) = Ts/heave.alpha;
 	A(r,r) = 1-Ts*(yaw.beta + 2*yaw.betaa*fabs(x(r)))/yaw.alpha;
-	A(r,b) = Ts;
+	A(r,b) = 0*Ts;
 
 	A(xp,u) = Ts*cos(x(psi));
 	A(xp,v) = -Ts*sin(x(psi));
-	A(xp,psi) = Ts*(-x(u)*sin(x(psi) - x(v)*sin(x(psi))));
+	A(xp,psi) = Ts*(-x(u)*sin(x(psi) - x(v)*cos(x(psi))));
 	A(xp,xc) = Ts;
 
 	A(yp,u) = Ts*sin(x(psi));
@@ -108,7 +117,9 @@ void LDTravModel::derivativeAW()
 	A(yp,psi) = Ts*(x(u)*cos(x(psi)) - x(v)*sin(x(psi)));
 	A(yp,yc) = Ts;
 
-	A(zp,w) = Ts;
+	//A(zp,w) = Ts;
+	//The altitude hack
+	A(zp,w) = -Ts;
 
 	A(psi,r) = Ts;
 }
@@ -128,15 +139,29 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 		}
 	}
 
+	if (dvlModel != 0) derivativeH();
+
 	measurement.resize(arrived.size());
 	H = matrix::Zero(arrived.size(),stateNum);
+	y = vector::Zero(arrived.size());
 	R = matrix::Zero(arrived.size(),arrived.size());
 	V = matrix::Zero(arrived.size(),arrived.size());
 
 	for (size_t i=0; i<arrived.size();++i)
 	{
 		measurement(i) = dataVec[i];
-		H(i,arrived[i]) = 1;
+
+		if (dvlModel != 0)
+		{
+			H.row(i)=Hnl.row(arrived[i]);
+			y(i) = ynl(arrived[i]);
+		}
+		else
+		{
+			H(i,arrived[i]) = 1;
+			y(i) = x(arrived[i]);
+		}
+
 		for (size_t j=0; j<arrived.size(); ++j)
 		{
 			R(i,j)=R0(arrived[i],arrived[j]);
@@ -153,6 +178,48 @@ const LDTravModel::output_type& LDTravModel::update(vector& measurements, vector
 
 void LDTravModel::estimate_y(output_type& y)
 {
-  y=H*x;
+  y=this->y;
+}
+
+void LDTravModel::derivativeH()
+{
+	Hnl=matrix::Identity(stateNum,stateNum);
+	ynl = Hnl*x;
+
+	switch (dvlModel)
+	{
+	case 1:
+		//Correct the nonlinear part
+		ynl(u) = x(u)+x(xc)*cos(x(psi))+x(yc)*sin(x(psi));
+		ynl(v) = x(v)-x(xc)*sin(x(psi))+x(yc)*cos(x(psi));
+
+		//Correct for the nonlinear parts
+		Hnl(u,u) = 1;
+		Hnl(u,xc) = cos(x(psi));
+		Hnl(u,yc) = sin(x(psi));
+		Hnl(u,psi) = -x(xc)*sin(x(psi)) + x(yc)*cos(x(psi));
+
+		Hnl(v,v) = 1;
+		Hnl(v,xc) = -sin(x(psi));
+		Hnl(v,yc) = cos(x(psi));
+		Hnl(v,psi) = -x(xc)*cos(x(psi)) - x(yc)*sin(x(psi));
+		break;
+	case 2:
+		//Correct the nonlinear part
+	  y(u) = x(u)*cos(x(psi)) - x(v)*sin(x(psi)) + x(xc);
+	  y(v) = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
+
+	  //Correct for the nonlinear parts
+		Hnl(u,xc) = 1;
+		Hnl(u,u) = cos(x(psi));
+		Hnl(u,v) = -sin(x(psi));
+		Hnl(u,psi) = -x(u)*sin(x(psi)) - x(v)*cos(x(psi));
+
+		Hnl(v,yc) = 1;
+		Hnl(v,u) = sin(x(psi));
+		Hnl(v,v) = cos(x(psi));
+		Hnl(v,psi) = x(u)*cos(x(psi)) - x(v)*sin(x(psi));
+		break;
+	}
 }
 

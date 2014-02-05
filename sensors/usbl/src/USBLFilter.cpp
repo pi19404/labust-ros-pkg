@@ -187,7 +187,7 @@ void USBLFilter::run()
 		odom->position_variance.east = variance(KFilter::yp, KFilter::yp);
 
 		//\todo Add covariance data
-		odom->body_velocity.x = state(KFilter::Vv)*cos(state(KFilter::psi));
+		odom->body_velocity.x = state(KFilter::Vv);
 		//Free the filter lock
 		lock.unlock();
 

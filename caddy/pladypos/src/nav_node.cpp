@@ -44,7 +44,9 @@
 #include <labust/tools/DynamicsLoader.hpp>
 #include <labust/simulation/DynamicsParams.hpp>
 
-#include <kdl/frames.hpp>
+//#include <kdl/frames.hpp>
+#include <bullet/LinearMath/btQuaternion.h>
+#include <bullet/LinearMath/btMatrix3x3.h>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -124,7 +126,12 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 				data->orientation.z,data->orientation.w);
 		tf::Quaternion result = meas*transform.getRotation();
 
-		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		//\todo Shortcut corection to remove KDL dependency
+		btMatrix3x3 rm(btQuaternion(result.x(),result.y(),result.z(),result.w()));
+		float roll, pitch, yaw;
+		rm.getEulerZYX(yaw,pitch,roll);
+
 		/*labust::tools::eulerZYXFromQuaternion(
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),

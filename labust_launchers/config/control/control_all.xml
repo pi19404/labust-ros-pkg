@@ -1,0 +1,19 @@
+<launch>
+	<node pkg="labust_uvapp" type="velocity_control" name="velcon"
+		machine="controlled">
+		<!-- <remap from="tauAchVelCon" to="tauAch" /> -->
+	</node>
+	<node pkg="labust_uvapp" type="dp_control" name="station_keeping"
+		machine="controlled">
+		<remap from="Enable" to="DP_enable" />
+		<remap from="ref" to="nuRef" />
+	</node>
+	<node pkg="labust_uvapp" type="lf_control" name="line_following"
+		machine="controlled" />
+	<node pkg="labust_uvapp" type="vt_control" name="virtual_target"
+		machine="controlled">
+		<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+	</node>
+	<node pkg="labust_uvapp" type="hdg_control" name="heading_control"
+		machine="controlled" />
+</launch>

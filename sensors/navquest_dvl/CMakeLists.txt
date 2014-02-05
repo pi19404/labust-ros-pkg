@@ -4,7 +4,12 @@ project(navquest_dvl)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp snippets geometry_msgs)
+find_package(catkin REQUIRED COMPONENTS 
+    auv_msgs 
+    roscpp 
+    snippets 
+    geometry_msgs
+    tf)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system thread regex serialization) 
@@ -76,14 +81,31 @@ include_directories(
 add_executable(navquest_node 
 	src/NavQuestNode.cpp
 	src/DVLdataClass.cpp)
+
+add_executable(navquest_socket_node 
+	src/NavQuestSocketNode.cpp
+	src/DVLdataClass.cpp)	
+
 add_executable(serialization_test src/test/serialization_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(navquest_dvl_node navquest_dvl_generate_messages_cpp)
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(navquest_node ${catkin_EXPORTED_TARGETS})
+ add_dependencies(navquest_socket_node ${catkin_EXPORTED_TARGETS})
+ add_dependencies(serialization_test ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(navquest_node
+   ${Boost_THREAD_LIBRARY}
+   ${Boost_REGEX_LIBRARY}
+   ${Boost_SERIALIZATION_LIBRARY}
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(navquest_socket_node
    ${Boost_THREAD_LIBRARY}
    ${Boost_REGEX_LIBRARY}
    ${Boost_SERIALIZATION_LIBRARY}

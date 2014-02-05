@@ -37,12 +37,13 @@
 #ifndef SIMCORE_HPP_
 #define SIMCORE_HPP_
 #include <labust/simulation/RBModel.hpp>
-#include <labust/ros/SimSensors.hpp>
+//#include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/Vector3.h>
 #include <auv_msgs/NavSts.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
@@ -66,8 +67,10 @@ namespace labust
 		/**
 		 *  This class implements core functionality of the ROS uvsim node.
 		 *
-		 *  \todo Split into policy NavSts or Odom
-		 *  \todo Push the allocation part into the RBModel class.
+		 *  \todo Split into NavSts and Odom policy
+		 *  \todo Keep noise in the model or fully leave it up to sensor simulations ?
+		 *  \todo Remove commented SimInterface code.
+		 *  \todo Deprecated world coordinate publishing in favor of the LLNode in labust_navigation.
 		 */
 		class SimCore
 		{
@@ -87,14 +90,14 @@ namespace labust
 			 */
 			void start();
 
-			/**
-			 * Add a new sensor to the simulation.
-			 */
-			inline void addSensor(SimSensorInterface::Ptr sensor)
-			{
-					boost::mutex::scoped_lock l(sensor_mux);
-					sensors.push_back(sensor);
-			}
+//			/**
+//			 * Add a new sensor to the simulation.
+//			 */
+//			inline void addSensor(SimSensorInterface::Ptr sensor)
+//			{
+//					boost::mutex::scoped_lock l(sensor_mux);
+//					sensors.push_back(sensor);
+//			}
 
 		private:
 			/**
@@ -210,17 +213,13 @@ namespace labust
 			 */
 			tf::TransformBroadcaster broadcast;
 			/**
-			 * The frame transform listener.
-			 */
-			tf::TransformListener listener;
-			/**
 			 * Subscriptions to input virtual forces and currents.
 			 */
 			ros::Subscriber tauIn, tauInWrench, currentsSub;
 			/**
 			 * Publishing of achieved forces.
 			 */
-			ros::Publisher tauAch, tauAchWrench, meas, measn, odom, odomn;
+			ros::Publisher tauAch, tauAchWrench, meas, measn, odom, odomn, acc;
 			/**
 			 * The achieved tau.
 			 */
@@ -236,7 +235,7 @@ namespace labust
 			/**
 			 * The sensor vector.
 			 */
-			std::vector<SimSensorInterface::Ptr> sensors;
+//			std::vector<SimSensorInterface::Ptr> sensors;
 			/**
 			 * The simulation rate.
 			 */

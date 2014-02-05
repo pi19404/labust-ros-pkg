@@ -19,11 +19,10 @@ find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs r
 #######################################
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   ControllerInfo.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -125,12 +124,21 @@ target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 #	include/labust/control/VelocityControl.hpp)
 #target_link_libraries(${PR_NAME} ${catkin_LIBRARIES} labust_navcon)
 
-## Add dependencies to the executable
 add_dependencies(velocity_control ${PROJECT_NAME}_gencfg)
 add_dependencies(dp_control ${PROJECT_NAME}_gencpp)
 add_dependencies(vt_control ${PROJECT_NAME}_gencpp)
 add_dependencies(lf_control ${PROJECT_NAME}_gencpp)
 add_dependencies(velocity_control ${PROJECT_NAME}_gencpp)
+add_dependencies(hlmanager ${PROJECT_NAME}_gencpp)
+# Add dependencies to the executable
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(velocity_control ${catkin_EXPORTED_TARGETS})
+ add_dependencies(dp_control ${catkin_EXPORTED_TARGETS})
+ add_dependencies(vt_control ${catkin_EXPORTED_TARGETS})
+ add_dependencies(lf_control ${catkin_EXPORTED_TARGETS})
+ add_dependencies(velocity_control ${catkin_EXPORTED_TARGETS})
+ add_dependencies(hlmanager ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(labust_uvapp_node

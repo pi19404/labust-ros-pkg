@@ -1,3 +1,0 @@
-<launch>
-	<include file="$(find labust_sim)/config/simulator.xml"/>  	 
-</launch>

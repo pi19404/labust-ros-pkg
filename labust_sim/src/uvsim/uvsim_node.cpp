@@ -48,32 +48,32 @@ int main(int argc, char* argv[])
 	ros::NodeHandle nh;
 
 	//Sensor loaders
-	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
-		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
+//	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
+//		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
 
 	labust::simulation::SimCore simulator;
 
-	typedef std::pair<std::string, std::string> NameTopicPair;
-	std::vector< NameTopicPair >
-		list({
-		NameTopicPair("labust::simulation::ImuSensor","imu"),
-		NameTopicPair("labust::simulation::GPSSensor","fix")});
-
-	try
-	{
-		using namespace labust::simulation;
-		for (auto it = list.begin(); it != list.end(); ++it)
-		{
-			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
-			sensor->configure(nh,it->second);
-			simulator.addSensor(sensor);
-		}
-	}
-	catch(pluginlib::PluginlibException& ex)
-	{
-	  //handle the class failing to load
-	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
-	}
+//	typedef std::pair<std::string, std::string> NameTopicPair;
+//	std::vector< NameTopicPair >
+//		list({
+//		NameTopicPair("labust::simulation::ImuSensor","imu"),
+//		NameTopicPair("labust::simulation::GPSSensor","fix")});
+//
+//	try
+//	{
+//		using namespace labust::simulation;
+//		for (auto it = list.begin(); it != list.end(); ++it)
+//		{
+//			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
+//			sensor->configure(nh,it->second);
+//			simulator.addSensor(sensor);
+//		}
+//	}
+//	catch(pluginlib::PluginlibException& ex)
+//	{
+//	  //handle the class failing to load
+//	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
+//	}
 
 	ros::spin();
 	return 0;

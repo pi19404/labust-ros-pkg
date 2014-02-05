@@ -1,0 +1,9 @@
+<launch>
+	<group ns="diver">
+ 		<node pkg="labust_sim" type="kinematic_sim.py" name="diver_kinematic">
+	   		<remap from="TrackPoint" to="stateHat" />
+	   		<remap from="joy" to="/diver/joy" />
+			<param name="tf_prefix" value="diver" />
+        </node>
+	</group>
+</launch>

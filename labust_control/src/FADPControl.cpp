@@ -38,8 +38,10 @@
 #include <labust/control/EnablePolicy.hpp>
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PIFFController.h>
+#include <labust/control/IPFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <Eigen/Dense>
 #include <auv_msgs/BodyForceReq.h>
@@ -50,66 +52,77 @@ namespace labust
 {
 	namespace control{
 		///The fully actuated dynamic positioning controller
-		struct FADPControl
+		struct FADPControl : DisableAxis
 		{
-			enum {x=0,y,psi};
+			enum {x=0,y};
 
-			FADPControl():Ts(0.1), uff(0), vff(0){};
+			FADPControl():Ts(0.1), useIP(false){};
 
 			void init()
 			{
 				ros::NodeHandle nh;
-				headingRef = nh.subscribe<std_msgs::Float32>("heading_ref", 1,
-						&FADPControl::onHeadingRef,this);
-
 				initialize_controller();
 			}
 
-			void onHeadingRef(const std_msgs::Float32::ConstPtr& hdg)
-			{
-				con[psi].desired = hdg->data;
-			};
-
-			void windup(const auv_msgs::BodyForceReq& tauAch)
+  		void windup(const auv_msgs::BodyForceReq& tauAch)
 			{
 				//Copy into controller
 				con[x].windup = tauAch.disable_axis.x;
 				con[y].windup = tauAch.disable_axis.y;
-				con[psi].windup = tauAch.disable_axis.yaw;
 			};
+
+  		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
+  		{
+  			con[x].internalState = 0;
+  			con[y].internalState = 0;
+  			con[x].lastState = state.position.north;
+  			con[y].lastState = state.position.east;
+  		};
 
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
-				con[x].desired =  ref.position.north;
-				con[y].desired =  ref.position.east;
-				uff = ref.body_velocity.x*cos(ref.orientation.yaw);
-				vff = ref.body_velocity.x*sin(ref.orientation.yaw);
+				con[x].desired = ref.position.north;
+				con[y].desired = ref.position.east;
+
+				///\todo There are more options for this ?
+				Eigen::Vector2f out, in;
+				Eigen::Matrix2f R;
+				in<<ref.body_velocity.x,ref.body_velocity.y;
+				double yaw(ref.orientation.yaw);
+				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
+				out = R*in;
+				double uff = out(x);
+				double vff = out(y);
 
 				con[x].state = state.position.north;
 				con[y].state = state.position.east;
-				con[psi].state = state.orientation.yaw;
 
-				PIFF_ffStep(&con[x],Ts, uff);
-				PIFF_ffStep(&con[y],Ts, vff);
-				float errorWrap = labust::math::wrapRad(
-						con[psi].desired - con[psi].state);
-				PIFF_wStep(&con[psi],Ts, errorWrap);
+				if (useIP)
+				{
+					IPFF_ffStep(&con[x],Ts, uff);
+					IPFF_ffStep(&con[y],Ts, vff);
+				}
+				else
+				{
+					PIFF_ffStep(&con[x],Ts, uff);
+					PIFF_ffStep(&con[y],Ts, vff);
+				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
 				nu->goal.requester = "fadp_controller";
+				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				Eigen::Vector2f out, in;
-				Eigen::Matrix2f R;
+				//ROS_ERROR("Output %f %f %f %f",uff,vff,con[x].output, con[y].output);
+
 				in<<con[x].output,con[y].output;
-				double yaw(state.orientation.yaw);
+				yaw = state.orientation.yaw;
 				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
 				out = R.transpose()*in;
 
 				nu->twist.linear.x = out[0];
 				nu->twist.linear.y = out[1];
-				nu->twist.angular.z = con[psi].output;
 
 				return nu;
 			}
@@ -122,9 +135,13 @@ namespace labust
 				Eigen::Vector3d closedLoopFreq(Eigen::Vector3d::Ones());
 				labust::tools::getMatrixParam(nh,"dp_controller/closed_loop_freq", closedLoopFreq);
 				nh.param("dp_controller/sampling",Ts,Ts);
+				nh.param("dp_controller/use_ip",useIP,useIP);
+
+				disable_axis[x] = 0;
+				disable_axis[y] = 0;
 
 				enum {Kp=0, Ki, Kd, Kt};
-				for (size_t i=0; i<3;++i)
+				for (size_t i=0; i<2;++i)
 				{
 					PIDBase_init(&con[i]);
 					PIFF_tune(&con[i], float(closedLoopFreq(i)));
@@ -134,10 +151,9 @@ namespace labust
 			}
 
 		private:
-			PIDBase con[3];
-			ros::Subscriber headingRef;
+			PIDBase con[2];
 			double Ts;
-			double uff,vff;
+			bool useIP;
 		};
 	}}
 

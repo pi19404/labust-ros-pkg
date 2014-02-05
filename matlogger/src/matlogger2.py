@@ -90,7 +90,7 @@ class MatLogger:
             isList = (len(logOrder) == 4) and logOrder[3] == 'list';
             self.loggers.append(MessageLogger(dataType[1], 
                                 getattr(module, logOrder[1]), 
-                                logOrder[2]), isList)
+                                logOrder[2], isList))
                              
         from datetime import datetime;
         name = rospy.get_param("~filename","log");

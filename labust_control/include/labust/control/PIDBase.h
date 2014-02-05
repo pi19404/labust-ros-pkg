@@ -59,6 +59,7 @@ typedef struct PT1Model
  * The PID controller base.
  * \todo Use doxygen grouping and reduce size
  * \todo Document difference between auto-windup and ext-windup
+ * \todo Rename lastError, lastState to yk_1, ek_1,ek_2 etc.
  */
 typedef struct PIDBase
 {
@@ -74,7 +75,7 @@ typedef struct PIDBase
 	/**
 	 * The windup flag
 	 */
-	char windup;
+	char windup, extWindup;
 	/**
 	 * The maximum output limit. The output saturation is symmetric.
 	 */
@@ -82,7 +83,7 @@ typedef struct PIDBase
 	/**
 	 * Internal state of the backward euler.
 	 */
-	float internalState, lastRef, lastError, lastFF;
+	float internalState, lastRef, lastError, lastFF, lastState, llastError, llastState, lastDerivative;
 
 	/**
 	 * The reference, state, output, feedforward, tracking

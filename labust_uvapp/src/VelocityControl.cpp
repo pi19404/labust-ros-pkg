@@ -40,6 +40,7 @@
 #include <labust/simulation/DynamicsParams.hpp>
 #include <labust/tools/DynamicsLoader.hpp>
 #include <labust/math/NumberManipulation.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
 #include <boost/bind.hpp>
@@ -63,6 +64,7 @@ VelocityControl::VelocityControl():
 			timeout(0.5),
 			joy_scale(1),
 			Ts(0.1),
+			externalIdent(false),
 			server(serverMux)
 {this->onInit();}
 
@@ -84,6 +86,8 @@ void VelocityControl::onInit()
 			&VelocityControl::handleWindup,this);
 	manualIn = nh.subscribe<sensor_msgs::Joy>("joy",1,
 			&VelocityControl::handleManual,this);
+	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1,
+			&VelocityControl::handleModelUpdate,this);
 	//Configure service
 	highLevelSelect = nh.advertiseService("ConfigureVelocityController",
 			&VelocityControl::handleServerConfig, this);
@@ -92,6 +96,14 @@ void VelocityControl::onInit()
 
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
+	nh.param("velocity_controller/external_ident",externalIdent, externalIdent);
+
+	if (externalIdent)
+	{
+		identExt = nh.subscribe<auv_msgs::BodyForceReq>("tauIdent",1,
+					&VelocityControl::handleExt,this);
+		for (int i=0; i<5; ++i) tauExt[i] = 0;
+	}
 
 	//Configure the dynamic reconfigure server
 	server.setCallback(boost::bind(&VelocityControl::dynrec_cb, this, _1, _2));
@@ -116,7 +128,7 @@ bool VelocityControl::handleEnableControl(labust_uvapp::EnableControl::Request& 
 
 void VelocityControl::updateDynRecConfig()
 {
-	ROS_INFO("Updating the dynamic reconfigure parameters. %d");
+	ROS_INFO("Updating the dynamic reconfigure parameters.");
 
 	config.Surge_mode = axis_control[u];
 	config.Sway_mode = axis_control[v];
@@ -164,6 +176,25 @@ void VelocityControl::handleManual(const sensor_msgs::Joy::ConstPtr& joy)
 	lastMan = ros::Time::now();
 }
 
+void VelocityControl::handleModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update)
+{
+	ROS_INFO("Updating controller parameters for %d DoF",update->dof);
+	controller[update->dof].modelParams[alpha] = update->alpha;
+	if (update->use_linear)
+	{
+		controller[update->dof].modelParams[beta] = update->beta;
+		controller[update->dof].modelParams[betaa] = 0;
+	}
+	else
+	{
+		controller[update->dof].modelParams[beta] = 0;
+		controller[update->dof].modelParams[betaa] = update->betaa;
+	}
+
+	//Tune controller
+	PIFFController_tune(&controller[update->dof]);
+}
+
 void VelocityControl::dynrec_cb(labust_uvapp::VelConConfig& config, uint32_t level)
 {
 	this->config = config;
@@ -199,6 +230,12 @@ void VelocityControl::handleWindup(const auv_msgs::BodyForceReq::ConstPtr& tau)
 	if (!controller[r].autoTracking) controller[r].windup = tau->disable_axis.yaw;
 };
 
+void VelocityControl::handleExt(const auv_msgs::BodyForceReq::ConstPtr& tau)
+{
+	labust::tools::pointToVector(tau->wrench.force, tauExt);
+	labust::tools::pointToVector(tau->wrench.torque, tauExt, 3);
+};
+
 void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate)
 {
 	//Copy into controller
@@ -219,8 +256,10 @@ void VelocityControl::handleEstimates(const auv_msgs::NavSts::ConstPtr& estimate
 void VelocityControl::handleMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 {
 	//Copy into controller
-	measurement[u] = meas->position.north;
-	measurement[v] = meas->position.east;
+	double dT = (ros::Time::now() - lastMeas).toSec();
+	//ROS_INFO("Estimated rate for integration: %f",dT);
+	measurement[u] += meas->body_velocity.x*dT;
+	measurement[v] += meas->body_velocity.y*dT;
 	measurement[w] = meas->position.depth;
 	measurement[p] = meas->orientation.roll;
 	measurement[q] = meas->orientation.pitch;
@@ -242,11 +281,11 @@ void VelocityControl::safetyTest()
 	for (int i=u; i<=r;++i)
 	{
 		bool cntChannel = (refTimeout || estTimeout) && (axis_control[i] == controlAxis);
-		if (cntChannel) ROS_WARN("Timeout on the control channel. Controlled axes will be disabled.");
+		if (cntChannel) ROS_WARN("Timeout on the control channel: %d. Controlled axes will be disabled.",i);
 		bool measChannel = measTimeout && (axis_control[i] == identAxis);
-		if (measChannel) ROS_WARN("Timeout on the measurement channel. Stopping identifications in progress.");
+		if (measChannel) ROS_WARN("Timeout on the measurement channel: %d. Stopping identifications in progress.",i);
 		bool manChannel = manTimeout && (axis_control[i] == manualAxis);
-		if (manChannel) ROS_WARN("Timeout on the manual channel. Manual axes will be disabled.");
+		if (manChannel) ROS_WARN("Timeout on the manual channel: %d. Manual axes will be disabled.",i);
 
 		suspend_axis[i] = (cntChannel || measChannel || manChannel);
 	}
@@ -266,6 +305,8 @@ double VelocityControl::doIdentification(int i)
 		ident[i].reset(new SOIdentification());
 		ident[i]->setRelay(C,X);
 		ident[i]->Ref(ref);
+		//Reset measurement
+		measurement[i] = 0;
 		ROS_INFO("Started indentification of %s DOF.",dofName[i].c_str());
 	}
 
@@ -333,10 +374,15 @@ void VelocityControl::step()
 			controller[i].output = tauManual[i];
 			break;
 		case controlAxis:
+			ROS_DEBUG("Controller %d : %f %f %f",
+					i,
+					controller[i].desired,
+					controller[i].state,
+					controller[i].output);
 			PIFFController_step(&controller[i], Ts);
 			break;
 		case identAxis:
-			controller[i].output = doIdentification(i);
+			controller[i].output = externalIdent?tauExt[i]:doIdentification(i);
 			break;
 		case directAxis:
 			controller[i].output = controller[i].desired;
@@ -361,21 +407,6 @@ void VelocityControl::step()
 	tau.wrench.torque.y = controller[q].output;
 	tau.wrench.torque.z = controller[r].output;
 
-//	if (axis_control[u] == controlAxis)
-//	{
-//		double ulimit(1.0);
-//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-//		if (fabs(controller[u].desired) > ulimit) controller[u].desired = controller[u].desired/fabs(controller[u].desired)*ulimit;
-//		tau.wrench.force.x = controller[u].desired;
-//	}
-//	else
-//	{
-//		double ulimit(1.0);
-//		if (controller[u].autoTracking) ulimit = controller[u].outputLimit;
-//		if (fabs(controller[u].output) > ulimit) controller[u].output = controller[u].output/fabs(controller[u].output)*ulimit;
-//		tau.wrench.force.x = controller[u].output;
-//	}
-
 	tauach.wrench.force.x  = tau.wrench.force.x;
 	tauach.wrench.force.y  = tau.wrench.force.y;
 	tauach.wrench.force.z  = tau.wrench.force.z;
@@ -383,16 +414,36 @@ void VelocityControl::step()
 	tauach.wrench.torque.y = tau.wrench.torque.y;
 	tauach.wrench.torque.z = tau.wrench.torque.z;
 
-	if (controller[u].autoTracking) tauach.disable_axis.x = controller[u].windup;
+	if (controller[u].autoTracking)
+	{
+		tauach.disable_axis.x = controller[u].windup;
+		tauach.windup.x = controller[u].windup;
+	}
 	if (controller[v].autoTracking)
 	{
-		ROS_INFO("WINDUP SWAY");
-		 tauach.disable_axis.y = controller[v].windup;
-	}	
-	if (controller[w].autoTracking) tauach.disable_axis.z = controller[w].windup;
-	if (controller[p].autoTracking) tauach.disable_axis.roll = controller[p].windup;
-	if (controller[q].autoTracking) tauach.disable_axis.pitch = controller[q].windup;
-	if (controller[r].autoTracking) tauach.disable_axis.yaw = controller[r].windup;
+		tauach.disable_axis.y = controller[v].windup;
+		tauach.windup.y = controller[v].windup;
+	}
+	if (controller[w].autoTracking)
+	{
+		tauach.disable_axis.z = controller[w].windup;
+		tauach.windup.z = controller[w].windup;
+	}
+	if (controller[p].autoTracking)
+	{
+		tauach.disable_axis.roll = controller[p].windup;
+		tauach.windup.roll = controller[p].windup;
+	}
+	if (controller[q].autoTracking)
+	{
+		tauach.disable_axis.pitch = controller[q].windup;
+		tauach.windup.pitch = controller[q].windup;
+	}
+	if (controller[r].autoTracking)
+	{
+		tauach.disable_axis.yaw = controller[r].windup;
+		tauach.windup.yaw = controller[r].windup;
+	}
 
 	//Restart values
 	//newReference = newEstimate = false;
@@ -437,7 +488,7 @@ void VelocityControl::initialize_controller()
 	alpha_mass<<model.m,model.m,model.m,model.Io.diagonal();
 	alphas += alpha_mass;
 
-	nh.param("velocity_controller/period",Ts,Ts);
+	nh.param("velocity_controller/Ts",Ts,Ts);
 
 	for (int32_t i = u; i <=r; ++i)
 	{

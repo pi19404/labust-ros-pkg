@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+  <name>labust_launchers</name>
+  <version>0.1.0</version>
+	<description>
+		The labust_launchers package contains all launch and configuration packages for 
+		the labust infrastructure, different platforms and sensors.
+	</description>
+
+  <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
+  <license>BSD</license>
+  <!-- <url type="website">http://ros.org/wiki/labust_launchers</url> -->
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
+  <buildtool_depend>catkin</buildtool_depend>
+  <export>
+  </export>
+</package>

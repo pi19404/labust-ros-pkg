@@ -58,7 +58,7 @@ find_package(Eigen REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES labust_navigation
-  CATKIN_DEPENDS auv_msgs roscpp snippets
+  CATKIN_DEPENDS auv_msgs roscpp snippets kdl_conversions
 #  DEPENDS system_lib
 )
 
@@ -77,12 +77,14 @@ include_directories(
 add_library(labust_navigation
    src/labust_navigation/KinematicModel.cpp
    src/labust_navigation/XYModel.cpp
+   src/labust_navigation/SensorHandlers.cpp
 )
 
 ## Declare a cpp executable
 # add_executable(labust_navigation_node src/labust_navigation_node.cpp)
 add_executable(eigen_test src/test/eigen_test.cpp)
 add_executable(nav_node2 src/nav_node/nav_node2.cpp)
+add_executable(llnode src/latlon_node/LLNode.cpp)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_navigation_node labust_navigation_generate_messages_cpp)
@@ -94,6 +96,7 @@ target_link_libraries(labust_navigation
 
 target_link_libraries(eigen_test ${catkin_LIBRARIES} labust_navigation)
 target_link_libraries(nav_node2 ${catkin_LIBRARIES} labust_navigation)
+target_link_libraries(llnode ${catkin_LIBRARIES})
 
 #############
 ## Install ##

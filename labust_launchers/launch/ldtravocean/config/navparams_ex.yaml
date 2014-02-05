@@ -1,0 +1,8 @@
+#Parameters:	         u     v     w       p    q       r   xp    yp   zp     phi    theta  psi   xc     yc     b    buoyancy  roll_restore pitch_restore  altitude
+ekfnav/Q: [diagonal, [0.001,0.001,0.001,0.001,0.001,0.0001,0.001,0.001,0.001,0.0001,0.0001,0.0001,0.001, 0.001, 0.01, 0.001,   0.001,        0.001,         0.001]]
+#Parameters:	          u   v     w     p    q      r   xp yp  zp    phi  theta  psi  xc   yc     b   buoyancy roll_restore pitch_restore, altitude
+ekfnav/R: [diagonal, [0.01,0.01,0.001,0.001,0.001,0.001,16,16,0.001,0.003,0.003,0.003,0.01,0.001,9999,9999,       9999,         9999,        0.01]]
+ekfnav/V: [diagonal, [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
+#Parameters:          u   v   w   p    q   r  xp yp zp phi theta psi xc yc b buoyancy roll_restore  pitch_restore altitude 
+ekfnav/P: [diagonal, [0.1,0.1,0.1,0.1,0.1,0.1,9,9,0.1, 0.1,0.1,  0.1,0, 0, 1,1,         1,          1,              0.1]]
+ekfnav/x0: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]

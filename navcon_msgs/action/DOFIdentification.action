@@ -13,6 +13,7 @@ float32 reference # State value around which to oscilate
 float32 sampling_rate # The desired sampling frequency for operation (Hz)
 ---
 #The identification result
+int32 dof # The identified DOF
 float32 alpha # inertial parameter
 float32 beta # linear damping coefficient
 float32 betaa # quadratic damping coefficient
