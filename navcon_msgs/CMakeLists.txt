@@ -51,6 +51,10 @@ add_message_files(
    HLMessage.msg
    ModelParamsUpdate.msg
    PIDParamsUpdate.msg
+   TauRef.msgs
+   NuRef.msg
+   StateRef.msg
+   Windup.msg
 )
 
 ## Generate services in the 'srv' folder
