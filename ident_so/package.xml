@@ -3,8 +3,9 @@
   <name>ident_so</name>
   <version>0.5.0</version>
   <description>
-      The ident_so package contains the identification library and
-      identification nodes and action servers.
+      The package contains the library implementation of the closed-loop 
+      vehicle model identification by use of self-oscillations. The 
+      identification can be used as an identification action server.
   </description>
 
   <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
@@ -21,4 +22,9 @@
   <run_depend>navcon_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>actionlib</run_depend>
+  
+  <export>
+	<!-- <labust_sim plugin="${prefix}/plugins.xml" /> -->
+	<rosdoc config="rosdoc.yaml" />
+  </export>
 </package>
