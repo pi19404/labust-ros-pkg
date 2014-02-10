@@ -1,0 +1,109 @@
+/**
+\mainpage
+\htmlinclude manifest.html
+
+\b ident_so package implements the closed loop vehicle model parameter identification by use of self oscillation. 
+The package is based around the research work of asst.prof.dr.sc. Nikola Mišković. For citation use the following document: 
+\n <em>Mišković, N., Vukić, Z., Bibuli, M., Bruzzone, G. and Caccia, M. (2011), 
+<b>Fast in-field identification of unmanned marine vehicles.</b> J. Field Robotics, 28: 101–120. doi: 10.1002/rob.20374</em>
+
+\section background Background
+
+\section codeapi Code API
+
+The package is split into the identification library (\a libI_SO) and the identificaation action server (\a ident_so). 
+It provides automatic identification and model parameter calculation based on the performed oscillation experiment.
+
+The labust::control::SOIdentification class is a ROS agnostic implementation of the identification experiment. It can be used
+in any application.
+
+EXAMPLE OF USAGE (TEST FILE)
+
+labust::control::IdentificationNode
+
+
+
+\section rosapi ROS API
+
+The 
+
+Usage with the GUI - link here.
+
+Every ROS name in your code must be documented. Names are very
+important in ROS because they are the API to nodes and services. They
+are also capable of being remapped on the command-line, so it is VERY
+IMPORTANT THAT YOU LIST NAMES AS THEY APPEAR IN THE CODE. It is also
+important that you write your code so that the names can be easily
+remapped.
+
+List of nodes:
+- \b ident_so
+
+
+<!-- START: copy for each node -->
+
+<hr>
+
+\subsection ident_so ident_so
+
+ident_so is the identificaiton action server node. 
+
+\subsubsection Usage
+\verbatim
+$ rosrun ident_so ident_so
+\endverbatim
+
+\par Example
+
+\verbatim
+$ rosrun ident_so ident_so
+\endverbatim
+
+
+\subsubsection topics ROS topics
+
+Subscribes to:
+- \b "meas": [auv_msgs/NavSts] The assembled state measurements in the base_link frame 
+
+Publishes to:
+- \b "tauOut": [auv_msgs/BodyForceReq] The desired force or torque that should act on the vehicle.
+The output from the identification relay.  
+
+\subsubsection parameters ROS parameters
+
+Reads the following parameters from the parameter server
+
+- \b "~integrateUV" : \b [bool] When True the speed error will be 
+integrated for surge and sway identification. 
+
+\subsubsection actions ROS actions
+- \b "Identification": [navcon_msgs/DOFIdentification] The action that receives the
+desired identification configuration.
+
+
+<!-- END: copy for each node -->
+
+\section commandline Command-line tools
+
+This section is a catch-all for any additional tools that your package
+provides or uses that may be of use to the reader. For example:
+
+- tools/scripts (e.g. rospack, roscd)
+- roslaunch .launch files
+- xmlparam files
+
+\subsection script_name script_name
+
+Description of what this script/file does.
+
+\subsubsection Usage
+\verbatim
+$ ./script_name [args]
+\endverbatim
+
+\par Example
+
+\verbatim
+$ ./script_name foo bar
+\endverbatim
+*/
