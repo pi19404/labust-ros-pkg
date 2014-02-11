@@ -112,8 +112,11 @@ add_executable(test_ident src/test/test_ident.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(ident_so ${catkin_EXPORTED_TARGETS} I_SO)
-add_dependencies(test_ident ${catkin_EXPORTED_TARGETS})
+add_dependencies(ident_so I_SO)
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(ident_so ${catkin_EXPORTED_TARGETS})
+ add_dependencies(test_ident ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(ident_so

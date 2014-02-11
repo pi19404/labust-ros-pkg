@@ -80,10 +80,6 @@ namespace labust
       enum {inputSize = 4};
       enum {measSize = 7};
       enum {X=0,Y,Z,N};
-//      enum {u_m=0,v_m,w_m,x_m,y_m,z_m,psi_m};
-//      enum {xpsi_m=0, ypsi_m, xypsipsi_m};
-//      enum {upsi_m=0, vpsi_m, wpsi_m, psipsi_m};
-//      enum {psiOnly_m = 0};
         
       /**
        * The default constructor.
@@ -126,11 +122,12 @@ namespace labust
       {
     	  this->surge = surge;
     	  this->sway = sway;
-    	  this->sway = heave;
+    	  this->heave = heave;
     	  this->yaw = yaw;
       }
 
       void calculateXYInovationVariance(const matrix& P, double& xin,double &yin);
+      void calculateUVInovationVariance(const matrix& P, double& uin,double &vin);
 
       /**
        * Return the speeds in the local frame.
@@ -141,6 +138,8 @@ namespace labust
       	ydot = this->ydot;
       }
 
+      inline void useDvlModel(int flag){this->dvlModel = flag;};
+
     protected:
      /**
        * Calculate the Jacobian matrices.
@@ -150,6 +149,10 @@ namespace labust
         * Calculate the Jacobian matrices.
         */
        void derivativeHV(int num);
+       /**
+        * Calculate the nonlinear H derivative.
+        */
+       void derivativeH();
       /**
        * The model parameters.
        */
@@ -162,6 +165,18 @@ namespace labust
        * The NED speeds.
        */
       double xdot,ydot;
+      /**
+       * The DVL linear/nonlinear flag.
+       */
+      int dvlModel;
+      /**
+       * The nonlinear H.
+       */
+      matrix Hnl;
+      /**
+       * The nonlinear and final y.
+       */
+      vector ynl,y;
     };
   }
 }

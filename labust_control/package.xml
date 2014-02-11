@@ -15,6 +15,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>auv_msgs</build_depend>
   <build_depend>navcon_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>snippets</build_depend>
   <build_depend>tf</build_depend>
@@ -24,6 +25,7 @@
   <run_depend>navcon_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>snippets</run_depend>
+  <run_depend>sensor_msgs</run_depend>
   <run_depend>tf</run_depend>
 
   <export>

@@ -12,3 +12,6 @@ geometry_msgs/Wrench wrench
 
 # Axes of control to disable, in body frame.
 Bool6Axis disable_axis
+
+# Windup indicator v2
+Windup6Axis windup

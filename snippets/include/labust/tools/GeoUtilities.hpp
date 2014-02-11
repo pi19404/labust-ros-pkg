@@ -34,6 +34,7 @@
 #ifndef GEOUTILITIES_HPP_
 #define GEOUTILITIES_HPP_
 #define _USE_MATH_DEFINES
+#include <utility>
 #include <math.h>
 
 namespace labust

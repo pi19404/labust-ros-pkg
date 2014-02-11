@@ -55,7 +55,8 @@ namespace labust
 			/**
 			 * Generic constructor.
 			 */
-			KFBase(): P(Model::matrix::Identity(Model::stateNum, Model::stateNum)){};
+			KFBase(): P(Model::matrix::Identity(Model::stateNum, Model::stateNum)),
+					outlierR(1.0){};
 
 			/**
 			 * Set the state covariance matrix value.
@@ -97,6 +98,13 @@ namespace labust
       {
       	this->W = W; this->Q = Q;
       }
+      /**
+       * Set the outlier coefficient.
+       */
+      void setOutlierR(double outlierR)
+      {
+      	this->outlierR = outlierR;
+      }
 			/**
 			 * Set the state value.
 			 *
@@ -134,6 +142,10 @@ namespace labust
 			 * The innovation
 			 */
 			typename Model::vector innovation;
+			/**
+			 * Outlier rejection coefficient.
+			 */
+			double outlierR;
 		};
 	}
 }

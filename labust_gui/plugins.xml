@@ -1,5 +1,5 @@
 <library path="src">
-  <class name="EMonitorRqt" type="emonitor.emonitor_rqt.EMonitorRqt" 
+<!--<class name="EMonitorRqt" type="emonitor.emonitor_rqt.EMonitorRqt" 
       base_class_type="rqt_gui_py::Plugin">
     <description>
       Monitor of the internal execution control. 
@@ -8,6 +8,30 @@
       <label>EMonitor</label>
       <icon type="theme">system-search</icon>
       <statustip>Execution control monitor.</statustip>
+    </qtgui>
+  </class> -->
+ 
+  <class name="IdentificationGui" type="control.ident_gui.IdentificationRqt" 
+      base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Control and monitoring of the identification procedure.
+    </description>
+    <qtgui>
+      <label>Identification</label>
+      <icon type="theme">system-search</icon>
+      <statustip>Parameter identification monitoring and control.</statustip>
+    </qtgui>
+  </class>
+  
+  <class name="SimManGui" type="control.simman_gui.SimManRqt" 
+      base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Simple manager for controller activation and monitoring.  
+    </description>
+    <qtgui>
+      <label>SimMan</label>
+      <icon type="theme">system-search</icon>
+      <statustip>Simple controller manager.</statustip>
     </qtgui>
   </class>
 </library>

@@ -19,7 +19,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and scripts declared therein get installed
-# catkin_python_setup()
+#catkin_python_setup()
 
 #######################################
 ## Declare ROS messages and services ##
@@ -62,9 +62,6 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-execute_process(COMMAND sh scripts/download_models.sh 
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-	
 ## Specify additional locations of header files
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
@@ -77,17 +74,23 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 #add_executable(model_node src/model_node.cpp)
 
 ## Declare a cpp executable
-add_executable(ldnav_node src/nav_node.cpp src/LDTravModel.cpp
+add_executable(ldnav_node src/Estimator3D.cpp src/LDTravModel.cpp
 	include/labust/navigation/LDTravModel.hpp)
+add_executable(ldnavex_node src/Estimator3DExtended.cpp src/LDTravModelExtended.cpp
+	include/labust/navigation/LDTravModelExtended.hpp)
 
 ## Add dependencies to the executable
 # add_dependencies(ldtravocean_node ${PROJECT_NAME})
-add_dependencies(ldnav_node ${catkin_EXPORTED_TARGETS})
+if (DEFINED catkin_EXPORTED_TARGETS)
+  add_dependencies(ldnav_node ${catkin_EXPORTED_TARGETS})
+  add_dependencies(ldnavex_node ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 #target_link_libraries(model_node ${catkin_LIBRARIES} labust_xml uvsim-plug)
 
 target_link_libraries(ldnav_node ${catkin_LIBRARIES})
+target_link_libraries(ldnavex_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
