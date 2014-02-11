@@ -105,6 +105,7 @@ add_executable(lf_controller2 src/LFControl.cpp)
 add_executable(nu_manual src/NuManual.cpp)
 add_executable(ref_manual src/RefManual.cpp)
 add_executable(async_merger src/AsyncMerger.cpp)
+add_executable(sdof_controller src/SingleDOF.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -123,6 +124,7 @@ if (DEFINED catkin_EXPORTED_TARGETS)
  add_dependencies(nu_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(ref_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(async_merger ${catkin_EXPORTED_TARGETS})
+ add_dependencies(sdof_controller ${catkin_EXPORTED_TARGETS})
 endif()
 
 ## Specify libraries to link a library or executable target against
@@ -157,6 +159,11 @@ target_link_libraries(hdg_controller2
 )
 
 target_link_libraries(hdg_controller_direct
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(sdof_controller
   pidtoolkit2
   ${catkin_LIBRARIES}
 )
