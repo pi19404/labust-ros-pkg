@@ -91,6 +91,10 @@ add_executable(serialization_test src/test/serialization_test.cpp)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(navquest_dvl_node navquest_dvl_generate_messages_cpp)
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(navquest_node ${catkin_EXPORTED_TARGETS})
+ add_dependencies(navquest_socket_node ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(navquest_node

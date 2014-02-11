@@ -1,9 +1,0 @@
-hl_manager/timeout: 2.0
-hl_manager/radius: 2.0
-#Circle radius for C-art
-hl_manager/circleRadius: 10.0
-#Distance and time to wait for B-art vehicle
-hl_manager/safetyDistance: 30.0
-hl_manager/safetyTime: 15.0
-hl_manager/safetyTime2: 55.0
-hl_manager/lookAhead: 5.0
