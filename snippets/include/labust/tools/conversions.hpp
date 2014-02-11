@@ -65,6 +65,50 @@ namespace labust
 		}
 
 		/**
+		 * The function offers mapping from NED structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void nedToVector(const Point& point, Iterator& vec, int offset = 0)
+		{
+			vec[offset+0] = point.north;
+			vec[offset+1] = point.east;
+			vec[offset+2] = point.depth;
+		}
+
+		/**
+		 * The class offers mapping to a RPY structure from a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToNED(const Iterator& vec, Point& point, int offset = 0)
+		{
+			point.north = vec[offset+0];
+			point.east = vec[offset+1];
+			point.depth = vec[offset+2];
+		}
+
+		/**
+		 * The function offers mapping from RPY structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void rpyToVector(const Point& point, Iterator& vec, int offset = 0)
+		{
+			vec[offset+0] = point.roll;
+			vec[offset+1] = point.pitch;
+			vec[offset+2] = point.yaw;
+		}
+
+		/**
+		 * The class offers mapping to a NED structure from a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToRPY(const Iterator& vec, Point& point, int offset = 0)
+		{
+			point.roll = vec[offset+0];
+			point.pitch = vec[offset+1];
+			point.yaw = vec[offset+2];
+		}
+
+		/**
 		 * The class offers mapping from auv_msgs disable_axis structure to a vector.
 		 */
 		template <class Point, class Iterator>
