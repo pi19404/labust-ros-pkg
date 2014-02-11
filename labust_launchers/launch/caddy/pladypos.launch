@@ -1,60 +1,28 @@
 <launch>
   <include file="$(find labust_launchers)/launch/caddy/$(env ROBOT).machine" />
   <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
+  <arg name="use_pl" value="$(optenv IS_PLADYPOS 0)" />
+  <arg name="en_logging" value="$(optenv ENABLE_LOGGING 0)" />     
+  <arg name="use_direct" value="$(optenv USE_DIRECT 0)" />      
 
-  <group ns="pladypos">
+  <group ns="pladypos">  	
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
+  	<rosparam command="load" file="$(env MODEL)" />
   	
-  	<include file="$(find labust_launchers)/config/control/joy.xml"/>
-  		
-  	<!-- <group ns="navigation"> -->
-  		<rosparam command="load" file="$(env MODEL)" />
-  	  	<rosparam command="load" file="$(find labust_launchers)/config/pladypos/navparams.yaml" />
-  	  	
-  	  	<remap from="tauAch" to="/pladypos/tauAch" /> 
-  	  	  		
-  		<include file="$(find labust_launchers)/config/navigation/navigation2D.xml" />
-  		<include file="$(find labust_launchers)/config/pladypos/imu_gps.xml" unless="$(arg is_sim)"/>
-  	<!-- </group> -->
-  	
-  	<!-- <group ns="control"> -->
-  		<rosparam command="load" file="$(env MODEL)" />
-  		<rosparam command="load"
-			file="$(find labust_launchers)/config/pladypos/velocity_control.yaml" />
-		<rosparam command="load"
-			file="$(find labust_launchers)/config/pladypos/dp_control.yaml" />
-			
-		<remap from="stateHat" to="/pladypos/stateHat" />
-		<remap from="state" to="/pladypos/stateHat" /> 
-  		
-  		<include file="$(find labust_launchers)/config/control/control_all.xml" />
-  		
-  		<!-- The simple execution manager -->
-  		<rosparam command="load" file="$(find labust_launchers)/config/pladypos/manager.yaml" />
-  		<include file="$(find labust_launchers)/config/control/manager.xml" />
-  	<!-- </group> -->
-  	
-  	<!-- <group ns="simulation" if="$(arg is_sim)"> -->
+  	<!-- Add the simulation elements -->
   	<group if="$(arg is_sim)">
-  		<rosparam command="load" file="$(env MODEL)" />
-  		<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
-  		
-  		<remap from="fix" to="/pladypos/gps" />
-  		<remap from="imu" to="/pladypos/imu" />
-		<remap from="tauIn" to="/pladypos/tauOut" />
-		<remap from="tauAch" to="/pladypos/tauAch" />
-			
-  		<include file="$(find labust_launchers)/config/simulator/simulator.xml" />
+		<include file="$(find labust_launchers)/launch/caddy/simulator.launch" />
   	</group>
-  	<!-- </group> -->
   	
-  	<!-- logger apps -->
-  	<group if="$(optenv ENABLE_LOGGING 0)">
-  		<rosparam command="load" file="$(find pladypos)/data/pladypos_info_t.yaml" />
-  		<rosparam command="load" file="$(find labust_imu)/data/imu_info_t.yaml" />
-  		<rosparam command="load" file="$(find labust_control)/data/hldiagnostics_t.yaml" />
-  		<rosparam command="load" file="$(find labust_launchers)/config/pladypos/logger.yaml" />
-  		<include file="$(find matlogger)/launch/std_logger.launch" />
-  	</group>  	
+  	<!-- Add the navigation -->
+  	<include file="$(find labust_launchers)/launch/caddy/navigation.launch"/>
+    	
+  	<!-- Add the controllers -->
+  	<include file="$(find labust_launchers)/launch/caddy/control.launch" />
+  	
+  	<!-- Add the logging -->
+  	<group if="$(arg en_logging)">
+  		<include file="$(find labust_launchers)/launch/caddy/logger.launch" />
+  	</group>
   </group>
 </launch>
