@@ -68,7 +68,7 @@ void labust::simulation::configureModel(const ros::NodeHandle& nh, RBModel& mode
 	Eigen::MatrixXd alloc;
 	Eigen::MatrixXi dofs, groups;
 	nh.param("allocation_type",alloc_type,-1);
-  labust::tools::getMatrixParam(nh,"allocation_matrix",alloc);
+    labust::tools::getMatrixParam(nh,"allocation_matrix",alloc);
 	labust::tools::getMatrixParam(nh,"allocation_dofs",dofs);
 	labust::tools::getMatrixParam(nh,"allocation_thruster_groups",groups);
 
@@ -94,28 +94,39 @@ void SimCore::onInit()
 	configureModel(nh, model);
 	modelReport();
 
+	//Subscribers
+	//auv_msgs
 	tauIn = nh.subscribe<auv_msgs::BodyForceReq>("tauIn", 1, &SimCore::onTau<auv_msgs::BodyForceReq>, this);
-
+	//odometry
 	tauInWrench = nh.subscribe<geometry_msgs::WrenchStamped>("tauInWrench", 1, &SimCore::onTau<geometry_msgs::WrenchStamped>, this);
-
+	//general
 	currentsSub = nh.subscribe<geometry_msgs::TwistStamped>("currents", 1, &SimCore::onCurrents, this);
 
 	//Publishers
+	//Auv_msgs
 	meas = nh.advertise<auv_msgs::NavSts>("meas_ideal",1);
 	measn = nh.advertise<auv_msgs::NavSts>("meas_noisy",1);
 	tauAch = nh.advertise<auv_msgs::BodyForceReq>("tauAch",1);
-
+	//odometry
 	odom = nh.advertise<nav_msgs::Odometry>("meas_odom",1);
 	odomn = nh.advertise<nav_msgs::Odometry>("meas_odom_noisy",1);
 	tauAchWrench = nh.advertise<geometry_msgs::WrenchStamped>("tauAchWrench",1);
+	//general
+	acc = nh.advertise<geometry_msgs::Vector3>("nuacc_ideal",1);
 
 	double fs(10);
+	double maxThrust(1), minThrust(-1);
+	ph.param("maxThrust",maxThrust,maxThrust);
+	ph.param("minThrust",minThrust,minThrust);
+	model.allocator.setThrusterMinMax(minThrust, maxThrust);
 	ph.param("Rate",fs,fs);
-	ph.param("ModelWrap",wrap,wrap);
+	ph.param("ModelWrap", wrap,wrap);
 	model.dT = 1/(fs*wrap);
 	rate = ros::Rate(fs);
-	ph.param("publish_world",enablePublishWorld, enablePublishWorld);
-	ph.param("publish_sim_base",enablePublishSimBaseLink, enablePublishSimBaseLink);
+	ph.param("publish_world", enablePublishWorld, enablePublishWorld);
+	ph.param("publish_sim_base", enablePublishSimBaseLink, enablePublishSimBaseLink);
+	ph.param("originLat", originLat, originLat);
+	ph.param("originLon", originLon, originLon);
 	runner = boost::thread(boost::bind(&SimCore::start, this));
 }
 
@@ -151,8 +162,11 @@ void SimCore::publishNavSts()
 	etaNuToNavSts(model.EtaNoisy(),model.NuNoisy(),*nstate);
 
 	//Handle LAT-LON additions and frame publishing
+	//Or make them wholly external to the simulator
 
 	//Publish messages
+	state->header.stamp = nstate->header.stamp = ros::Time::now();
+	state->header.frame_id = nstate->header.frame_id = "local";
 	meas.publish(state);
 	measn.publish(nstate);
 }
@@ -169,6 +183,9 @@ void SimCore::publishOdom()
 	//Handle covariance additions
 
 	//Publish messages
+	state->header.stamp = nstate->header.stamp = ros::Time::now();
+	state->header.frame_id = nstate->header.frame_id = "local";
+	state->child_frame_id = nstate->child_frame_id = "base_link";
 	odom.publish(state);
 	odomn.publish(nstate);
 }
@@ -220,7 +237,7 @@ void SimCore::publishSimBaseLink()
 
 void SimCore::start()
 {
-	SimSensorInterface::Hook hook(model,broadcast,listener);
+//	SimSensorInterface::Hook hook(model,broadcast,listener);
 
 	while (ros::ok())
 	{
@@ -230,14 +247,14 @@ void SimCore::start()
 			for (size_t i=0; i<wrap;++i) model.step(tau);
 		}
 
-		{
-			boost::mutex::scoped_lock l(sensor_mux);
-			for (std::vector<SimSensorInterface::Ptr>::iterator it=sensors.begin();
-					it != sensors.end(); ++it)
-			{
-				(*it)->step(hook);
-			}
-		}
+//		{
+//			boost::mutex::scoped_lock l(sensor_mux);
+//			for (std::vector<SimSensorInterface::Ptr>::iterator it=sensors.begin();
+//					it != sensors.end(); ++it)
+//			{
+//				(*it)->step(hook);
+//			}
+//		}
 
 		//Publish states
 		publishNavSts();
@@ -245,34 +262,15 @@ void SimCore::start()
 		//Publish transforms
 		if (enablePublishWorld) publishWorld();
 		if (enablePublishSimBaseLink) publishSimBaseLink();
+		//Publish acceleration
+		geometry_msgs::Vector3::Ptr accout(new geometry_msgs::Vector3());
+		const vector& vacc=model.NuAcc();
+		labust::tools::vectorToPoint(vacc, *accout);
+		acc.publish(accout);
 
 		model_lock.unlock();
 		rate.sleep();
 	}
-		/*while (ros::ok())
-				const vector& Nu = (useNoisy?model.NuNoisy():model.Nu());
-				const vector& Eta = (useNoisy?model.EtaNoisy():model.Eta());
-				if ((ros::Time::now()-lastGps).sec >= gpsTime)
-				{
-					mapToNavSatFix(Eta,Nu,&fix,utmzone,lisWorld,localFrame);
-					if (fix.altitude >= 0)
-					{
-						gpsFix.publish(fix);
-					}
-					lastGps = ros::Time::now();
-				}
-
-				imuMeas.publish(*mapToImu(Eta,Nu,model.NuAcc(),&imu,localFrame));
-				dvlMeas.publish(*mapToDvl(Eta,Nu,&dvl,localFrame));
-				depth.fluid_pressure = model.getPressure(Eta(RBModel::z));
-				depth.header.frame_id = "local";
-				pressureMeas.publish(depth);
-
-
-
-				ros::spinOnce();
-	}
-	*/
 }
 
 void SimCore::modelReport()

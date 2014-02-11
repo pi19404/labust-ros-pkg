@@ -38,6 +38,7 @@
 #include <labust_uvapp/VelConConfig.h>
 #include <labust_uvapp/ConfigureVelocityController.h>
 #include <labust_uvapp/EnableControl.h>
+#include <navcon_msgs/ModelParamsUpdate.h>
 #include <dynamic_reconfigure/server.h>
 
 #include <auv_msgs/NavSts.h>
@@ -109,6 +110,14 @@ namespace labust
 			/**
 			 * Handle incoming estimates message.
 			 */
+			void handleModelUpdate(const navcon_msgs::ModelParamsUpdate::ConstPtr& update);
+			/**
+			 * Handle external identification input.
+			 */
+			void handleExt(const auv_msgs::BodyForceReq::ConstPtr& tau);
+			/**
+			 * Handle incoming estimates message.
+			 */
 			void handleManual(const sensor_msgs::Joy::ConstPtr& joy);
 			/**
 			 * Handle server request for configuration.
@@ -168,7 +177,7 @@ namespace labust
 			/**
 			 * Joystick message.
 			 */
-			float tauManual[N+1];
+			float tauManual[N+1], tauExt[N+1];
 			/**
 			 * Joystick scaling.
 			 */
@@ -180,7 +189,7 @@ namespace labust
 			/**
 			 * Timeout management.
 			 */
-			bool suspend_axis[r+1];
+			bool suspend_axis[r+1], externalIdent;
 			/**
 			 * Dynamic reconfigure server.
 			 */
@@ -193,7 +202,7 @@ namespace labust
 			/**
 			 * The subscribed topics.
 			 */
-			ros::Subscriber velocityRef, stateHat, manualIn, tauAch, measSub;
+			ros::Subscriber velocityRef, stateHat, manualIn, tauAch, measSub, identExt, modelUpdate;
 			/**
 			 * High level controller service.
 			 */

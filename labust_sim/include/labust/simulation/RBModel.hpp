@@ -135,15 +135,17 @@ namespace labust
       /**
        * Returns the pressure based on depth.
        */
-      inline double getPressure(double h){return this->rho*this->g_acc*h;};
+      inline double getPressure(double h) const{return this->rho*this->g_acc*h;};
 
       /**
        * Initialize the model.
        */
       inline void init()
       {
+    	this->reset();
       	calculate_mrb();
-      	this->reset();
+      	//Calculate and set the the neutral depth where W=B
+        eta(z) = (m/(2*ae*be*ce*M_PI/3*rho)-1)*ce - waterLevel - rb(z);
       }
       /**
        * The method restarts the model to initial parameters.
@@ -152,7 +154,7 @@ namespace labust
       {
         this->eta = this->eta0;
         this->nu = this->nu0;
-        this->B=2*labust::math::coerce((eta(z)+waterLevel)/ce+1,0,2)*M_PI/3*ae*be*ce*rho*g_acc;
+        this->B=2*labust::math::coerce((eta(z)+waterLevel+rb(z)/2)/ce+1,0,2)*M_PI/3*ae*be*ce*rho*g_acc;
       };
 
       /**

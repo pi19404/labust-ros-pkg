@@ -23,6 +23,7 @@ add_message_files(
 	 BodyForceReq.msg  
 	 BodyVelocityReq.msg  
 	 Bool6Axis.msg  
+	 Windup6Axis.msg
 	 DecimalLatLon.msg  
 	 GoalDescriptor.msg  
 	 NavSts.msg  

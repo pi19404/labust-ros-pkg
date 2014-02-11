@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="uwsim" name="uwsim" type="uwsim" 
+  args="--configfile $(find labust_uwsim)/scenes/cart2/test_environment.xml 
+  --dataPath  $(find labust_uwsim)/urdf/cart2/"/>
+    
+    <node pkg="labust_uwsim" type="NavSts2Odom.py" name="cart2uwsim">
+        <remap from="stateHat" to="/cart2/stateHat" />
+        <remap from="uwsim_hook" to="/cart2/uwsim_hook" />
+        <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+    </node>
+    
+    <node pkg="rviz" name="rviz" type="rviz"/>
+</launch>

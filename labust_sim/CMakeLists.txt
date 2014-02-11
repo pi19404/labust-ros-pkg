@@ -70,14 +70,22 @@ file(GLOB SRC src/labust_sim/*.cpp)
 file(GLOB HPP include/labust/simulation/*.hpp) 
 add_library(labust_sim ${SRC} ${HPP})
 
-file(GLOB SRC src/sim_sensors/*.cpp)
-file(GLOB HPP include/labust/ros/*.hpp) 
-add_library(sim_sensors ${SRC} ${HPP})
+#file(GLOB SRC src/sim_sensors/*.cpp)
+#file(GLOB HPP include/labust/ros/*.hpp) 
+#add_library(sim_sensors ${SRC} ${HPP})
 
 file(GLOB SRC src/uvsim/*.cpp)
 file(GLOB HPP include/labust/ros/*.hpp) 
 add_executable(uvsim ${SRC} ${HPP})
 target_link_libraries(uvsim ${catkin_LIBRARIES} labust_sim ${Boost_RANDOM_LIBRARY})
+
+#Simple simulated sensors
+add_executable(imu_sim src/sim_sensors/ImuSim.cpp)
+target_link_libraries(imu_sim ${catkin_LIBRARIES})
+add_executable(dvl_sim src/sim_sensors/DvlSim.cpp)
+target_link_libraries(dvl_sim ${catkin_LIBRARIES})
+add_executable(gps_sim src/sim_sensors/GPSSim.cpp)
+target_link_libraries(gps_sim ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############

@@ -1,0 +1,19 @@
+<launch>
+    <node pkg="uwsim" name="uwsim" type="uwsim" 
+  args="--configfile $(find labust_uwsim)/scenes/cmre/test_environment.xml 
+  --dataPath  $(find labust_uwsim)/urdf/cmre/"/>
+    
+    <node pkg="labust_uwsim" type="NavSts2Odom.py" name="usv2uwsim">
+        <remap from="stateHat" to="/usv/stateHat" />
+        <remap from="uwsim_hook" to="/usv/uwsim_hook" />
+        <param name="tf_prefix" value="usv" />
+    </node>
+    
+    <node pkg="labust_uwsim" type="NavSts2Odom.py" name="uuv2uwsim">
+        <remap from="stateHat" to="/uuv/stateHat" />
+        <remap from="uwsim_hook" to="/uuv/uwsim_hook" />
+        <param name="tf_prefix" value="uuv" />
+    </node>
+    
+    <node pkg="rviz" name="rviz" type="rviz"/>
+</launch>

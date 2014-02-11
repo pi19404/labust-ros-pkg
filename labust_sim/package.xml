@@ -27,7 +27,7 @@
 	<run_depend>pluginlib</run_depend>
 	
 	<export>
-	    <labust_sim plugin="${prefix}/plugins.xml" />
+	    <!-- <labust_sim plugin="${prefix}/plugins.xml" /> -->
 	    <rosdoc config="rosdoc.yaml" />
 	</export>
 </package>

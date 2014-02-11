@@ -114,7 +114,7 @@ void RBModel::step(const vector& tau)
 	nuacc = (nu - nu_old)/dT;
 
 	//From body to world coordinates
-	eta.block<3,1>(0,0) += dT*J1*nu.block<3,1>(0,0)+current;
+	eta.block<3,1>(0,0) += dT*(J1*nu.block<3,1>(0,0)+current);
 	eta.block<3,1>(3,0) += dT*J2*nu.block<3,1>(3,0);
 }
 

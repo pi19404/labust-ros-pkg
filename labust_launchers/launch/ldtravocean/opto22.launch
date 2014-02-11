@@ -1,0 +1,9 @@
+<launch>
+	<node pkg="optoengine" name="optoengine" type="opto22_node">
+	<param name="server_address" value="192.168.255.15"/>
+	<remap from="imu_opto" to="imu" />
+	<param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
+	</node>
+</launch>
+
+
