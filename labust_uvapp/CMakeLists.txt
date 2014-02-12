@@ -4,8 +4,18 @@ project(labust_uvapp)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS labust_base std_msgs auv_msgs nav_msgs roscpp dynamic_reconfigure sensor_msgs
-	message_generation tf kdl_conversions snippets)
+find_package(catkin REQUIRED COMPONENTS 
+    labust_base 
+    std_msgs 
+    auv_msgs 
+    nav_msgs 
+    roscpp 
+    dynamic_reconfigure 
+    sensor_msgs
+	message_generation 
+	tf 
+#	kdl_conversions 
+	snippets)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -52,7 +62,7 @@ generate_dynamic_reconfigure_options(cfg/VelCon.cfg)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES labust_uvapp
-   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs tf kdl_conversions
+   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs tf #kdl_conversions
 #  DEPENDS system_lib
 )
 

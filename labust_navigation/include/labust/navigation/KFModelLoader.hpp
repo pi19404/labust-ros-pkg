@@ -50,8 +50,8 @@ namespace labust
   		labust::tools::getMatrixParam(nh, ns+"Q", model.Q);
   		model.W = ModelType::matrix::Identity(model.Q.rows(), model.Q.cols());
   		labust::tools::getMatrixParam(nh, ns+"R", model.R0);
-  		model.V0 = ModelType::matrix::Identity(model.R.rows(), model.R.cols());
-  		model.H0 = ModelType::matrix::Identity(model.R.rows(), model.Q.cols());
+  		model.V0 = ModelType::matrix::Identity(model.R0.rows(), model.R0.cols());
+  		model.H0 = ModelType::matrix::Identity(model.R0.rows(), model.Q.cols());
 
   		//Optional parameters
   		if (nh.hasParam(ns+"W"))	labust::tools::getMatrixParam(nh, ns+"W", model.W);

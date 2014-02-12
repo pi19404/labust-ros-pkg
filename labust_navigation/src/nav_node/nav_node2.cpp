@@ -45,8 +45,6 @@
 #include <labust/navigation/KFModelLoader.hpp>
 
 //#include <kdl/frames.hpp>
-#include <bullet/LinearMath/btQuaternion.h>
-#include <bullet/LinearMath/btMatrix3x3.h>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -106,7 +104,7 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 	}
 	catch(tf::TransformException& ex)
 	{
-		ROS_ERROR("%s",ex.what());
+		ROS_WARN("%s",ex.what());
 	}
 };
 
@@ -127,13 +125,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 		tf::Quaternion result = meas*transform.getRotation();
 
 		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
-		//\todo Shortcut corection to remove KDL dependency
-		btMatrix3x3 rm(btQuaternion(result.x(),result.y(),result.z(),result.w()));
-		float tmp_yaw, tmp_pitch, tmp_roll;
-		rm.getEulerZYX(tmp_yaw,tmp_pitch,tmp_roll);
-		rpy[yaw] = tmp_yaw; rpy[pitch] = tmp_pitch; rpy[roll] = tmp_roll;
-		rpy[yaw] = unwrap(rpy[yaw]);
-
+		labust::tools::eulerZYXFromQuaternion(result, roll, pitch, yaw);
 		/*labust::tools::eulerZYXFromQuaternion(
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),
@@ -152,7 +144,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	}
 	catch (tf::TransformException& ex)
 	{
-		ROS_ERROR("%s",ex.what());
+		ROS_WARN("%s",ex.what());
 	}
 };
 
@@ -179,6 +171,8 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 
 	nav.initModel();
 	labust::navigation::kfModelLoader(nav, nh, "ekfnav");
+
+	std::cout<<"V:"<<nav.V<<std::endl;
 }
 
 void offline_sim(const std::string& filename, KFNav& ekf)
@@ -433,7 +427,7 @@ int main(int argc, char* argv[])
 		}
 		catch(tf::TransformException& ex)
 		{
-			ROS_ERROR("%s",ex.what());
+			ROS_WARN("%s",ex.what());
 		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));

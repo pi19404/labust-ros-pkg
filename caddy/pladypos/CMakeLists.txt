@@ -4,7 +4,13 @@ project(pladypos)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp labust_base sensor_msgs kdl_conversions tf dynamic_reconfigure labust_uvapp snippets)
+find_package(catkin REQUIRED COMPONENTS 
+    auv_msgs 
+    roscpp 
+    labust_base
+    tf 
+    dynamic_reconfigure 
+    snippets)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system)
@@ -54,7 +60,7 @@ generate_dynamic_reconfigure_options(cfg/ThrusterMapping.cfg cfg/DPSettings.cfg)
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES pladypos
-   CATKIN_DEPENDS auv_msgs message_runtime roscpp labust_base sensor_msgs kdl_conversions tf dynamic_reconfigure
+   CATKIN_DEPENDS auv_msgs message_runtime roscpp tf dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -72,14 +78,14 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp executable
 add_executable(pladypos_node src/pladypos_node.cpp src/PlaDyPosNode.cpp)
-add_executable(nav_node src/nav_node.cpp)
+#add_executable(nav_node src/nav_node.cpp)
 
 ## Add dependencies to the executable
 add_dependencies(pladypos_node ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pladypos_node ${catkin_LIBRARIES} labust_comms)
-target_link_libraries(nav_node ${catkin_LIBRARIES} labust_navcon)
+#target_link_libraries(nav_node ${catkin_LIBRARIES} labust_navcon)
 
 #############
 ## Install ##
