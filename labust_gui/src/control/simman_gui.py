@@ -166,14 +166,15 @@ class HLManager:
         self.hdgEnable = 0
         self.altEnable = 0
         self.dpEnable = 0
-        
+        self.pitchEnable = 0
+             
         self.enablers={"HDG":"HDG_enable",
                        "ALT":"ALT_enable",
                        "DP":"FADP_enable",
                        "NU":"NU_enable",
                        "REF":"REF_enable",
                        "PITCH":"PITCH_enable"};
-        for v in self.enablers.values():
+        for v in self.enablers.keys():
            self._invoke_enabler(v, False) 
                        
         self._invoke_manual_nu_cfg()
@@ -185,8 +186,8 @@ class HLManager:
         self.manualEnable = state
         self.manualSelection = selection
         
-        self._invoke_enabler(self.enablers["NU"], False)
-        self._invoke_enabler(self.enablers["REF"], False)
+        self._invoke_enabler("NU", False)
+        self._invoke_enabler("REF", False)
         if state:
             if selection == 0:
                 if not self.dpEnable:
@@ -199,9 +200,9 @@ class HLManager:
             elif selection == 1:
                 for i,e in enumerate(self.velcon):
                     if (e != 2): self.velcon[i]=2
-                self._invoke_enabler(self.enablers["NU"], True)
+                self._invoke_enabler("NU", True)
             elif selection == 2:
-                self._invoke_enabler(self.enablers["REF"], True)
+                self._invoke_enabler("REF", True)
         else:
                 for i,e in enumerate(self.velcon):
                     if (e == 1): self.velcon[i]=0
@@ -214,7 +215,7 @@ class HLManager:
                      
     def heading_control(self, state):
         self.hdgEnable = state
-        self._invoke_enabler(self.enablers["HDG"], state)
+        self._invoke_enabler("HDG", state)
         if state:
             self.man_nu.yaw = 1
             self.velcon[5] = 2
@@ -228,7 +229,7 @@ class HLManager:
         
     def depth_control(self, state):
         self.altEnable = state
-        self._invoke_enabler(self.enablers["ALT"], state)
+        self._invoke_enabler("ALT", state)
         if state:
             self.man_nu.z = 1
             self.velcon[2] = 2
@@ -242,7 +243,7 @@ class HLManager:
         
     def pitch_control(self, state):
         self.pitchEnable = state
-        self._invoke_enabler(self.enablers["PITCH"], state)
+        self._invoke_enabler("PITCH", state)
         if state:
             self.man_nu.pitch = 1
             self.velcon[4] = 2
@@ -256,7 +257,7 @@ class HLManager:
         
     def dp_control(self, state):
         self.dpEnable = state
-        self._invoke_enabler(self.enablers["DP"], state)
+        self._invoke_enabler("DP", state)
         if state:
             self.man_nu.x = 1
             self.man_nu.y = 1
@@ -273,24 +274,27 @@ class HLManager:
         self._invoke_velcon_cfg()
          
     def _invoke_enabler(self, name, data):
-        rospy.wait_for_service(name, timeout=5.0)
+        if self.enablers[name] == "None": return      
         try:
-            enabler = rospy.ServiceProxy(name, EnableControl)
+            rospy.wait_for_service(self.enablers[name], timeout=1.0)
+            enabler = rospy.ServiceProxy(self.enablers[name], EnableControl)
             enabler(data)
-        except rospy.ServiceException, e:
+        except (rospy.ROSException, rospy.ServiceException), e:
+            print "Removing enabler from list."
+            self.enablers[name] = "None"
             print "Service call failed: %s"%e
                   
     def _invoke_manual_nu_cfg(self):
-        rospy.wait_for_service("ConfigureAxes")
         try:
+            rospy.wait_for_service("ConfigureAxes")
             configurer = rospy.ServiceProxy("ConfigureAxes", ConfigureAxes)
             configurer(self.man_nu)
-        except rospy.ServiceException, e:
+        except (rospy.ROSException, rospy.ServiceException), e:
             print "Service call failed: %s"%e
                  
     def _invoke_velcon_cfg(self):
-        rospy.wait_for_service("ConfigureVelocityController")
         try:
+            rospy.wait_for_service("ConfigureVelocityController")
             configurer = rospy.ServiceProxy("ConfigureVelocityController", ConfigureVelocityController)
             configurer(desired_mode=self.velcon)
         except rospy.ServiceException, e:
