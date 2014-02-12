@@ -58,7 +58,7 @@ find_package(Eigen REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES labust_navigation
-  CATKIN_DEPENDS auv_msgs roscpp snippets kdl_conversions
+  CATKIN_DEPENDS auv_msgs roscpp snippets
 #  DEPENDS system_lib
 )
 
