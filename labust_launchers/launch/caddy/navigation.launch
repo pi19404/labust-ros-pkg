@@ -1,30 +1,9 @@
 <launch>
-    <arg name="use_extended" value="$(optenv USE_EXTENDED_NAV 1)" />
-
-    <rosparam command="load" file="$(find labust_launchers)/launch/ldtravocean/config/navparams.yaml" unless="$(arg use_extended)" />
-    <rosparam command="load" file="$(find labust_launchers)/launch/ldtravocean/config/navparams_ex.yaml" if="$(arg use_extended)" />
+    <rosparam command="load" file="$(find labust_launchers)/launch/caddy/config/navparams.yaml" />
  
-    <node pkg="ldtravocean" type="ldnav_node" name="ekf_nav" unless="$(arg use_extended)">
-      <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
-      <param name="imu_with_yaw_rate" value="false" />
-      <param name="dvl_model" value="1" />
-      <param name="Ts" value="0.1" />
-       
-      <remap from="gps" to="nogps" />
-      <remap from="altitude" to="altitude_opto" />
-      <remap from="depth" to="depth_opto" />
-    </node>
-
-    <node pkg="ldtravocean" type="ldnavex_node" name="ekf_nav" if="$(arg use_extended)">
-      <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
-      <param name="imu_with_yaw_rate" value="false" />
-      <param name="dvl_model" value="1" />
-      <param name="Ts" value="0.1" />
-       
-      <remap from="gps" to="nogps" />
-      <remap from="altitude" to="altitude_opto" />
-      <!-- <remap from="depth" to="depth_opto" /> -->
-    </node>
+  	<node pkg="labust_navigation" type="nav_node2" name="ekf_nav">
+    	<param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+  	</node>
 
     <node pkg="labust_navigation" type="llnode" name="tf_frame_node">
       <param name="LocalFixSim" value="true" if="$(optenv USE_LOCAL_FIX 1)" /> 

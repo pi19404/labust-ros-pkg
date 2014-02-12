@@ -1,9 +1,8 @@
 <launch>
+	<arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
+  	
 	<rosparam command="load"
 		file="$(find labust_launchers)/launch/caddy/config/control.yaml" />
-
-	<!-- Manual control input -->
-	<include file="$(find labust_launchers)/config/control/joy.xml" />
 	
 	<node pkg="labust_control" type="nu_manual" name="ManualNuRef">
 	   <remap from="Enable" to="NU_enable" />
@@ -14,7 +13,7 @@
 	</node>
 
 	<!-- Identification control -->
-	<node pkg="ident_so" type="ident_so" name="identification">
+	<node pkg="ident_so" type="ident_so" name="identification" if="$(arg use_ident)">
 	   <remap from="tauOut" to="tauIdent" />
  	</node>
 

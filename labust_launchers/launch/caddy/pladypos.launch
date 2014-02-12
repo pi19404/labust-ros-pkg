@@ -1,9 +1,10 @@
 <launch>
-  <include file="$(find labust_launchers)/launch/caddy/$(env ROBOT).machine" />
   <arg name="is_sim" value="$(optenv IS_SIM 1)" />     
   <arg name="use_pl" value="$(optenv IS_PLADYPOS 0)" />
   <arg name="en_logging" value="$(optenv ENABLE_LOGGING 0)" />     
-  <arg name="use_direct" value="$(optenv USE_DIRECT 0)" />      
+  <arg name="use_direct" value="$(optenv USE_DIRECT 0)" />
+  <arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
+  <arg name="use_mm" value="$(optenv USE_MULTIMASTER 0)" />  
 
   <group ns="pladypos">  	
   	<rosparam command="load" file="$(find snippets)/data/locations/$(env LOCATION).yaml" />
@@ -23,6 +24,11 @@
   	<!-- Add the logging -->
   	<group if="$(arg en_logging)">
   		<include file="$(find labust_launchers)/launch/caddy/logger.launch" />
+  	</group>
+  	
+  	<group if="$(arg use_mm)">
+  	  	<node pkg="master_discovery_fkie" type="zeroconf" name="zeroconf" />
+  		<node pkg="master_sync_fkie" type="master_sync" name="master_sync" />
   	</group>
   </group>
 </launch>
