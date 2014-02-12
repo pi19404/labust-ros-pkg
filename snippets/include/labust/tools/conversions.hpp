@@ -147,12 +147,12 @@ namespace labust
 
 		//\todo Test and document this method
 		template <class T>
-		void eulerZYXFromQuaternion(const Eigen::Quaternion<T>& q, double& roll, double& pitch, double& yaw)
+		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			yaw = atan2(2*(q.w()*q.x() + q.y()*q.z()),1-2*(q.x()*q.x() + q.y()*q.y()));
-			pitch = asin(2*(q.w()*q.y()-q.z()*q.x()));
-			roll = atan2(2*(q.w()*q.z()+q.x()*q.y()),1-2*(q.y()*q.y()+q.z()*q.z()));
+			yaw = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
+			pitch = -asin(2*(q.x()*q.z()-q.y()*q.w()));
+			roll = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
 		}
 	}
 }

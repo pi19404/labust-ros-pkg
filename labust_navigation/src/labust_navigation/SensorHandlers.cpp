@@ -34,8 +34,9 @@
 #include <labust/navigation/SensorHandlers.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/GeoUtilities.hpp>
+#include <labust/tools/conversions.hpp>
 
-#include <kdl/frames.hpp>
+//#include <kdl/frames.hpp>
 
 using namespace labust::navigation;
 
@@ -86,8 +87,9 @@ void ImuHandler::onImu(const sensor_msgs::Imu::ConstPtr& data)
 		tf::Quaternion meas(data->orientation.x,data->orientation.y,
 				data->orientation.z,data->orientation.w);
 		tf::Quaternion result = meas*transform.getRotation();
-		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX
-				(rpy[yaw],rpy[pitch],rpy[roll]);
+		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX
+		//		(rpy[yaw],rpy[pitch],rpy[roll]);
+		labust::tools::eulerZYXFromQuaternion(result, rpy[roll], rpy[pitch], rpy[yaw]);
 		rpy[yaw] = unwrap(rpy[yaw]);
 
 		//Transform angular velocities

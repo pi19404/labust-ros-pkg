@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     snippets 
     auv_msgs 
     tf
-    kdl_conversions
+#   kdl_conversions
     labust_navigation)
 
 ## System dependencies are found with CMake's conventions

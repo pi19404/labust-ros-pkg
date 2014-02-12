@@ -36,9 +36,10 @@
  *********************************************************************/
 #include <labust/control/VirtualTarget.hpp>
 #include <labust/tools/MatrixLoader.hpp>
+#include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyVelocityReq.h>
-#include <kdl/frames.hpp>
+//#include <kdl/frames.hpp>
 #include <boost/bind.hpp>
 
 #include <cmath>
@@ -215,11 +216,14 @@ void VirtualTarget::step()
 		listener.lookupTransform("local", "serret_frenet_frame", ros::Time(0), sfLocal);
 		tf::Quaternion q = sfTransform.getRotation();
 		double gamma,gammaRabbit,flow_yaw,pitch,roll;
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gamma,pitch,roll);
+		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, gamma);
+		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gamma,pitch,roll);
 		q = sfLocal.getRotation();
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gammaRabbit,pitch,roll);
+		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gammaRabbit,pitch,roll);
+		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, gammaRabbit);
 		q = flowLocal.getRotation();
-		KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(flow_yaw,pitch,roll);
+		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(flow_yaw,pitch,roll);
+		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, flow_yaw);
 
 		//double UvecYaw = state.orientation.yaw;
 		//For slow movements prefer the body frame instead of the flow frame.
