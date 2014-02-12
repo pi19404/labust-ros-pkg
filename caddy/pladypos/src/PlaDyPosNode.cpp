@@ -36,7 +36,6 @@
 #include <labust/math/NumberManipulation.hpp>
 
 #include <diagnostic_msgs/DiagnosticStatus.h>
-//#include <cart2/ImuInfo.h>
 #include <std_msgs/Float32MultiArray.h>
 
 #include <boost/regex.hpp>

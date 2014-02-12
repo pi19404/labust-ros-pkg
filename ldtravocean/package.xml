@@ -41,7 +41,7 @@
   <build_depend>auv_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>labust_navigation</build_depend>
-  <build_depend>kdl_conversions</build_depend>
+  <!-- <build_depend>kdl_conversions</build_depend> -->
   <build_depend>rqt_gui</build_depend>
   <build_depend>rqt_gui_py</build_depend>
   
@@ -50,7 +50,7 @@
   <run_depend>auv_msgs</run_depend>
   <run_depend>tf</run_depend>
   <run_depend>labust_navigation</run_depend>
-  <run_depend>kdl_conversions</run_depend>
+  <!-- <run_depend>kdl_conversions</run_depend> -->
   <run_depend>rqt_gui</run_depend>
   <run_depend>rqt_gui_py</run_depend>
 

@@ -65,6 +65,50 @@ namespace labust
 		}
 
 		/**
+		 * The function offers mapping from NED structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void nedToVector(const Point& point, Iterator& vec, int offset = 0)
+		{
+			vec[offset+0] = point.north;
+			vec[offset+1] = point.east;
+			vec[offset+2] = point.depth;
+		}
+
+		/**
+		 * The class offers mapping to a RPY structure from a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToNED(const Iterator& vec, Point& point, int offset = 0)
+		{
+			point.north = vec[offset+0];
+			point.east = vec[offset+1];
+			point.depth = vec[offset+2];
+		}
+
+		/**
+		 * The function offers mapping from RPY structure to a vector.
+		 */
+		template <class Point, class Iterator>
+		void rpyToVector(const Point& point, Iterator& vec, int offset = 0)
+		{
+			vec[offset+0] = point.roll;
+			vec[offset+1] = point.pitch;
+			vec[offset+2] = point.yaw;
+		}
+
+		/**
+		 * The class offers mapping to a NED structure from a vector.
+		 */
+		template <class Point, class Iterator>
+		void vectorToRPY(const Iterator& vec, Point& point, int offset = 0)
+		{
+			point.roll = vec[offset+0];
+			point.pitch = vec[offset+1];
+			point.yaw = vec[offset+2];
+		}
+
+		/**
 		 * The class offers mapping from auv_msgs disable_axis structure to a vector.
 		 */
 		template <class Point, class Iterator>
@@ -103,12 +147,12 @@ namespace labust
 
 		//\todo Test and document this method
 		template <class T>
-		void eulerZYXFromQuaternion(const Eigen::Quaternion<T>& q, double& roll, double& pitch, double& yaw)
+		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			yaw = atan2(2*(q.w()*q.x() + q.y()*q.z()),1-2*(q.x()*q.x() + q.y()*q.y()));
-			pitch = asin(2*(q.w()*q.y()-q.z()*q.x()));
-			roll = atan2(2*(q.w()*q.z()+q.x()*q.y()),1-2*(q.y()*q.y()+q.z()*q.z()));
+			yaw = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
+			pitch = -asin(2*(q.x()*q.z()-q.y()*q.w()));
+			roll = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
 		}
 	}
 }

@@ -44,7 +44,7 @@
 #include <labust/simulation/DynamicsParams.hpp>
 #include <labust/navigation/KFModelLoader.hpp>
 
-#include <kdl/frames.hpp>
+//#include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -104,7 +104,7 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 	}
 	catch(tf::TransformException& ex)
 	{
-		ROS_ERROR("%s",ex.what());
+		ROS_WARN("%s",ex.what());
 	}
 };
 
@@ -124,7 +124,8 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 				data->orientation.z,data->orientation.w);
 		tf::Quaternion result = meas*transform.getRotation();
 
-		KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
+		labust::tools::eulerZYXFromQuaternion(result, roll, pitch, yaw);
 		/*labust::tools::eulerZYXFromQuaternion(
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),
@@ -143,7 +144,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	}
 	catch (tf::TransformException& ex)
 	{
-		ROS_ERROR("%s",ex.what());
+		ROS_WARN("%s",ex.what());
 	}
 };
 
@@ -170,6 +171,8 @@ void configureNav(KFNav& nav, ros::NodeHandle& nh)
 
 	nav.initModel();
 	labust::navigation::kfModelLoader(nav, nh, "ekfnav");
+
+	std::cout<<"V:"<<nav.V<<std::endl;
 }
 
 void offline_sim(const std::string& filename, KFNav& ekf)
@@ -424,7 +427,7 @@ int main(int argc, char* argv[])
 		}
 		catch(tf::TransformException& ex)
 		{
-			ROS_ERROR("%s",ex.what());
+			ROS_WARN("%s",ex.what());
 		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
