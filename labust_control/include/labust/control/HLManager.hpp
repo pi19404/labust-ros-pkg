@@ -41,10 +41,11 @@
 
 #include <std_msgs/Bool.h>
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <auv_msgs/NavSts.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
@@ -189,7 +190,7 @@ namespace labust
 			/**
 			 * Local origin.
 			 */
-			tf::TransformBroadcaster broadcaster;
+			tf2_ros::TransformBroadcaster broadcaster;
 			/**
 			 * Lat-Lon origin position.
 			 */
