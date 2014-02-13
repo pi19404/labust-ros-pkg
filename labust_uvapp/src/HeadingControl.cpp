@@ -38,7 +38,7 @@
 #include <labust/tools/MatrixLoader.hpp>
 
 #include <auv_msgs/BodyVelocityReq.h>
-#include <kdl/frames.hpp>
+#include <geometry_msgs/TwistStamped.h>
 #include <boost/bind.hpp>
 
 #include <cmath>
