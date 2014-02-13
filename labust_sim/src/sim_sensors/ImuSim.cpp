@@ -38,8 +38,10 @@
 #include <geometry_msgs/Vector3.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Float32.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
+#include <labust/tools/conversions.hpp>
 
 #include <boost/thread/mutex.hpp>
 
@@ -75,10 +77,17 @@ struct ImuSim
 		depth_pub.publish(depth);
 
 		//Publish the imu_frame location
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(0, 0, 0));
-		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-	    broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "imu_frame"));
+		///\todo Replace this with the available static transform publisher node
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = 0;
+		transform.transform.translation.y = 0;
+		transform.transform.translation.z = 0;
+		labust::tools::quaternionFromEulerZYX(0, 0, 0,
+				transform.transform.rotation);
+		transform.child_frame_id = "imu_frame";
+		transform.header.frame_id = "base_link";
+		transform.header.stamp = ros::Time::now();
+		broadcaster.sendTransform(transform);
 	}
 
 	void onAcc(const typename geometry_msgs::Vector3::ConstPtr& msg)
@@ -92,7 +101,7 @@ private:
 	ros::Publisher imu_pub, depth_pub;
 	boost::mutex acc_mux;
 	geometry_msgs::Vector3 nuacc;
-	tf::TransformBroadcaster broadcaster;
+	tf2_ros::TransformBroadcaster broadcaster;
 };
 
 int main(int argc, char* argv[])

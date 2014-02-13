@@ -4,7 +4,12 @@ project(labust_sim)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS auv_msgs roscpp rospy tf snippets pluginlib)
+find_package(catkin REQUIRED COMPONENTS 
+    auv_msgs 
+    roscpp 
+    rospy 
+    tf2_ros 
+    snippets)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS random)

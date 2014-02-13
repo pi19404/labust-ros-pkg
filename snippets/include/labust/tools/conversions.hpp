@@ -145,6 +145,22 @@ namespace labust
 			q = Quaternion<T>(m);
 		}
 
+		template <class T>
+		void quaternionFromEulerZYX(double roll, double pitch, double yaw, T& q)
+		{
+			using namespace Eigen;
+			Matrix<double,3,3> m;
+			typedef Matrix<double,3,1> Vector3;
+			m = AngleAxis<double>(yaw, Vector3::UnitZ())
+			* AngleAxis<double>(pitch, Vector3::UnitY())
+			* AngleAxis<double>(roll, Vector3::UnitX());
+			Quaternion<double> t(m);
+			q.x = t.x();
+			q.y = t.y();
+			q.z = t.z();
+			q.w = t.w();
+		}
+
 		//\todo Test and document this method
 		template <class T>
 		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)

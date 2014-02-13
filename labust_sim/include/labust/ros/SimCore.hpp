@@ -37,7 +37,6 @@
 #ifndef SIMCORE_HPP_
 #define SIMCORE_HPP_
 #include <labust/simulation/RBModel.hpp>
-//#include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyForceReq.h>
@@ -47,8 +46,7 @@
 #include <auv_msgs/NavSts.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
 
 #include <boost/thread.hpp>
 
@@ -211,7 +209,7 @@ namespace labust
 			/**
 			 * The frame transform broadcaster.
 			 */
-			tf::TransformBroadcaster broadcast;
+			tf2_ros::TransformBroadcaster broadcast;
 			/**
 			 * Subscriptions to input virtual forces and currents.
 			 */
