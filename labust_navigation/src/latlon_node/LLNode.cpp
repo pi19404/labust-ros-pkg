@@ -37,8 +37,8 @@
 #include <labust/tools/conversions.hpp>
 
 #include <sensor_msgs/NavSatFix.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
 
 #include <boost/thread.hpp>
@@ -82,19 +82,30 @@ struct LLNode
 		ros::Rate rate(1);
 		while (ros::ok())
 		{
-			tf::Transform transform;
+			geometry_msgs::TransformStamped transform;
 			if (fixValidated)
 			{
-				transform.setOrigin(tf::Vector3(originLon, originLat, 0));
-				transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-				broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
+				geometry_msgs::TransformStamped transform;
+				transform.transform.translation.x = originLon;
+				transform.transform.translation.y = originLat;
+				transform.transform.translation.z = 0;
+				labust::tools::quaternionFromEulerZYX(0, 0, 0,
+						transform.transform.rotation);
+				transform.child_frame_id = "world";
+				transform.header.frame_id = "worldLatLon";
+				transform.header.stamp = ros::Time::now();
+				broadcaster.sendTransform(transform);
 			}
 
-			transform.setOrigin(tf::Vector3(0, 0, 0));
+			transform.transform.translation.x = 0;
+			transform.transform.translation.y = 0;
+			transform.transform.translation.z = 0;
 			Eigen::Quaternion<float> q;
-			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
-			transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
+			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,transform.transform.rotation);
+			transform.child_frame_id = "local";
+			transform.header.frame_id = "world";
+			transform.header.stamp = ros::Time::now();
+			broadcaster.sendTransform(transform);
 
 			rate.sleep();
 		}
@@ -102,7 +113,7 @@ struct LLNode
 
 private:
 	ros::Subscriber gps_raw;
-	tf::TransformBroadcaster broadcaster;
+	tf2_ros::TransformBroadcaster broadcaster;
 	double originLat, originLon;
 	bool fixValidated;
 	int fixCount;

@@ -36,7 +36,8 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/conversions.hpp>
 
-//#include <kdl/frames.hpp>
+#include <geometry_msgs/TransformStamped.h>
+#include <Eigen/Dense>
 
 using namespace labust::navigation;
 
@@ -49,24 +50,24 @@ void GPSHandler::configure(ros::NodeHandle& nh)
 void GPSHandler::onGps(const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	//Calculate to X-Y tangent plane
-	tf::StampedTransform transformDeg, transformLocal;
+	geometry_msgs::TransformStamped transformDeg, transformLocal;
 	try
 	{
-		listener.lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
-		listener.lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
-		posxy =	labust::tools::deg2meter(data->latitude - transformDeg.getOrigin().y(),
-					data->longitude - transformDeg.getOrigin().x(),
-					transformDeg.getOrigin().y());
+		transformLocal = buffer.lookupTransform("local", "gps_frame", ros::Time(0));
+		transformDeg = buffer.lookupTransform("worldLatLon", "local", ros::Time(0));
+		posxy =	labust::tools::deg2meter(data->latitude - transformDeg.transform.translation.y,
+					data->longitude - transformDeg.transform.translation.x,
+					transformDeg.transform.translation.y);
 
-		originLL.first = transformDeg.getOrigin().y();
-		originLL.second = transformDeg.getOrigin().x();
+		originLL.first = transformDeg.transform.translation.y;
+		originLL.second = transformDeg.transform.translation.x;
 
 		posLL.first = data->latitude;
 		posLL.second = data->longitude;
 
 		isNew = true;
 	}
-	catch(tf::TransformException& ex)
+	catch(tf2::TransformException& ex)
 	{
 		ROS_WARN("Unable to decode GPS measurement. Missing frame : %s",ex.what());
 	}
@@ -80,13 +81,17 @@ void ImuHandler::configure(ros::NodeHandle& nh)
 
 void ImuHandler::onImu(const sensor_msgs::Imu::ConstPtr& data)
 {
-	tf::StampedTransform transform;
+	geometry_msgs::TransformStamped transform;
 	try
 	{
-		listener.lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
-		tf::Quaternion meas(data->orientation.x,data->orientation.y,
+		transform = buffer.lookupTransform("base_link", "imu_frame", ros::Time(0));
+		Eigen::Quaternion<double> meas(data->orientation.x,data->orientation.y,
 				data->orientation.z,data->orientation.w);
-		tf::Quaternion result = meas*transform.getRotation();
+		Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+				transform.transform.rotation.y,
+				transform.transform.rotation.z,
+				transform.transform.rotation.w);
+		Eigen::Quaternion<double> result = meas*rot;;
 		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX
 		//		(rpy[yaw],rpy[pitch],rpy[roll]);
 		labust::tools::eulerZYXFromQuaternion(result, rpy[roll], rpy[pitch], rpy[yaw]);
@@ -106,7 +111,7 @@ void ImuHandler::onImu(const sensor_msgs::Imu::ConstPtr& data)
 
 		isNew = true;
 	}
-	catch (tf::TransformException& ex)
+	catch (tf2::TransformException& ex)
 	{
 		ROS_WARN("Failed converting the IMU data: %s",ex.what());
 	}
@@ -126,19 +131,25 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 	{
 		try
 		{
-			tf::StampedTransform transform;
-			listener.lookupTransform("base_link", "dvl_frame", ros::Time(0), transform);
+			geometry_msgs::TransformStamped transform;
+			transform = buffer.lookupTransform("base_link", "dvl_frame", ros::Time(0));
 
-			tf::Vector3 speed(data->twist.linear.x, data->twist.linear.y, data->twist.linear.z);
-			tf::Vector3 body_speed = transform.getBasis()*speed;
+			Eigen::Vector3d speed(data->twist.linear.x, data->twist.linear.y, data->twist.linear.z);
+			Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+					transform.transform.rotation.y,
+					transform.transform.rotation.z,
+					transform.transform.rotation.w);
+			Eigen::Vector3d body_speed = rot.matrix()*speed;
 
 			//Add compensation for excentralized DVL
-			tf::Vector3 origin=transform.getOrigin();
+			Eigen::Vector3d origin(transform.transform.translation.x,
+					transform.transform.translation.y,
+					transform.transform.translation.z);
 			if (origin.x() != 0 || origin.y() != 0)
 			{
 				double ang = atan2(origin.y(), origin.x());
 				double vm = r*sqrt(origin.x()*origin.x() + origin.y()*origin.y());
-				body_speed -= tf::Vector3(vm*sin(ang),vm*cos(ang),0);
+				body_speed -= Eigen::Vector3d(vm*sin(ang),vm*cos(ang),0);
 			}
 
 			uvw[u] = body_speed.x();
@@ -160,12 +171,16 @@ void DvlHandler::onDvl(const geometry_msgs::TwistStamped::ConstPtr& data)
 	}
 	else if (data->header.frame_id == "local")
 	{
-		tf::StampedTransform transform;
-		tf::Vector3 meas(data->twist.linear.x,
+		geometry_msgs::TransformStamped transform;
+		Eigen::Vector3d meas(data->twist.linear.x,
 				data->twist.linear.y,
 				data->twist.linear.z);
-		listener.lookupTransform("local", "base_link", ros::Time(0), transform);
-		tf::Vector3 result = transform.getBasis()*meas;
+		Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+				transform.transform.rotation.y,
+				transform.transform.rotation.z,
+				transform.transform.rotation.w);
+		transform = buffer.lookupTransform("local", "base_link", ros::Time(0));
+		Eigen::Vector3d result = rot.matrix()*meas;
 		uvw[u] = result.x();
 		uvw[v] = result.y();
 		uvw[w] = result.z();

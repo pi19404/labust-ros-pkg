@@ -38,7 +38,8 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/TwistStamped.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <ros/ros.h>
 
@@ -70,6 +71,7 @@ namespace labust
 		class GPSHandler : public NewArrived
 		{
 		public:
+			GPSHandler():listener(buffer){};
 			void configure(ros::NodeHandle& nh);
 
 			inline const std::pair<double, double>&
@@ -84,7 +86,8 @@ namespace labust
 		private:
 			void onGps(const sensor_msgs::NavSatFix::ConstPtr& data);
 			std::pair<double, double> posxy, originLL, posLL;
-			tf::TransformListener listener;
+			tf2_ros::Buffer buffer;
+			tf2_ros::TransformListener listener;
 			ros::Subscriber gps;
 		};
 
@@ -98,6 +101,8 @@ namespace labust
 			enum {p=0,q,r};
 			enum {ax,ay,az};
 
+			ImuHandler():listener(buffer){};
+
 			void configure(ros::NodeHandle& nh);
 
 			inline const double* orientation() const{return rpy;}
@@ -108,7 +113,8 @@ namespace labust
 
 		private:
 			void onImu(const sensor_msgs::Imu::ConstPtr& data);
-			tf::TransformListener listener;
+			tf2_ros::Buffer buffer;
+			tf2_ros::TransformListener listener;
 			labust::math::unwrap unwrap;
 			ros::Subscriber imu;
 			double rpy[3], pqr[3], axyz[3];
@@ -119,7 +125,7 @@ namespace labust
 		public:
 			enum {u=0,v,w};
 
-			DvlHandler():r(0){};
+			DvlHandler():r(0),listener(buffer){};
 
 			void configure(ros::NodeHandle& nh);
 
@@ -131,7 +137,8 @@ namespace labust
 			void onDvl(const geometry_msgs::TwistStamped::ConstPtr& data);
 			double uvw[3], r;
 			ros::Subscriber nu_dvl;
-			tf::TransformListener listener;
+			tf2_ros::Buffer buffer;
+			tf2_ros::TransformListener listener;
 		};
 	}
 }

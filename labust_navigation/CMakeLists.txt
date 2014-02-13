@@ -9,8 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   snippets
   sensor_msgs
-#  kdl_conversions
-  tf
+  geometry_msgs
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
