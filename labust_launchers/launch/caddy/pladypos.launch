@@ -27,8 +27,7 @@
   	</group>
   	
   	<group if="$(arg use_mm)">
-  	  	<node pkg="master_discovery_fkie" type="zeroconf" name="zeroconf" />
-  		<node pkg="master_sync_fkie" type="master_sync" name="master_sync" />
+  		<include file="$(find labust_launchers)/launch/caddy/multi_master.launch" />
   	</group>
   </group>
 </launch>
