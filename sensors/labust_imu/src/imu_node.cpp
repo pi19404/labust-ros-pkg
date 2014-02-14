@@ -160,6 +160,7 @@ void handleIncoming(SharedData& shared,
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
 		imu->orientation.w = quat.w();
+		shared.transforms[SharedData::imuPos].header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(shared.transforms[SharedData::imuPos]);
 		shared.imuPub.publish(imu);
 
@@ -181,6 +182,7 @@ void handleIncoming(SharedData& shared,
 		gps->position_covariance[8] = 9999;
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
+		shared.transforms[SharedData::gpsPos].header.stamp = ros::Time::now();
 		shared.broadcast.sendTransform(shared.transforms[SharedData::gpsPos]);
 		static int i=0;
 		++i;
