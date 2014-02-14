@@ -48,6 +48,7 @@
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <ros/ros.h>
 
@@ -335,18 +336,18 @@ void Estimator3D::start()
 		publishState();
 
 		//Send the base-link transform
-		tf::StampedTransform transform;
-		transform.setOrigin(tf::Vector3(
-				nav.getState()(KFNav::xp),
-				nav.getState()(KFNav::yp),
-				nav.getState()(KFNav::zp)));
-		Eigen::Quaternion<float> q;
-		labust::tools::quaternionFromEulerZYX(
-				nav.getState()(KFNav::phi),
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = nav.getState()(KFNav::xp);
+		transform.transform.translation.y = nav.getState()(KFNav::yp);
+		transform.transform.translation.z = nav.getState()(KFNav::zp);
+		labust::tools::quaternionFromEulerZYX(nav.getState()(KFNav::phi),
 				nav.getState()(KFNav::theta),
-				nav.getState()(KFNav::psi),q);
-		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+				nav.getState()(KFNav::psi),
+				transform.transform.rotation);
+		transform.child_frame_id = "base_link";
+		transform.header.frame_id = "local";
+		transform.header.stamp = ros::Time::now();
+		broadcaster.sendTransform(transform);
 
 		rate.sleep();
 		ros::spinOnce();
