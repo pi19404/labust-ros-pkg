@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
     auv_msgs 
     roscpp 
     labust_base
-    tf 
     dynamic_reconfigure 
     snippets)
 
@@ -60,7 +59,7 @@ generate_dynamic_reconfigure_options(cfg/ThrusterMapping.cfg cfg/DPSettings.cfg)
 catkin_package(
 #   INCLUDE_DIRS include
 #  LIBRARIES pladypos
-   CATKIN_DEPENDS auv_msgs message_runtime roscpp tf dynamic_reconfigure
+   CATKIN_DEPENDS auv_msgs message_runtime roscpp dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
