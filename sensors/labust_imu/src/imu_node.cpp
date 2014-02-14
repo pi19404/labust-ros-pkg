@@ -43,7 +43,8 @@
 #include <std_msgs/String.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
 
 #include <boost/bind.hpp>
@@ -60,10 +61,13 @@ struct SharedData
 		data_offset=4,
 		checksum = 85,
 		float_offset=9};
+
+	enum {imuPos=0,
+		gpsPos};
 	enum {lat=0, lon=1};
 	ros::Publisher imuPub, gpsPub, imuinfo;
-	tf::Transform imuPos, gpsPos, worldLatLon, world;
-	tf::TransformBroadcaster broadcast;
+	std::vector<geometry_msgs::TransformStamped> transforms;
+	tf2_ros::TransformBroadcaster broadcast;
 	double magnetic_declination;
 	unsigned char buffer[msg_size];
 	std::vector<double> median[2];
@@ -156,7 +160,7 @@ void handleIncoming(SharedData& shared,
 		imu->orientation.y = quat.y();
 		imu->orientation.z = quat.z();
 		imu->orientation.w = quat.w();
-		shared.broadcast.sendTransform(tf::StampedTransform(shared.imuPos, ros::Time::now(), "base_link", "imu_frame"));
+		shared.broadcast.sendTransform(shared.transforms[SharedData::imuPos]);
 		shared.imuPub.publish(imu);
 
 		//Send GPS stuff
@@ -177,7 +181,7 @@ void handleIncoming(SharedData& shared,
 		gps->position_covariance[8] = 9999;
 		gps->header.frame_id = "worldLatLon";
 		gps->header.stamp = ros::Time::now();
-		shared.broadcast.sendTransform(tf::StampedTransform(shared.gpsPos, ros::Time::now(), "base_link", "gps_frame"));
+		shared.broadcast.sendTransform(shared.transforms[SharedData::gpsPos]);
 		static int i=0;
 		++i;
 //		if ((status == 'A') && ((i%shared.gps_pub)==0)) shared.gpsPub.publish(gps);
@@ -213,10 +217,6 @@ void handleIncoming(SharedData& shared,
 				shared.gpsPub.publish(gps);
 			}
 		}
-//
-		//Send the WorldLatLon frame update
-		//shared.broadcast.sendTransform(tf::StampedTransform(shared.worldLatLon, ros::Time::now(), "worldLatLon", "world"));
-		//shared.broadcast.sendTransform(tf::StampedTransform(shared.world, ros::Time::now(), "world", "local"));
 	}
 	start_receive(shared,port);
 }
@@ -279,28 +279,31 @@ int main(int argc, char* argv[])
 
 	labust::tools::getMatrixParam(nh, "imu_origin", origin);
 	labust::tools::getMatrixParam(nh, "imu_orientation", orientation);
-	shared.imuPos.setOrigin(tf::Vector3(origin(0),origin(1),origin(2)));
-	shared.imuPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
-			orientation(1),orientation(2)));
+	shared.transforms[SharedData::imuPos].transform.translation.x = origin(0);
+	shared.transforms[SharedData::imuPos].transform.translation.y = origin(1);
+	shared.transforms[SharedData::imuPos].transform.translation.z = origin(2);
+	labust::tools::quaternionFromEulerZYX(orientation(0),
+			orientation(1),
+			orientation(2),
+			shared.transforms[SharedData::imuPos].transform.rotation);
+	shared.transforms[SharedData::imuPos].child_frame_id = "imu_frame";
+	shared.transforms[SharedData::imuPos].header.frame_id = "base_link";
+	shared.transforms[SharedData::imuPos].header.stamp = ros::Time::now();
 
 	origin = origin.Zero();
 	orientation = orientation.Zero();
 	labust::tools::getMatrixParam(nh, "gps_origin", origin);
 	labust::tools::getMatrixParam(nh, "gps_orientation", orientation);
-	shared.gpsPos.setOrigin(tf::Vector3(origin(0),origin(1),origin(2)));
-	shared.gpsPos.setRotation(tf::createQuaternionFromRPY(orientation(0),
-			orientation(1),orientation(2)));
-
-	//Setup the world coordinates
-	double originLat(0), originLon(0);
-	nh.param("LocalOriginLat",originLat,originLat);
-	nh.param("LocalOriginLon",originLon,originLon);
-	shared.worldLatLon.setOrigin(tf::Vector3(originLon, originLat, 0));
-	shared.worldLatLon.setRotation(tf::createQuaternionFromRPY(0,0,0));
-	Eigen::Quaternion<float> q;
-	labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
-	shared.world.setOrigin(tf::Vector3(0,0,0));
-	shared.world.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
+	shared.transforms[SharedData::gpsPos].transform.translation.x = origin(0);
+	shared.transforms[SharedData::gpsPos].transform.translation.y = origin(1);
+	shared.transforms[SharedData::gpsPos].transform.translation.z = origin(2);
+	labust::tools::quaternionFromEulerZYX(orientation(0),
+			orientation(1),
+			orientation(2),
+			shared.transforms[SharedData::gpsPos].transform.rotation);
+	shared.transforms[SharedData::gpsPos].child_frame_id = "imu_frame";
+	shared.transforms[SharedData::gpsPos].header.frame_id = "base_link";
+	shared.transforms[SharedData::gpsPos].header.stamp = ros::Time::now();
 
 	start_receive(shared,port);
 	boost::thread t(boost::bind(&ba::io_service::run,&io));
