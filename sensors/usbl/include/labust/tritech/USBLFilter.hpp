@@ -39,7 +39,8 @@
 #include <labust/navigation/KFCore.hpp>
 #include <labust/navigation/KinematicModel.hpp>
 
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
@@ -114,9 +115,13 @@ namespace labust
 			 */
 			ros::Subscriber usblSub;
 			/**
+			 * Transform buffer.
+			 */
+			tf2_ros::Buffer buffer;
+			/**
 			 * Frame transform listener.
 			 */
-			tf::TransformListener listener;
+			tf2_ros::TransformListener listener;
 			/**
 			 * Safety timeout.
 			 */

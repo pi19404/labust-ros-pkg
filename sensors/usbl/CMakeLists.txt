@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp 
     rospy
     labust_base 
-    tf 
+    tf2_ros 
     nodelet 
     auv_msgs 
     tritech_sdk
@@ -59,7 +59,7 @@ find_package(Boost REQUIRED COMPONENTS thread serialization)
 catkin_package(
    INCLUDE_DIRS include
 #  LIBRARIES usbl
-   CATKIN_DEPENDS geometry_msgs  roscpp rospy tf nodelet auv_msgs tritech_sdk #labust_base
+   CATKIN_DEPENDS geometry_msgs  roscpp rospy tf2_ros nodelet auv_msgs tritech_sdk #labust_base
 #  DEPENDS system_lib
 )
 

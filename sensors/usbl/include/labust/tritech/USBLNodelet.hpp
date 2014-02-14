@@ -40,7 +40,7 @@
 
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 
@@ -160,7 +160,7 @@ namespace labust
 			/**
 			 * USBL frame transformation broadcaster.
 			 */
-			tf::TransformBroadcaster frameBroadcast;
+			tf2_ros::TransformBroadcaster frameBroadcast;
 			/**
 			 * Auto interrogate mode.
 			 */

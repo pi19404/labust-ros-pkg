@@ -38,9 +38,11 @@
 #include <labust/tritech/TCPDevice.hpp>
 #include <labust/tritech/mtMessages.hpp>
 #include <labust/tritech/USBLMessages.hpp>
+#include <labust/tools/conversions.hpp>
 #include <pluginlib/class_list_macros.h>
 
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 
 #include <boost/archive/binary_iarchive.hpp>
@@ -278,10 +280,16 @@ void USBLNodelet::run()
 		///\todo Determine if transform broadcast is neeeded
 		///\todo add transform settings in initial parameters.
 		///\todo determine real transform values relative to base_link
-		//tf::Transform transform;
-		//transform.setOrigin(tf::Vector3(0.25, 0.0, 0.5) );
-		//transform.setRotation(tf::Quaternion(0,0,0,1));
-		//frameBroadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "usbl"));
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = 0.25;
+		transform.transform.translation.y = 0;
+		transform.transform.translation.z = 0.5;
+		labust::tools::quaternionFromEulerZYX(0, 0, 0,
+				transform.transform.rotation);
+		transform.child_frame_id = "usbl_frame";
+		transform.header.frame_id = "base_link";
+		transform.header.stamp = ros::Time::now();
+		frameBroadcast.sendTransform(transform);
 		NODELET_INFO("Running.");	
 	}
 	NODELET_INFO("Exiting run.");	
