@@ -37,8 +37,11 @@
 		<node pkg="labust_control" type="fadp_controller2" name="station_keeping">
 			<remap from="Enable" to="FADP_enable" />
 		</node>
-		<node pkg="labust_control" type="alt_controller2" name="alt_depth_control">
+		<node pkg="labust_control" type="alt_controller2" name="alt_control">
 			<remap from="Enable" to="ALT_enable" />
+		</node>
+		<node pkg="labust_control" type="depth_controller2" name="depth_control">
+			<remap from="Enable" to="DEPTH_enable" />
 		</node>
 		<node pkg="labust_control" type="pitch_controller" name="pitch_control">
 			<remap from="Enable" to="PITCH_enable" />
