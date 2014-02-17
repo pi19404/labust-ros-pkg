@@ -78,12 +78,15 @@ add_executable(ldnav_node src/Estimator3D.cpp src/LDTravModel.cpp
 	include/labust/navigation/LDTravModel.hpp)
 add_executable(ldnavex_node src/Estimator3DExtended.cpp src/LDTravModelExtended.cpp
 	include/labust/navigation/LDTravModelExtended.hpp)
+add_executable(nznav_node src/EstimatorNZ.cpp src/NZModel.cpp
+	include/labust/navigation/NZModel.hpp)
 
 ## Add dependencies to the executable
 # add_dependencies(ldtravocean_node ${PROJECT_NAME})
 if (DEFINED catkin_EXPORTED_TARGETS)
   add_dependencies(ldnav_node ${catkin_EXPORTED_TARGETS})
   add_dependencies(ldnavex_node ${catkin_EXPORTED_TARGETS})
+  add_dependencies(nznav_node ${catkin_EXPORTED_TARGETS})
 endif()
 
 ## Specify libraries to link a library or executable target against
@@ -91,6 +94,7 @@ endif()
 
 target_link_libraries(ldnav_node ${catkin_LIBRARIES})
 target_link_libraries(ldnavex_node ${catkin_LIBRARIES})
+target_link_libraries(nznav_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
