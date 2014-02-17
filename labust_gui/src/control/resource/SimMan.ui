@@ -51,42 +51,35 @@
       <item row="1" column="1">
        <widget class="QDoubleSpinBox" name="depthRef">
         <property name="minimum">
-         <double>-1000.000000000000000</double>
+         <double>0.000000000000000</double>
         </property>
         <property name="maximum">
-         <double>1000.000000000000000</double>
+         <double>9999.000000000000000</double>
         </property>
        </widget>
       </item>
       <item row="1" column="0">
        <widget class="QCheckBox" name="depthEnable">
         <property name="text">
-         <string>Alt/Depth</string>
+         <string>Depth</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QCheckBox" name="dpEnable">
         <property name="text">
          <string>Station Keeping</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QCheckBox" name="manualEnable">
         <property name="text">
          <string>Manual</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QCheckBox" name="pitchEnable">
-        <property name="text">
-         <string>Pitch</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="pitchRef">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -99,6 +92,36 @@
         </property>
         <property name="maximum">
          <double>30.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QCheckBox" name="pitchEnable">
+        <property name="text">
+         <string>Pitch</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="altitudeEnable">
+        <property name="text">
+         <string>Altitude</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QDoubleSpinBox" name="altitudeRef">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimum">
+         <double>0.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>9999.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -459,11 +482,6 @@
     </layout>
    </widget>
   </widget>
-  <zorder>groupBox_3</zorder>
-  <zorder>groupBox_4</zorder>
-  <zorder>Stop</zorder>
-  <zorder>groupBox</zorder>
-  <zorder>groupBox_2</zorder>
  </widget>
  <resources/>
  <connections/>

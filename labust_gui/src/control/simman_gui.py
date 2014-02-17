@@ -65,10 +65,9 @@ class SimManGui(QtGui.QWidget):
                                             self.emit(QtCore.SIGNAL("onManualEnable"), 
                                                       state, self.manualSelection))
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDepthEnable"), ros.onDepthEnable)  
-        self.depthEnable.toggled.connect(lambda state: 
-                                            self.emit(QtCore.SIGNAL("onDepthEnable"), 
-                                                      state, 
-                                                      self.depthRef.value()))
+        self.depthEnable.toggled.connect(self._onDepthEnable)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onAltitudeEnable"), ros.onAltitudeEnable)  
+        self.altitudeEnable.toggled.connect(self._onAltitudeEnable) 
         QtCore.QObject.connect(self, QtCore.SIGNAL("onDPEnable"), ros.onDPEnable)  
         self.dpEnable.toggled.connect(self._onDpEnable)
         QtCore.QObject.connect(self, QtCore.SIGNAL("onPitchEnable"), ros.onPitchEnable)
@@ -86,6 +85,10 @@ class SimManGui(QtGui.QWidget):
         self.depthRef.editingFinished.connect(lambda: 
                                                     self.emit(QtCore.SIGNAL("onDepthUpdate"), 
                                                     self.depthRef.value()))
+        QtCore.QObject.connect(self, QtCore.SIGNAL("onAltitudeUpdate"), ros.onAltitudeUpdate)
+        self.altitudeRef.editingFinished.connect(lambda: 
+                                                    self.emit(QtCore.SIGNAL("onAltitudeUpdate"), 
+                                                    self.altitudeRef.value()))
         
         QtCore.QObject.connect(self, QtCore.SIGNAL("onMoveBaseRef"), ros.onMoveBaseRef)
         
@@ -131,6 +134,20 @@ class SimManGui(QtGui.QWidget):
                   self.eastRef.value(),
                   self.movebaseSelection)
         
+    def _onAltitudeEnable(self, state):
+        #disable depth
+        if self.depthEnable.isChecked():
+            self.emit(QtCore.SIGNAL("onDepthEnable"), False, 0)
+            
+        self.emit(QtCore.SIGNAL("onAltitudeEnable"), state, self.altitudeRef.value())
+            
+    def _onDepthEnable(self, state):
+        #disable depth
+        if self.altitudeEnable.isChecked():
+            self.emit(QtCore.SIGNAL("onAltitudeEnable"), False, 0)
+            
+        self.emit(QtCore.SIGNAL("onDepthEnable"), state, self.depthRef.value())       
+        
         
     def _update_refs(self,data):
         if not self.headingEnable.isChecked():
@@ -140,7 +157,9 @@ class SimManGui(QtGui.QWidget):
         if not self.depthEnable.isChecked():
             self.depthRef.setValue(data.position.depth)
         if not self.pitchEnable.isChecked():
-            self.pitchRef.setValue(math.degrees(data.orientation.pitch)) 
+          self.pitchRef.setValue(math.degrees(data.orientation.pitch)) 
+        if not self.altitudeEnable.isChecked():
+            self.altitudeRef.setValue(data.altitude)
             
     def _booststrap(self):
         self.headingEnable.setChecked(False)
@@ -165,11 +184,13 @@ class HLManager:
         
         self.hdgEnable = 0
         self.altEnable = 0
+        self.depthEnable = 0
         self.dpEnable = 0
         self.pitchEnable = 0
              
         self.enablers={"HDG":"HDG_enable",
                        "ALT":"ALT_enable",
+                       "DEPTH":"DEPTH_enable",
                        "DP":"FADP_enable",
                        "NU":"NU_enable",
                        "REF":"REF_enable",
@@ -228,6 +249,30 @@ class HLManager:
         self._invoke_velcon_cfg()
         
     def depth_control(self, state):
+        if state and self.altEnable:
+            #Disable altitude first
+            self._invoke_enabler("ALT", False)
+            self.altEnable = False;
+        
+        self.depthEnable = state
+        self._invoke_enabler("DEPTH", state)
+        if state:
+            self.man_nu.z = 1
+            self.velcon[2] = 2
+        else:
+            self.man_nu.z = 0
+            self.velcon[2] = 0
+            self.manual_control(self.manualEnable, self.manualSelection)
+
+        self._invoke_manual_nu_cfg()
+        self._invoke_velcon_cfg()
+        
+    def altitude_control(self, state):
+        if state and self.depthEnable:
+            #Disable depth first
+            self._invoke_enabler("DEPTH", False)
+            self.depthEnable = False;
+                        
         self.altEnable = state
         self._invoke_enabler("ALT", state)
         if state:
@@ -332,6 +377,10 @@ class SimManROS(QtCore.QObject):
             self._stateRef.orientation.pitch = math.radians(pitch)
             self._update_stateRef()
             
+        def onAltitudeUpdate(self, altitude):
+            self._stateRef.altitude = altitude
+            self._update_stateRef()
+            
         def onMoveBaseRef(self, x, y, selection):
             if selection == 0:
                 self._stateRef.position.north = x
@@ -363,7 +412,12 @@ class SimManROS(QtCore.QObject):
         def onDepthEnable(self, state, depth):
             #Invoke the enable services
             self.manager.depth_control(state);
-            self.onDepthUpdate(depth)  
+            self.onDepthUpdate(depth)
+            
+        def onAltitudeEnable(self, state, altitude):
+            #Invoke the enable services
+            self.manager.altitude_control(state);
+            self.onAltitudeUpdate(altitude) 
         
         def onPitchEnable(self, state, depth):
             #Invoke the enable services
