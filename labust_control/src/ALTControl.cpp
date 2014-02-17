@@ -39,6 +39,7 @@
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PSatDController.h>
 #include <labust/control/IPFFController.h>
+#include <labust/control/PIFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -68,7 +69,7 @@ namespace labust
 			{
 				//Copy into controller
 				//con.windup = tauAch.disable_axis.z;
-  			con.extWindup = tauAch.windup.z;
+  			con.extWindup = -tauAch.windup.z;
 			};
 
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
@@ -93,7 +94,8 @@ namespace labust
 				}
 				else
 				{
-					PSatD_dStep(&con, Ts, 0);
+					PIFF_ffStep(&con,Ts,-ref.body_velocity.z);
+					//PSatD_dStep(&con, Ts, 0);
 					ROS_INFO("Current state=%f, desired=%f", con.state, con.desired);
 				}
 
@@ -135,7 +137,8 @@ namespace labust
 				}
 				else
 				{
-					PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+					//PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+					IPFF_tune(&con, float(closedLoopFreq));
 					con.outputLimit = 1;
 				}
 

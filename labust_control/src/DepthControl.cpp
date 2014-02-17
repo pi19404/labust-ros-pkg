@@ -39,6 +39,7 @@
 #include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PSatDController.h>
 #include <labust/control/IPFFController.h>
+#include <labust/control/PIFFController.h>
 #include <labust/math/NumberManipulation.hpp>
 #include <labust/tools/MatrixLoader.hpp>
 #include <labust/tools/conversions.hpp>
@@ -90,12 +91,12 @@ namespace labust
 				if (useIP)
 				{
 					IPFF_ffStep(&con, Ts, ref.body_velocity.z);
-					//PIFF_ffStep(&con,Ts,ref.body_velocity.z);
 					ROS_INFO("Current state=%f, desired=%f, windup=%d", con.state, con.desired, con.windup);
 				}
 				else
 				{
-					PSatD_dStep(&con, Ts, wd);
+					PIFF_ffStep(&con,Ts,ref.body_velocity.z);
+					//PSatD_dStep(&con, Ts, wd);
 					ROS_INFO("Current state=%f, desired=%f", con.state, con.desired);
 				}
 
@@ -105,6 +106,7 @@ namespace labust
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
 				nu->twist.linear.z = con.output;
+				//nu->twist.linear.z = 0.2;
 
 				return nu;
 			}
@@ -115,9 +117,9 @@ namespace labust
 
 				ros::NodeHandle nh;
 				double closedLoopFreq(1);
-				nh.param("Depth_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
-				nh.param("Depth_controller/sampling",Ts,Ts);
-				nh.param("Depth_controller/use_ip",useIP,useIP);
+				nh.param("depth_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
+				nh.param("depth_controller/sampling",Ts,Ts);
+				nh.param("depth_controller/use_ip",useIP,useIP);
 
 				disable_axis[2] = 0;
 
@@ -129,7 +131,8 @@ namespace labust
 				}
 				else
 				{
-					PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+					//PSatD_tune(&con, float(closedLoopFreq), 0, 1);
+					IPFF_tune(&con, float(closedLoopFreq));
 					con.outputLimit = 1;
 				}
 
