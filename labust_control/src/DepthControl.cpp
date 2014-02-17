@@ -51,12 +51,12 @@
 namespace labust
 {
 	namespace control{
-		///The altitude/depth controller
-		struct ALTControl : DisableAxis
+		///The Depthitude/depth controller
+		struct DepthControl : DisableAxis
 		{
 			enum {x=0,y};
 
-			ALTControl():Ts(0.1), useIP(false), minAltitude(5){};
+			DepthControl():Ts(0.1), useIP(false){};
 
 			void init()
 			{
@@ -74,56 +74,50 @@ namespace labust
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
   		{
   			con.internalState = 0;
-  			con.lastState = state.altitude;
+ 				con.lastState = state.position.depth;
   		};
 
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
-				con.desired = ref.altitude;
-				con.state = state.altitude;
+				con.desired = ref.position.depth;
+				con.state = state.position.depth;
+				float wd = state.body_velocity.z;
 
 				//Zero feed-forward
 				//PIFF_ffStep(&con,Ts,0);
 				//\todo Check the derivative sign
 				if (useIP)
 				{
-					IPFF_ffStep(&con, Ts, -ref.body_velocity.z);
+					IPFF_ffStep(&con, Ts, ref.body_velocity.z);
+					//PIFF_ffStep(&con,Ts,ref.body_velocity.z);
 					ROS_INFO("Current state=%f, desired=%f, windup=%d", con.state, con.desired, con.windup);
 				}
 				else
 				{
-					PSatD_dStep(&con, Ts, 0);
+					PSatD_dStep(&con, Ts, wd);
 					ROS_INFO("Current state=%f, desired=%f", con.state, con.desired);
 				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());
 				nu->header.stamp = ros::Time::now();
-				nu->goal.requester = "alt_controller";
+				nu->goal.requester = "depth_controller";
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				nu->twist.linear.z = -con.output;
-
-				//Safety
-				if (state.altitude < minAltitude)
-				{
-					con.internalState = 0;
-					nu->twist.linear.z = 0;
-				}
+				nu->twist.linear.z = con.output;
 
 				return nu;
 			}
 
 			void initialize_controller()
 			{
-				ROS_INFO("Initializing depth/altitude controller...");
+				ROS_INFO("Initializing depth controller...");
 
 				ros::NodeHandle nh;
 				double closedLoopFreq(1);
-				nh.param("alt_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
-				nh.param("alt_controller/sampling",Ts,Ts);
-				nh.param("alt_controller/use_ip",useIP,useIP);
-				nh.param("alt_controller/min_altitude",minAltitude,minAltitude);
+				nh.param("Depth_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
+				nh.param("Depth_controller/sampling",Ts,Ts);
+				nh.param("Depth_controller/use_ip",useIP,useIP);
 
 				disable_axis[2] = 0;
 
@@ -139,24 +133,21 @@ namespace labust
 					con.outputLimit = 1;
 				}
 
-				ROS_INFO("Depth/Altitude controller initialized.");
+				ROS_INFO("Depth controller initialized.");
 			}
 
 		private:
-			ros::Subscriber alt_sub;
 			PIDBase con;
 			double Ts;
 			bool useIP;
-			double lastRef;
-			double minAltitude;
 		};
 	}}
 
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"alt_control");
+	ros::init(argc,argv,"Depth_control");
 
-	labust::control::HLControl<labust::control::ALTControl,
+	labust::control::HLControl<labust::control::DepthControl,
 	labust::control::EnableServicePolicy,
 	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
 
