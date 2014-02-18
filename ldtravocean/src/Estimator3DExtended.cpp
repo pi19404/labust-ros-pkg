@@ -48,6 +48,7 @@
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <std_msgs/Float32.h>
 
 #include <ros/ros.h>
 
@@ -72,6 +73,7 @@ void Estimator3D::onInit()
 	stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 	stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
 	currentsHat = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
+	buoyancyHat = nh.advertise<std_msgs::Float32>("buoyancy",1);
 	//Subscribers
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, &Estimator3D::onTau,this);
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&Estimator3D::onDepth, this);
@@ -309,10 +311,13 @@ void Estimator3D::publishState()
 	geometry_msgs::TwistStamped::Ptr current(new geometry_msgs::TwistStamped());
 	current->twist.linear.x = estimate(KFNav::xc);
 	current->twist.linear.y = estimate(KFNav::yc);
-
 	current->header.stamp = ros::Time::now();
 	current->header.frame_id = "local";
 	currentsHat.publish(current);
+
+	std_msgs::Float32::Ptr buoyancy(new std_msgs::Float32());
+	buoyancy->data = estimate(KFNav::buoyancy);
+	buoyancyHat.publish(buoyancy);
 }
 
 void Estimator3D::start()
