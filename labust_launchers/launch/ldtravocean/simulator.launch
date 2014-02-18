@@ -34,5 +34,5 @@
   	<node pkg="labust_sim" type="dvl_sim" name="dvl_sim">
   		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
   		<!-- <remap from="dvl" to="nu_dvl" /> -->
-  	</node>	
+  	</node>
 </launch>
