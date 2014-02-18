@@ -57,7 +57,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			DepthControl():Ts(0.1), useIP(false){};
+			DepthControl():Ts(0.1), useIP(false), trimOffset(0){};
 
 			void init()
 			{
@@ -105,7 +105,7 @@ namespace labust
 				nu->goal.requester = "depth_controller";
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				nu->twist.linear.z = con.output;
+				nu->twist.linear.z = con.output + trimOffset;
 				//nu->twist.linear.z = 0.2;
 
 				return nu;
@@ -120,6 +120,7 @@ namespace labust
 				nh.param("depth_controller/closed_loop_freq", closedLoopFreq, closedLoopFreq);
 				nh.param("depth_controller/sampling",Ts,Ts);
 				nh.param("depth_controller/use_ip",useIP,useIP);
+				nh.param("depth_controller/trim_offset",trimOffset,trimOffset);
 
 				disable_axis[2] = 0;
 
@@ -143,6 +144,7 @@ namespace labust
 			PIDBase con;
 			double Ts;
 			bool useIP;
+			double trimOffset;
 		};
 	}}
 

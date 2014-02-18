@@ -79,7 +79,8 @@ namespace labust
 				{
 					this->baseRef.position = state->position;
 					this->baseRef.orientation = state->orientation;
-					this->baseRef.position.depth = -state->altitude;
+					this->baseRef.position.depth = state->position.depth;
+					this->baseRef.altitude = state->altitude;
 				}
 				stateReady = Enable::enable;
 			}

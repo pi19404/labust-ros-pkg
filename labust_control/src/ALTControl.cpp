@@ -57,7 +57,7 @@ namespace labust
 		{
 			enum {x=0,y};
 
-			ALTControl():Ts(0.1), useIP(false), minAltitude(5){};
+			ALTControl():Ts(0.1), useIP(false), minAltitude(5), trimOffset(0){};
 
 			void init()
 			{
@@ -104,7 +104,7 @@ namespace labust
 				nu->goal.requester = "alt_controller";
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
-				nu->twist.linear.z = -con.output;
+				nu->twist.linear.z = trimOffset - con.output;
 
 				//Safety
 				if (state.altitude < minAltitude)
@@ -126,6 +126,7 @@ namespace labust
 				nh.param("alt_controller/sampling",Ts,Ts);
 				nh.param("alt_controller/use_ip",useIP,useIP);
 				nh.param("alt_controller/min_altitude",minAltitude,minAltitude);
+				nh.param("alt_controller/trim_offset",trimOffset,trimOffset);
 
 				disable_axis[2] = 0;
 
@@ -152,6 +153,7 @@ namespace labust
 			bool useIP;
 			double lastRef;
 			double minAltitude;
+			double trimOffset;
 		};
 	}}
 
