@@ -56,8 +56,7 @@ namespace labust
 		 */
 		class IdentificationNode
 		{
-			enum {u=0,v,w,p,q,r};
-			enum {x=0,y,z,roll,pitch,yaw};
+			enum {x=0,y,z,roll,pitch,yaw,altitude, u, v, w, measNum};
 			enum {X=0,Y,Z,K,M,N};
 			enum {alpha=0,beta,betaa};
 
@@ -66,6 +65,8 @@ namespace labust
 			typedef boost::shared_ptr<ActionServer> ActionServerPtr;
 			typedef navcon_msgs::DOFIdentificationGoal Goal;
 			typedef navcon_msgs::DOFIdentificationResult Result;
+
+			typedef Eigen::Matrix<double, measNum,1> MeasVec;
 
 		public:
 			/**
@@ -110,7 +111,7 @@ namespace labust
 		  /**
 		   * The measurement vector.
 		   */
-		  labust::simulation::vector measurements;
+		  MeasVec measurements;
 		  /**
 		   * Integration based x,y.
 		   * The x,y measurements will be calculated by
@@ -118,6 +119,22 @@ namespace labust
 		   * measurements.
 		   */
 		  bool integrateUV;
+		  /**
+		   * Use surge-sway error.
+		   * The difference between the desired speed and measured will be
+		   * integrated as the error to the identification.
+		   */
+		  bool useUV;
+		  /**
+		   * Use heave error.
+		   * The difference between the desired heave and measured will be
+		   * integrated as the error to the identification.
+		   */
+		  bool useW;
+		  /**
+		   * Cumulative error.
+		   */
+		  double cumulative_error;
 		  /**
 		   * The measurement mutex.
 		   */

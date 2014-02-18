@@ -4,6 +4,7 @@ int32 Heave=2
 int32 Roll=3
 int32 Pitch=4
 int32 Yaw=5
+int32 Altitude=6
 
 #The identification GOAL
 int32 dof # Desired DOF to identify
