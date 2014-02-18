@@ -27,5 +27,5 @@ export ENABLE_LOGGING=1
 export LOGDIR=./
 
 #Control configuration
-export USE_IDENTIFICATION=0
+export USE_IDENTIFICATION=1
 export USE_MULTIMASTER=1

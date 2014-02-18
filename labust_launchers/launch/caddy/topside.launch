@@ -1,0 +1,19 @@
+<launch>
+  <arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
+  <arg name="use_mm" value="$(optenv USE_MULTIMASTER 0)" />  
+
+  <group ns="pladypos">  	
+	<!-- Control GUI -->
+	<node pkg="rqt_gui" type="rqt_gui" name="control_gui" 
+		args="--perspective-file $(find labust_launchers)/launch/caddy/config/simman.perspective" unless="$(arg use_ident)" />
+	<node pkg="rqt_gui" type="rqt_gui" name="control_gui" 
+		args="--perspective-file $(find labust_launchers)/launch/caddy/config/simident.perspective" if="$(arg use_ident)" />  	
+		
+	<!-- Joystick on topside -->
+	<include file="$(find labust_launchers)/launch/common/joy.launch"/>
+ 	
+  	<group if="$(arg use_mm)">
+  		<include file="$(find labust_launchers)/launch/caddy/multi_master.launch" />
+  	</group>
+  </group>
+</launch>

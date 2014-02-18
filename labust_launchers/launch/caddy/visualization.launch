@@ -6,13 +6,13 @@
     <node pkg="labust_uwsim" type="NavSts2Odom.py" name="pladypos2uwsim">
         <remap from="stateHat" to="/pladypos/stateHat" />
         <remap from="uwsim_hook" to="/pladypos/uwsim_hook" />
-        <param name="tf_prefix" value="pladypos" />
+        <!-- <param name="tf_prefix" value="pladypos" /> -->
     </node>
     
     <node pkg="labust_uwsim" type="NavSts2Odom.py" name="diver2uwsim">
         <remap from="stateHat" to="/diver/stateHat" />
         <remap from="uwsim_hook" to="/diver/uwsim_hook" />
-        <param name="tf_prefix" value="diver" />
+        <!-- <param name="tf_prefix" value="diver" /> -->
     </node>
     
     <node pkg="rviz" name="rviz" type="rviz"/>
