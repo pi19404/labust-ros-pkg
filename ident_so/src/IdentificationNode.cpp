@@ -89,7 +89,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		measurements(x) = meas->position.north;
 		measurements(y) = meas->position.east;
 	}
-	measurements(z) = meas->altitude;
+	measurements(z) = meas->position.depth;
 	measurements(roll) = meas->orientation.roll;
 	measurements(pitch) = meas->orientation.pitch;
 	measurements(yaw) = meas->orientation.yaw;

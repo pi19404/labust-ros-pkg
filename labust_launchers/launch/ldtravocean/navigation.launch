@@ -23,11 +23,15 @@
        
       <remap from="gps" to="nogps" />
       <remap from="altitude" to="altitude_opto" />
-      <!-- <remap from="depth" to="depth_opto" /> -->
+      <remap from="depth" to="depth_opto" />
     </node>
 
     <node pkg="labust_navigation" type="llnode" name="tf_frame_node">
       <param name="LocalFixSim" value="true" if="$(optenv USE_LOCAL_FIX 1)" /> 
+      <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
+    </node>
+    
+    <node pkg="tf" type="static_transform_publisher" name="imu_frame_node" args="0 0 0 0 0 0 base_link imu_frame 100">
       <param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
     </node>
 </launch>
