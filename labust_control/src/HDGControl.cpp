@@ -66,7 +66,8 @@ namespace labust
   		void windup(const auv_msgs::BodyForceReq& tauAch)
 			{
 				//Copy into controller
-				con.windup = tauAch.disable_axis.yaw;
+				//con.windup = tauAch.disable_axis.yaw;
+  			con.extWindup = tauAch.windup.yaw;
 			};
 
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
@@ -122,7 +123,6 @@ namespace labust
 			}
 
 		private:
-			ros::Subscriber alt_sub;
 			PIDBase con;
 			double Ts;
 			bool useIP;
