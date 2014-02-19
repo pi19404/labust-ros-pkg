@@ -170,8 +170,19 @@ void Estimator3D::onDepth(const std_msgs::Float32::ConstPtr& data)
 void Estimator3D::onAltitude(const std_msgs::Float32::ConstPtr& data)
 {
 	measurements(KFNav::altitude) = data->data;
-	newMeas(KFNav::altitude) = 1;
-	alt = data->data;
+	//Dismiss false altitude
+	if (fabs(data->data-nav.getState()(KFNav::altitude)) < 10*nav.calculateAltInovationVariance(nav.getStateCovariance())) 
+	{
+		newMeas(KFNav::altitude) = 1;
+		alt = data->data;
+		ROS_INFO("Accepted altitude: meas=%f, estimate=%f, variance=%f",
+			data->data, nav.getState()(KFNav::altitude), 10* nav.calculateAltInovationVariance(nav.getStateCovariance()));
+	}
+	else
+	{
+		ROS_INFO("Dissmissed altitude: meas=%f, estimate=%f, variance=%f",
+			data->data, nav.getState()(KFNav::altitude), 10* nav.calculateAltInovationVariance(nav.getStateCovariance()));
+	}
 };
 
 void Estimator3D::processMeasurements()
