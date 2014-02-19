@@ -13,7 +13,8 @@ navsts_t: [auv_msgs, NavSts,['origin.latitude',
                                'position.depth',
                                'orientation.roll',
                                'orientation.pitch',
-                               'orientation.yaw']]
+                               'orientation.yaw',
+                               'altitude']]
 
 bodyvelreq_t: [auv_msgs, BodyVelocityReq,['twist.linear.x',
                                 'twist.linear.y',
