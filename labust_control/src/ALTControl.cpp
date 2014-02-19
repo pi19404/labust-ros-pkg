@@ -89,12 +89,13 @@ namespace labust
 				//\todo Check the derivative sign
 				if (useIP)
 				{
-					IPFF_ffStep(&con, Ts, -ref.body_velocity.z);
+					IPFF_ffStep(&con, Ts, ref.body_velocity.z);
+					//IPFF_ffStep(&con, Ts, 0);
 					ROS_INFO("Current state=%f, desired=%f, windup=%d", con.state, con.desired, con.windup);
 				}
 				else
 				{
-					PIFF_ffStep(&con,Ts,-ref.body_velocity.z);
+					PIFF_ffStep(&con,Ts, ref.body_velocity.z);
 					//PSatD_dStep(&con, Ts, 0);
 					ROS_INFO("Current state=%f, desired=%f", con.state, con.desired);
 				}
