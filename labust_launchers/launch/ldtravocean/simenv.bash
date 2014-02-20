@@ -11,7 +11,7 @@ export JOYSTICK=/dev/input/js0
 
 #Simulation env variables
 export IS_SIM=1
-export USE_NOISE=0
+export USE_NOISE=1
 #export MODEL=`rospack find snippets`/data/models/ldtrav_rov.yaml
 export MODEL=`rospack find snippets`/data/models/ldtrav_trench.yaml
 export ALLOCATION_MODEL=`rospack find snippets`/data/allocations/x_horizontal_vertical.yaml
