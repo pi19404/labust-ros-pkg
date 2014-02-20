@@ -30,7 +30,8 @@
   	<include file="$(find labust_launchers)/launch/ldtravocean/control_direct.launch" if="$(arg use_direct)" />
 	
 	<!-- add the opto22 bridge node -->
-	<include file="$(find labust_launchers)/launch/ldtravocean/opto22.launch" unless="$(arg is_sim)" />
+	<!-- <include file="$(find labust_launchers)/launch/ldtravocean/opto22.launch" unless="$(arg is_sim)" /> -->
+	<include file="$(find labust_launchers)/launch/ldtravocean/opto22.launch" />
 	
 	<!-- add the navquest dvl node -->
 	<include file="$(find labust_launchers)/launch/ldtravocean/dvl.launch" unless="$(arg is_sim)"/>

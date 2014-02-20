@@ -17,6 +17,7 @@ export MODEL=`rospack find snippets`/data/models/ldtrav_trench.yaml
 export ALLOCATION_MODEL=`rospack find snippets`/data/allocations/x_horizontal_vertical.yaml
 export USE_DIRECT=0
 export USE_EXTENDED_NAV=1
+export USE_NZ_NAV=0
 
 #Frame env variables
 export USE_TF_PREFIX=1
