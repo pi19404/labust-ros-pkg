@@ -16,8 +16,8 @@ class MessageTransformer:
         self.pub = rospy.Publisher("uwsim_hook", Odometry);
         self.listener = tf.TransformListener();
         self.broadcaster = tf.TransformBroadcaster();
-        self.tf_prefix = rospy.get_param("~tf_prefix");
-        self.tf_prefix = "/"+self.tf_prefix;
+        self.tf_prefix = rospy.get_param("~tf_prefix","");
+        #self.tf_prefix = "/"+self.tf_prefix;
            
     def onNavSts(self,data):   
         q = tf.transformations.quaternion_from_euler(math.pi, 0, math.pi/2)

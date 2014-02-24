@@ -133,6 +133,7 @@ namespace labust
 
       void calculateXYInovationVariance(const matrix& P, double& xin,double &yin);
       void calculateUVInovationVariance(const matrix& P, double& uin,double &vin);
+      double calculateAltInovationVariance(const matrix& P);
 
       /**
        * Return the speeds in the local frame.

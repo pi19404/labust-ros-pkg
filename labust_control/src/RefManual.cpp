@@ -47,14 +47,16 @@ namespace labust
 {
 	namespace control{
 		///The manual reference controller
-		template <class Enable>
-		struct RefManual : public Enable
+		struct RefManual
 		{
 			enum {u=0,v,w,p,q,r};
 			RefManual():
 				nu_max(Eigen::Vector6d::Zero()),
 				Ts(0.1),
-				stateReady(false){this->init();};
+				stateReady(false),
+				stateAcquired(false),
+				useFF(false),
+				enable(false){this->init();};
 
 			void init()
 			{
@@ -67,26 +69,60 @@ namespace labust
 						&RefManual::onEstimate,this);
 				joyIn = nh.subscribe<sensor_msgs::Joy>("joy", 1,
 						&RefManual::onJoy,this);
+				
+				enableControl = nh.advertiseService("Enable",
+						&RefManual::onEnableControl, this);
 
 				initialize_manual();
 			}
+			
+			bool onEnableControl(navcon_msgs::EnableControl::Request& req,
+					navcon_msgs::EnableControl::Response& resp)
+			{
+				this->enable = req.enable;
+				if (req.enable)
+				{
+				  if (stateAcquired)
+				  {
+					baseRef = lastState;
+					stateReady = true;
+				  }
+				  else
+				  {
+					stateReady = false;
+					return false;
+				  }
+				}
+				else
+				{
+					stateReady = false;
+				}
+				
+				return true;
+			}
+
 
 			void onEstimate(const auv_msgs::NavSts::ConstPtr& state)
 			{
 				boost::mutex::scoped_lock l(cnt_mux);
+				lastState = *state;
+				stateAcquired = true;
+				if (!stateReady) baseRef = lastState;
 				//Switch occured
-				if (Enable::enable && !stateReady)
-				{
-					this->baseRef.position = state->position;
-					this->baseRef.orientation = state->orientation;
-					this->baseRef.position.depth = -state->altitude;
-				}
-				stateReady = Enable::enable;
+				//if (Enable::enable && !stateReady)
+				//{
+				//	this->baseRef.position = state->position;
+				//	this->baseRef.orientation = state->orientation;
+				//	this->baseRef.position.depth = state->position.depth;
+				//	this->baseRef.altitude = state->altitude;
+				//}
+				//stateReady = Enable::enable;
 			}
 
 			void onJoy(const sensor_msgs::Joy::ConstPtr& joy)
 			{
 				if (!stateReady) return;
+				if (!stateAcquired) return;
 
 				Eigen::Vector6d mapped;
 				mapper.remap(*joy, mapped);
@@ -104,16 +140,30 @@ namespace labust
 
 				baseRef.position.north += out(u);
 				baseRef.position.east += out(v);
-				//baseRef.position.depth += mapped[w]*Ts*nu_max(w);
 				baseRef.position.depth += mapped[w]*Ts*nu_max(w);
 				baseRef.orientation.roll += mapped[p]*Ts*nu_max(p);
 				baseRef.orientation.pitch += mapped[q]*Ts*nu_max(q);
 				baseRef.orientation.yaw += mapped[r]*Ts*nu_max(r);
-				baseRef.body_velocity.x = mapped[u]*nu_max[u];
-				baseRef.body_velocity.y = mapped[v]*nu_max[v];
-				baseRef.body_velocity.z = mapped[w]*nu_max[w];
+				
+				baseRef.altitude -= mapped[w]*Ts*nu_max(w);
+				
+				if (useFF)
+				{
+				  baseRef.body_velocity.x = mapped[u]*nu_max[u];
+				  baseRef.body_velocity.y = mapped[v]*nu_max[v];
+				  baseRef.body_velocity.z = mapped[w]*nu_max[w];
+				  baseRef.orientation_rate.roll = mapped[p]*nu_max(p);
+				  baseRef.orientation_rate.pitch = mapped[q]*nu_max(q);
+				  baseRef.orientation_rate.yaw = mapped[r]*nu_max(r);
+				}
+				
+				auv_msgs::NavSts::Ptr refOut(new auv_msgs::NavSts());
+				*refOut = baseRef;
+				refOut->orientation.roll =  labust::math::wrapRad(refOut->orientation.roll);
+				refOut->orientation.pitch =  labust::math::wrapRad(refOut->orientation.pitch);
+				refOut->orientation.yaw =  labust::math::wrapRad(refOut->orientation.yaw);
 
-				stateRef.publish(baseRef);
+				stateRef.publish(refOut);
 			}
 
 			void initialize_manual()
@@ -123,6 +173,7 @@ namespace labust
 				ros::NodeHandle nh;
 				labust::tools::getMatrixParam(nh,"ref_manual/maximum_speeds", nu_max);
 				nh.param("ref_manual/sampling_time",Ts,Ts);
+				nh.param("ref_manual/feedforward_speeds",useFF,useFF);
 
 				ROS_INFO("Manual ref controller initialized.");
 			}
@@ -135,7 +186,12 @@ namespace labust
 			JoystickMapping mapper;
 			auv_msgs::NavSts baseRef;
 			boost::mutex cnt_mux;
+			auv_msgs::NavSts lastState;
 			bool stateReady;
+			bool stateAcquired;
+			bool useFF;
+			bool enable;
+			ros::ServiceServer enableControl;
 		};
 	}}
 
@@ -143,7 +199,9 @@ int main(int argc, char* argv[])
 {
 	ros::init(argc,argv,"ref_manual");
 
-	labust::control::RefManual<labust::control::EnableServicePolicy> controller;
+	//labust::control::RefManual<labust::control::EnableServicePolicy> controller;
+	labust::control::RefManual controller;
+	ros::Duration(10).sleep();
 	ros::spin();
 
 	return 0;

@@ -48,6 +48,8 @@
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 
 #include <ros/ros.h>
 
@@ -61,7 +63,9 @@ Estimator3D::Estimator3D():
 		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
 		alt(0),
 		useYawRate(false),
-		dvl_model(0){this->onInit();};
+		dvl_model(0),
+		compassVariance(0.3),
+		gyroVariance(0.003){this->onInit();};
 
 void Estimator3D::onInit()
 {
@@ -72,21 +76,48 @@ void Estimator3D::onInit()
 	stateHat = nh.advertise<auv_msgs::NavSts>("stateHat",1);
 	stateMeas = nh.advertise<auv_msgs::NavSts>("meas",1);
 	currentsHat = nh.advertise<geometry_msgs::TwistStamped>("currentsHat",1);
+	buoyancyHat = nh.advertise<std_msgs::Float32>("buoyancy",1);
 	//Subscribers
 	tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, &Estimator3D::onTau,this);
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&Estimator3D::onDepth, this);
 	altitude = nh.subscribe<std_msgs::Float32>("altitude", 1, &Estimator3D::onAltitude, this);
 	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &Estimator3D::onModelUpdate,this);
+	resetTopic = nh.subscribe<std_msgs::Bool>("reset_nav_covariance", 1, &Estimator3D::onReset,this);
+	useGyro = nh.subscribe<std_msgs::Bool>("use_gyro", 1, &Estimator3D::onUseGyro,this);
 
 	//Get DVL model
 	ph.param("dvl_model",dvl_model, dvl_model);
 	nav.useDvlModel(dvl_model);
 	ph.param("imu_with_yaw_rate",useYawRate,useYawRate);
+	ph.param("compass_variance",compassVariance,compassVariance);
+	ph.param("gyro_variance",gyroVariance,gyroVariance);
 
 	//Configure handlers.
 	gps.configure(nh);
 	dvl.configure(nh);
 	imu.configure(nh);
+}
+
+void Estimator3D::onReset(const std_msgs::Bool::ConstPtr& reset)
+{
+   if (reset->data)
+   {
+      nav.setStateCovariance(10000*KFNav::matrix::Identity(KFNav::stateNum, KFNav::stateNum));
+   }
+}
+
+void Estimator3D::onUseGyro(const std_msgs::Bool::ConstPtr& use_gyro)
+{
+   if (use_gyro->data)
+   {
+      nav.R0(KFNav::psi, KFNav::psi) = gyroVariance;
+      ROS_INFO("Switch to using gyro measurements.");
+   }
+   else
+   {
+      nav.R0(KFNav::psi, KFNav::psi) = compassVariance;
+      ROS_INFO("Switch to using compass measurements.");
+   }
 }
 
 void Estimator3D::configureNav(KFNav& nav, ros::NodeHandle& nh)
@@ -168,8 +199,19 @@ void Estimator3D::onDepth(const std_msgs::Float32::ConstPtr& data)
 void Estimator3D::onAltitude(const std_msgs::Float32::ConstPtr& data)
 {
 	measurements(KFNav::altitude) = data->data;
-	newMeas(KFNav::altitude) = 1;
-	alt = data->data;
+	//Dismiss false altitude
+	if (fabs(data->data-nav.getState()(KFNav::altitude)) < 10*nav.calculateAltInovationVariance(nav.getStateCovariance())) 
+	{
+		newMeas(KFNav::altitude) = 1;
+		alt = data->data;
+		ROS_INFO("Accepted altitude: meas=%f, estimate=%f, variance=%f",
+			data->data, nav.getState()(KFNav::altitude), 10* nav.calculateAltInovationVariance(nav.getStateCovariance()));
+	}
+	else
+	{
+		ROS_INFO("Dissmissed altitude: meas=%f, estimate=%f, variance=%f",
+			data->data, nav.getState()(KFNav::altitude), 10* nav.calculateAltInovationVariance(nav.getStateCovariance()));
+	}
 };
 
 void Estimator3D::processMeasurements()
@@ -309,10 +351,13 @@ void Estimator3D::publishState()
 	geometry_msgs::TwistStamped::Ptr current(new geometry_msgs::TwistStamped());
 	current->twist.linear.x = estimate(KFNav::xc);
 	current->twist.linear.y = estimate(KFNav::yc);
-
 	current->header.stamp = ros::Time::now();
 	current->header.frame_id = "local";
 	currentsHat.publish(current);
+
+	std_msgs::Float32::Ptr buoyancy(new std_msgs::Float32());
+	buoyancy->data = estimate(KFNav::buoyancy);
+	buoyancyHat.publish(buoyancy);
 }
 
 void Estimator3D::start()

@@ -60,7 +60,9 @@ EstimatorNZ::EstimatorNZ():
 		measurements(KFNav::vector::Zero(KFNav::stateNum)),
 		newMeas(KFNav::vector::Zero(KFNav::stateNum)),
 		alt(0),
-		useYawRate(false){this->onInit();};
+		useYawRate(false),
+		compassVariance(0.3),
+		gyroVariance(0.003){this->onInit();};
 
 void EstimatorNZ::onInit()
 {
@@ -76,12 +78,37 @@ void EstimatorNZ::onInit()
 	depth = nh.subscribe<std_msgs::Float32>("depth", 1,	&EstimatorNZ::onDepth, this);
 	altitude = nh.subscribe<std_msgs::Float32>("altitude", 1, &EstimatorNZ::onAltitude, this);
 	modelUpdate = nh.subscribe<navcon_msgs::ModelParamsUpdate>("model_update", 1, &EstimatorNZ::onModelUpdate,this);
-
+	resetTopic = nh.subscribe<std_msgs::Bool>("reset_nav_covariance", 1, &EstimatorNZ::onReset,this);
+	useGyro = nh.subscribe<std_msgs::Bool>("use_gyro", 1, &EstimatorNZ::onUseGyro,this);
 	//Get DVL model
 	ph.param("imu_with_yaw_rate",useYawRate,useYawRate);
+	ph.param("compass_variance",compassVariance,compassVariance);
+	ph.param("gyro_variance",gyroVariance,gyroVariance);
 
 	//Configure handlers.
 	imu.configure(nh);
+}
+
+void EstimatorNZ::onReset(const std_msgs::Bool::ConstPtr& reset)
+{
+   if (reset->data)
+   {
+      nav.setStateCovariance(10000*KFNav::matrix::Identity(KFNav::stateNum, KFNav::stateNum));
+   }
+}
+
+void EstimatorNZ::onUseGyro(const std_msgs::Bool::ConstPtr& use_gyro)
+{
+   if (use_gyro->data)
+   {
+      nav.R0(KFNav::psi, KFNav::psi) = gyroVariance;
+      ROS_INFO("Switch to using gyro measurements.");
+   }
+   else
+   {
+      nav.R0(KFNav::psi, KFNav::psi) = compassVariance;
+      ROS_INFO("Switch to using compass measurements.");
+   }
 }
 
 void EstimatorNZ::configureNav(KFNav& nav, ros::NodeHandle& nh)

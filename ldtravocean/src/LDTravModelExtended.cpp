@@ -71,6 +71,11 @@ void LDTravModel::calculateXYInovationVariance(const LDTravModel::matrix& P, dou
 	yin = sqrt(P(yp,yp)) + sqrt(R0(yp,yp));
 }
 
+double LDTravModel::calculateAltInovationVariance(const LDTravModel::matrix& P)
+{
+	return sqrt(P(altitude,altitude)) + sqrt(R0(altitude,altitude));
+}
+
 void LDTravModel::calculateUVInovationVariance(const LDTravModel::matrix& P, double& uin,double &vin)
 {
 	uin = sqrt(P(u,u)) + sqrt(R0(v,v));

@@ -93,7 +93,7 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		measurements(x) = meas->position.north;
 		measurements(y) = meas->position.east;
 	}
-	measurements(z) = meas->altitude;
+	measurements(z) = meas->position.depth;
 	measurements(roll) = meas->orientation.roll;
 	measurements(pitch) = meas->orientation.pitch;
 	measurements(yaw) = meas->orientation.yaw;
@@ -160,8 +160,8 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 		}
 
 		//Handle angular values
-		if (goal->dof >= goal->Roll)
-	  {
+		if ((goal->dof >= Goal::Roll) && (goal->dof <=Goal::Yaw))
+	  	{
 			error = labust::math::wrapRad(
 					labust::math::wrapRad(goal->reference) -
 					labust::math::wrapRad(measurements(goal->dof)));
@@ -173,6 +173,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 		}
 		else if (goal->dof == Goal::Altitude)
 		{
+			ROS_INFO("Doing identification: %f %f %f.",goal->reference, measurements[goal->dof], error);
 			this->setTau(Goal::Heave, -ident.step(error, 1/goal->sampling_rate));
 		}
 
@@ -181,7 +182,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 		{
 			ROS_INFO("DOFIdentification for %d: Preempted", goal->dof);
 			//Set output to zero
-			this->setTau(goal->dof, 0.0);
+			this->setTau(0, 0.0);
 			// set the action state to preempted
 			aserver->setPreempted();
 			return;
@@ -202,7 +203,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 	}
 
 	//Stop the vessel
-	this->setTau(goal->dof, 0.0);
+	this->setTau(0, 0.0);
 
 	if (ident.isFinished())
 	{

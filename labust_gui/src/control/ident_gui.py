@@ -10,8 +10,8 @@ import os, sys
 import rospy
 import labust_gui
 
-from python_qt_binding import QtCore, QtGui
-from labust_rqt.rqt_plugin_meta import RqtPluginMeta
+from python_qt_binding import loadUi, QtCore, QtGui
+from qt_gui.plugin import Plugin
 
 from labust_uvapp.srv import ConfigureVelocityController
 from navcon_msgs.msg import DOFIdentificationAction, DOFIdentificationGoal
@@ -261,15 +261,41 @@ class IdentificationROS(QtCore.QObject):
         def _unsubscribe(self):
             pass
 
-class IdentificationRqt(RqtPluginMeta):
+
+class IdentificationRqt(Plugin):
     def __init__(self, context):
         name = "Identification"
-        resource = rqt_plugin_meta.resource_rpath(name, __file__)
-        super(IdentificationRqt, self).__init__(context = context,
-                                                name = name,
-                                                GuiT = IdentificationGui,
-                                                RosT = IdentificationROS,
-                                                resource=resource)
+        resource = os.path.join(os.path.dirname(
+                        os.path.realpath(__file__)), 
+                        "resource/" + name + ".ui")
+        GuiT = IdentificationGui
+        RosT = IdentificationROS
+        
+        super(IdentificationRqt, self).__init__(context)
+        self.setObjectName(name)
+
+        from argparse import ArgumentParser
+        parser = ArgumentParser()
+        parser.add_argument("-q", "--quiet", action="store_true",
+                      dest="quiet",
+                      help="Put plugin in silent mode")
+        args, unknowns = parser.parse_known_args(context.argv())
+        if not args.quiet:
+            print("arguments: ", args)
+            print("unknowns: ", unknowns)
+
+        # Create QWidget
+        self._gui = GuiT()
+        self._ros = RosT()
+
+        loadUi(resource, self._gui)
+        self._ros.setup(self._gui)
+        self._gui.setup(name + "Rqt", self._ros)
+
+        if context.serial_number() > 1:
+            self._widget.setWindowTitle(self._widget.windowTitle() + 
+                                        (" (%d)" % context.serial_number()))
+        context.add_widget(self._gui) 
 
 if __name__ == '__main__':
     from labust_rqt import rqt_plugin_meta
