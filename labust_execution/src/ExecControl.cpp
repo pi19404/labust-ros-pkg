@@ -112,9 +112,23 @@ bool ExecControl::onRegisterController(
 	resp.accepted = true;
 	controllers[req.name].info = req;
 	depGraph.addToGraph(req);
-	pnGraph.addToGraph(req);
+	//pnGraph.addToGraph(req);
+	//pnCon.addToPNGraph(req);
+
+	ros::Time now = ros::Time::now();
 	pnCon.addToGraph(req);
-	pnCon.reachability();
+	double addgraph_dT = (ros::Time::now() - now).toSec();
+	now = ros::Time::now();
+	pnCon.addToPNGraph(req);
+	double addpngraph_dT = (ros::Time::now() - now).toSec();
+	//pnCon.reachability();
+	double classic_dT = (ros::Time::now() - now).toSec();
+	now = ros::Time::now();
+	//pnCon.addToRGraph2(req.name);
+	pnCon.addToRGraph(req.name);
+	double incremental_dT = (ros::Time::now() - now).toSec();
+
+	//pnCon.addToRGraph();
 	//addToMatrix(req.name);
 	names.push_back(req.name);
 
@@ -127,12 +141,15 @@ bool ExecControl::onRegisterController(
 	dep_file<<temp;
 	out.data = temp;
 	depGraphPub.publish(out);
-	pnGraph.getDotDesc(temp);
+	pnCon.getDotDesc2(temp);
 	pn_file<<temp;
 	out.data = temp;
 	pnGraphPub.publish(out);
 	pnCon.getDotDesc(temp);
 	r_file<<temp;
+
+	std::ofstream prof_file("profile.csv", std::ios::app);
+	prof_file<<addgraph_dT<<","<<addpngraph_dT<<","<<classic_dT<<","<<incremental_dT<<std::endl;
 
 	return true;
 }
@@ -200,7 +217,8 @@ void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
 		//firing_seq.clear();
 		//this->get_firing2(name->data);
 		//pnCon.get_firing(name->data);
-		pnCon.get_firing_r(name->data);
+		//pnCon.get_firing_r(name->data);
+		pnCon.get_firing_pn(name->data);
 	}
 	else
 	{
@@ -211,7 +229,8 @@ void ExecControl::onActivateController(const std_msgs::String::ConstPtr& name)
 		{
 			if (name->data == dofs[i])
 			{
-				pnCon.get_firing_r(name->data);
+				//pnCon.get_firing_r(name->data);
+				pnCon.get_firing_pn(name->data);
 				break;
 			}
 		}

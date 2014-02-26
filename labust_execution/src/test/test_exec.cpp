@@ -46,83 +46,86 @@ int main (int argc, char **argv)
   navcon_msgs::RegisterController srv;
 
   //Add manual
-  std::string manuals[]={"manualX","manualY","manualZ","manualN"};
+  std::string manualPos[]={"manual_x","manual_y","manual_z","manual_roll", "manual_pitch", "manual_yaw"};
+  std::string manualNu[]={"manual_u","manual_v","manual_w","manual_p", "manual_q", "manual_r"};
+  std::string manuals[]={"manualX","manualY","manualZ","manualK", "manualM", "manualN"};
   //Add surge, sway, heave, yaw_rate controllers.
-  std::string basics[]={"surge","sway","heave","yaw_rate"};
-  int basics_dofs[]={0,1,2,5};
+  std::string basics[]={"surge","sway","heave","roll_rate","pitch_rate","yaw_rate"};
+  std::string ident[]={"identX","identY","identZ","identK","identM","identN"};
+  std::string pose_cnt[]={"fadp","fadp","depth","roll","pitch","heading"};
+  int basics_dofs[]={0,1,2,3,4,5};
 
-  for (int i=0; i<4; ++i)
+  for (int i=0; i<6; ++i)
   {
+  	//velocity controllers
 	  srv.request.used_dofs.assign(0);
 	  srv.request.name = basics[i];
 	  srv.request.used_dofs[basics_dofs[i]] = 1;
 	  client.call(srv);
 
+	  //tau manual
 	  srv.request.used_dofs.assign(0);
 	  srv.request.name = manuals[i];
 	  srv.request.used_dofs[basics_dofs[i]] = 1;
 	  client.call(srv);
+
+	  //nu manual
+	  navcon_msgs::RegisterController srv2;
+	  srv2.request.name = manualNu[i];
+	  srv2.request.used_cnt.push_back(basics[i]);
+	  client.call(srv2);
+
+	  //identification
+	  navcon_msgs::RegisterController srv3;
+	  srv3.request.name = ident[i];
+	  //srv3.request.used_dofs.assign(1);
+	  srv3.request.used_dofs[2] = 0;
+	  srv3.request.used_dofs[5] = 0;
+	  srv3.request.used_dofs[i] = 1;
+	  client.call(srv3);
+
+	  //Pose controllers
+	  navcon_msgs::RegisterController srv4;
+	  srv4.request.name = pose_cnt[i];
+	  srv4.request.used_cnt.push_back(basics[i]);
+	  if (i == 1) srv4.request.used_cnt.push_back(basics[i-1]);
+	  if (i != 0) client.call(srv4);
+
+	  std::cout<<"finished no:"<<i<<std::endl;
   }
 
-  //Add identifications: surge, sway, heave, yaw
-  srv.request.name = "identX";
-  srv.request.used_dofs.assign(1);
-  //Let heading DOF be free ?
-  srv.request.used_dofs[5] = 0;
-  client.call(srv);
-
-  srv.request.name = "identY";
-  srv.request.used_dofs.assign(1);
-  //Let heading DOF be free ?
-  srv.request.used_dofs[5] = 0;
-  client.call(srv);
-
-  srv.request.name = "identZ";
-  srv.request.used_dofs.assign(1);
-  client.call(srv);
-
-  srv.request.name = "identN";
-  srv.request.used_dofs.assign(1);
-  client.call(srv);
-
+  //Underactuated dp
   srv.request.used_dofs.assign(0);
-  //Add complex controllers: dp, hdg, depth, dp+depth, dp+hdg
-  srv.request.name = "dp";
-  srv.request.used_cnt.resize(2);
-  srv.request.used_cnt[0] = "surge";
-  srv.request.used_cnt[1] = "sway";
+  srv.request.used_cnt.clear();
+  srv.request.name = "uadp";
+  srv.request.used_cnt.push_back("surge");
+  srv.request.used_cnt.push_back("heading");
   client.call(srv);
 
-  srv.request.name = "hdg";
-  srv.request.used_cnt.resize(1);
-  srv.request.used_cnt[0] = "yaw_rate";
-  client.call(srv);
+  std::cout<<"Added dp."<<std::endl;
 
-  srv.request.name = "depth";
-  srv.request.used_cnt.resize(1);
-  srv.request.used_cnt[0] = "heave";
+  //Virtual target
+  srv.request.used_dofs.assign(0);
+  srv.request.used_cnt.clear();
+  srv.request.name = "vt";
+  srv.request.used_cnt.push_back("surge");
+  srv.request.used_cnt.push_back("yaw_rate");
   client.call(srv);
-
-  srv.request.name = "dpDepth";
-  srv.request.used_cnt.resize(3);
-  srv.request.used_cnt[0] = "surge";
-  srv.request.used_cnt[1] = "sway";
-  srv.request.used_cnt[2] = "depth";
+  std::cout<<"Added dp."<<std::endl;
+  //LF target
+  srv.request.used_dofs.assign(0);
+  srv.request.used_cnt.clear();
+  srv.request.name = "falf";
+  srv.request.used_cnt.push_back("surge");
+  srv.request.used_cnt.push_back("sway");
+  srv.request.used_cnt.push_back("heading");
   client.call(srv);
-
-  srv.request.name = "dpHdg";
-  srv.request.used_cnt.resize(3);
-  srv.request.used_cnt[0] = "surge";
-  srv.request.used_cnt[1] = "sway";
-  srv.request.used_cnt[2] = "hdg";
-  client.call(srv);
-
-  srv.request.name = "dpHdgDepth";
-  srv.request.used_cnt.resize(4);
-  srv.request.used_cnt[0] = "surge";
-  srv.request.used_cnt[1] = "sway";
-  srv.request.used_cnt[2] = "hdg";
-  srv.request.used_cnt[3] = "depth";
+  //LF underactuated
+  srv.request.used_dofs.assign(0);
+  srv.request.used_cnt.clear();
+  srv.request.name = "ualf";
+  srv.request.used_cnt.push_back("surge");
+  srv.request.used_cnt.push_back("yaw_rate");
   client.call(srv);
 
   //exit

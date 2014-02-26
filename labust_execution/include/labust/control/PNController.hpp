@@ -98,13 +98,33 @@ namespace labust
 			 */
 			void get_firing_r(const std::string& name);
 			/**
+			 * Get the firing sequence for the named controller by reverse graph search.
+			 */
+			void get_firing_pn(const std::string& name);
+			/**
 			 * Calculates the reachability graph.
 			 */
 			void reachability();
 			/**
+			 * Calculates the reachability graph incrementaly.
+			 */
+			void addToRGraph(const std::string& name);
+			/**
+			 * Calculates the reachability graph incrementaly.
+			 */
+			void addToRGraph2(const std::string& name);
+			/**
+			 * Calculates the pn graph incrementaly.
+			 */
+			void addToPNGraph(const navcon_msgs::RegisterControllerRequest& info);
+			/**
 			 * Get the reachability graph DOT description.
 			 */
 			void getDotDesc(std::string& desc);
+			/**
+			 * Get the reachability graph DOT description.
+			 */
+			void getDotDesc2(std::string& desc);
 
 		private:
 			/**
@@ -138,6 +158,10 @@ namespace labust
 			 * The last firing sequence.
 			 */
 			std::vector<int> firing_seq;
+			/**
+			 * The current resource position.
+			 */
+			std::vector<int> resourcePosition;
 
 			//Reachability graph stuff
 			struct VertexProperty
@@ -163,6 +187,26 @@ namespace labust
 		  		boost::directedS, VertexProperty,
 		  		boost::property<boost::edge_name_t, int> > GraphType;
 
+			struct PNVertexProperty
+			{
+				enum {t =0, p=1};
+				int type;
+				int t_num;
+				int p_num;
+				bool marked;
+				std::string name;
+				std::set<int> dep_resource;
+			};
+
+			struct PNEdgeProperty
+			{
+				int weight;
+			};
+
+			typedef boost::adjacency_list<boost::vecS, boost::vecS,
+		  		boost::bidirectionalS, PNVertexProperty,
+		  		boost::property<boost::edge_name_t, int> > PNGraphType;
+
 			struct pn_writer
 			{
 				pn_writer(GraphType& graph):graph(graph){}
@@ -177,6 +221,26 @@ namespace labust
 					out<< ")\"]";
 				}
 				GraphType& graph;
+			};
+
+			/**
+			 * The graphviz writer class for the PN graph.
+			 */
+			struct pn_writer2 {
+				pn_writer2(PNGraphType& graph):graph(graph){}
+				template <class Vertex>
+				void operator()(std::ostream &out, const Vertex& e) const
+				{
+					if (graph[e].type == PNGraphType::vertex_property_type::value_type::p)
+					{
+						out << "[label="<< graph[e].name<<"]";
+					}
+					else
+					{
+						out << "[height=0.05, style=filled, shape=rectangle, color=black, label=\"\"]";
+					}
+				}
+				PNGraphType& graph;
 			};
 
 			template<class PropertyMap, class NameMap>
@@ -199,7 +263,10 @@ namespace labust
 				return edge_writer<PropertyMap, NameMap>(pmap,map);
 			}
 
-			GraphType rgraph;
+			GraphType rgraph, rgraph2;
+			PNGraphType pngraph;
+
+			std::map<int, int> placeToVertexMap;
 
 			std::vector<Eigen::VectorXi> all_markings;
 			std::vector<GraphType::vertex_descriptor> all_idx;
