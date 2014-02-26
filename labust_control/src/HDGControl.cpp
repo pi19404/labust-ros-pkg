@@ -87,11 +87,11 @@ namespace labust
 				//Zero feed-forward
 				if (useIP)
 				{
-					IPFF_wffStep(&con,Ts, errorWrap, 0);
+					IPFF_wffStep(&con,Ts, errorWrap, ref.orientation_rate.yaw);
 				}
 				else
 				{
-					PIFF_wffStep(&con,Ts, errorWrap, 0);
+					PIFF_wffStep(&con,Ts, errorWrap, ref.orientation_rate.yaw);
 				}
 
 				auv_msgs::BodyVelocityReqPtr nu(new auv_msgs::BodyVelocityReq());

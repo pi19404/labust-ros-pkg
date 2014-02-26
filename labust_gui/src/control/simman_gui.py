@@ -134,19 +134,24 @@ class SimManGui(QtGui.QWidget):
                   self.eastRef.value(),
                   self.movebaseSelection)
         
-    def _onAltitudeEnable(self, state):
-        #disable depth
+    def _onAltitudeEnable(self, state):      
+        #disable depth  
         if self.depthEnable.isChecked():
             self.emit(QtCore.SIGNAL("onDepthEnable"), False, 0)
+            self.depthEnable.blockSignals(True)
+            self.depthEnable.setChecked(False)
+            self.depthEnable.blockSignals(False)
             
         self.emit(QtCore.SIGNAL("onAltitudeEnable"), state, self.altitudeRef.value())
             
-    def _onDepthEnable(self, state):
-        #disable depth
+    def _onDepthEnable(self, state):          
         if self.altitudeEnable.isChecked():
             self.emit(QtCore.SIGNAL("onAltitudeEnable"), False, 0)
-            
-        self.emit(QtCore.SIGNAL("onDepthEnable"), state, self.depthRef.value())       
+            self.altitudeEnable.blockSignals(True)
+            self.altitudeEnable.setChecked(False)
+            self.altitudeEnable.blockSignals(False)
+              
+        self.emit(QtCore.SIGNAL("onDepthEnable"), state, self.depthRef.value())     
         
         
     def _update_refs(self,data):

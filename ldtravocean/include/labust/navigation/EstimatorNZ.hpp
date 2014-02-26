@@ -41,6 +41,7 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Bool.h>
 #include <auv_msgs/BodyForceReq.h>
 
 namespace labust
@@ -100,6 +101,14 @@ namespace labust
 			 * Helper method to publish the navigation state.
 			 */
 			void publishState();
+			/**
+			 * Handle input forces and torques.
+			 */
+			void onReset(const std_msgs::Bool::ConstPtr& reset);
+			/**
+			 * Handle the gyro/compass switch.
+			 */
+			void onUseGyro(const std_msgs::Bool::ConstPtr& use_gyro);
 
 			/**
 			 * The navigation filter.
@@ -124,7 +133,7 @@ namespace labust
 			/**
 			 * Sensors and input subscribers.
 			 */
-			ros::Subscriber tauAch, depth, altitude, modelUpdate;
+			ros::Subscriber tauAch, depth, altitude, modelUpdate, resetTopic, useGyro;
 			/**
 			 * The Imu handler.
 			 */
@@ -150,6 +159,10 @@ namespace labust
 			 * The DVL model selector.
 			 */
 			//int dvl_model;
+			/**
+			 * The compass and gyro variance.
+			 */
+			double compassVariance, gyroVariance;
 		};
 	}
 }
