@@ -81,9 +81,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ident_so
-#  CATKIN_DEPENDS navcon_msgs roscpp
+   INCLUDE_DIRS include
+   LIBRARIES I_SO
+   CATKIN_DEPENDS navcon_msgs roscpp actionlib
 #  DEPENDS system_lib
 )
 
@@ -127,7 +127,6 @@ target_link_libraries(ident_so
 target_link_libraries(test_ident
   ${catkin_LIBRARIES}
 )
-
 #############
 ## Install ##
 #############
