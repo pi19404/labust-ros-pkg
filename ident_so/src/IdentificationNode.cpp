@@ -47,8 +47,10 @@ using namespace labust::control;
 const char dofNames[]={'X','Y','Z','K','M','N','A'};
 
 IdentificationNode::IdentificationNode():
-				measurements(Eigen::Matrix<double,6,1>::Zero()),
-				integrateUV(true)
+				measurements(MeasVec::Zero()),
+				integrateUV(true),
+				useUV(false),
+				useW(false)
 {
 	this->onInit();
 }
@@ -67,6 +69,8 @@ void IdentificationNode::onInit()
 			&IdentificationNode::onMeasurement,this);
 
 	ph.param("integrateUV",integrateUV, true);
+	ph.param("useUV",useUV, false);
+	ph.param("useW",useW, false);
 }
 
 void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
@@ -89,10 +93,15 @@ void IdentificationNode::onMeasurement(const auv_msgs::NavSts::ConstPtr& meas)
 		measurements(x) = meas->position.north;
 		measurements(y) = meas->position.east;
 	}
-	measurements(z) = meas->altitude;
+	measurements(z) = meas->position.depth;
 	measurements(roll) = meas->orientation.roll;
 	measurements(pitch) = meas->orientation.pitch;
 	measurements(yaw) = meas->orientation.yaw;
+
+	measurements(altitude) = meas->altitude;
+	measurements(u) = meas->body_velocity.x;
+	measurements(v) = meas->body_velocity.y;
+	measurements(w) = meas->body_velocity.z;
 }
 
 void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
@@ -103,7 +112,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 	if ((goal->sampling_rate <= 0) ||
 			(goal->command == 0) ||
 			(goal->hysteresis == 0) ||
-			(goal->dof < 0) || (goal->dof > goal->Yaw))
+			(goal->dof < Goal::Surge) || (goal->dof > Goal::Altitude))
 	{
 		ROS_ERROR("Some identification criteria are faulty: "
 				"command: (%f != 0), "
@@ -131,25 +140,49 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 		measurements(y)=0;
 	}
 
+	//Reset the cumulative error
+	if (useUV)
+	{
+		cumulative_error = 0;
+	}
+
 	while (!ident.isFinished())
 	{
 		double error = goal->reference - measurements(goal->dof);
-		//Handle angular values
-		if (goal->dof >= roll)
+
+		if (((goal->dof <= Goal::Sway) && useUV) || ((goal->dof == Goal::Heave) && useW))
 		{
+			enum {stateDiff = 7};
+			//This takes "u,v,w" when "x,y,z" is identified
+			error = goal->reference - measurements(goal->dof + stateDiff);
+			cumulative_error += error/goal->sampling_rate;
+			error = cumulative_error;
+		}
+
+		//Handle angular values
+		if ((goal->dof >= Goal::Roll) && (goal->dof <=Goal::Yaw))
+	  	{
 			error = labust::math::wrapRad(
 					labust::math::wrapRad(goal->reference) -
 					labust::math::wrapRad(measurements(goal->dof)));
 		}
 		//Perform one step
-		this->setTau(goal->dof, ident.step(error, 1/goal->sampling_rate));
+		if ((goal->dof >= Goal::Surge) && (goal->dof <= Goal::Yaw))
+		{
+			this->setTau(goal->dof, ident.step(error, 1/goal->sampling_rate));
+		}
+		else if (goal->dof == Goal::Altitude)
+		{
+			ROS_INFO("Doing identification: %f %f %f.",goal->reference, measurements[goal->dof], error);
+			this->setTau(Goal::Heave, -ident.step(error, 1/goal->sampling_rate));
+		}
 
 		//Check for preemption
 		if (aserver->isPreemptRequested() || !ros::ok())
 		{
 			ROS_INFO("DOFIdentification for %d: Preempted", goal->dof);
 			//Set output to zero
-			this->setTau(goal->dof, 0.0);
+			this->setTau(0, 0.0);
 			// set the action state to preempted
 			aserver->setPreempted();
 			return;
@@ -170,7 +203,7 @@ void IdentificationNode::doIdentification(const Goal::ConstPtr& goal)
 	}
 
 	//Stop the vessel
-	this->setTau(goal->dof, 0.0);
+	this->setTau(0, 0.0);
 
 	if (ident.isFinished())
 	{

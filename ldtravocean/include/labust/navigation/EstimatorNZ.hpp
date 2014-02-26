@@ -31,10 +31,10 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
-#ifndef ESTIMATOR3DEXTENDED_HPP_
-#define ESTIMATOR3DEXTENDED_HPP_
+#ifndef ESTIMATORNZ_HPP_
+#define ESTIMATORNZ_HPP_
 #include <labust/navigation/KFCore.hpp>
-#include <labust/navigation/LDTravModelExtended.hpp>
+#include <labust/navigation/NZModel.hpp>
 #include <labust/navigation/SensorHandlers.hpp>
 #include <labust/math/NumberManipulation.hpp>
 #include <navcon_msgs/ModelParamsUpdate.h>
@@ -48,19 +48,19 @@ namespace labust
 	namespace navigation
 	{
 		/**
-	 	 * The 3D state estimator for ROVs and AUVs. Extended with altitude and pitch estimates.
+	 	 * The NZ state estimator for ROVs and AUVs. Extended with altitude and pitch estimates.
 	 	 *
 	 	 * \todo Extract the lat/lon part into the llnode.
 	 	 */
-		class Estimator3D
+		class EstimatorNZ
 		{
 			enum{X=0,Y,Z,K,M,N, DoF};
-			typedef labust::navigation::KFCore<labust::navigation::LDTravModel> KFNav;
+			typedef labust::navigation::KFCore<labust::navigation::NZModel> KFNav;
 		public:
 			/**
 			 * Main constructor.
 			 */
-			Estimator3D();
+			EstimatorNZ();
 
 			/**
 			 * Initialize the estimation filter.
@@ -120,23 +120,15 @@ namespace labust
 			/**
 			 * Estimated and measured state publisher.
 			 */
-			ros::Publisher stateMeas, stateHat, currentsHat, buoyancyHat;
+			ros::Publisher stateMeas, stateHat, currentsHat;
 			/**
 			 * Sensors and input subscribers.
 			 */
 			ros::Subscriber tauAch, depth, altitude, modelUpdate;
 			/**
-			 * The GPS handler.
-			 */
-			GPSHandler gps;
-			/**
 			 * The Imu handler.
 			 */
 			ImuHandler imu;
-			/**
-			 * The DVL handler.
-			 */
-			DvlHandler dvl;
 			/**
 			 * The transform broadcaster.
 			 */
@@ -146,7 +138,8 @@ namespace labust
 			 */
 			double alt;
 			/**
-			 * Model parameters
+			 * Model parameters.
+			 * \todo This could be reduced since we only have two models
 			 */
 			KFNav::ModelParams params[DoF];
 			/**
@@ -156,9 +149,9 @@ namespace labust
 			/**
 			 * The DVL model selector.
 			 */
-			int dvl_model;
+			//int dvl_model;
 		};
 	}
 }
-/* ESTIMATOR3DEXTENDED_HPP_ */
+/* ESTIMATORNZ_HPP_ */
 #endif

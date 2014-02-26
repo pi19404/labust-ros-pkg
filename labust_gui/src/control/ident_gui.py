@@ -88,7 +88,7 @@ class IdentificationGui(QtGui.QWidget):
     @QtCore.pyqtSlot()
     def _startIdent_pressed(self):           
         tmp = IdentSetup()
-        tmp.dof = self.dofCombo.currentIndex()
+        tmp.dof = self.dofCombo.currentIndex()            
         tmp.ref = self.identRef.value()
         tmp.amp = self.identAmp.value()
         tmp.hyst = self.identHyst.value()
@@ -127,6 +127,7 @@ class IdentificationGui(QtGui.QWidget):
         self.dofCombo.addItem("K")
         self.dofCombo.addItem("M")
         self.dofCombo.addItem("N")   
+        self.dofCombo.addItem("A") 
         
         self.canTune = False
         self.tuneButton.setEnabled(False)
@@ -146,7 +147,8 @@ class IdentificationROS(QtCore.QObject):
                         "Heave",
                         "Roll",
                         "Pitch",
-                        "Yaw")
+                        "Yaw",
+                        "Altitude")
         
         def setup(self, gui):
             self._connect_signals(gui)
@@ -155,14 +157,16 @@ class IdentificationROS(QtCore.QObject):
         
         @QtCore.pyqtSlot(bool, object)
         def onIdentGuiReq(self, active, setup):
-            if setup.dof < 0 or setup.dof >= 6:
-                print("DOF select {} is invalid. Ignoring.".format(dof))
+            if (setup.dof < DOFIdentificationGoal.Surge or 
+            setup.dof > DOFIdentificationGoal.Altitude):
+                print("DOF select {} is invalid. Ignoring.".format(setup.dof))
                 return
                  
             if self.useAction:
                 self._actionIdent(active, setup)
             else:
                 self._velconIdent(active, setup)
+                
         @QtCore.pyqtSlot(object, bool)
         def onModelUpdate(self, result, use_linear):
             update = ModelParamsUpdate()
@@ -178,8 +182,12 @@ class IdentificationROS(QtCore.QObject):
         def _velconIdent(self, active, setup):
             velcon = [0,0,0,0,0,0]
             '''Identification is number 3'''
-            if active: 
-                velcon[setup.dof] = 3
+            if active:
+                if setup.dof == DOFIdentificationGoal.Altitude:
+                    velcon[DOFIdentificationGoal.Heave] = 3
+                else:
+                    velcon[setup.dof] = 3
+                    
                 print(setup.amp)
                 rospy.set_param(self.velconName + "/" + 
                                 self.names[setup.dof] +
