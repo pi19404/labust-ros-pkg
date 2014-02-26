@@ -37,6 +37,7 @@
 #include <labust/ros/SimCore.hpp>
 #include <labust/tools/DynamicsLoader.hpp>
 #include <labust/tools/conversions.hpp>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <sstream>
 
@@ -209,30 +210,44 @@ void SimCore::etaNuToOdom(const vector& eta, const vector& nu, nav_msgs::Odometr
 
 void SimCore::publishWorld()
 {
-	tf::Transform transform;
-	transform.setOrigin(tf::Vector3(originLon, originLat, 0));
-	transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
-	transform.setOrigin(tf::Vector3(0, 0, 0));
-	Eigen::Quaternion<float> q;
-	labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
-	transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
+	geometry_msgs::TransformStamped transform;
+	transform.transform.translation.x = originLon;
+	transform.transform.translation.y = originLat;
+	transform.transform.translation.z = 0;
+	labust::tools::quaternionFromEulerZYX(0, 0, 0,
+			transform.transform.rotation);
+	transform.child_frame_id = "world";
+	transform.header.frame_id = "worldLatLon";
+	transform.header.stamp = ros::Time::now();
+	broadcast.sendTransform(transform);
+
+	transform.transform.translation.x = 0;
+	transform.transform.translation.y = 0;
+	transform.transform.translation.z = 0;
+	labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,
+			transform.transform.rotation);
+	transform.child_frame_id = "local";
+	transform.header.frame_id = "world";
+	transform.header.stamp = ros::Time::now();
+	broadcast.sendTransform(transform);
 }
 
 void SimCore::publishSimBaseLink()
 {
 	const vector& eta = model.Eta();
-	tf::Transform transform;
-	transform.setOrigin(tf::Vector3(eta(RBModel::x),
-			eta(RBModel::y),
-			eta(RBModel::z)));
-	Eigen::Quaternion<double> q;
+
+	geometry_msgs::TransformStamped transform;
+	transform.transform.translation.x = eta(RBModel::x);
+	transform.transform.translation.y = eta(RBModel::y);
+	transform.transform.translation.z = eta(RBModel::z);
 	labust::tools::quaternionFromEulerZYX(eta(RBModel::phi),
 			eta(RBModel::theta),
-			eta(RBModel::psi), q);
-	transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-	broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_sim"));
+			eta(RBModel::psi),
+			transform.transform.rotation);
+	transform.child_frame_id = "base_link_sim";
+	transform.header.frame_id = "local";
+	transform.header.stamp = ros::Time::now();
+	broadcast.sendTransform(transform);
 }
 
 void SimCore::start()
@@ -289,4 +304,15 @@ void SimCore::modelReport()
 	str.str("");
 	str<<model.Io<<"\n"<<model.Ma<<"\n"<<model.Dlin<<"\n"<<model.Dquad;
 	ROS_INFO("(Io,Ma,Dlin,Dquad):\n%s",str.str().c_str());
+}
+
+int main(int argc, char* argv[])
+{
+	ros::init(argc,argv,"uvsim");
+	ros::NodeHandle nh;
+
+	labust::simulation::SimCore simulator;
+
+	ros::spin();
+	return 0;
 }

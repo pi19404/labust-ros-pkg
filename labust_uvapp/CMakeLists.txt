@@ -13,8 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
     dynamic_reconfigure 
     sensor_msgs
 	message_generation 
-	tf 
-#	kdl_conversions 
+	geometry_msgs
+	tf2_ros  
 	snippets)
 
 ## System dependencies are found with CMake's conventions
@@ -62,7 +62,7 @@ generate_dynamic_reconfigure_options(cfg/VelCon.cfg)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES labust_uvapp
-   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs tf #kdl_conversions
+   CATKIN_DEPENDS labust_base auv_msgs nav_msgs std_msgs roscpp dynamic_reconfigure sensor_msgs tf2_ros #kdl_conversions
 #  DEPENDS system_lib
 )
 

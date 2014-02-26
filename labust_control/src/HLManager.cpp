@@ -44,6 +44,7 @@
 #include <navcon_msgs/HLMessage.h>
 #include <std_msgs/Float32.h>
 #include <std_msgs/Int32.h>
+#include <geometry_msgs/TransformStamped.h>
 
 using labust::control::HLManager;
 
@@ -299,12 +300,16 @@ void HLManager::onVTTwist(const geometry_msgs::TwistStamped::ConstPtr& twist)
 		double yRabbit = point.point.y + circleRadius*sin(s/circleRadius);
 		double gammaRabbit=labust::math::wrapRad(s/circleRadius)+M_PI/2;
 
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(xRabbit, yRabbit, 0));
-		Eigen::Quaternion<float> q;
-		labust::tools::quaternionFromEulerZYX(0,0,gammaRabbit, q);
-		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "serret_frenet_frame"));
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = xRabbit;
+		transform.transform.translation.y = yRabbit;
+		transform.transform.translation.z = 0;
+		labust::tools::quaternionFromEulerZYX(0, 0, gammaRabbit,
+				transform.transform.rotation);
+		transform.child_frame_id = "serret_frenet_frame";
+		transform.header.frame_id = "local";
+		transform.header.stamp = ros::Time::now();
+		broadcaster.sendTransform(transform);
 
 		auv_msgs::NavStsPtr msg(new auv_msgs::NavSts());
 		msg->position.north = xRabbit;
@@ -473,15 +478,26 @@ void HLManager::start()
 	{
 		if (fixValidated)
 		{
-			tf::Transform transform;
-			transform.setOrigin(tf::Vector3(originLon, originLat, 0));
-			transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/worldLatLon", "/world"));
-			transform.setOrigin(tf::Vector3(0, 0, 0));
-			Eigen::Quaternion<float> q;
-			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,q);
-			transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-			broadcaster.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "local"));
+			geometry_msgs::TransformStamped transform;
+			transform.transform.translation.x = originLon;
+			transform.transform.translation.y = originLat;
+			transform.transform.translation.z = 0;
+			labust::tools::quaternionFromEulerZYX(0, 0, 0,
+					transform.transform.rotation);
+			transform.child_frame_id = "world";
+			transform.header.frame_id = "worldLatLon";
+			transform.header.stamp = ros::Time::now();
+			broadcaster.sendTransform(transform);
+
+			transform.transform.translation.x = 0;
+			transform.transform.translation.y = 0;
+			transform.transform.translation.z = 0;
+			labust::tools::quaternionFromEulerZYX(M_PI,0,M_PI/2,
+					transform.transform.rotation);
+			transform.child_frame_id = "local";
+			transform.header.frame_id = "world";
+			transform.header.stamp = ros::Time::now();
+			broadcaster.sendTransform(transform);
 		}
 		this->safetyTest();
 		this->step();

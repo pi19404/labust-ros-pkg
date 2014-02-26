@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp 
     snippets 
     geometry_msgs
-    tf)
+    tf2_ros)
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system thread regex serialization) 

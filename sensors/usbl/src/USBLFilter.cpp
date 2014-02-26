@@ -41,6 +41,7 @@
 #include <labust/math/NumberManipulation.hpp>
 
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <auv_msgs/NavSts.h>
 
 PLUGINLIB_DECLARE_CLASS(usbl,USBLFilter,labust::tritech::USBLFilter, nodelet::Nodelet)
@@ -48,6 +49,7 @@ PLUGINLIB_DECLARE_CLASS(usbl,USBLFilter,labust::tritech::USBLFilter, nodelet::No
 using namespace labust::tritech;
 
 USBLFilter::USBLFilter():
+	listener(buffer),
 	timeout(150),
 	iteration(0),
 	maxSpeed(0.5){};
@@ -109,22 +111,22 @@ void USBLFilter::onUsbl(const geometry_msgs::PointStamped::ConstPtr& msg)
 
 	boost::mutex::scoped_lock lock(dataMux);
 
-	tf::StampedTransform transform;
+	geometry_msgs::TransformStamped transform;
 	try
 	{
 		//Take position two seconds from the past
 		ros::Time now(ros::Time::now()), desired(now - ros::Duration(0));
-		listener.lookupTransform("local", "base_link", ros::Time(0), transform);
+		transform = buffer.lookupTransform("local", "base_link", ros::Time(0));
 	}
-	catch (tf::TransformException& ex)
+	catch (tf2::TransformException& ex)
 	{
 		NODELET_ERROR("%s",ex.what());
 	}
 
 	KFilter::input_type vec(2);
-	vec(0) = transform.getOrigin().x() + msg->point.x;
-	vec(1) = transform.getOrigin().y() + msg->point.y;
-	depth = transform.getOrigin().z() + (-msg->point.z);
+	vec(0) = transform.transform.translation.x + msg->point.x;
+	vec(1) = transform.transform.translation.y + msg->point.y;
+	depth = transform.transform.translation.z + (-msg->point.z);
 
 	double inx, iny;
 	filter.calculateXYInovationVariance(filter.getStateCovariance(),inx,iny);
@@ -193,17 +195,17 @@ void USBLFilter::run()
 
 		try
 		{
-			tf::StampedTransform transformDeg;
-			listener.lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
+			geometry_msgs::TransformStamped transformDeg;
+			transformDeg = buffer.lookupTransform("worldLatLon", "local", ros::Time(0));
 
 			std::pair<double, double> diffAngle = labust::tools::meter2deg(state(KFilter::xp),
 					state(KFilter::yp),
 					//The latitude angle
-					transformDeg.getOrigin().y());
-			odom->global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
-			odom->global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
+					transformDeg.transform.translation.y);
+			odom->global_position.latitude = transformDeg.transform.translation.y + diffAngle.first;
+			odom->global_position.longitude = transformDeg.transform.translation.x + diffAngle.second;
 		}
-		catch(tf::TransformException& ex)
+		catch(tf2::TransformException& ex)
 		{
 			NODELET_ERROR("%s",ex.what());
 		}

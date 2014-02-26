@@ -45,6 +45,7 @@
 #include <labust/tools/StringUtilities.hpp>
 
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
 #include <auv_msgs/RPY.h>
@@ -219,23 +220,30 @@ void NavQuestSocketNode::publishDvlData(const NQRes& data)
 	//TF frame
 	//Either use a fixed rotation here or the DVL measurements
 	enum {roll=0, pitch, yaw};
-	tf::Transform transform;
-	//Moved 1.4m from the rotation origin.
-	transform.setOrigin(tf::Vector3(1.4,0,0));
-	//transform.setOrigin(tf::Vector3(0,0,0));
+	geometry_msgs::TransformStamped transform;
+	///\todo Parametrize this position value of the DVL frame!!!
+	//transform.transform.translation.x = 0;
+	transform.transform.translation.x = 1.4;
+	transform.transform.translation.y = 0;
+	transform.transform.translation.z = 0;
+	transform.child_frame_id = "dvl_frame";
+	transform.header.frame_id = "base_link";
+	transform.header.stamp = ros::Time::now();
+
 	if (useFixed)
 	{
-		transform.setRotation(tf::createQuaternionFromRPY(0,0, base_orientation));
-		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "base_link", "dvl_frame"));
+		labust::tools::quaternionFromEulerZYX(0,0,base_orientation,
+				transform.transform.rotation);
+		broadcast.sendTransform(transform);
 	}
 	else
 	{
 		Eigen::Quaternion<float> quat;
 		labust::tools::quaternionFromEulerZYX(labust::math::wrapRad(data.rph[roll]/180*M_PI),
 				labust::math::wrapRad(data.rph[pitch]/180*M_PI),
-				labust::math::wrapRad(data.rph[yaw]/180*M_PI + magnetic_declination), quat);
-		transform.setRotation(tf::Quaternion(quat.x(), quat.y(), quat.z(), quat.w()));
-		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "dvl_frame"));
+				labust::math::wrapRad(data.rph[yaw]/180*M_PI + magnetic_declination),
+				transform.transform.rotation);
+		broadcast.sendTransform(transform);
 	}
 
 	//RPY

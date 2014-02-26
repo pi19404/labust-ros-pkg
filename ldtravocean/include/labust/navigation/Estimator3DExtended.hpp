@@ -39,8 +39,7 @@
 #include <labust/math/NumberManipulation.hpp>
 #include <navcon_msgs/ModelParamsUpdate.h>
 
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <std_msgs/Float32.h>
 #include <auv_msgs/BodyForceReq.h>
 
@@ -141,7 +140,7 @@ namespace labust
 			/**
 			 * The transform broadcaster.
 			 */
-			tf::TransformBroadcaster broadcaster;
+			tf2_ros::TransformBroadcaster broadcaster;
 			/**
 			 * Temporary altitude storage.
 			 */

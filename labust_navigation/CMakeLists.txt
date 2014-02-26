@@ -9,8 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   snippets
   sensor_msgs
-#  kdl_conversions
-  tf
+  geometry_msgs
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -85,6 +85,7 @@ add_library(labust_navigation
 add_executable(eigen_test src/test/eigen_test.cpp)
 add_executable(nav_node2 src/nav_node/nav_node2.cpp)
 add_executable(llnode src/latlon_node/LLNode.cpp)
+add_executable(static_transform_publisher src/static_transform_publisher/static_transform_publisher.cpp)
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_navigation_node labust_navigation_generate_messages_cpp)
@@ -97,6 +98,7 @@ target_link_libraries(labust_navigation
 target_link_libraries(eigen_test ${catkin_LIBRARIES} labust_navigation)
 target_link_libraries(nav_node2 ${catkin_LIBRARIES} labust_navigation)
 target_link_libraries(llnode ${catkin_LIBRARIES})
+target_link_libraries(static_transform_publisher ${catkin_LIBRARIES})
 
 #############
 ## Install ##

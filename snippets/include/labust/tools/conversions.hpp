@@ -38,6 +38,8 @@
 #define CONVERSIONS_HPP_
 #include <Eigen/Dense>
 
+#include <geometry_msgs/Quaternion.h>
+
 namespace labust
 {
 	namespace tools
@@ -145,6 +147,22 @@ namespace labust
 			q = Quaternion<T>(m);
 		}
 
+		template <class T>
+		void quaternionFromEulerZYX(double roll, double pitch, double yaw, T& q)
+		{
+			using namespace Eigen;
+			Matrix<double,3,3> m;
+			typedef Matrix<double,3,1> Vector3;
+			m = AngleAxis<double>(yaw, Vector3::UnitZ())
+			* AngleAxis<double>(pitch, Vector3::UnitY())
+			* AngleAxis<double>(roll, Vector3::UnitX());
+			Quaternion<double> t(m);
+			q.x = t.x();
+			q.y = t.y();
+			q.z = t.z();
+			q.w = t.w();
+		}
+
 		//\todo Test and document this method
 		template <class T>
 		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)
@@ -153,6 +171,15 @@ namespace labust
 			yaw = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
 			pitch = -asin(2*(q.x()*q.z()-q.y()*q.w()));
 			roll = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
+		}
+
+		//\todo Test and document this method
+		void eulerZYXFromQuaternion(const geometry_msgs::Quaternion& q, double& roll, double& pitch, double& yaw)
+		{
+			using namespace Eigen;
+			yaw = atan2(2*(q.w*q.z + q.x*q.y),1-2*(q.z*q.z + q.y*q.y));
+			pitch = -asin(2*(q.x*q.z-q.y*q.w));
+			roll = atan2(2*(q.w*q.x+q.y*q.z),1-2*(q.y*q.y+q.x*q.x));
 		}
 	}
 }

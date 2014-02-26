@@ -1,13 +1,15 @@
 #include <string>
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <labust/tools/conversions.hpp>
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "state_publisher");
     ros::NodeHandle n;
     ros::Publisher joint_pub = n.advertise<sensor_msgs::JointState>("joint_states", 1);
-    tf::TransformBroadcaster broadcaster;
+    tf2_ros::TransformBroadcaster broadcaster;
     ros::Rate loop_rate(30);
 
     const double degree = M_PI/180;
@@ -40,7 +42,8 @@ int main(int argc, char** argv) {
         odom_trans.transform.translation.x = 0;cos(angle)*2;
         odom_trans.transform.translation.y = 0;sin(angle)*2;
         odom_trans.transform.translation.z = 0;
-        odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(0);
+    		labust::tools::quaternionFromEulerZYX(0,0,0,
+    				odom_trans.transform.rotation);
 
         //send the joint state and transform
         joint_pub.publish(joint_state);

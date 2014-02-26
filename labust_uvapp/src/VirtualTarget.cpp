@@ -39,7 +39,7 @@
 #include <labust/tools/conversions.hpp>
 
 #include <auv_msgs/BodyVelocityReq.h>
-//#include <kdl/frames.hpp>
+#include <geometry_msgs/TransformStamped.h>
 #include <boost/bind.hpp>
 
 #include <cmath>
@@ -61,7 +61,8 @@ VirtualTarget::VirtualTarget():
 		K2(1),
 		gammaARad(45),
 		enable(false),
-		use_flow_frame(false)
+		use_flow_frame(false),
+		listener(transBuffer)
 {this->onInit();}
 
 void VirtualTarget::onInit()
@@ -208,22 +209,18 @@ void VirtualTarget::step()
 	if (!enable) return;
 	//this->safetyTest();
 
-	tf::StampedTransform sfTransform, sfLocal, flowLocal;
+  geometry_msgs::TransformStamped sfTransform, sfLocal, flowLocal;
 	try
 	{
-		listener.lookupTransform("serret_frenet_frame", "base_link_flow", ros::Time(0), sfTransform);
-		listener.lookupTransform("local", "base_link_flow", ros::Time(0), flowLocal);
-		listener.lookupTransform("local", "serret_frenet_frame", ros::Time(0), sfLocal);
-		tf::Quaternion q = sfTransform.getRotation();
+		sfTransform = transBuffer.lookupTransform("serret_frenet_frame", "base_link_flow", ros::Time(0));
+		flowLocal = transBuffer.lookupTransform("local", "base_link_flow", ros::Time(0));
+		sfLocal = transBuffer.lookupTransform("local", "serret_frenet_frame", ros::Time(0));
 		double gamma,gammaRabbit,flow_yaw,pitch,roll;
-		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, gamma);
-		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gamma,pitch,roll);
-		q = sfLocal.getRotation();
-		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(gammaRabbit,pitch,roll);
-		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, gammaRabbit);
-		q = flowLocal.getRotation();
-		//KDL::Rotation::Quaternion(q.x(),q.y(),q.z(),q.w()).GetEulerZYX(flow_yaw,pitch,roll);
-		labust::tools::eulerZYXFromQuaternion(q, roll, pitch, flow_yaw);
+		labust::tools::eulerZYXFromQuaternion(sfTransform.transform.rotation,
+				roll, pitch, gamma);
+		labust::tools::eulerZYXFromQuaternion(sfLocal.transform.rotation,
+				roll, pitch, gammaRabbit);
+		labust::tools::eulerZYXFromQuaternion(flowLocal.transform.rotation, roll, pitch, flow_yaw);
 
 		//double UvecYaw = state.orientation.yaw;
 		//For slow movements prefer the body frame instead of the flow frame.
@@ -242,8 +239,8 @@ void VirtualTarget::step()
 
 		gamma=labust::math::wrapRad(gamma);
 
-		double distance(pow(sfTransform.getOrigin().y(),2) + pow(sfTransform.getOrigin().x(),2));
-		double angleDiff(atan2(sfTransform.getOrigin().y(),sfTransform.getOrigin().x()));
+		double distance(pow(sfTransform.transform.translation.y,2) + pow(sfTransform.transform.translation.x,2));
+		double angleDiff(atan2(sfTransform.transform.translation.y, sfTransform.transform.translation.x));
 		if (false && distance > 0.5 && fabs(angleDiff) > M_PI/2)
 		{
 			headingController.desired = angleDiff;
@@ -251,7 +248,7 @@ void VirtualTarget::step()
 		else
 		{
 			//Just for readability
-			double s1(sfTransform.getOrigin().x()),y1(sfTransform.getOrigin().y());
+			double s1(sfTransform.transform.translation.x),y1(sfTransform.transform.translation.y);
 
 			geometry_msgs::TwistStamped sTwist;
 			//double flowSurgeEstimate = state.body_velocity.x;
@@ -278,7 +275,7 @@ void VirtualTarget::step()
 
 		nuRef.publish(nu);
 	}
-	catch (tf::TransformException& ex)
+	catch (tf2::TransformException& ex)
 	{
 		ROS_ERROR("%s",ex.what());
 	}

@@ -38,14 +38,18 @@
 
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/NavSatFix.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <labust/tools/conversions.hpp>
 #include <ros/ros.h>
 
 struct GPSSim
 {
 	GPSSim():
 		rate(10),
+		listener(buffer),
 		gps_z(0)
 	{
 		ros::NodeHandle nh,ph("~");
@@ -63,28 +67,30 @@ struct GPSSim
 		fix->header.frame_id = "worldLatLon";
 
 		//Broadcast the position of the GPS device.
-		tf::Transform transform;
-		transform.setOrigin(tf::Vector3(0, 0, -gps_z));
-		transform.setRotation(tf::createQuaternionFromRPY(0,0,0));
-		broadcaster.sendTransform(
-				tf::StampedTransform(transform, ros::Time::now(),
-						"base_link", "gps_frame"));
+		///\todo Replace this with the available static transform publisher node
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = 0;
+		transform.transform.translation.y = 0;
+		transform.transform.translation.z = -gps_z;
+		labust::tools::quaternionFromEulerZYX(0, 0, 0,
+				transform.transform.rotation);
+		transform.child_frame_id = "gps_frame";
+		transform.header.frame_id = "base_link";
+		transform.header.stamp = ros::Time::now();
+		broadcaster.sendTransform(transform);
 
-		tf::StampedTransform transformLocal, transformDeg;
+		geometry_msgs::TransformStamped transformLocal, transformDeg;
 		try
 		{
 			//Get the GPS position
-			listener.lookupTransform("local", "gps_frame",
-					ros::Time(0), transformLocal);
+			transformLocal = buffer.lookupTransform("local", "gps_frame", ros::Time(0));
 			//In case the origin changes
-			listener.waitForTransform("/worldLatLon", "/world",
+			transformDeg = buffer.lookupTransform("worldLatLon", "world",
 					ros::Time(0), ros::Duration(5.0));
-			listener.lookupTransform("/worldLatLon", "/world",
-					ros::Time(0), transformDeg);
-			double originLat = transformDeg.getOrigin().y();
-			double originLon = transformDeg.getOrigin().x();
+			double originLat = transformDeg.transform.translation.y;
+    	double originLon = transformDeg.transform.translation.x;
 
-			fix->altitude = -transformLocal.getOrigin().z();
+			fix->altitude = -transformDeg.transform.translation.z;
 			std::pair<double, double> diffAngle =
 					labust::tools::meter2deg(msg->pose.pose.position.x,
 					msg->pose.pose.position.y,
@@ -101,7 +107,7 @@ struct GPSSim
 				gps_pub.publish(fix);
 			}
 		}
-		catch (tf::TransformException& ex)
+		catch (tf2::TransformException& ex)
 		{
 			ROS_WARN("%s",ex.what());
 		}
@@ -111,8 +117,9 @@ private:
 	ros::Subscriber odom;
 	ros::Publisher gps_pub;
 	int rate;
-	tf::TransformListener listener;
-	tf::TransformBroadcaster broadcaster;
+	tf2_ros::Buffer buffer;
+	tf2_ros::TransformListener listener;
+	tf2_ros::TransformBroadcaster broadcaster;
 	double gps_z;
 };
 

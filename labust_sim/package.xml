@@ -16,15 +16,13 @@
 	<build_depend>auv_msgs</build_depend>
 	<build_depend>roscpp</build_depend>
 	<build_depend>rospy</build_depend>
-	<build_depend>tf</build_depend>
+	<build_depend>tf2_ros</build_depend>
 	<build_depend>snippets</build_depend>
-	<build_depend>pluginlib</build_depend>
 	
 	<run_depend>auv_msgs</run_depend>
 	<run_depend>roscpp</run_depend>
 	<run_depend>rospy</run_depend>
-	<run_depend>tf</run_depend>
-	<run_depend>pluginlib</run_depend>
+	<run_depend>tf2_ros</run_depend>
 	
 	<export>
 	    <!-- <labust_sim plugin="${prefix}/plugins.xml" /> -->

@@ -31,50 +31,42 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- *  Author: Dula Nad
- *  Created: 01.02.2013.
+ *  Author : Dula Nad
+ *  Created: 26.03.2013.
  *********************************************************************/
-#include <labust/ros/SimCore.hpp>
-#include <labust/ros/SimSensors.hpp>
 #include <labust/tools/conversions.hpp>
+#include <labust/tools/MatrixLoader.hpp>
 
-#include <pluginlib/class_loader.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include <ros/ros.h>
 
-///\todo Edit the class loading to be loaded from the rosparam server.
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"uvsim");
-	ros::NodeHandle nh;
+	ros::init(argc,argv,"static_transform_publisher");
+	ros::NodeHandle ph("~");
 
-	//Sensor loaders
-//	pluginlib::ClassLoader<labust::simulation::SimSensorInterface>
-//		sim_loader("labust_sim", "labust::simulation::SimSensorInterface");
+	tf2_ros::StaticTransformBroadcaster broadcast;
+	Eigen::Vector3d origin, orientation;
+	labust::tools::getMatrixParam(ph, "origin", origin);
+	labust::tools::getMatrixParam(ph, "orientation", orientation);
 
-	labust::simulation::SimCore simulator;
-
-//	typedef std::pair<std::string, std::string> NameTopicPair;
-//	std::vector< NameTopicPair >
-//		list({
-//		NameTopicPair("labust::simulation::ImuSensor","imu"),
-//		NameTopicPair("labust::simulation::GPSSensor","fix")});
-//
-//	try
-//	{
-//		using namespace labust::simulation;
-//		for (auto it = list.begin(); it != list.end(); ++it)
-//		{
-//			SimSensorInterface::Ptr sensor(sim_loader.createInstance(it->first));
-//			sensor->configure(nh,it->second);
-//			simulator.addSensor(sensor);
-//		}
-//	}
-//	catch(pluginlib::PluginlibException& ex)
-//	{
-//	  //handle the class failing to load
-//	  ROS_ERROR("The plugin failed to load for some reason. Error: %s", ex.what());
-//	}
+	//Broadcast the position of the device.
+	enum {x=0,y,z};
+	enum {roll=0,pitch,yaw};
+	geometry_msgs::TransformStamped transform;
+	transform.transform.translation.x = origin(x);
+	transform.transform.translation.y = origin(y);
+	transform.transform.translation.z = origin(z);
+	labust::tools::quaternionFromEulerZYX(
+			orientation(roll),
+			orientation(pitch),
+			orientation(yaw),
+			transform.transform.rotation);
+	ph.getParam("child_frame", transform.child_frame_id);
+	ph.getParam("base_frame", transform.header.frame_id);
+	transform.header.stamp = ros::Time::now();
+	broadcast.sendTransform(transform);
 
 	ros::spin();
-	return 0;
 }

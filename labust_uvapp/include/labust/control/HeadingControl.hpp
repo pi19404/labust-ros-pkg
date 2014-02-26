@@ -45,7 +45,8 @@
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
-#include <tf/transform_listener.h>
+//#include <tf/transform_listener.h>
+#include <boost/thread/mutex.hpp>
 #include <ros/ros.h>
 
 namespace labust
@@ -184,7 +185,7 @@ namespace labust
 			/**
 			 * The transform listener for frame conversions.
 			 */
-			tf::TransformListener listener;
+			//tf::TransformListener listener;
 		};
 	}
 }

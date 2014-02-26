@@ -7,8 +7,8 @@ project(labust_imu)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
-	snippets
-	tf
+  snippets
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions

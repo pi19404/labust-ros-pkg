@@ -43,9 +43,11 @@
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float32.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <ros/ros.h>
 
 namespace labust
@@ -182,9 +184,13 @@ namespace labust
 			 */
 		  //dynamic_reconfigure::Server<labust_uvapp::VelConConfig> server;
 			/**
+			 * The transform listener buffer.
+			 */
+			tf2_ros::Buffer transBuffer;
+			/**
 			 * The transform listener for frame conversions.
 			 */
-			tf::TransformListener listener;
+			tf2_ros::TransformListener listener;
 		};
 	}
 }

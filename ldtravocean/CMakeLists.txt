@@ -8,8 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp 
     snippets 
     auv_msgs 
-    tf
-#   kdl_conversions
     labust_navigation)
 
 ## System dependencies are found with CMake's conventions
@@ -55,7 +53,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ldtravocean
-   CATKIN_DEPENDS roscpp auv_msgs tf
+   CATKIN_DEPENDS roscpp auv_msgs
 #  DEPENDS system_lib
 )
 
@@ -69,9 +67,6 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 # add_library(ldtravocean
 #   src/${PROJECT_NAME}/ldtravocean.cpp
 # )
-
-## Declare a cpp executable
-#add_executable(model_node src/model_node.cpp)
 
 ## Declare a cpp executable
 add_executable(ldnav_node src/Estimator3D.cpp src/LDTravModel.cpp

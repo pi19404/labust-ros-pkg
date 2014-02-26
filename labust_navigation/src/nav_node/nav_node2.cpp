@@ -44,14 +44,17 @@
 #include <labust/simulation/DynamicsParams.hpp>
 #include <labust/navigation/KFModelLoader.hpp>
 
-//#include <kdl/frames.hpp>
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/BodyForceReq.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 
-#include <tf/transform_broadcaster.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <Eigen/Dense>
 
 #include <ros/ros.h>
 
@@ -60,7 +63,8 @@
 #include <fstream>
 
 typedef labust::navigation::KFCore<labust::navigation::XYModel> KFNav;
-tf::TransformListener* listener;
+tf2_ros::Buffer buffer;
+tf2_ros::TransformListener* listener;
 
 ros::Time t;
 KFNav::vector measurement(KFNav::vector::Zero(KFNav::stateNum)), newMeas(KFNav::vector::Zero(KFNav::stateNum));
@@ -76,19 +80,19 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 {
 	enum {x,y,newMsg};
 	//Calculate to X-Y tangent plane
-	tf::StampedTransform transformDeg, transformLocal;
+	geometry_msgs::TransformStamped transformDeg, transformLocal;
 	try
 	{
-		listener->lookupTransform("local", "gps_frame", ros::Time(0), transformLocal);
-		listener->lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
+		transformLocal = buffer.lookupTransform("local", "gps_frame", ros::Time(0));
+		transformDeg = buffer.lookupTransform("/worldLatLon", "local", ros::Time(0));
 
 		std::pair<double,double> posxy =
-				labust::tools::deg2meter(data->latitude - transformDeg.getOrigin().y(),
-						data->longitude - transformDeg.getOrigin().x(),
-						transformDeg.getOrigin().y());
+				labust::tools::deg2meter(data->latitude - transformDeg.transform.translation.y,
+						data->longitude - transformDeg.transform.translation.x,
+						transformDeg.transform.translation.y);
 
 		//correct for lever arm shift during pitch and roll
-		tf::Vector3 pos = tf::Vector3(posxy.first, posxy.second,0);
+		Eigen::Vector3d pos = Eigen::Vector3d(posxy.first, posxy.second,0);
 
 		//xy(x) = pos.x();
 		//xy(y) = pos.y();
@@ -102,7 +106,7 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 		measurement(KFNav::xp) = posxy.first;
 		measurement(KFNav::yp) = posxy.second;
 	}
-	catch(tf::TransformException& ex)
+	catch(tf2::TransformException& ex)
 	{
 		ROS_WARN("%s",ex.what());
 	}
@@ -115,14 +119,18 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	static labust::math::unwrap unwrap;
 	
 
-	tf::StampedTransform transform;
+	geometry_msgs::TransformStamped transform;
 	try
 	{
 		t = data->header.stamp;
-		listener->lookupTransform("base_link", "imu_frame", ros::Time(0), transform);
-		tf::Quaternion meas(data->orientation.x,data->orientation.y,
+		transform = buffer.lookupTransform("base_link", "imu_frame", ros::Time(0));
+		Eigen::Quaternion<double> meas(data->orientation.x,data->orientation.y,
 				data->orientation.z,data->orientation.w);
-		tf::Quaternion result = meas*transform.getRotation();
+		Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+				transform.transform.rotation.y,
+				transform.transform.rotation.z,
+				transform.transform.rotation.w);
+		Eigen::Quaternion<double> result = meas*rot;
 
 		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
 		labust::tools::eulerZYXFromQuaternion(result, roll, pitch, yaw);
@@ -142,7 +150,7 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 		measurement(KFNav::psi) = unwrap(yaw);
 		measurement(KFNav::r) = data->angular_velocity.z;
 	}
-	catch (tf::TransformException& ex)
+	catch (tf2::TransformException& ex)
 	{
 		ROS_WARN("%s",ex.what());
 	}
@@ -302,8 +310,8 @@ int main(int argc, char* argv[])
 	//Subscribers
 	KFNav::vector tau(KFNav::vector::Zero(KFNav::inputSize)),xy(KFNav::vector::Zero(2+1)),rpy(KFNav::vector::Zero(3+1));
 
-	tf::TransformBroadcaster broadcast;
-	listener = new tf::TransformListener();
+	tf2_ros::TransformBroadcaster broadcast;
+	listener = new tf2_ros::TransformListener(buffer);
 
 	ros::Subscriber tauAch = nh.subscribe<auv_msgs::BodyForceReq>("tauAch", 1, boost::bind(&handleTau,boost::ref(tau),_1));
 	ros::Subscriber navFix = nh.subscribe<sensor_msgs::NavSatFix>("gps", 1, boost::bind(&handleGPS,boost::ref(xy),_1));
@@ -413,38 +421,42 @@ int main(int argc, char* argv[])
 
 		try
 		{
-			tf::StampedTransform transformDeg;
-			listener->lookupTransform("/worldLatLon", "local", ros::Time(0), transformDeg);
+			geometry_msgs::TransformStamped transformDeg;
+			transformDeg = buffer.lookupTransform("worldLatLon", "local", ros::Time(0));
 
 			std::pair<double, double> diffAngle = labust::tools::meter2deg(state.position.north,
 					state.position.east,
 					//The latitude angle
-					transformDeg.getOrigin().y());
-			state.global_position.latitude = transformDeg.getOrigin().y() + diffAngle.first;
-			state.global_position.longitude = transformDeg.getOrigin().x() + diffAngle.second;
-			state.origin.latitude = transformDeg.getOrigin().y();
-			state.origin.longitude = transformDeg.getOrigin().x();
+					transformDeg.transform.translation.y);
+			state.global_position.latitude = transformDeg.transform.translation.y + diffAngle.first;
+			state.global_position.longitude = transformDeg.transform.translation.x + diffAngle.second;
+			state.origin.latitude = transformDeg.transform.translation.y;
+			state.origin.longitude = transformDeg.transform.translation.x;
 		}
-		catch(tf::TransformException& ex)
+		catch(tf2::TransformException& ex)
 		{
 			ROS_WARN("%s",ex.what());
 		}
 
 		state.orientation.yaw = labust::math::wrapRad(estimate(KFNav::psi));
 
-		tf::StampedTransform transform;
-		transform.setOrigin(tf::Vector3(estimate(KFNav::xp), estimate(KFNav::yp), 0.0));
-		Eigen::Quaternion<float> q;
-		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),estimate(KFNav::psi),q);
-		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link"));
+		geometry_msgs::TransformStamped transform;
+		transform.transform.translation.x = estimate(KFNav::xp);
+		transform.transform.translation.y = estimate(KFNav::yp);
+		transform.transform.translation.z = 0;
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),estimate(KFNav::psi),
+				transform.transform.rotation);
+		transform.child_frame_id = "base_link";
+		transform.header.frame_id = "local";
+		transform.header.stamp = ros::Time::now();
+		broadcast.sendTransform(transform);
 
 		//Calculate the flow frame (instead of heading use course)
 		double xdot,ydot;
 		nav.getNEDSpeed(xdot,ydot);
-		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),atan2(ydot,xdot),q);
-		transform.setRotation(tf::Quaternion(q.x(),q.y(),q.z(),q.w()));
-		broadcast.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "local", "base_link_flow"));
+		labust::tools::quaternionFromEulerZYX(rpy(0),rpy(1),atan2(ydot,xdot),transform.transform.rotation);
+		transform.child_frame_id = "base_link_flow";
+		broadcast.sendTransform(transform);
 
 		flowspeed.twist.linear.x = xdot;
 		flowspeed.twist.linear.y = ydot;

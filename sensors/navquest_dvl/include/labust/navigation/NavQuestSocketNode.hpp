@@ -37,7 +37,7 @@
 #include <labust/navigation/NavQuestMessages.hpp>
 #include <labust/navigation/BeamPublisher.hpp>
 
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <ros/ros.h>
 
 #include <boost/asio.hpp>
@@ -126,7 +126,7 @@ namespace labust
 			/**
 			 * The transform broadcaster.
 			 */
-			tf::TransformBroadcaster broadcast;
+			tf2_ros::TransformBroadcaster broadcast;
 			/**
 			 * Fixed rotation flag.
 			 */
