@@ -139,24 +139,23 @@ namespace labust
 		void quaternionFromEulerZYX(double roll, double pitch, double yaw, Eigen::Quaternion<T>& q)
 		{
 			using namespace Eigen;
-			Matrix<T,3,3> m;
+			Matrix<T,3,3> Cx,Cy,Cz,m;
 			typedef Matrix<T,3,1> Vector3;
-			m = AngleAxis<T>(yaw, Vector3::UnitZ())
-			* AngleAxis<T>(pitch, Vector3::UnitY())
-			* AngleAxis<T>(roll, Vector3::UnitX());
+			Cx = AngleAxis<T>(roll, Vector3::UnitX());
+			Cy = AngleAxis<T>(pitch, Vector3::UnitY());
+			Cz = AngleAxis<T>(yaw, Vector3::UnitZ());
+			//Tait-Bryan angles (XYZ) local => body
+			//The angle axis of Eigen are transposed matrices of what we expect
+			m = (Cz*Cy*Cx).transpose();
+
 			q = Quaternion<T>(m);
 		}
 
 		template <class T>
 		void quaternionFromEulerZYX(double roll, double pitch, double yaw, T& q)
 		{
-			using namespace Eigen;
-			Matrix<double,3,3> m;
-			typedef Matrix<double,3,1> Vector3;
-			m = AngleAxis<double>(yaw, Vector3::UnitZ())
-			* AngleAxis<double>(pitch, Vector3::UnitY())
-			* AngleAxis<double>(roll, Vector3::UnitX());
-			Quaternion<double> t(m);
+			Eigen::Quaternion<double> t;
+			quaternionFromEulerZYX(roll, pitch, yaw, t);
 			q.x = t.x();
 			q.y = t.y();
 			q.z = t.z();
@@ -168,18 +167,18 @@ namespace labust
 		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			yaw = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
+			roll = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
 			pitch = -asin(2*(q.x()*q.z()-q.y()*q.w()));
-			roll = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
+			yaw = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
 		}
 
 		//\todo Test and document this method
 		void eulerZYXFromQuaternion(const geometry_msgs::Quaternion& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			yaw = atan2(2*(q.w*q.z + q.x*q.y),1-2*(q.z*q.z + q.y*q.y));
+			roll = atan2(2*(q.w*q.z + q.x*q.y),1-2*(q.z*q.z + q.y*q.y));
 			pitch = -asin(2*(q.x*q.z-q.y*q.w));
-			roll = atan2(2*(q.w*q.x+q.y*q.z),1-2*(q.y*q.y+q.x*q.x));
+			yaw = atan2(2*(q.w*q.x+q.y*q.z),1-2*(q.y*q.y+q.x*q.x));
 		}
 	}
 }
