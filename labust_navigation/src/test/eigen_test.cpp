@@ -4,31 +4,33 @@
  *  Created on: Oct 16, 2013
  *      Author: dnad
  */
-#include <labust/navigation/KinematicModel.hpp>
-#include <labust/navigation/KFCore.hpp>
-#include <labust/navigation/KFModelLoader.hpp>
-
-#include <ros/ros.h>
+#include <labust/tools/conversions.hpp>
+#include <iostream>
 
 int main(int argc, char* argv[])
 {
-	ros::init(argc, argv, "eigen_test");
-	ros::NodeHandle nh;
-	using namespace labust::navigation;
-	KFCore<KinematicModel> nav;
+	using namespace Eigen;
+	typedef double T;
+	double roll = 0;
+	double pitch = 0;
+	double yaw = M_PI/3;
+	Quaternion<double> q;
+	labust::tools::quaternionFromEulerZYX(roll,pitch,yaw,q);
+	std::cout<<"quat:"<<q.x()<<" "<<q.y()<<" "<<q.z()<<" "<<q.w()<<std::endl;
+	roll = pitch = yaw = 0;
+	labust::tools::eulerZYXFromQuaternion(q, roll,pitch,yaw);
 
-	kfModelLoader(nav,nh);
+	//Tait-Bryan angles (XYZ) local => body
+	//The angle axis of Eigen are transposed matrices of what we expect
+	//m = (Cz*Cy*Cx).transpose();
 
-	ros::Rate rate(10);
+	std::cout<<roll<<std::endl;
+	std::cout<<pitch<<std::endl;
+	std::cout<<yaw<<std::endl;
 
-	while (ros::ok())
-	{
-		nav.predict();
-		KinematicModel::vector meas = KinematicModel::vector::Zero(KinematicModel::inputSize);
-		nav.correct(meas);
-		rate.sleep();
-	}
+	//std::cout<<q<<std::endl;
 
+	//q = Quaternion<T>(m);
 	return 0;
 }
 

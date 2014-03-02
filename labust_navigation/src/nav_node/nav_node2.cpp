@@ -84,7 +84,7 @@ void handleGPS(KFNav::vector& xy, const sensor_msgs::NavSatFix::ConstPtr& data)
 	try
 	{
 		transformLocal = buffer.lookupTransform("local", "gps_frame", ros::Time(0));
-		transformDeg = buffer.lookupTransform("/worldLatLon", "local", ros::Time(0));
+		transformDeg = buffer.lookupTransform("worldLatLon", "local", ros::Time(0));
 
 		std::pair<double,double> posxy =
 				labust::tools::deg2meter(data->latitude - transformDeg.transform.translation.y,
@@ -124,21 +124,23 @@ void handleImu(KFNav::vector& rpy, const sensor_msgs::Imu::ConstPtr& data)
 	{
 		t = data->header.stamp;
 		transform = buffer.lookupTransform("base_link", "imu_frame", ros::Time(0));
-		Eigen::Quaternion<double> meas(data->orientation.x,data->orientation.y,
-				data->orientation.z,data->orientation.w);
-		Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+		Eigen::Quaternion<double> meas(data->orientation.w, data->orientation.x,data->orientation.y,
+				data->orientation.z);
+		Eigen::Quaternion<double> rot(transform.transform.rotation.w,
+				transform.transform.rotation.x,
 				transform.transform.rotation.y,
-				transform.transform.rotation.z,
-				transform.transform.rotation.w);
+				transform.transform.rotation.z);
 		Eigen::Quaternion<double> result = meas*rot;
-
+		//Eigen::Quaternion<double> result = meas;
 		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX(yaw,pitch,roll);
 		labust::tools::eulerZYXFromQuaternion(result, roll, pitch, yaw);
 		/*labust::tools::eulerZYXFromQuaternion(
 				Eigen::Quaternion<float>(result.x(),result.y(),
 						result.z(),result.w()),
 				roll,pitch,yaw);*/
-		//ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
+		ROS_INFO("Received RPY:%f,%f,%f",roll,pitch,yaw);
+		ROS_INFO("Received Quaternion:%f,%f,%f,%f",data->orientation.x,data->orientation.y,
+				data->orientation.z,data->orientation.w);
 		rpy(r) = roll;
 		rpy(p) = pitch;
 		rpy(y) = yaw;

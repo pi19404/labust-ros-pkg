@@ -144,10 +144,9 @@ namespace labust
 			Cx = AngleAxis<T>(roll, Vector3::UnitX());
 			Cy = AngleAxis<T>(pitch, Vector3::UnitY());
 			Cz = AngleAxis<T>(yaw, Vector3::UnitZ());
-			//Tait-Bryan angles (XYZ) local => body
-			//The angle axis of Eigen are transposed matrices of what we expect
-			m = (Cz*Cy*Cx).transpose();
-
+			//ZYX convention
+			m = (Cz*Cy*Cx); //From child to parent
+			//m = (Cz*Cy*Cx).transpose(); //From parent to child
 			q = Quaternion<T>(m);
 		}
 
@@ -167,18 +166,28 @@ namespace labust
 		void eulerZYXFromQuaternion(const T& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			roll = atan2(2*(q.w()*q.z() + q.x()*q.y()),1-2*(q.z()*q.z() + q.y()*q.y()));
+			//From child to parent
+			roll = atan2(2*(q.y()*q.z() + q.x()*q.w()),1-2*(q.x()*q.x() + q.y()*q.y()));
 			pitch = -asin(2*(q.x()*q.z()-q.y()*q.w()));
-			yaw = atan2(2*(q.w()*q.x()+q.y()*q.z()),1-2*(q.y()*q.y()+q.x()*q.x()));
+			yaw = atan2(2*(q.y()*q.x()+q.w()*q.z()),1-2*(q.y()*q.y()+q.z()*q.z()));
+			//From parent to child
+			//roll = atan2(2*(q.y()*q.z() - q.x()*q.w()),1-2*(q.x()*q.x() + q.y()*q.y()));
+			//pitch = -asin(2*(q.x()*q.z() + q.y()*q.w()));
+			//yaw = atan2(2*(q.x()*q.y()-q.w()*q.z()),1-2*(q.y()*q.y()+q.z()*q.z()));
 		}
 
 		//\todo Test and document this method
 		void eulerZYXFromQuaternion(const geometry_msgs::Quaternion& q, double& roll, double& pitch, double& yaw)
 		{
 			using namespace Eigen;
-			roll = atan2(2*(q.w*q.z + q.x*q.y),1-2*(q.z*q.z + q.y*q.y));
+			//From child to parent
+			roll = atan2(2*(q.y*q.z + q.x*q.w),1-2*(q.x*q.x + q.y*q.y));
 			pitch = -asin(2*(q.x*q.z-q.y*q.w));
-			yaw = atan2(2*(q.w*q.x+q.y*q.z),1-2*(q.y*q.y+q.x*q.x));
+			yaw = atan2(2*(q.y*q.x+q.w*q.z),1-2*(q.y*q.y+q.z*q.z));
+			//From parent to child
+			//roll = atan2(2*(q.y*q.z - q.x*q.w),1-2*(q.x*q.x + q.y*q.y));
+			//pitch = -asin(2*(q.x*q.z + q.y*q.w));
+			//yaw = atan2(2*(q.x*q.y-q.w*q.z),1-2*(q.y*q.y+q.z*q.z));
 		}
 	}
 }
