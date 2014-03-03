@@ -67,8 +67,10 @@ namespace labust
   		void windup(const auv_msgs::BodyForceReq& tauAch)
 			{
 				//Copy into controller
-				con[x].windup = tauAch.disable_axis.x;
-				con[y].windup = tauAch.disable_axis.y;
+				//con[x].windup = tauAch.disable_axis.x;
+				//con[y].windup = tauAch.disable_axis.y;
+  			con[x].extWindup = tauAch.windup.x;
+  			con[y].extWindup = tauAch.windup.y;
 			};
 
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)

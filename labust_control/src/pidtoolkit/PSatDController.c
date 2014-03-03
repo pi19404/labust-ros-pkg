@@ -37,12 +37,13 @@
 void PSatD_tune(PIDBase* self, float w, float aAngle, float surge)
 {
 	//Check for zero surge
-	if (fabs(surge) < 0.1) surge=0.1;
-
-	self->Kp = w*w/surge;
-	self->Kd = 2*w/surge;
+	self->Kp = self->Kd = 0;
+	if (surge != 0.0)
+	{
+		self->Kp = w*w/surge;
+		self->Kd = 2*w/surge;
+	}
 	self->outputLimit = self->Kd*surge*sin(aAngle);
-
 	self->Ki = self->Kt = self->Tf = 0;
 }
 
