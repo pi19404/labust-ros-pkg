@@ -160,7 +160,7 @@ void XYModel::derivativeAW()
 
 	A(xp,u) = Ts*cos(x(psi));
 	A(xp,v) = -Ts*sin(x(psi));
-	A(xp,psi) = Ts*(-x(u)*sin(x(psi) - x(v)*cos(x(psi))));
+	A(xp,psi) = Ts*(-x(u)*sin(x(psi)) - x(v)*cos(x(psi)));
 	A(xp,xc) = Ts;
 
 	A(yp,u) = Ts*sin(x(psi));

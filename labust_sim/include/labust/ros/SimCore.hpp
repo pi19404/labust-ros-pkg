@@ -137,10 +137,14 @@ namespace labust
 			inline void publish_windup(auv_msgs::BodyForceReq::Ptr& tau, const WindupType& windup)
 			{
 				labust::tools::vectorToPoint(windup,tau->disable_axis);
-
 				tau->disable_axis.roll = windup(3);
 				tau->disable_axis.pitch = windup(4);
 				tau->disable_axis.yaw = windup(5);
+
+				labust::tools::vectorToPoint(windup,tau->windup);
+				tau->windup.roll = windup(3);
+				tau->windup.pitch = windup(4);
+				tau->windup.yaw = windup(5);
 			}
 			/**
 			 * The windup helper function.
