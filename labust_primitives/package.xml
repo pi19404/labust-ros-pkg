@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package>
+  <name>labust_primitives</name>
+  <version>0.0.0</version>
+  <description>
+      The package contains the actions and primitives used for high-level control and 
+      mission management.
+  </description>
+
+  <maintainer email="dula.nad@gmail.com">Gyula Nagy</maintainer>
+  <license>BSD</license>
+  <author email="dula.nad@gmail.com">Gyula Nagy</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
+  <build_depend>auv_msgs</build_depend>
+  <build_depend>navcon_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>snippets</build_depend>
+  <run_depend>actionlib</run_depend>
+  <run_depend>actionlib_msgs</run_depend>
+  <run_depend>auv_msgs</run_depend>
+  <run_depend>navcon_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>snippets</run_depend>
+</package>
