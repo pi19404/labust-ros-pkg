@@ -108,6 +108,7 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(course_keeping src/CourseKeeping.cpp)
+add_executable(course_keeping_1 src/CourseKeeping_1.cpp)
 add_executable(test_course src/test/test_course.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -116,6 +117,10 @@ add_executable(test_course src/test/test_course.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(course_keeping
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(course_keeping_1
    ${catkin_LIBRARIES}
 )
 

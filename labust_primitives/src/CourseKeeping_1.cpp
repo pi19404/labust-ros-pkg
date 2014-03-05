@@ -65,7 +65,7 @@ namespace labust
 			enum {ualf=0,falf,heading, numcnt};
 
 			CourseKeeping():
-				ExecutorBase("course_keeping"),
+				ExecutorBase("course_keeping_1"),
 				underactuated(true),
 				headingEnabled(false),
 				processNewGoal(false){};
@@ -276,7 +276,7 @@ namespace labust
 
 int main(int argc, char* argv[])
 {
-	ros::init(argc,argv,"course_keeping");
+    ros::init(argc,argv,"course_keeping_1");
 
 	labust::control::PrimitiveBase<labust::control::CourseKeeping> primitive;
 	ros::spin();
