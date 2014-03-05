@@ -36,7 +36,9 @@
  *********************************************************************/
 #include <labust/control/HLControl.hpp>
 #include <labust/control/EnablePolicy.hpp>
+#include <labust/control/WindupPolicy.hpp>
 #include <labust/control/PSatDController.h>
+#include <labust/control/PIFFController.h>
 #include <labust/tools/conversions.hpp>
 
 #include <tf2_ros/buffer.h>
@@ -44,6 +46,7 @@
 
 #include <Eigen/Dense>
 #include <auv_msgs/BodyVelocityReq.h>
+#include <auv_msgs/BodyForceReq.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <ros/ros.h>
 
@@ -67,6 +70,13 @@ namespace labust
 
 			void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state){};
 
+  		void windup(const auv_msgs::BodyForceReq& tauAch)
+			{
+				//Copy into controller
+				//con.windup = tauAch.disable_axis.yaw;
+  			con.extWindup = tauAch.windup.y;
+			};
+
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
 					const auv_msgs::NavSts& state)
 			{
@@ -85,13 +95,13 @@ namespace labust
 					labust::tools::eulerZYXFromQuaternion(dH.transform.rotation,
 							roll, pitch, gamma);
 
+					con.desired = ref.position.east;
+					con.state = dH.transform.translation.y;
 					//Calculate desired yaw-rate
 					if (underactuated)
 					{
 						PSatD_tune(&con,wh,aAngle,ref.body_velocity.x);
 						double dd = -ref.body_velocity.x*sin(gamma);
-						con.desired = ref.position.east;
-						con.state = dH.transform.translation.y;
 						PSatD_dStep(&con,Ts,dd);
 						//PSatD_step(&con,Ts);
 						ROS_INFO("Limiter: %f", con.outputLimit);
@@ -100,8 +110,9 @@ namespace labust
 					}
 					else
 					{
+						PIFF_step(&con,Ts);
 						double ul = ref.body_velocity.x;
-						double vl = -0.1*dH.transform.translation.y;
+						double vl = con.output;
 						ROS_INFO("Command output: ul=%f, vl=%f", ul, vl);
 
 						Eigen::Vector2f out, in;
@@ -140,18 +151,19 @@ namespace labust
 				nh.param("ualf_controller/sampling",Ts,Ts);
 				nh.param("ualf_controller/underactuated",underactuated,underactuated);
 
+				PIDBase_init(&con);
+
 				disable_axis[0] = 0;
 				if (underactuated)
 				{
 					disable_axis[5] = 0;
+					PSatD_tune(&con,wh,aAngle,surge);
 				}
 				else
 				{
 					disable_axis[1] = 0;
+					PIFF_tune(&con,wh);
 				}
-
-				PIDBase_init(&con);
-				PSatD_tune(&con,wh,aAngle,surge);
 
 				ROS_INFO("LF controller initialized.");
 			}
@@ -171,7 +183,8 @@ int main(int argc, char* argv[])
 	ros::init(argc,argv,"lf_control");
 
 	labust::control::HLControl<labust::control::UALFControl,
-	labust::control::EnableServicePolicy> controller;
+	labust::control::EnableServicePolicy,
+	labust::control::WindupPolicy<auv_msgs::BodyForceReq> > controller;
 	ros::spin();
 
 	return 0;
