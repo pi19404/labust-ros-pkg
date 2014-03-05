@@ -85,12 +85,12 @@ void ImuHandler::onImu(const sensor_msgs::Imu::ConstPtr& data)
 	try
 	{
 		transform = buffer.lookupTransform("base_link", "imu_frame", ros::Time(0));
-		Eigen::Quaternion<double> meas(data->orientation.x,data->orientation.y,
-				data->orientation.z,data->orientation.w);
-		Eigen::Quaternion<double> rot(transform.transform.rotation.x,
+		Eigen::Quaternion<double> meas(data->orientation.w, data->orientation.x,
+				data->orientation.y, data->orientation.z);
+		Eigen::Quaternion<double> rot(transform.transform.rotation.w,
+				transform.transform.rotation.x,
 				transform.transform.rotation.y,
-				transform.transform.rotation.z,
-				transform.transform.rotation.w);
+				transform.transform.rotation.z);
 		Eigen::Quaternion<double> result = meas*rot;;
 		//KDL::Rotation::Quaternion(result.x(),result.y(),result.z(),result.w()).GetEulerZYX
 		//		(rpy[yaw],rpy[pitch],rpy[roll]);

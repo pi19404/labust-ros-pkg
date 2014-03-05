@@ -70,6 +70,8 @@ void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 		//Experimental
 		self->windup = ((self->extWindup > 0) && (error > 0)) ||
 				((self->extWindup < 0) && (error < 0));
+		//Experimental 2
+		self->windup = (self->extWindup && (error*self->output > 0));
 	}
 
 	//Proportional term
