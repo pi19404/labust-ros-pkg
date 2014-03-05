@@ -143,13 +143,13 @@ namespace labust
 			void initialize_controller()
 			{
 				ROS_INFO("Initializing LF controller...");
-				ros::NodeHandle nh;
+				ros::NodeHandle nh, ph("~");
 				nh.param("ualf_controller/closed_loop_freq",wh,wh);
 				double surge(0.1);
 				nh.param("ualf_controller/default_surge",surge,surge);
   			nh.param("ualf_controller/approach_angle",aAngle,aAngle);
 				nh.param("ualf_controller/sampling",Ts,Ts);
-				nh.param("ualf_controller/underactuated",underactuated,underactuated);
+				ph.param("underactuated",underactuated,underactuated);
 
 				PIDBase_init(&con);
 

@@ -52,6 +52,7 @@ namespace labust
 {
 	namespace control{
 		///The fully actuated dynamic positioning controller
+		///\todo add tracking support
 		struct FADPControl : DisableAxis
 		{
 			enum {x=0,y};
@@ -75,10 +76,24 @@ namespace labust
 
   		void reset(const auv_msgs::NavSts& ref, const auv_msgs::NavSts& state)
   		{
-  			con[x].internalState = 0;
-  			con[y].internalState = 0;
+				Eigen::Vector2f out, in;
+				Eigen::Matrix2f R;
+//				in<<0.5,0;
+//				double yaw(state.orientation.yaw);
+//				R<<cos(yaw),-sin(yaw),sin(yaw),cos(yaw);
+//				out = R*in;
+//  			con[x].internalState = out(0);
+//  			con[y].internalState = out(1);
+				con[x].internalState = 0;
+				con[y].internalState = 0;
   			con[x].lastState = state.position.north;
   			con[y].lastState = state.position.east;
+  			con[x].lastRef = ref.position.north;
+  			con[y].lastRef = ref.position.east;
+  			con[x].lastError = ref.position.north - state.position.north;
+  			con[y].lastError = ref.position.east - state.position.east;
+  			ROS_INFO("Reset: %f %f %f %f", con[x].internalState, con[y].internalState,
+  					state.position.north, state.position.east);
   		};
 
 			auv_msgs::BodyVelocityReqPtr step(const auv_msgs::NavSts& ref,
@@ -86,6 +101,8 @@ namespace labust
 			{
 				con[x].desired = ref.position.north;
 				con[y].desired = ref.position.east;
+
+				ROS_INFO("Position desired: %f %f", ref.position.north, ref.position.east);
 
 				///\todo There are more options for this ?
 				Eigen::Vector2f out, in;

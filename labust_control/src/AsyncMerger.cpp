@@ -43,7 +43,7 @@ using namespace labust::control;
 
 
 AsyncMergerBase::AsyncMergerBase():
-		Ts(0.6)
+		Ts(0.3)
 {
 	this->reset_axes();
 	ros::NodeHandle nh,ph("~");
