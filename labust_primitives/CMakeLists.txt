@@ -107,8 +107,11 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-add_executable(course_keeping src/CourseKeeping.cpp)
-add_executable(course_keeping_1 src/CourseKeeping_1.cpp)
+add_executable(course_keeping_FA src/CourseKeepingFA.cpp)
+add_executable(course_keeping_UA src/CourseKeepingUA.cpp)
+add_executable(dp_primitive src/DPprimitive.cpp)
+add_executable(go2point_FA src/go2point_FA.cpp)
+add_executable(go2point_UA src/go2point_UA.cpp)
 add_executable(test_course src/test/test_course.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -116,11 +119,23 @@ add_executable(test_course src/test/test_course.cpp)
 # add_dependencies(labust_primitives_node labust_primitives_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(course_keeping
+target_link_libraries(course_keeping_FA
    ${catkin_LIBRARIES}
 )
 
-target_link_libraries(course_keeping_1
+target_link_libraries(course_keeping_UA
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(dp_primitive
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(go2point_FA
+   ${catkin_LIBRARIES}
+)
+
+target_link_libraries(go2point_UA
    ${catkin_LIBRARIES}
 )
 
