@@ -83,6 +83,7 @@ add_library(labust_navigation
 ## Declare a cpp executable
 # add_executable(labust_navigation_node src/labust_navigation_node.cpp)
 add_executable(eigen_test src/test/eigen_test.cpp)
+add_executable(euler_quat src/test/euler_quat.cpp)
 add_executable(nav_node2 src/nav_node/nav_node2.cpp)
 add_executable(llnode src/latlon_node/LLNode.cpp)
 add_executable(static_transform_publisher src/static_transform_publisher/static_transform_publisher.cpp)
@@ -96,6 +97,7 @@ target_link_libraries(labust_navigation
 )
 
 target_link_libraries(eigen_test ${catkin_LIBRARIES} labust_navigation)
+target_link_libraries(euler_quat ${catkin_LIBRARIES} labust_navigation)
 target_link_libraries(nav_node2 ${catkin_LIBRARIES} labust_navigation)
 target_link_libraries(llnode ${catkin_LIBRARIES})
 target_link_libraries(static_transform_publisher ${catkin_LIBRARIES})
