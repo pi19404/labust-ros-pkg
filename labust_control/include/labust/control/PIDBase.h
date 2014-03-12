@@ -75,7 +75,7 @@ typedef struct PIDBase
 	/**
 	 * The windup flag
 	 */
-	char windup, extWindup;
+	char windup, extWindup, extTrack, useBackward;
 	/**
 	 * The maximum output limit. The output saturation is symmetric.
 	 */
@@ -83,12 +83,12 @@ typedef struct PIDBase
 	/**
 	 * Internal state of the backward euler.
 	 */
-	float internalState, lastRef, lastError, lastFF, lastState, llastError, llastState, lastDerivative;
+	float internalState, lastRef, lastError, lastFF, lastState, llastError, llastState, lastDerivative, lastI, lastP, lastF;
 
 	/**
 	 * The reference, state, output, feedforward, tracking
 	 */
-	float desired, state, output;
+	float desired, state, output, track;
 
 	/**
 	 * The internal model parameters.

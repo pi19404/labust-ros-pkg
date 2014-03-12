@@ -56,6 +56,8 @@ void PIFF_tune(PIDBase* self, float w)
 
 void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 {
+	static char inWindup = 0;
+	static float lastInt = 0;
 	if (self->extTrack == 0)
 	{
 		if (self->autoWindup != 0)
@@ -71,35 +73,43 @@ void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 					(self->output*error > 0);
 		}
 
-		//Backward recalculation
-		if ((self->lastI != 0) && self->windup && self->useBackward)
+		//Hybrid tracking
+		if (self->windup)
 		{
-			//Calculate the proportional influence
-			float diff = self->track - self->internalState + self->lastI;
-			//If the proportional part is already in windup remove the whole last integral
-			//Otherwise recalculate the integral to be on the edge of windup
-			self->internalState -= ((diff*self->track <= 0)?self->lastI:(self->lastI - diff));
+			float distance = fabs(self->track - self->internalState)/fabs(self->track);
+			if (distance < 0)	self->internalState += 0.5*distance*self->Kp*(error-self->lastError);
+			if (inWindup == 0)
+			{
+				inWindup = 1;
+//				float diff = self->internalState - self->track;
+//				if (fabs(diff) > fabs(lastInt))	self->internalState -= lastInt;
+//				else self->internalState -= diff;
+				self->internalState -= lastInt;
+			}
+		}
+		else
+		{
+			inWindup = 0;
 		}
 
-		//This is the equivalent of full tracking anti-windup
-		//if (self->windup) self->internalState = self->track;
-
 		//Proportional term
-		self->lastP = self->Kp*(error-self->lastError);
-		//self->internalState += self->lastP;
+		self->internalState += self->Kp*(error-self->lastError);
 
 		//Integral term
-		self->lastI = ((!self->windup)?self->Ki*Ts*error:0);
-		//self->internalState += self->lastI;
-
+		if (!self->windup)
+		{
+			self->internalState += self->Ki*Ts*error;
+			lastInt = self->Ki*Ts*error;
+		}
 		//Feed forward term
-		self->lastF = ff - self->lastFF;
-		//self->internalState += self->lastF;
+		self->internalState += ff - self->lastFF;
 		//Set initial output
-		self->output = self->internalState += self->lastP + self->lastI + self->lastF;
+		self->output = self->internalState;
 
 		if (self->autoWindup != 0)
 			self->output = sat(self->internalState,-self->outputLimit, self->outputLimit);
+
+		//if (self->extWindup != 0) self->internalState = self->output = self->track;
 	}
 	else
 	{

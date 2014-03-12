@@ -127,6 +127,7 @@ namespace labust
 				labust::tools::vectorToPoint(tau,ach->wrench.force);
 				labust::tools::vectorToPoint(tau,ach->wrench.torque,3);
 				publish_windup(ach, model.allocator.getCoercion());
+				ach->header.stamp = ros::Time::now();
 				publish_dispatch(ach);
 			}
 

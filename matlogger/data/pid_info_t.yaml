@@ -1,0 +1,28 @@
+pid_info_t: [std_msgs, Float32MultiArray,['Kp',
+                               'Ki',
+                               'Kd',
+                               'Tf',
+                               'Kt',
+                               
+                               'autoWindup',
+                               'windup',
+                               'extWindup',
+                               'extTrack',
+                               
+                               'outputLimit',
+                               'internalState',
+                               'lastRef',
+                               'lastError',
+                               'lastFF',
+                               'lastState',
+                               'llastError',
+                               'llastState',
+                               'lastDerivative',
+                               'lastI',
+                               'lastP',
+                               
+                               'desired',
+                               'state',
+                               'output',
+                               'track'], list]
+             

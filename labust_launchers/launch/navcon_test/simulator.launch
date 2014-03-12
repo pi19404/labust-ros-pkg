@@ -1,0 +1,17 @@
+<launch>
+	<rosparam command="load" file="$(env MODEL)" />
+  	<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
+  		
+  	<!-- Dynamic simulation node -->
+  	<node pkg="labust_sim" type="uvsim" name="uvsim">    	    
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<param name="publish_world" value="false" />
+		<param name="publish_sim_base" value="true" />
+		
+		<!-- <param name="maxThrust" value="0.2" />
+		<param name="minThrust" value="-0.2" /> -->
+		<param name="maxThrust" value="100" />
+		<param name="minThrust" value="-100" />
+	</node>
+</launch>

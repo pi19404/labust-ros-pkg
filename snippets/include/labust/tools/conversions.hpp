@@ -125,7 +125,7 @@ namespace labust
 		}
 
 		template <class Point, class Iterator>
-		void disableAxisToVector(Point& point, const Iterator& vec)
+		void disableAxisToVector(const Point& point, Iterator& vec)
 		{
 			vec[0] = point.x;
 			vec[1] = point.y;

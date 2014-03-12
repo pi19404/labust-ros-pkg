@@ -38,16 +38,19 @@ void PIDBase_init(PIDBase* self)
 	self->autoWindup = 0;
 	self->windup = 0;
 	self->extWindup = 0;
+	self->extTrack = 0;
+	self->useBackward = 0;
 	self->outputLimit = 0;
 	self->Kp = self->Ki = 0;
 	self->Kd = self->Tf = 0;
 	self->Kt = 0;
 
 	self->internalState = self->output = 0;
-	self->desired = self->state =0;
+	self->desired = self->state = self->track = 0;
 	self->lastError = self->lastRef = 0;
 	self->lastFF = self->lastState = 0;
 	self->llastError = self->llastState = 0;
+	self->lastI = self->lastP = self->lastF = 0;
 
 	self->model.alpha = 0;
 	self->model.beta = 0;

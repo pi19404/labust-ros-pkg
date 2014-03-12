@@ -108,6 +108,9 @@ add_executable(ualf_controller src/line_following/UALFControl.cpp)
 add_executable(nu_manual src/NuManual.cpp)
 add_executable(ref_manual src/RefManual.cpp)
 add_executable(async_merger src/AsyncMerger.cpp)
+add_executable(single_dof_velcon src/velocity_controller/SingleDOFVelocity.cpp)
+add_executable(velcon src/velocity_controller/VelocityController.cpp)
+add_executable(single_dof_state src/state_controller/SingleDOFState.cpp)
 
 ## Declare a cpp executable
 # add_executable(labust_control_node src/labust_control_node.cpp)
@@ -128,6 +131,9 @@ if (DEFINED catkin_EXPORTED_TARGETS)
  add_dependencies(nu_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(ref_manual ${catkin_EXPORTED_TARGETS})
  add_dependencies(async_merger ${catkin_EXPORTED_TARGETS})
+ add_dependencies(single_dof_velcon ${catkin_EXPORTED_TARGETS})
+ add_dependencies(velcon ${catkin_EXPORTED_TARGETS})
+  add_dependencies(single_dof_state ${catkin_EXPORTED_TARGETS})
 endif()
 
 ## Specify libraries to link a library or executable target against
@@ -172,6 +178,22 @@ target_link_libraries(hdg_controller2
 )
 
 target_link_libraries(hdg_controller_direct
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(single_dof_velcon
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(single_dof_state
+  pidtoolkit2
+  ${catkin_LIBRARIES}
+)
+
+
+target_link_libraries(velcon
   pidtoolkit2
   ${catkin_LIBRARIES}
 )

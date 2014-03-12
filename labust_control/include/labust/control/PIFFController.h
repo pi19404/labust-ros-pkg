@@ -53,6 +53,7 @@ void PIFF_tune(PIDBase* self, float w);
  * supplied error and feedforward calculation.
  */
 void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff);
+
 /**
  * Calculate one step of the PIFF controller.
  */

@@ -1,0 +1,8 @@
+#Parameters:	         w     r      zp   psi    b    buoyancy   altitude
+ekfnav/Q: [diagonal, [0.0003,0.0005,0.001,0.001, 0.01, 0.001,      0.001]]
+#Parameters:	        w     r   zp   psi   b   buoyancy altitude
+ekfnav/R: [diagonal, [0.001,0.001,0.5,0.001,9999,9999,     0.01]]
+#ekfnav/V: [diagonal, [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]]
+#Parameters:           w   r   zp  psi   b  buoyancy altitude 
+ekfnav/P: [diagonal, [0.1,0.1,1000,100, 100, 100,     1000]]
+ekfnav/x0: [0,0,0,0,0,0,0]

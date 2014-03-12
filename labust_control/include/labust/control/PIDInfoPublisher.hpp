@@ -34,74 +34,69 @@
  *  Created on: 26.06.2013.
  *  Author: Dula Nad
  *********************************************************************/
-#ifndef ENABLEPOLICY_HPP_
-#define ENABLEPOLICY_HPP_
-#include <navcon_msgs/EnableControl.h>
-#include <navcon_msgs/ControllerState.h>
-#include <std_msgs/Bool.h>
+#ifndef PIDINFOPUBLISHER_HPP_
+#define PIDINFOPUBLISHER_HPP_
+#include <labust/control/PIDBase.h>
+
+#include <std_msgs/Float32MultiArray.h>
 #include <ros/ros.h>
+
+#include <string>
 
 namespace labust
 {
 	namespace control
 	{
-		class EnableServicePolicy
+		/**
+		 * The PIDBase info publisher used for debugging purposes.
+		 */
+		class PIDInfoPublisher
 		{
 		public:
-			EnableServicePolicy():
-				enable(false)
+			PIDInfoPublisher(ros::NodeHandle nh, const std::string& name = "pid_info")
 			{
-				ros::NodeHandle nh;
-				enableControl = nh.advertiseService("Enable",
-						&EnableServicePolicy::onEnableControl, this);
+				infoPub = nh.advertise<std_msgs::Float32MultiArray>(name, 1);
 			}
 
-			bool onEnableControl(navcon_msgs::EnableControl::Request& req,
-					navcon_msgs::EnableControl::Response& resp)
+			void operator()(PIDBase& con)
 			{
-				this->enable = req.enable;
-				return true;
+					std_msgs::Float32MultiArray::Ptr info(new std_msgs::Float32MultiArray());
+					info->data.push_back(con.Kp);
+					info->data.push_back(con.Ki);
+					info->data.push_back(con.Kd);
+					info->data.push_back(con.Tf);
+					info->data.push_back(con.Kt);
+
+					info->data.push_back(con.autoWindup);
+					info->data.push_back(con.windup);
+					info->data.push_back(con.extWindup);
+					info->data.push_back(con.extTrack);
+
+					info->data.push_back(con.outputLimit);
+					info->data.push_back(con.internalState);
+					info->data.push_back(con.lastRef);
+					info->data.push_back(con.lastError);
+					info->data.push_back(con.lastFF);
+					info->data.push_back(con.lastState);
+					info->data.push_back(con.llastError);
+					info->data.push_back(con.llastState);
+					info->data.push_back(con.lastDerivative);
+					info->data.push_back(con.lastI);
+					info->data.push_back(con.lastP);
+
+					info->data.push_back(con.desired);
+					info->data.push_back(con.state);
+					info->data.push_back(con.output);
+					info->data.push_back(con.track);
+
+					infoPub.publish(info);
 			}
 
 		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::ServiceServer enableControl;
-		};
-
-		class EnableTopicPolicy
-		{
-		public:
-			EnableTopicPolicy():
-				enable(false)
-			{
-				ros::NodeHandle nh;
-				enableControl = nh.subscribe<std_msgs::Bool>("Enable",1,
-						&EnableTopicPolicy::onEnableControl, this);
-			}
-
-			void onEnableControl(const std_msgs::Bool::ConstPtr& req)
-			{
-				this->enable = req->data;
-			}
-
-		protected:
-			/**
-			 * Is enabled.
-			 */
-			bool enable;
-			/**
-			 * High level controller service.
-			 */
-			ros::Subscriber enableControl;
+			ros::Publisher infoPub;
 		};
 	}
 }
 
-/* ENABLEPOLICY_HPP_ */
+/* PIDINFOPUBLISHER_HPP_ */
 #endif

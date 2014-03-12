@@ -1,0 +1,6 @@
+#             Type+LogOrder    Topic names             
+log_data: [['navsts_t',       ['stateHat', 'meas', 'stateRef']], 
+           ['pid_info_t', ['/velcon/pid_info', '/high_level/pid_info']],
+           ['bodyvelreq_t',   ['nuRefMerged']],
+           ['bodyforcereq_t', ['tauOut', 'tauAch']]]
+           

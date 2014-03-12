@@ -139,7 +139,7 @@ namespace labust
 					{
 						coercion(dofs[i]) = 0;
 						//If there is deviation between input and output we assume
-						if (fabs(tauIn(dofs[i]) - tauOut(dofs[i])) > 0.01)
+						if (fabs(tauIn(dofs[i]) - tauOut(dofs[i])) > 0.0001)
 						{
 							if (tauIn(dofs[i])>tauOut(dofs[i]))	coercion(dofs[i])=1;
 							else if (tauIn(dofs[i])<tauOut(dofs[i]))	coercion(dofs[i])=-1;
