@@ -11,7 +11,7 @@
 		
 		<!-- <param name="maxThrust" value="0.2" />
 		<param name="minThrust" value="-0.2" /> -->
-		<param name="maxThrust" value="100" />
-		<param name="minThrust" value="-100" />
+		<param name="maxThrust" value="50" />
+		<param name="minThrust" value="-50" />
 	</node>
 </launch>

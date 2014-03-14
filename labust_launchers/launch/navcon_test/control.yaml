@@ -1,13 +1,13 @@
 # Vehicle basic states:              x   y   z   r   p   y  alt  
-state_controller/closed_loop_freq: [0.2,0.2,0.3,0.0,0.0,0.5,0.6]
+state_controller/closed_loop_freq: [0.2,0.2,0.3,0.0,0.0,0.8,0.8]
 state_controller/auto_windup: [0.0,0.0,0.0,1.0,1.0,0.0,0.0]
 state_controller/output_limits: [100.0,100.0,100.0,0.0,0.0,1.0,1.0]
-state_controller/use_recalc: [1.0,1.0,1.0,1.0,1.0,0]
+state_controller/use_recalc: [1.0,1.0,1.0,1.0,1.0,0.0]
 state_controller/Ts: 0.1
 
 #Vehicle basic speeds:                  u   v   w   p   q   r
 velocity_controller/closed_loop_freq: [0.8,0.8,1.2,1.0,1.0,1.6]
 velocity_controller/auto_windup: [0.0,0.0,0.0,1.0,1.0,0.0]
 velocity_controller/output_limits: [100.0,100.0,100.0,0.0,0.0,1.0]
-velocity_controller/use_recalc: [1.0,1.0,1.0,1.0,1.0,0]
+velocity_controller/use_recalc: [1.0,1.0,1.0,1.0,1.0,0.0]
 velocity_controller/Ts: 0.1
