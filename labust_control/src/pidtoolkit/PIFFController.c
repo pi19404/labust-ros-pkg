@@ -56,7 +56,7 @@ void PIFF_tune(PIDBase* self, float w)
 
 void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 {
-	if (self->extTrack == 0)
+	if (1 || self->extTrack == 0)
 	{
 		if (self->autoWindup != 0)
 		{
@@ -78,19 +78,24 @@ void PIFF_wffStep(PIDBase* self, float Ts, float error, float ff)
 			float diff = self->track - self->internalState + self->lastI;
 			//If the proportional part is already in windup remove the whole last integral
 			//Otherwise recalculate the integral to be on the edge of windup
-			self->internalState -= ((diff*self->track <= 0)?self->lastI:(self->lastI - diff));
+			self->internalState -= ((diff*self->track <= 0)?self->lastI:0*(self->lastI - diff));
 		}
-
-		//This is the equivalent of full tracking anti-windup
-		//if (self->windup) self->internalState = self->track;
 
 		//Proportional term
 		self->lastP = self->Kp*(error-self->lastError);
 		//self->internalState += self->lastP;
 
 		//Integral term
-		self->lastI = ((!self->windup)?self->Ki*Ts*error:0);
-		//self->internalState += self->lastI;
+		//This is the equivalent of full tracking anti-windup
+		if (self->windup && self->extTrack)
+		{
+			self->lastI = self->Ki*Ts*error + 2*self->Ki*Ts*(self->track - self->internalState);
+		}
+		else if (!self->extTrack)
+		{
+			self->lastI = ((!self->windup)?self->Ki*Ts*error:0);
+			//self->internalState += self->lastI;
+		}
 
 		//Feed forward term
 		self->lastF = ff - self->lastFF;

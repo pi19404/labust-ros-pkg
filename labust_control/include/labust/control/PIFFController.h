@@ -62,7 +62,7 @@ inline void PIFF_step(PIDBase* self, float Ts)
 	PIFF_wffStep(self, Ts,
 			self->desired - self->state,
 			(self->model.beta +
-			self->model.betaa*fabs(self->desired))*self->desired);
+			 self->model.betaa*fabs(self->desired))*self->desired);
 }
 /**
  * Calculate one step of the PIFF controller with externally

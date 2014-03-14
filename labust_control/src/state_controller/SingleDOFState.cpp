@@ -127,7 +127,7 @@ namespace labust
 				convertInput(ref,state,track);
 				double nu[6]={0};
 				//Calculate step
-				con.extTrack = 0;
+				con.extTrack = 0*windup[idx];;
 				con.extWindup = windup[idx];
 				con.desired = stateRef[idx];
 				con.state = stateHat[idx];
@@ -179,7 +179,7 @@ namespace labust
 
 				labust::tools::pointToVector(state.body_velocity, nuHat);
 				labust::tools::rpyToVector(state.orientation_rate, nuHat, 3);
-				stateHat[numStates-1] = -state.body_velocity.z;
+				nuHat[numStates-1] = -state.body_velocity.z;
 
 				labust::tools::pointToVector(track.twist.linear,nuAch);
 				labust::tools::pointToVector(track.twist.angular,nuAch, 3);
