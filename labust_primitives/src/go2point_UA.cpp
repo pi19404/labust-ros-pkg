@@ -107,9 +107,7 @@ namespace labust
 				if ((goal == 0) || (new_goal->T1.point.x != goal->T1.point.x)
 								|| (new_goal->T1.point.y != goal->T1.point.y)
 								|| (new_goal->T2.point.x != goal->T2.point.x)
-								|| (new_goal->T2.point.y != goal->T2.point.y)
-								|| (new_goal->yaw != goal->yaw)
-								|| (new_goal->speed != goal->speed))
+								|| (new_goal->T2.point.y != goal->T2.point.y))
 				{
 					//Save new goal
 					goal = new_goal;
@@ -201,7 +199,6 @@ namespace labust
 				ros::ServiceClient cl;
 
 				if(underactuated){				
-
 					cl = nh.serviceClient<navcon_msgs::EnableControl>("UALF_enable_1");
 				} else {
 					cl = nh.serviceClient<navcon_msgs::EnableControl>("UALF_enable");
@@ -224,8 +221,11 @@ namespace labust
 
 					 // Check if goal is completed
 					Eigen::Vector3d deltaVictory;
-					deltaVictory<<goalPosition.x-estimate->position.north,
-							goalPosition.y-estimate->position.east,
+//					deltaVictory<<goalPosition.x-estimate->position.north,
+//							goalPosition.y-estimate->position.east,
+//							0;
+					deltaVictory<<goal->T2.point.x-estimate->position.north,
+							goal->T2.point.y-estimate->position.east,
 							0;
 
 					double distVictory = deltaVictory.norm();
