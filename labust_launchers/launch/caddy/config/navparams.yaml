@@ -1,8 +1,0 @@
-#Parameters:	        u     v     r    xp    yp    psi   xc     yc     b1    b2  
-ekfnav/Q: [diagonal, [0.001,0.001,0.01,0.001,0.001,0.001,0.001, 0.001, 0.01, 0.001]]
-#Parameters:	        u    v    r     xp yp psi   xc    yc    b1   b2
-ekfnav/R: [diagonal, [0.01,0.01,0.001,16,16,0.001,0.001,0.001,9999,9999]]
-#Parameters:          u   v   r   xp yp psi xc yc b1 b2
-ekfnav/P: [diagonal, [0.1,0.1,0.1,9, 9, 0.1,0, 0, 1, 1]]
-#Parameters: u v r xp yp psi xc yc b1 b2
-ekfnav/x0:  [0,0,0,0, 0, 0,  0, 0, 0, 0]

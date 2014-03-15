@@ -1,6 +1,0 @@
-<launch>
- 	<node pkg="master_discovery_fkie" type="zeroconf" name="zeroconf" />
-	<node pkg="master_sync_fkie" type="master_sync" name="master_sync">
-		<param name="ignore_topics" value="[/tf, /tf_static]" />
-	</node>
-</launch>

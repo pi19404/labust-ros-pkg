@@ -1,8 +1,0 @@
-<launch>
-	<node pkg="opto22" name="opto22PLC" type="opto22MMPNode" > 
-	<param name="ip_address" value="192.168.255.15"/>
-	<param name="tf_prefix" value="$(optenv TF_PREFIX /)" if="$(optenv USE_TF_PREFIX 0)" />
-	</node>
-</launch>
-
-

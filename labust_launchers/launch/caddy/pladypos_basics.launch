@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find labust_launchers)/config/pladypos/imu_gps.xml" />
-  <include file="$(find pladypos)/launch/pladypos_driver.launch" />
-</launch>

@@ -1,9 +1,0 @@
-#             Type+LogOrder    Topic names             
-log_data: [['navsts_t',       ['stateHat', 'meas', 'stateRef']], 
-           ['bodyvelreq_t',   ['nuRefMerged']],
-           ['bodyforcereq_t', ['tauOut', 'tauAch']],
-           ['twist_stamped_t',['currentsHat','dvl','velo_earth','water_velo_instrument','water_velo_earth']],
-           ['pladypos_info_t',['pladypos_info']],
-           ['imu_info_t',     ['imu_info']],
-           ['imu_t',          ['imu']]]
-           
