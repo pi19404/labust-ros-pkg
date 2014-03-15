@@ -138,6 +138,7 @@ namespace labust
 					//Update reference
 					//The underactuated controller will auto-enable itself
 					stateRef.publish(step(lastState));
+                    enableController = true;
 
 					//Enable overactuated controllers
 //					if (!underactuated)
@@ -187,11 +188,11 @@ namespace labust
 
 				cl = nh.serviceClient<navcon_msgs::EnableControl>("FADP_enable");
 				navcon_msgs::EnableControl a;
-				a.request.enable = true;
+                a.request.enable = enableController;
 				cl.call(a);
 
 				cl = nh.serviceClient<navcon_msgs::EnableControl>("HDG_enable");
-				a.request.enable = true;
+                a.request.enable = enableController;
 				cl.call(a);
 			}
 
@@ -207,6 +208,7 @@ namespace labust
 						goal.reset();
 						ROS_INFO("Stopping controllers.");
 						controllers.state.assign(numcnt, false);
+                        enableController = false;
 						this->updateControllers();
 				}
 
@@ -263,6 +265,7 @@ namespace labust
 			auv_msgs::NavSts lastState;
 			boost::mutex state_mux;
 			navcon_msgs::ControllerSelectRequest controllers;
+            bool enableController;
 		};
 	}
 }

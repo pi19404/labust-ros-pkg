@@ -113,6 +113,14 @@ add_executable(dp_primitive src/DPprimitive.cpp)
 add_executable(go2point_FA src/go2point_FA.cpp)
 add_executable(go2point_UA src/go2point_UA.cpp)
 add_executable(test_course src/test/test_course.cpp)
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(course_keeping_FA ${catkin_EXPORTED_TARGETS})
+ add_dependencies(course_keeping_UA ${catkin_EXPORTED_TARGETS})
+ add_dependencies(dp_primitive ${catkin_EXPORTED_TARGETS})
+ add_dependencies(go2point_FA ${catkin_EXPORTED_TARGETS})
+ add_dependencies(go2point_UA ${catkin_EXPORTED_TARGETS})
+ add_dependencies(test_course ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
