@@ -134,7 +134,7 @@ namespace labust
 				}
 
 				nu->header.stamp = ros::Time::now();
-				nu->goal.requester = "ualf_controller";
+				nu->goal.requester = (underactuated)?"ualf_controller":"falf_controller";
 				labust::tools::vectorToDisableAxis(disable_axis, nu->disable_axis);
 
 				return nu;

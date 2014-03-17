@@ -1,7 +1,0 @@
-<launch>
-  <machine name="shoreside" address="localhost" 
-  	env-loader="$(env HOME)/catkin_ws/devel/env.sh" 
-  	default="true" /> 
-  <machine name="controlled" address="localhost" 
-	env-loader="$(env HOME)/catkin_ws/devel/env.sh" /> 
-</launch>
