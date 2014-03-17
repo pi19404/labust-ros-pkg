@@ -8,3 +8,7 @@ imu_t: [sensor_msgs, Imu,['linear_acceleration.x',
                           'orientation.y',
                           'orientation.z',
                           'orientation.w']]
+ 
+navsatfix_t: [sensor_msgs, NavSatFix,['latitude',
+                          'longitude',
+                          'altitude']]
