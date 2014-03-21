@@ -59,6 +59,41 @@ namespace labust
 			typedef auv_msgs::NavSts StateType;
 		};
 
+
+		struct SinglePID
+		{
+			SinglePID(){};
+
+			float step(float Ts, float ref, float state, float track,
+					bool extWindup = false,
+					bool extTrack = false)
+			{
+				con.extTrack = extTrack;
+				con.extWindup = extWindup;
+				con.desired = ref;
+				con.state = state;
+				con.track = track;
+				PIFF_step(&con, Ts);
+				return con.output;
+			}
+
+			void tune(float w, double outputLimit, bool autoWindup, const PT1Model& pt1)
+			{
+				this->tune(w, outputLimit, autoWindup);
+				PIFF_modelTune(&this->con, &pt1, w);
+			}
+
+			void tune(float w, double outputLimit, bool autoWindup)
+			{
+				PIDBase_init(&this->con);
+				con.autoWindup = autoWindup;
+				con.outputLimit = outputLimit;
+				PIFF_tune(&con, w);
+			}
+
+			PIDBase con;
+		};
+
 		struct VelocityController
 		{
 			enum {numDofs = 6};
@@ -142,14 +177,16 @@ namespace labust
 					pt1.beta = model.Dlin(i,i);
 					pt1.betaa = model.Dquad(i,i);
 
+					/*controllers[numDofs].tune(float(closedLoopFreq(i), )
+
 					PIDBase_init(&controllers[i]);
-					PIFF_modelTune(&controllers[i], &pt1, float(closedLoopFreq(i)));
-					controllers[i].autoWindup = autoTracking(i);
+					PIFF_modelTune(&controllers[i], &pt1, );
+					controllers[i].autoWindup = autoTracking(i);*/
 				}
 			}
 
 		private:
-			PIDBase controllers[numDofs];
+			SinglePID controllers[numDofs];
 			int state[numDofs];
 			double Ts;
 		};

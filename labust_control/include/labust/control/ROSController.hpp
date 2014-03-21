@@ -47,6 +47,7 @@ namespace labust
 {
 	namespace control
 	{
+		///\todo Remove checking if anything has changed, it the controller is in the list something has changed
 		class ControllerStateTracker
 		{
 			typedef navcon_msgs::ControllerState CStateT;

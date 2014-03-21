@@ -53,7 +53,13 @@ namespace labust
 		class PIDInfoPublisher
 		{
 		public:
+			PIDInfoPublisher(){};
 			PIDInfoPublisher(ros::NodeHandle nh, const std::string& name = "pid_info")
+			{
+				init(nh, name);
+			}
+
+			void init(ros::NodeHandle& nh, const std::string& name = "pid_info")
 			{
 				infoPub = nh.advertise<std_msgs::Float32MultiArray>(name, 1);
 			}
