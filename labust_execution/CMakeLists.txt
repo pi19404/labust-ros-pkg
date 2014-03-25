@@ -113,13 +113,15 @@ add_executable(exec_control src/ExecControl.cpp
 	src/ExecPNGraph.cpp
 	src/PNController.cpp)  
 add_executable(test_exec src/test/test_exec.cpp)
+add_executable(simple_manager src/simple_manager/ControllerManager.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_execution_node labust_execution_generate_messages_cpp)
 if (DEFINED catkin_EXPORTED_TARGETS)
-add_dependencies(exec_control ${catkin_EXPORTED_TARGETS})
-add_dependencies(test_exec ${catkin_EXPORTED_TARGETS})
+    add_dependencies(exec_control ${catkin_EXPORTED_TARGETS})
+    add_dependencies(test_exec ${catkin_EXPORTED_TARGETS})
+    add_dependencies(simple_manager ${catkin_EXPORTED_TARGETS})
 endif()
 
 ## Specify libraries to link a library or executable target against
@@ -132,6 +134,10 @@ target_link_libraries(test_exec
 )
 
 target_link_libraries(exec_control
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(simple_manager
   ${catkin_LIBRARIES}
 )
 
