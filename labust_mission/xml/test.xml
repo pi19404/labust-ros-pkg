@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<mission>
+    <primitive name="go2point_FA">
+	<id>1</id>
+	<param name="north">5.0</param>
+	<param name="east">10.0</param>
+	<param name="heading">1.57</param>
+        <param name="speed">0.5</param>
+	<param name="victory_radius">0.5</param>
+    </primitive>
+    <primitive name="go2point_FA">
+	<id>2</id>
+	<param name="north">15.0</param>
+	<param name="east">10.0</param>
+	<param name="speed">0.5</param>
+	<param name="heading">1.57</param>
+	<param name="victory_radius">0.5</param>
+    </primitive>
+    <primitive name="go2point_UA">
+	<id>3</id>
+	<param name="north">5.0</param>
+	<param name="east">-5.0</param>
+	<param name="speed">0.5</param>
+	<param name="victory_radius">0.5</param>
+    </primitive>
+    <primitive name="dynamic_positioning">
+	<id>3</id>
+	<param name="north">5.0</param>
+	<param name="east">-5.0</param>
+	<param name="heading">0.0</param>
+	<!--<event start="" />-->
+	<event stop="event1" />
+    </primitive>
+    <primitive name="go2point_FA">
+	<id>4</id>
+	<param name="north">0.0</param>
+	<param name="east">10.0</param>
+	<param name="heading">1.57</param>
+	<param name="speed">0.5</param>
+	<param name="victory_radius">0.5</param>
+    </primitive>
+    <primitive name="go2point_FA">
+	<id>5</id>
+	<param name="north">0.0</param>
+	<param name="east">0.0</param>
+	<param name="heading">1.57</param>
+	<param name="speed">0.5</param>
+	<param name="victory_radius">0.5</param>
+    </primitive>
+</mission>
