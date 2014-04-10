@@ -83,6 +83,7 @@ MainEventQueue(){ mainEventQueue = new RosEventQueue();	}
 volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
 volatile int ID=0;
 
+// ovaj enum bi mogao prebaciti u neki glavni  header kako bi se djelio medu cpp
 enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
 const char *primitives[] = {"none", "go2point_FA", "go2point_UA", "dynamic_positioning", "course_keeping_FA", "course_keeping_UA"};
 
