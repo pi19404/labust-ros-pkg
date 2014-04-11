@@ -48,6 +48,7 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <auv_msgs/NED.h>
+#include <std_msgs/String.h>
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/GeoUtilities.hpp>
 #include <tinyxml2.h>
@@ -308,13 +309,25 @@ int parseNeptus(string xmlFile){
    }
 }
 
+
+
+void startParseCallback(const std_msgs::String::ConstPtr& msg){
+
+	int status = parseNeptus(msg->data);
+}
+
 int main(int argc, char** argv){
 
 	ros::init(argc, argv, "neptusParser");
+	ros::NodeHandle nh;
 
-	string xmlFile = "/home/filip/mission.nmis";
-ROS_ERROR("start");
-	int status = parseNeptus(xmlFile);
+	/* Subscribers */
+	ros::Subscriber subStartParse = nh.subscribe<std_msgs::String>("startParse",1, startParseCallback);
+
+	//string xmlFile = "/home/filip/mission.nmis";
+//ROS_ERROR("start");
+	//int status = parseNeptus(xmlFile);
+	ros::spin();
 
 	return 0;
 

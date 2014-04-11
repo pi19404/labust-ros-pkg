@@ -1,0 +1,776 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mission-def>
+  <!-- Data saved on 2014-04-09T09:06:11.0Z with Neptus version 3.0.1_R14.01a (compiled on 2014-02-28, gneptus-3.0.1_R14.1a). -->
+  <header>
+    <id>id_kgbout</id>
+    <name>Unnamed Mission</name>
+    <type>Test</type>
+    <description>No description available</description>
+  </header>
+  <definitions>
+    <vehicles/>
+    <maps>
+      <map>
+        <id>id_1365513060163</id>
+        <name>Unnamed Map</name>
+        <href>maps/map.nmap</href>
+      </map>
+    </maps>
+    <checklists/>
+    <home-reference>
+      <id>home</id>
+      <name>home</name>
+      <origin>
+        <latitude>52N37'4.421408615537992''</latitude>
+        <longitude>9W36'19.4793222046139''</longitude>
+        <depth>0.0</depth>
+      </origin>
+    </home-reference>
+  </definitions>
+  <body>
+    <plan id="pl_86rnpa" vehicle="LABUST">
+      <graph>
+        <node start="true" xPos="349" yPos="18">
+          <id>Unconstrained1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Unconstrained kind="manual"/>
+          </maneuver>
+        </node>
+      </graph>
+    </plan>
+    <plan id="pl_nx4cqa" vehicle="lauv-seacon-1">
+      <graph>
+        <node start="true" xPos="246" yPos="101">
+          <id>Goto1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Goto kind="automatic">
+              <finalPoint type="pointType">
+                <point>
+                  <id>id_3zscpi</id>
+                  <name>id_3zscpi</name>
+                  <coordinate>
+                    <latitude>52N41'58.29855965799817''</latitude>
+                    <longitude>1E52'21.19938873288847''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>5.0</radiusTolerance>
+              </finalPoint>
+              <speed tolerance="10.0" type="float" unit="RPM">900.0</speed>
+              <trajectoryTolerance>
+                <radiusTolerance>5.0</radiusTolerance>
+              </trajectoryTolerance>
+            </Goto>
+          </maneuver>
+        </node>
+        <node start="false" xPos="46" yPos="5">
+          <id>RowsManeuver1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <RowsManeuver kind="automatic">
+              <basePoint type="pointType">
+                <point>
+                  <id>id_hswddv</id>
+                  <name>id_hswddv</name>
+                  <coordinate>
+                    <latitude>52N42'10.281889783137377''</latitude>
+                    <longitude>2E55'18.29899810789111''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>0</radiusTolerance>
+              </basePoint>
+              <width>100.0</width>
+              <length>200.0</length>
+              <hstep>27.0</hstep>
+              <bearing>0.0</bearing>
+              <crossAngle>45.0</crossAngle>
+              <speed unit="RPM">1000.0</speed>
+            </RowsManeuver>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.396519366991E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396519366991E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396519366991E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <node start="false" xPos="142" yPos="275">
+          <id>RIPattern1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <RIPattern kind="automatic">
+              <basePoint type="pointType">
+                <point>
+                  <id>id_jchtkd</id>
+                  <name>id_jchtkd</name>
+                  <coordinate>
+                    <latitude>52N42'4.814023657745725''</latitude>
+                    <longitude>2E55'23.62908386228404''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>0.0</radiusTolerance>
+              </basePoint>
+              <width>100.0</width>
+              <hstep>20.0</hstep>
+              <bearing>0.0</bearing>
+              <squareCurve>false</squareCurve>
+              <speed unit="RPM">1000.0</speed>
+            </RIPattern>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.396519553262E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396519553262E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396519553262E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <edge>
+          <id>id_bl74ey</id>
+          <source>Goto1</source>
+          <target>RowsManeuver1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+        <edge>
+          <id>id_snpc10</id>
+          <source>RowsManeuver1</source>
+          <target>RIPattern1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+      </graph>
+    </plan>
+    <plan id="pl_q0awu" vehicle="piccolo-testbed">
+      <graph>
+        <node start="true" xPos="386" yPos="256">
+          <id>Goto1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Goto kind="automatic">
+              <finalPoint type="pointType">
+                <point>
+                  <id>id_3geczp</id>
+                  <name>id_3geczp</name>
+                  <coordinate>
+                    <latitude>43N23'46.57883419974487''</latitude>
+                    <longitude>14E49'0.5265953445259264''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>100.0</z>
+                  <zunits>ALTITUDE</zunits>
+                </point>
+                <radiusTolerance>5.0</radiusTolerance>
+              </finalPoint>
+              <speed tolerance="10.0" type="float" unit="m/s">20.0</speed>
+              <trajectoryTolerance>
+                <radiusTolerance>5.0</radiusTolerance>
+              </trajectoryTolerance>
+            </Goto>
+          </maneuver>
+        </node>
+        <node start="false" xPos="386" yPos="256">
+          <id>Goto2</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Goto kind="automatic">
+              <finalPoint type="pointType">
+                <point>
+                  <id>id_zbuj5t</id>
+                  <name>id_zbuj5t</name>
+                  <coordinate>
+                    <latitude>43N11'18.10189977186899''</latitude>
+                    <longitude>15E47'0.9953453445195048''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>100.0</z>
+                  <zunits>ALTITUDE</zunits>
+                </point>
+                <radiusTolerance>5.0</radiusTolerance>
+              </finalPoint>
+              <speed tolerance="10.0" type="float" unit="m/s">20.0</speed>
+              <trajectoryTolerance>
+                <radiusTolerance>5.0</radiusTolerance>
+              </trajectoryTolerance>
+            </Goto>
+          </maneuver>
+        </node>
+        <edge>
+          <id>id_f539hv</id>
+          <source>Goto1</source>
+          <target>Goto2</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+      </graph>
+    </plan>
+    <plan id="pl_s2v8xo" vehicle="lauv-simulator-1">
+      <graph>
+        <node start="true" xPos="168" yPos="235">
+          <id>Goto1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Goto kind="automatic">
+              <finalPoint type="pointType">
+                <point>
+                  <id>id_ujqdxt</id>
+                  <name>id_ujqdxt</name>
+                  <coordinate>
+                    <latitude>44N18'9.043669229749906''</latitude>
+                    <longitude>13E41'31.90160297392035''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>5.0</radiusTolerance>
+              </finalPoint>
+              <speed tolerance="10.0" type="float" unit="RPM">900.0</speed>
+              <trajectoryTolerance>
+                <radiusTolerance>5.0</radiusTolerance>
+              </trajectoryTolerance>
+            </Goto>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.396508882526E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508882526E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Echo Sounder</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508882526E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508882526E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508882526E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>DVL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <node start="false" xPos="261" yPos="53">
+          <id>Loiter1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <Loiter kind="automatic">
+              <basePoint type="pointType">
+                <point>
+                  <id>id_l0x0z6</id>
+                  <name>id_l0x0z6</name>
+                  <coordinate>
+                    <latitude>44N15'47.47130725456543''</latitude>
+                    <longitude>13E55'42.243399848914144''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>5.0</radiusTolerance>
+              </basePoint>
+              <duration>30</duration>
+              <trajectory>
+                <radius type="float">10.0</radius>
+                <radiusTolerance type="float">5.0</radiusTolerance>
+                <type>Circular</type>
+                <length type="float">50.0</length>
+                <bearing type="float">0.0</bearing>
+                <direction>Clockwise</direction>
+              </trajectory>
+              <speed tolerance="5.0" type="float" unit="RPM">900.0</speed>
+            </Loiter>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.396508950039E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508950039E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Echo Sounder</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508950039E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508950039E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396508950039E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>DVL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <node start="false" xPos="346" yPos="23">
+          <id>RowsManeuver1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <RowsManeuver kind="automatic">
+              <basePoint type="pointType">
+                <point>
+                  <id>id_k1via0</id>
+                  <name>id_k1via0</name>
+                  <coordinate>
+                    <latitude>44N15'56.56782928859627''</latitude>
+                    <longitude>13E55'46.762385597211555''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>0</radiusTolerance>
+              </basePoint>
+              <width>100.0</width>
+              <length>200.0</length>
+              <hstep>27.0</hstep>
+              <bearing>45.0</bearing>
+              <crossAngle>45.0</crossAngle>
+              <speed unit="RPM">1000.0</speed>
+            </RowsManeuver>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.396868973662E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396868973662E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Echo Sounder</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396868973662E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396868973662E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.396868973662E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>DVL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <node start="false" xPos="106" yPos="55">
+          <id>YoYo1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <YoYo kind="automatic">
+              <finalPoint type="pointType">
+                <point>
+                  <id>id_vrn4j0</id>
+                  <name>id_vrn4j0</name>
+                  <coordinate>
+                    <latitude>44N15'56.00427809154098''</latitude>
+                    <longitude>13E56'2.771954765295792''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>0</radiusTolerance>
+              </finalPoint>
+              <speed tolerance="100.0" type="float" unit="RPM">900.0</speed>
+              <amplitude>1.0</amplitude>
+              <pitch>0.17453292</pitch>
+            </YoYo>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.39686903764E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686903764E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Echo Sounder</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686903764E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686903764E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686903764E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>DVL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <node start="false" xPos="249" yPos="31">
+          <id>CrossHatchPattern1</id>
+          <maneuver>
+            <minTime>0</minTime>
+            <maxTime>10000</maxTime>
+            <CrossHatchPattern kind="automatic">
+              <basePoint type="pointType">
+                <point>
+                  <id>id_6rmzlu</id>
+                  <name>id_6rmzlu</name>
+                  <coordinate>
+                    <latitude>44N15'58.16166841486279''</latitude>
+                    <longitude>13E56'2.5788357162235265''</longitude>
+                    <height>0.0</height>
+                  </coordinate>
+                  <z>2.0</z>
+                  <zunits>DEPTH</zunits>
+                </point>
+                <radiusTolerance>0.0</radiusTolerance>
+              </basePoint>
+              <width>100.0</width>
+              <hstep>20.0</hstep>
+              <bearing>0.0</bearing>
+              <squareCurve>false</squareCurve>
+              <speed unit="RPM">1000.0</speed>
+            </CrossHatchPattern>
+          </maneuver>
+          <actions>
+            <start-actions>
+              <messages>
+                <SetEntityParameters imcv="5.3.0" time="1.39686908348E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Camera Module</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>false</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686908348E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Echo Sounder</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686908348E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>Sidescan</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Frequency</name>
+                      <value>770</value>
+                    </EntityParameter>
+                    <EntityParameter>
+                      <name>Range</name>
+                      <value>30</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686908348E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>LBL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+                <SetEntityParameters imcv="5.3.0" time="1.39686908348E9" src="0" dst="65535" src_ent="0" dst_ent="255">
+                  <name>DVL</name>
+                  <params>
+                    <EntityParameter>
+                      <name>Active</name>
+                      <value>true</value>
+                    </EntityParameter>
+                  </params>
+                </SetEntityParameters>
+              </messages>
+            </start-actions>
+          </actions>
+        </node>
+        <edge>
+          <id>id_ojh4o2</id>
+          <source>Goto1</source>
+          <target>Loiter1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+        <edge>
+          <id>id_a7wdu0</id>
+          <source>Loiter1</source>
+          <target>RowsManeuver1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+        <edge>
+          <id>id_up82gf</id>
+          <source>RowsManeuver1</source>
+          <target>YoYo1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+        <edge>
+          <id>id_m27br9</id>
+          <source>YoYo1</source>
+          <target>CrossHatchPattern1</target>
+          <guard>ManeuverIsDone</guard>
+        </edge>
+      </graph>
+    </plan>
+  </body>
+</mission-def>
