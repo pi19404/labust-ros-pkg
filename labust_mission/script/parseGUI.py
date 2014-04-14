@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys, subprocess, rospy
+#import os.path
 from PySide import QtCore, QtGui, QtUiTools
 
 from std_msgs.msg import Bool
@@ -42,16 +43,20 @@ class ControlMainWindow(QtGui.QMainWindow):
         str("Open Neptus mission file"), str("/home/filip"), str(""))
         print "Opened file: "+filename[0]
         self.filename = filename[0]
-	self.ui.fileName.setText(str(filename[0]))
-   
-	bashCmd = str("/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/script/unzipMission.bash "+filename[0])
+        self.ui.fileName.setText(str(filename[0]))
+        bashCmd = str("/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/script/unzipMission.bash "+filename[0])
         #print bashCmd
         subprocess.call(bashCmd,shell=True)
 
     def startParse(self):
         # Dodaj provjeru je li uspjelo unzipanje
         missionFilename = String()
-        missionFilename = self.filename
+        #missionFilename = os.path.split(self.filename)[1]
+        #missionFilename = missionFilename.split(".")[0]
+        #missionFilename = "/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/script/extracted/"+missionFilename+".nmis"
+        missionFilename = "/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/script/extracted/mission.nmis"
+
+        print missionFilename 
         self.pubStartParse.publish(missionFilename)
 
 

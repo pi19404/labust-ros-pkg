@@ -168,13 +168,13 @@ int parseNeptus(string xmlFile){
 
 	   // do something with each child element
 
-		   ROS_ERROR("debug");
+		   ROS_ERROR("debug Loop vanjski");
 
 		  if( XMLElement *maneuver = node->FirstChildElement("maneuver")){
 
 			   for (XMLElement* maneuverType = maneuver->FirstChildElement(); maneuverType != NULL; maneuverType = maneuverType->NextSiblingElement()){
 
-
+				   ROS_ERROR("debug Loop unutarnji");
 
 				   ROS_ERROR("Loop, %s", maneuverType->ToElement()->Name());
 
@@ -273,28 +273,21 @@ int parseNeptus(string xmlFile){
 
 					   double speed = atof(param->ToElement()->GetText());
 
-					   double alternationPercent = 0.5;
-					   double curvOff = 0;
-					   bool squareCurve = true;
-					   double bearingRad = angle;
-					   double crossAngleRadians = 0;
-					   bool invertY = false;
-
-
-					   std::vector<Eigen::Vector4d> tmpPoints;
-					   tmpPoints = MG.calcRowsPoints(width, length, hstep,
-					   	            alternationPercent, curvOff, squareCurve, bearingRad,
-					   	            crossAngleRadians, invertY);
-
-
-					   MG.writePrimitives(go2point_FA, tmpPoints);
-
-					   //MG.lawnmower(position.north, position.east, width, length, angle, step);
-
-
-
-
-					  // maneuver::lawnmower();
+//					   double alternationPercent = 0.5;
+//					   double curvOff = 0;
+//					   bool squareCurve = true;
+//					   double bearingRad = angle;
+//					   double crossAngleRadians = 0;
+//					   bool invertY = false;
+//
+//
+//					   std::vector<Eigen::Vector4d> tmpPoints;
+//					   tmpPoints = MG.calcRowsPoints(width, length, hstep,
+//					   	            alternationPercent, curvOff, squareCurve, bearingRad,
+//					   	            crossAngleRadians, invertY);
+//
+//
+//					   MG.writePrimitives(go2point_FA, tmpPoints);
 
 				   }
 			   }
@@ -324,9 +317,6 @@ int main(int argc, char** argv){
 	/* Subscribers */
 	ros::Subscriber subStartParse = nh.subscribe<std_msgs::String>("startParse",1, startParseCallback);
 
-	//string xmlFile = "/home/filip/mission.nmis";
-//ROS_ERROR("start");
-	//int status = parseNeptus(xmlFile);
 	ros::spin();
 
 	return 0;

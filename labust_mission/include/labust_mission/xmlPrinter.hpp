@@ -116,7 +116,7 @@ void WriteXML::addMission(){
 
 void WriteXML::saveXML(){
 
-	string fileName = "src/test_izlaz.xml";
+	string fileName = "/home/filip/catkin_ws/src/test_izlaz.xml";
 	doc.SaveFile( fileName.c_str() );
 	ROS_ERROR("Mission generated.");
 }

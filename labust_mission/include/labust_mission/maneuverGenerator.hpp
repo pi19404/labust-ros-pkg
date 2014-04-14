@@ -1,3 +1,5 @@
+//\todo Dodati strukturu s raznim parametrima primitiva ??????????
+
 /*********************************************************************
  * maneuverGenerator.hpp
  *
@@ -48,22 +50,63 @@
 
 #include <labust_mission/xmlPrinter.hpp>
 
-//enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
 
 using namespace utils;
 
-class ManeuverGenerator {
+/*********************************************************************
+ *** ManeuverGenerator class definition
+ *********************************************************************/
 
-public:
-	ManeuverGenerator(){
+namespace labust {
+	namespace maneuver {
 
+		class ManeuverGenerator {
+
+		public:
+
+			/*********************************************************
+			 *** Class functions
+			 ********************************************************/
+
+			ManeuverGenerator();
+
+			void writePrimitives(int primitiveID, std::vector<Eigen::Vector4d> points);
+
+			std::vector<Eigen::Vector4d> calcRIPatternPoints(double width, double hstep,
+								double alternationPercent, double curvOff, bool squareCurve, double bearingRad);
+
+			std::vector<Eigen::Vector4d> calcCrossHatchPatternPoints(double width, double hstep,
+								double curvOff, bool squareCurve, double bearingRad);
+
+			std::vector<Eigen::Vector4d> calcRowsPoints(double width, double length, double hstep,
+								double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
+								double crossAngleRadians);
+
+			std::vector<Eigen::Vector4d> calcRowsPoints(double width, double length, double hstep,
+								double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
+								double crossAngleRadians, bool invertY);
+
+			std::pair<double,double> rotate(double angleRadians, double x, double y, bool clockwiseRotation);
+
+
+			/*********************************************************
+			 *** Class variables
+			 ********************************************************/
+
+			enum {X = 0, Y, Z, T};
+			enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
+			WriteXML writeXML;
+		};
 	}
-
-	// Dodati strukturu s raznim parametrima primitiva ??????????
-
-	void writePrimitives(int primitiveID, std::vector<Eigen::Vector4d> points){
+}
 
 
+using namespace labust::maneuver;
+
+	ManeuverGenerator::ManeuverGenerator(){}
+
+
+	void ManeuverGenerator::writePrimitives(int primitiveID, std::vector<Eigen::Vector4d> points){
 
 		switch(primitiveID){
 
@@ -118,370 +161,254 @@ public:
 	}
 
 
-	void lawnmower(double x, double y, double width, double length, double angle, double step){
-
-				/////////////////
-				//WriteXML writeXML;
-				/////////////////
-
-				//writeXML.addMission();
-				/* Odredi koliko traka stane u širinu lawn-a */
-				int stepN = floor(width/step);
+	//	void go2point_UA(double north, double east, double speed, double victoryRadius){
+	//
+	//		writeXML.addGo2point_UA(north,east,speed,victoryRadius);
+	//
+	//	}
 
 
-			  //Dodaj startnu točku
+	std::vector<Eigen::Vector4d> ManeuverGenerator::calcRIPatternPoints(double width, double hstep,
+			double alternationPercent, double curvOff, bool squareCurve, double bearingRad) {
 
-				writeXML.addGo2point_UA(x,y,0.5,1.0);
+		std::vector<Eigen::Vector4d> newPoints;
 
-				double xc = x;
-				double yc = y;
+		double length = width;
+		Eigen::Vector4d pointBaseB;
+		pointBaseB << -length/2.0, -width/2.0, 0, -1;
+
+		std::pair<double, double> res = rotate(bearingRad, pointBaseB[X], pointBaseB[Y], false);
+	   // double[] res = AngleCalc.rotate(bearingRad, pointBaseB[X], pointBaseB[Y], false);
+		Eigen::Vector4d pointBase1;
+		pointBase1  << res.first, res.second, 0, -1;
+
+		res = rotate(bearingRad+(-60*M_PI/180), pointBaseB[X], pointBaseB[Y], false);
+
+		Eigen::Vector4d pointBase2;
+		pointBase2 << res.first, res.second, 0, -1;
+
+		res = rotate(bearingRad+(-120*M_PI/180), pointBaseB[X], pointBaseB[Y], false);
+
+		Eigen::Vector4d pointBase3;
+		pointBase3 << res.first, res.second, 0, -1;
+
+		std::vector<Eigen::Vector4d> points1 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
+				squareCurve, bearingRad, 0);
+
+		for(std::vector<Eigen::Vector4d>::iterator it = points1.begin() ; it != points1.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += pointBase1[X];
+			vTmp[Y] += pointBase1[Y];
+
+			*it = vTmp;
+		}
+
+		std::vector<Eigen::Vector4d> points2 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
+						squareCurve, bearingRad + (-60*M_PI/180), 0);
+
+		for(std::vector<Eigen::Vector4d>::iterator it = points2.begin() ; it != points2.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += pointBase2[X];
+			vTmp[Y] += pointBase2[Y];
+
+			*it = vTmp;
+		}
+
+		std::vector<Eigen::Vector4d> points3 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
+						squareCurve, bearingRad + (-120*M_PI/180), 0);
+
+		for(std::vector<Eigen::Vector4d>::iterator it = points3.begin() ; it != points3.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += pointBase3[X];
+			vTmp[Y] += pointBase3[Y];
+
+			*it = vTmp;
+		}
+
+		// Provjeri ovaj dio moguci problemi s pokazivacem !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		std::vector<Eigen::Vector4d>::iterator it;
+
+		it = newPoints.end();
+		newPoints.insert(it+1, points1.begin(), points1.end());
+		it = newPoints.end();
+		newPoints.insert(it+1, points2.begin(), points2.end());
+		it = newPoints.end();
+		newPoints.insert(it+1, points3.begin(), points3.end());
+
+		return newPoints;
+	}
 
 
-				//Dok ima traka radi
-				for (int i=0;i<stepN;++i){
 
-					//Svaka neparna ide prema dolje (brojimo od nulte)
-					double side = 1;
-					if ((i%2) != 0){
-					  side = -1;
-					}
+	std::vector<Eigen::Vector4d> ManeuverGenerator::calcCrossHatchPatternPoints(double width, double hstep,
+			double curvOff, bool squareCurve, double bearingRad) {
 
-					//Od trenutne točke imaš novu točku na duljini pod kutem lawn-a
+		std::vector<Eigen::Vector4d> newPoints;
 
-					//Add to next point
-					xc += side * length * cos(angle);
-					yc += side * length * sin(angle);
+		double length = width;
 
-					writeXML.addGo2point_UA(xc,yc,0.5,1.0);
+		Eigen::Vector4d pointBase1;
+		pointBase1 << -length/2., -width/2., 0, -1;
 
-					//Do sljedećeg lawn-a imaš mali komadić pod 90
-					//Add new turn
-					xc += step * cos(angle - M_PI/2);
-					yc += step * sin(angle - M_PI/2);
+		Eigen::Vector4d pointBase2;
+		pointBase2 << -length/2., width/2., 0, -1;
 
-					//Zadnju točku ne dodaš da ostane ficlek
-					//Do not add last point
-					if (i != (stepN-1)){
-						//ltg.appendPoint(*(new ControlUtils::PointC(xc,yc)));
-						writeXML.addGo2point_UA(xc,yc,0.5,1.0);
-					}
-				}
+		std::pair<double, double> res = rotate(bearingRad, pointBase1[X], pointBase1[Y], false);
 
-			//	writeXML.saveXML();
+		pointBase1 << res.first, res.second, 0, -1;
+
+		res = rotate(bearingRad, pointBase2[X], pointBase2[Y], false);
+
+		pointBase2 << res.first, res.second, 0, -1;
+
+		std::vector<Eigen::Vector4d> points1 = calcRowsPoints(width, width, hstep, 1, curvOff,
+				squareCurve, bearingRad, 0);
+
+		for(std::vector<Eigen::Vector4d>::iterator it = points1.begin() ; it != points1.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += pointBase1[X];
+			vTmp[Y] += pointBase1[Y];
+
+			*it = vTmp;
+		}
+
+		std::vector<Eigen::Vector4d> points2 = calcRowsPoints(width, width, hstep, 1, curvOff,
+						squareCurve, bearingRad + (-90*M_PI/180), 0);
+
+		for(std::vector<Eigen::Vector4d>::iterator it = points2.begin() ; it != points2.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += pointBase2[X];
+			vTmp[Y] += pointBase2[Y];
+
+			*it = vTmp;
+		}
+
+		// Provjeri ovaj dio moguci problemi s pokazivacem !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		std::vector<Eigen::Vector4d>::iterator it;
+
+		it = newPoints.end();
+		newPoints.insert(it+1, points1.begin(), points1.end());
+		it = newPoints.end();
+		newPoints.insert(it+1, points2.begin(), points2.end());
+
+		return newPoints;
+	}
+
+
+
+	 std::vector<Eigen::Vector4d> ManeuverGenerator::calcRowsPoints(double width, double length, double hstep,
+			double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
+			double crossAngleRadians) {
+		return calcRowsPoints(width, length, hstep, alternationPercent, curvOff, squareCurve,
+				bearingRad, crossAngleRadians, false);
+	}
+
+
+	 std::vector<Eigen::Vector4d> ManeuverGenerator::calcRowsPoints(double width, double length, double hstep,
+			double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
+			double crossAngleRadians, bool invertY) {
+
+		width = fabs(width);
+		length = fabs(length);
+		hstep = fabs(hstep);
+
+		bool direction = true;
+
+		std::vector<Eigen::Vector4d> newPoints;
+
+		Eigen::Vector4d point;
+		point<<-curvOff,0,0,-1;
+
+		newPoints.push_back(point);
+
+// double x1;
+		double x2;
+		for (double y = 0; y <= width; y += hstep) {
+
+			if (direction) {
+// x1 = -curvOff;
+				x2 = length + curvOff;
 			}
+			else {
+// x1 = length + curvOff;
+				x2 = -curvOff;
+			}
+			direction = !direction;
 
-//	void go2point_UA(double north, double east, double speed, double victoryRadius){
-//
-//		writeXML.addGo2point_UA(north,east,speed,victoryRadius);
-//
-//	}
+			double hstepDelta = 0;
+			if (direction)
+				hstepDelta = hstep * (1 - alternationPercent);
+			//Eigen::Vector4d point;
+			point << x2, y - hstepDelta, 0, -1;
+
+			newPoints.push_back(point);
+
+			if (y + hstep <= width) {
+				double hstepAlt = hstep;
+				if (!direction)
+					hstepAlt = hstep * alternationPercent;
+
+				point << x2 + (squareCurve ? 0 : 1) * (direction ? curvOff : -curvOff), y + hstepAlt, 0, -1;
+				newPoints.push_back(point);
+			}
+		}
+
+		for (std::vector<Eigen::Vector4d>::iterator it = newPoints.begin() ; it != newPoints.end(); ++it){
+
+
+			//std::cout << ' ' << *it;
+
+			Eigen::Vector4d vTmp = *it;
+		   // double yTmp = vTmp[0];
+
+			std::pair<double,double> res = rotate(-crossAngleRadians, vTmp[0], 0, false);
+			vTmp[X] = res.first;
+			vTmp[Y] = vTmp[Y] + res.second;
+			if (invertY)
+				vTmp[Y] = -vTmp[Y];
+			res = rotate(bearingRad + (!invertY ? -1 : 1) * -crossAngleRadians, vTmp[X], vTmp[Y], false);
+			vTmp[X] = res.first;
+			vTmp[Y] = res.second;
+
+			*it = vTmp;
+
+		}
+
+		return newPoints;
+	}
 
 	 /**
-	     * @param width
-	     * @param hstep
-	     * @param alternationPercent
-	     * @param curvOff
-	     * @param squareCurve
-	     * @param bearingRad
-	     * @return
-	     */
-	    std::vector<Eigen::Vector4d> calcRIPatternPoints(double width, double hstep,
-	            double alternationPercent, double curvOff, bool squareCurve, double bearingRad) {
-
-	        std::vector<Eigen::Vector4d> newPoints;
-
-	        double length = width;
-	        Eigen::Vector4d pointBaseB;
-	        pointBaseB << -length/2.0, -width/2.0, 0, -1;
-
-	        std::pair<double, double> res = rotate(bearingRad, pointBaseB[X], pointBaseB[Y], false);
-	       // double[] res = AngleCalc.rotate(bearingRad, pointBaseB[X], pointBaseB[Y], false);
-	        Eigen::Vector4d pointBase1;
-	        pointBase1  << res.first, res.second, 0, -1;
-
-	        res = rotate(bearingRad+(-60*M_PI/180), pointBaseB[X], pointBaseB[Y], false);
-
-	        Eigen::Vector4d pointBase2;
-	        pointBase2 << res.first, res.second, 0, -1;
-
-	        res = rotate(bearingRad+(-120*M_PI/180), pointBaseB[X], pointBaseB[Y], false);
-
-	        Eigen::Vector4d pointBase3;
-	        pointBase3 << res.first, res.second, 0, -1;
-
-	        std::vector<Eigen::Vector4d> points1 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
-	                squareCurve, bearingRad, 0);
-
-	        for(std::vector<Eigen::Vector4d>::iterator it = points1.begin() ; it != points1.end(); ++it){
-
-	        	Eigen::Vector4d vTmp = *it;
-	        	vTmp[X] += pointBase1[X];
-	        	vTmp[Y] += pointBase1[Y];
-
-	        	*it = vTmp;
-	        }
-
-	        std::vector<Eigen::Vector4d> points2 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
-	       	                squareCurve, bearingRad + (-60*M_PI/180), 0);
-
-			for(std::vector<Eigen::Vector4d>::iterator it = points2.begin() ; it != points2.end(); ++it){
-
-				Eigen::Vector4d vTmp = *it;
-				vTmp[X] += pointBase2[X];
-				vTmp[Y] += pointBase2[Y];
-
-				*it = vTmp;
-			}
-
-	        std::vector<Eigen::Vector4d> points3 = calcRowsPoints(width, width, hstep, 2-alternationPercent, curvOff,
-	       	                squareCurve, bearingRad + (-120*M_PI/180), 0);
-
-			for(std::vector<Eigen::Vector4d>::iterator it = points3.begin() ; it != points3.end(); ++it){
-
-				Eigen::Vector4d vTmp = *it;
-				vTmp[X] += pointBase3[X];
-				vTmp[Y] += pointBase3[Y];
-
-				*it = vTmp;
-			}
-
-			// Provjeri ovaj dio moguci problemi s pokazivacem !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			std::vector<Eigen::Vector4d>::iterator it;
-
-			it = newPoints.end();
-	        newPoints.insert(it+1, points1.begin(), points1.end());
-			it = newPoints.end();
-	        newPoints.insert(it+1, points2.begin(), points2.end());
-			it = newPoints.end();
-	        newPoints.insert(it+1, points3.begin(), points3.end());
-
-	        return newPoints;
-	    }
-
-
-	    /**
-	     * @param width
-	     * @param hstep
-	     * @param curvOff
-	     * @param squareCurve
-	     * @param bearingRad
-	     * @return
-	     */
-	    std::vector<Eigen::Vector4d> calcCrossHatchPatternPoints(double width, double hstep,
-	            double curvOff, bool squareCurve, double bearingRad) {
-
-	        std::vector<Eigen::Vector4d> newPoints;
-
-	        double length = width;
-
-	        Eigen::Vector4d pointBase1;
-	        pointBase1 << -length/2., -width/2., 0, -1;
-
-	        Eigen::Vector4d pointBase2;
-	        pointBase2 << -length/2., width/2., 0, -1;
-
-	        std::pair<double, double> res = rotate(bearingRad, pointBase1[X], pointBase1[Y], false);
-
-	        pointBase1 << res.first, res.second, 0, -1;
-
-	        res = rotate(bearingRad, pointBase2[X], pointBase2[Y], false);
-
-	        pointBase2 << res.first, res.second, 0, -1;
-
-	        std::vector<Eigen::Vector4d> points1 = calcRowsPoints(width, width, hstep, 1, curvOff,
-	                squareCurve, bearingRad, 0);
-
-	        for(std::vector<Eigen::Vector4d>::iterator it = points1.begin() ; it != points1.end(); ++it){
-
-	        	Eigen::Vector4d vTmp = *it;
-	        	vTmp[X] += pointBase1[X];
-	        	vTmp[Y] += pointBase1[Y];
-
-	        	*it = vTmp;
-	        }
-
-	        std::vector<Eigen::Vector4d> points2 = calcRowsPoints(width, width, hstep, 1, curvOff,
-	       	                squareCurve, bearingRad + (-90*M_PI/180), 0);
-
-	    	for(std::vector<Eigen::Vector4d>::iterator it = points2.begin() ; it != points2.end(); ++it){
-
-				Eigen::Vector4d vTmp = *it;
-				vTmp[X] += pointBase2[X];
-				vTmp[Y] += pointBase2[Y];
-
-				*it = vTmp;
-			}
-
-			// Provjeri ovaj dio moguci problemi s pokazivacem !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			std::vector<Eigen::Vector4d>::iterator it;
-
-			it = newPoints.end();
-	        newPoints.insert(it+1, points1.begin(), points1.end());
-			it = newPoints.end();
-	        newPoints.insert(it+1, points2.begin(), points2.end());
-
-	        return newPoints;
-	    }
-
-
-
-	  /**
-	* @param width
-	* @param length
-	* @param hstep
-	* @param alternationPercent
-	* @param curvOff
-	* @param squareCurve
-	* @param bearingRad
-	* @param crossAngleRadians
-	* @return
-	*/
-	     std::vector<Eigen::Vector4d> calcRowsPoints(double width, double length, double hstep,
-	            double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
-	            double crossAngleRadians) {
-	        return calcRowsPoints(width, length, hstep, alternationPercent, curvOff, squareCurve,
-	                bearingRad, crossAngleRadians, false);
-	    }
-
-	    /**
-	* @param width
-	* @param length
-	* @param hstep
-	* @param alternationPercent
-	* @param curvOff
-	* @param squareCurve
-	* @param bearingRad
-	* @param crossAngleRadians
-	* @param invertY
-	* @return
-	*/
-	     std::vector<Eigen::Vector4d> calcRowsPoints(double width, double length, double hstep,
-	            double alternationPercent, double curvOff, bool squareCurve, double bearingRad,
-	            double crossAngleRadians, bool invertY) {
-
-	        width = fabs(width);
-	        length = fabs(length);
-	        hstep = fabs(hstep);
-
-	        bool direction = true;
-
-	        std::vector<Eigen::Vector4d> newPoints;
-
-	        Eigen::Vector4d point;
-	        point<<-curvOff,0,0,-1;
-
-	        newPoints.push_back(point);
-
-	// double x1;
-	        double x2;
-	        for (double y = 0; y <= width; y += hstep) {
-
-	            if (direction) {
-	// x1 = -curvOff;
-	                x2 = length + curvOff;
-	            }
-	            else {
-	// x1 = length + curvOff;
-	                x2 = -curvOff;
-	            }
-	            direction = !direction;
-
-	            double hstepDelta = 0;
-	            if (direction)
-	                hstepDelta = hstep * (1 - alternationPercent);
-	            //Eigen::Vector4d point;
-	            point << x2, y - hstepDelta, 0, -1;
-
-	            newPoints.push_back(point);
-
-	            if (y + hstep <= width) {
-	                double hstepAlt = hstep;
-	                if (!direction)
-	                    hstepAlt = hstep * alternationPercent;
-
-	                point << x2 + (squareCurve ? 0 : 1) * (direction ? curvOff : -curvOff), y + hstepAlt, 0, -1;
-	                newPoints.push_back(point);
-	            }
-	        }
-
-	        for (std::vector<Eigen::Vector4d>::iterator it = newPoints.begin() ; it != newPoints.end(); ++it){
-
-
-	        	//std::cout << ' ' << *it;
-
-	            Eigen::Vector4d vTmp = *it;
-	           // double yTmp = vTmp[0];
-
-	            std::pair<double,double> res = rotate(-crossAngleRadians, vTmp[0], 0, false);
-				vTmp[X] = res.first;
-				vTmp[Y] = vTmp[Y] + res.second;
-				if (invertY)
-					vTmp[Y] = -vTmp[Y];
-				res = rotate(bearingRad + (!invertY ? -1 : 1) * -crossAngleRadians, vTmp[X], vTmp[Y], false);
-				vTmp[X] = res.first;
-				vTmp[Y] = res.second;
-
-				*it = vTmp;
-
-	        }
-
-	// NeptusLog.pub().info("<###>Points");
-	// for (double[] pt : newPoints) {
-	// NeptusLog.pub().info("<###>[" + pt[X] + ", " + pt[Y] + "]");
-	// }
-	        return newPoints;
-	    }
-
-	     /**
-	         * XY Coordinate conversion considering a rotation angle.
-	         *
-	         * @param angleRadians angle
-	         * @param x original x value on entry, rotated x value on exit.
-	         * @param y original y value on entry, rotated y value on exit.
-	         * @param clockwiseRotation clockwiseRotation rotation or not
-	         */
-
-
-	     std::pair<double,double> rotate(double angleRadians, double x, double y, bool clockwiseRotation) {
-
-	     	        double sina = sin(angleRadians);
-	     	        double cosa = cos(angleRadians);
-
-	     	        std::pair<double,double> xy;
-
-	     	        if (clockwiseRotation) {
-	     	            xy.first = x * cosa + y * sina;
-	     	            xy.second = -x * sina + y * cosa;
-	     	        }
-	     	        else {
-	     	            xy.first = x * cosa - y * sina;
-	     	            xy.second = x * sina + y * cosa;
-	     	        }
-	     	        return xy;
-	     	    }
-
-	WriteXML writeXML;
-	enum {X = 0, Y, Z, T};
-
-	enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
-
-
-
-
-};
-
-
-
-
-namespace utils {
-	namespace maneuver {
-
-
+		 * XY Coordinate conversion considering a rotation angle.
+		 *
+		 * @param angleRadians angle
+		 * @param x original x value on entry, rotated x value on exit.
+		 * @param y original y value on entry, rotated y value on exit.
+		 * @param clockwiseRotation clockwiseRotation rotation or not
+		 */
+
+
+	 std::pair<double,double> ManeuverGenerator::rotate(double angleRadians, double x, double y, bool clockwiseRotation) {
+
+		double sina = sin(angleRadians);
+		double cosa = cos(angleRadians);
+
+		std::pair<double,double> xy;
+
+		if (clockwiseRotation) {
+			xy.first = x * cosa + y * sina;
+			xy.second = -x * sina + y * cosa;
+		}
+		else {
+			xy.first = x * cosa - y * sina;
+			xy.second = x * sina + y * cosa;
+		}
+		return xy;
 	}
-}
-
-
-
 
 
 
