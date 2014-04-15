@@ -40,10 +40,12 @@
 *********************************************************************/
 
 #include <iostream>
-#include <string>
+
 #include <cstddef>
 
-#include <ros/ros.h>
+#include <labust_mission/labustMission.hpp>
+#include <labust_mission/maneuverGenerator.hpp>
+
 #include <tf2_ros/transform_listener.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -53,61 +55,199 @@
 #include <labust/tools/GeoUtilities.hpp>
 #include <tinyxml2.h>
 
-#include <labust_mission/maneuverGenerator.hpp>
 
-//enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
 
 
 using namespace std;
 using namespace tinyxml2;
 using namespace utils;
 
+class NeptusParser{
 
-struct LatLon2NED {
-	LatLon2NED(){
-		//ros::NodeHandle nh;
+public:
+
+	NeptusParser():startPointSet(false),
+					 startRelative(true){
+
+		offset.north = offset.east = 0;
+
 	}
 
-	void convert(sensor_msgs::NavSatFix LatLon){
-		//Calculate to X-Y tangent plane
-		//geometry_msgs::TransformStamped transformDeg, transformLocal;
-		//try
-		//{
-//			transformLocal = buffer.lookupTransform("local", "gps_frame", ros::Time(0));
-//			transformDeg = buffer.lookupTransform("worldLatLon", "local", ros::Time(0));
-//			posxy =	labust::tools::deg2meter(LatLon.latitude - transformDeg.transform.translation.y,
-//						LatLon.longitude - transformDeg.transform.translation.x,
-//						transformDeg.transform.translation.y);
-			posxy =	labust::tools::deg2meter(LatLon.latitude - 44.00,
-						LatLon.longitude - 13.00 ,
-						13.00);
-//
-//			originLL.first = transformDeg.transform.translation.y;
-//			originLL.second = transformDeg.transform.translation.x;
-//
-//			posLL.first = LatLon.latitude;
-//			posLL.second = LatLon.longitude;
+	int parseNeptus(string xmlFile){
 
+	   /* Open XML file */
+	   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
 
+		   ROS_INFO("*.nmis mission file successfully loaded.");
+		   /* Write mission tag */
+		   MG.writeXML.addMission();
 
-			//return posxy;
+		   /* Go to graph node and loop through it's children */
+		   XMLElement *graph = xmlDoc.FirstChildElement("mission-def")->FirstChildElement("body")
+											   ->FirstChildElement("plan")->FirstChildElement("graph");
 
-			//isNew = true;
-	//	}
-//		catch(tf2::TransformException& ex)
-//		{
-//			ROS_WARN("Unable to decode GPS measurement. Missing frame : %s",ex.what());
-//		}
+		   for (XMLElement* node = graph->FirstChildElement(); node != NULL; node = node->NextSiblingElement()){
+
+			   /* Check if child element is maneuver node */
+			   if( XMLElement *maneuver = node->FirstChildElement("maneuver")){
+
+				   /* Loop through maneuver child nodes */
+				   for (XMLElement* maneuverType = maneuver->FirstChildElement(); maneuverType != NULL; maneuverType = maneuverType->NextSiblingElement()){
+
+					   /* Check maneuver type */
+					   if(strcmp(maneuverType->ToElement()->Name(),"Goto") == 0){
+
+						   ROS_ERROR("GoTo manevar");
+						   parseGoto(maneuverType);
+
+					   } else  if(strcmp(maneuverType->ToElement()->Name(),"Loiter") == 0){
+
+						   ROS_ERROR("loiter manevar");
+						   parseLoiter(maneuverType);
+
+					   } else  if(strcmp(maneuverType->ToElement()->Name(),"RowsManeuver") == 0){
+
+						   ROS_ERROR("lawnmower manevar");
+						   parseRows(maneuverType);
+					   }
+				   }
+			   }
+		   }
+
+		   /* Save XML file */
+		   MG.writeXML.saveXML();
+		   return 1;
+	   } else {
+		   ROS_ERROR("Cannot open XML file!");
+		   return -1;
+	   }
 	}
+
+
+
+
+	void parseGoto(XMLElement *maneuverType){
+
+		ROS_INFO("Parsing goto maneuver...");
+
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
+									   	   	   	   	   	   	   	   	   FirstChildElement("coordinate")->FirstChildElement("latitude");
+		/* Read maneuver parameters */
+		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());
+		string lat = LatLonPoint->ToElement()->GetText();
+
+		LatLonPoint = LatLonPoint->NextSiblingElement();
+
+		ROS_ERROR("Lon: %s", LatLonPoint->ToElement()->GetText());
+		string lon = LatLonPoint->ToElement()->GetText();
+
+		//LatLonPoint = LatLonPoint->NextSiblingElement();
+		//ROS_ERROR("Height: %s", LatLonPoint->ToElement()->GetText());
+
+		/* Convert Lat/Lon position to NED position */
+		auv_msgs::NED position;
+		position = str2NED(lat,lon);
+		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
+
+		if(!startPointSet && startRelative){
+			offset = position;
+			startPointSet = true;
+		}
+
+		/* Write point to XML file */
+		MG.writeXML.addGo2point_UA(position.north-offset.north, position.east-offset.east,0.5,1.0);
+
+
+	}
+
+	void parseRows(XMLElement *maneuverType){
+
+		ROS_INFO("Parsing rows maneuver...");
+
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("basePoint")->FirstChildElement("point")->
+																   FirstChildElement("coordinate")->FirstChildElement("latitude");
+		/* Read rows maneuver start point parameters */
+		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());
+		string lat = LatLonPoint->ToElement()->GetText();
+
+		LatLonPoint = LatLonPoint->NextSiblingElement();
+
+		ROS_ERROR("Lon: %s", LatLonPoint->ToElement()->GetText());
+		string lon = LatLonPoint->ToElement()->GetText();
+
+		//LatLonPoint = LatLonPoint->NextSiblingElement();
+		//ROS_ERROR("Height%s", LatLonPoint->ToElement()->GetText());
+
+		/* Convert Lat/Lon position to NED position */
+		auv_msgs::NED position;
+		position = str2NED(lat,lon);
+		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
+
+		if(!startPointSet  && startRelative){
+			offset = position;
+			startPointSet = true;
+		}
+
+		/* Read rows parameters */
+		XMLElement *param = maneuverType->FirstChildElement("width");
+		double width = atof(param->ToElement()->GetText());
+		ROS_ERROR("Width: %s", param->ToElement()->GetText());
+
+		param = param->NextSiblingElement();
+		double length = atof(param->ToElement()->GetText());
+		ROS_ERROR("length: %s", param->ToElement()->GetText());
+
+		param = param->NextSiblingElement();
+		double hstep = atof(param->ToElement()->GetText());
+		ROS_ERROR("Hstep: %s", param->ToElement()->GetText());
+
+		param = param->NextSiblingElement();
+		double angle = atof(param->ToElement()->GetText());
+		ROS_ERROR("bearing: %s", param->ToElement()->GetText());
+
+		param = param->NextSiblingElement();
+		double speed = atof(param->ToElement()->GetText());
+		ROS_ERROR("speed: %s", param->ToElement()->GetText());
+
+
+
+		double alternationPercent = 0.5;
+		double curvOff = 0;
+		bool squareCurve = true;
+		double bearingRad = angle;
+		double crossAngleRadians = 0;
+		bool invertY = false;
+
+		/* Generate maneuver points */
+		std::vector<Eigen::Vector4d> tmpPoints;
+		tmpPoints = MG.calcRowsPoints(width, length, hstep,
+					alternationPercent, curvOff, squareCurve, bearingRad,
+					crossAngleRadians, invertY);
+
+		/* For each point subtract offset */
+		for(std::vector<Eigen::Vector4d>::iterator it = tmpPoints.begin(); it != tmpPoints.end(); ++it){
+
+			Eigen::Vector4d vTmp = *it;
+			vTmp[X] += -offset.north + position.north;
+			vTmp[Y] += -offset.east + position.east;
+
+			*it = vTmp;
+		}
+
+		/* Write maneuver points to XML */
+		MG.writePrimitives(go2point_FA, tmpPoints);
+	}
+
+	void parseLoiter(XMLElement *maneuverType){
+
+	}
+
 
 	auv_msgs::NED str2NED(string Lat, string Lon){
-//		string Dstr = Lat.substr (0,2);
-//		string Mstr = Lat.substr (3,2);
-//		string Sstr = Lat.substr (5,17);
 
-		//pair<double, double> ;
 		auv_msgs::NED position;
 		sensor_msgs::NavSatFix LatLon;
+		std::pair<double, double> posxy;
 
 		double DLat = atof(Lat.substr(0,2).c_str());
 		double MLat = atof(Lat.substr(3,2).c_str());
@@ -124,189 +264,29 @@ struct LatLon2NED {
 		LatLon.latitude = DLat+MLat/60+SLat/3600;
 	    LatLon.longitude = DLon+MLon/60+SLon/3600;
 
-	    convert(LatLon);
+		posxy =	labust::tools::deg2meter(LatLon.latitude - 44.00, LatLon.longitude - 13.00, 13.00);
+
+//	    convert(LatLon);
 	    position.north = posxy.first;
 	    position.east = posxy.second;
 	    position.depth = 0;
 
 	    return position;
-		//return DD;
-
-
-
 	}
 
-	//void onGps(const sensor_msgs::NavSatFix::ConstPtr& data);
-	//sensor_msgs::NavSatFix LatLon;
-	std::pair<double, double> posxy, originLL, posLL;
-//	tf2_ros::Buffer buffer;
-	//tf2_ros::TransformListener listener;
-	//ros::Subscriber gps;
+	sensor_msgs::NavSatFix startPoint;
+	auv_msgs::NED offset;
+	bool startPointSet;
+	bool startRelative;
+
+	   ManeuverGenerator MG;
+	   XMLDocument xmlDoc;
+
 };
 
-
-int parseNeptus(string xmlFile){
-
-	enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
-
-
-   LatLon2NED LL2NED;
-   ManeuverGenerator MG;
-   XMLDocument xmlDoc;
-
-   /* Open XML file */
-   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
-
-	   ROS_ERROR("Otvorio .nmis");
-
-	   MG.writeXML.addMission();
-
-	   XMLElement *graph = xmlDoc.FirstChildElement("mission-def")->FirstChildElement("body")
-										   ->FirstChildElement("plan")->FirstChildElement("graph");
-
-	   for (XMLElement* node = graph->FirstChildElement(); node != NULL; node = node->NextSiblingElement()){
-
-	   // do something with each child element
-
-		   ROS_ERROR("debug Loop vanjski");
-
-		  if( XMLElement *maneuver = node->FirstChildElement("maneuver")){
-
-			   for (XMLElement* maneuverType = maneuver->FirstChildElement(); maneuverType != NULL; maneuverType = maneuverType->NextSiblingElement()){
-
-				   ROS_ERROR("debug Loop unutarnji");
-
-				   ROS_ERROR("Loop, %s", maneuverType->ToElement()->Name());
-
-
-				   if(strcmp(maneuverType->ToElement()->Name(),"Goto") == 0){
-
-					   ROS_ERROR("GoTo manevar");
-
-					   //XMLElement *
-
-					   XMLElement *LatLon = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
-							   	   	   	   	   	   	   	   	   FirstChildElement("coordinate")->FirstChildElement("latitude");
-
-					   ROS_ERROR("Lat: %s", LatLon->ToElement()->GetText());
-					   string lat = LatLon->ToElement()->GetText();
-
-					   LatLon = LatLon->NextSiblingElement();
-
-					   ROS_ERROR("Lon: %s", LatLon->ToElement()->GetText());
-					   string lon = LatLon->ToElement()->GetText();
-
-					   LatLon = LatLon->NextSiblingElement();
-
-					   ROS_ERROR("Height: %s", LatLon->ToElement()->GetText());
-
-					   auv_msgs::NED position;
-					   position = LL2NED.str2NED(lat,lon);
-
-					   ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
-
-					   MG.writeXML.addGo2point_UA(position.north, position.east,0.5,1.0);
-
-
-
-
-				   } else  if(strcmp(maneuverType->ToElement()->Name(),"Loiter") == 0){
-
-					   ROS_ERROR("loiter manevar");
-
-
-				   } else  if(strcmp(maneuverType->ToElement()->Name(),"RowsManeuver") == 0){
-
-					   ROS_ERROR("lawnmower manevar");
-
-					   XMLElement *LatLon = maneuverType->FirstChildElement("basePoint")->FirstChildElement("point")->
-					 							   	   	   	   	   	   	   	   	   FirstChildElement("coordinate")->FirstChildElement("latitude");
-
-					   ROS_ERROR("Lat: %s", LatLon->ToElement()->GetText());
-
-					   string lat = LatLon->ToElement()->GetText();
-
-					   LatLon = LatLon->NextSiblingElement();
-
-
-					   ROS_ERROR("Lon: %s", LatLon->ToElement()->GetText());
-					   string lon = LatLon->ToElement()->GetText();
-
-					   LatLon = LatLon->NextSiblingElement();
-
-					   ROS_ERROR("Height%s", LatLon->ToElement()->GetText());
-
-					//  double height = atof(LatLon->ToElement()->GetText().c_str());
-					   auv_msgs::NED position;
-					   position = LL2NED.str2NED(lat,lon);
-
-					   ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
-
-					   XMLElement *param = maneuverType->FirstChildElement("width");
-
-					   ROS_ERROR("Width: %s", param->ToElement()->GetText());
-
-
-					   double width = atof(param->ToElement()->GetText());
-
-					   param = param->NextSiblingElement();
-
-					   ROS_ERROR("length: %s", param->ToElement()->GetText());
-					   double length = atof(param->ToElement()->GetText());
-
-
-					   param = param->NextSiblingElement();
-
-					   ROS_ERROR("Hstep: %s", param->ToElement()->GetText());
-					   double hstep = atof(param->ToElement()->GetText());
-
-
-					   param = param->NextSiblingElement();
-
-					   ROS_ERROR("bearing: %s", param->ToElement()->GetText());
-					   double angle  = atof(param->ToElement()->GetText());
-
-
-					   param = param->NextSiblingElement();
-
-					   ROS_ERROR("speed: %s", param->ToElement()->GetText());
-
-					   double speed = atof(param->ToElement()->GetText());
-
-//					   double alternationPercent = 0.5;
-//					   double curvOff = 0;
-//					   bool squareCurve = true;
-//					   double bearingRad = angle;
-//					   double crossAngleRadians = 0;
-//					   bool invertY = false;
-//
-//
-//					   std::vector<Eigen::Vector4d> tmpPoints;
-//					   tmpPoints = MG.calcRowsPoints(width, length, hstep,
-//					   	            alternationPercent, curvOff, squareCurve, bearingRad,
-//					   	            crossAngleRadians, invertY);
-//
-//
-//					   MG.writePrimitives(go2point_FA, tmpPoints);
-
-				   }
-			   }
-		  }
-	   }
-
-	   MG.writeXML.saveXML();
-
-   } else {
-	   ROS_ERROR("Cannot open XML file!");
-	   return -1;
-   }
-}
-
-
-
 void startParseCallback(const std_msgs::String::ConstPtr& msg){
-
-	int status = parseNeptus(msg->data);
+	NeptusParser NP;
+	int status = NP.parseNeptus(msg->data);
 }
 
 int main(int argc, char** argv){

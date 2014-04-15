@@ -45,7 +45,8 @@
 #ifndef MANEUVERGENERATOR_HPP_
 #define MANEUVERGENERATOR_HPP_
 
-#include <ros/ros.h>
+//#include <ros/ros.h>
+#include <labust_mission/labustMission.hpp>
 #include <Eigen/Dense>
 
 #include <labust_mission/xmlPrinter.hpp>
@@ -93,8 +94,6 @@ namespace labust {
 			 *** Class variables
 			 ********************************************************/
 
-			enum {X = 0, Y, Z, T};
-			enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
 			WriteXML writeXML;
 		};
 	}

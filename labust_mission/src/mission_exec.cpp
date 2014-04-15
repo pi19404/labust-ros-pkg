@@ -40,14 +40,9 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-//#include <iostream>
-#include <string>
-//#include <cstddef>
-
-#include <ros/ros.h>
-
-//#include <mzos_mission_control/serviceCall.hpp>
+#include <labust_mission/labustMission.hpp>
 #include <labust_mission/controllerManager.hpp>
+
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
@@ -83,9 +78,6 @@ MainEventQueue(){ mainEventQueue = new RosEventQueue();	}
 volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
 volatile int ID=0;
 
-// ovaj enum bi mogao prebaciti u neki glavni  header kako bi se djelio medu cpp
-enum {none = 0, go2point_FA, go2point_UA, dynamic_positioning, course_keeping_FA, course_keeping_UA};
-const char *primitives[] = {"none", "go2point_FA", "go2point_UA", "dynamic_positioning", "course_keeping_FA", "course_keeping_UA"};
 
 /*********************************************************************
 *** Finite State Machine
@@ -489,9 +481,6 @@ int main(int argc, char** argv){
 	ControllerManager ConMan;
 	ConMan.start();
 	CM = &ConMan;
-
-	/* Parse mission */
-	//parse();
 
 	/* Start state machine */
 	ros::AsyncSpinner spinner(2);

@@ -44,7 +44,7 @@
 #define XMLPRINTER_HPP_
 
 
-#include <string>
+//#include <string>
 #include <iostream>
 #include <cmath>
 #include <cstddef>
