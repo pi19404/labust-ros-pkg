@@ -1,7 +1,7 @@
 <!--/*****************************************************************
- * labust_mission_template.launch
+ * labust_primitives_template.launch
  *
- *  Created on: Apr 15, 2014
+ *  Created on: Apr 16, 2014
  *      Author: Filip Mandic
  *
  ********************************************************************/
@@ -45,53 +45,87 @@
     <!-- ========================================================= -->
     <!-- == Arguments ============================================ -->
     <!-- ========================================================= -->
-    <arg name="labust_mission_path" />
+
+    <!--<arg name="labust_mission_path" />
     <arg name="xml_save_path" />
     <arg name="mission_execution" default="true" />
     <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />
+    <arg name="parseGUI" default="true" />-->
 
 
     <!-- ========================================================= -->
-    <!-- == Mission execution node =============================== -->
+    <!-- == CourseKeeping FA node ================================ -->
     <!-- ========================================================= -->
+
     <node 
-	if="$(arg mission_execution)" 
-        name="mission_execution_node" 
-        pkg="labust_mission" 
-        type="mission_exec" >
+        pkg="labust_primitives" 
+        type="course_keeping_FA"
+        name="course_keeping_FA" >
 
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
-
-    </node>
-
-
-    <!-- ========================================================= -->
-    <!-- == Neptus parser node =================================== -->
-    <!-- ========================================================= -->
-    <node 
- 	if="$(arg neptus_parser)" 
-        name="neptus_parser_node" 
-        pkg="labust_mission" 
-        type="neptus_parser" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+     	<remap from="out" to="stateRef" />
+     	<remap from="state" to="stateHat" />
+	<param name="underactuated" value="false" />
 
     </node>
 
     <!-- ========================================================= -->
-    <!-- == Parser GUI node ====================================== -->
+    <!-- == CourseKeeping UA node ================================ -->
     <!-- ========================================================= -->
+
     <node 
- 	if="$(arg parseGUI)" 
-        name="parseGUI_node" 
-        pkg="labust_mission" 
-        type="parseGUI.py" 
-        output="screen" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
+        pkg="labust_primitives" 
+        type="course_keeping_UA"
+        name="course_keeping_UA" >
+
+     	<remap from="out" to="stateRef" />
+     	<remap from="state" to="stateHat" />
+	<param name="underactuated" value="true" />
 
     </node>
 
+    <!-- ========================================================= -->
+    <!-- == Dynamic Positioning node ============================= -->
+    <!-- ========================================================= -->
+
+    <node 
+        pkg="labust_primitives"
+        type="dp_primitive"
+        name="dp_primitive">
+     	
+        <remap from="out" to="stateRef" />
+     	<remap from="state" to="stateHat" />
+        <param name="underactuated" value="false" />
+
+     </node>
+
+    <!-- ========================================================= -->
+    <!-- == Go2Point FA node ===================================== -->
+    <!-- ========================================================= -->
+
+    <node 
+        pkg="labust_primitives"
+        type="go2point_FA"
+        name="go2point_FA">
+
+     	<remap from="out" to="stateRef" />
+     	<remap from="state" to="stateHat" />
+        <param name="underactuated" value="false" />
+
+    </node>
+
+    <!-- ========================================================= -->
+    <!-- == Go2Point UA node ===================================== -->
+    <!-- ========================================================= -->
+
+    <node 
+        pkg="labust_primitives"
+        type="go2point_UA"
+        name="go2point_UA">
+
+     	<remap from="out" to="stateRef" />
+     	<remap from="state" to="stateHat" />
+        <param name="underactuated" value="true" />
+
+    </node>
+   
 </launch>

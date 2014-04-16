@@ -40,7 +40,6 @@
 *********************************************************************/
 
 #include <iostream>
-
 #include <cstddef>
 
 #include <labust_mission/labustMission.hpp>
@@ -54,23 +53,29 @@
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/GeoUtilities.hpp>
 #include <tinyxml2.h>
-
-
-
+#include <misc_msgs/StartParser.h>
 
 using namespace std;
 using namespace tinyxml2;
 using namespace utils;
 
+/*********************************************************************
+ *** NeptusParser Class definition
+ ********************************************************************/
+
 class NeptusParser{
 
 public:
+
+	/*********************************************************************
+	 *** Class functions
+	 ********************************************************************/
 
 	NeptusParser():startPointSet(false),
 					 startRelative(true){
 
 		offset.north = offset.east = 0;
-
+		xmlSavePath = "";
 	}
 
 	int parseNeptus(string xmlFile){
@@ -115,15 +120,13 @@ public:
 		   }
 
 		   /* Save XML file */
-		   MG.writeXML.saveXML();
+		   MG.writeXML.saveXML(xmlSavePath);
 		   return 1;
 	   } else {
 		   ROS_ERROR("Cannot open XML file!");
 		   return -1;
 	   }
 	}
-
-
 
 
 	void parseGoto(XMLElement *maneuverType){
@@ -141,14 +144,11 @@ public:
 		ROS_ERROR("Lon: %s", LatLonPoint->ToElement()->GetText());
 		string lon = LatLonPoint->ToElement()->GetText();
 
-		//LatLonPoint = LatLonPoint->NextSiblingElement();
-		//ROS_ERROR("Height: %s", LatLonPoint->ToElement()->GetText());
-
-		/* Convert Lat/Lon position to NED position */
 		auv_msgs::NED position;
 		position = str2NED(lat,lon);
 		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
 
+		/* Set offset if in relative mode */
 		if(!startPointSet && startRelative){
 			offset = position;
 			startPointSet = true;
@@ -175,14 +175,11 @@ public:
 		ROS_ERROR("Lon: %s", LatLonPoint->ToElement()->GetText());
 		string lon = LatLonPoint->ToElement()->GetText();
 
-		//LatLonPoint = LatLonPoint->NextSiblingElement();
-		//ROS_ERROR("Height%s", LatLonPoint->ToElement()->GetText());
-
-		/* Convert Lat/Lon position to NED position */
 		auv_msgs::NED position;
 		position = str2NED(lat,lon);
 		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
 
+		/* Set offset if in relative mode */
 		if(!startPointSet  && startRelative){
 			offset = position;
 			startPointSet = true;
@@ -224,7 +221,7 @@ public:
 					alternationPercent, curvOff, squareCurve, bearingRad,
 					crossAngleRadians, invertY);
 
-		/* For each point subtract offset */
+		/* For each point subtract offset and add start point */
 		for(std::vector<Eigen::Vector4d>::iterator it = tmpPoints.begin(); it != tmpPoints.end(); ++it){
 
 			Eigen::Vector4d vTmp = *it;
@@ -242,6 +239,9 @@ public:
 
 	}
 
+	/*********************************************************************
+	 *** Class helper functions
+	 ********************************************************************/
 
 	auv_msgs::NED str2NED(string Lat, string Lon){
 
@@ -266,7 +266,6 @@ public:
 
 		posxy =	labust::tools::deg2meter(LatLon.latitude - 44.00, LatLon.longitude - 13.00, 13.00);
 
-//	    convert(LatLon);
 	    position.north = posxy.first;
 	    position.east = posxy.second;
 	    position.depth = 0;
@@ -274,19 +273,34 @@ public:
 	    return position;
 	}
 
+	/*********************************************************************
+	 *** Class variables
+	 ********************************************************************/
+
+	ManeuverGenerator MG;
+	XMLDocument xmlDoc;
 	sensor_msgs::NavSatFix startPoint;
 	auv_msgs::NED offset;
 	bool startPointSet;
 	bool startRelative;
-
-	   ManeuverGenerator MG;
-	   XMLDocument xmlDoc;
-
+	string xmlSavePath;
 };
 
-void startParseCallback(const std_msgs::String::ConstPtr& msg){
+void startParseCallback(ros::Publisher &pubStartDispatcher, const misc_msgs::StartParser::ConstPtr& msg){
+
+	ros::NodeHandle ph("~");
 	NeptusParser NP;
-	int status = NP.parseNeptus(msg->data);
+	ph.param("xml_save_path", NP.xmlSavePath, NP.xmlSavePath);
+	ROS_ERROR("%s",NP.xmlSavePath.c_str());
+	NP.offset.north = NP.offset.east = 0;
+	NP.startRelative = msg->relative;
+	int status = NP.parseNeptus(msg->fileName);
+
+	if(status == 1){
+		std_msgs::String tmp;
+		tmp.data = "/START_DISPATCHER";
+		pubStartDispatcher.publish(tmp);
+	}
 }
 
 int main(int argc, char** argv){
@@ -294,13 +308,14 @@ int main(int argc, char** argv){
 	ros::init(argc, argv, "neptusParser");
 	ros::NodeHandle nh;
 
+	/* Publishers */
+	ros::Publisher pubStartDispatcher = nh.advertise<std_msgs::String>("eventString",1);
+
 	/* Subscribers */
-	ros::Subscriber subStartParse = nh.subscribe<std_msgs::String>("startParse",1, startParseCallback);
+	ros::Subscriber subStartParse = nh.subscribe<misc_msgs::StartParser>("startParse",1, boost::bind(&startParseCallback, boost::ref(pubStartDispatcher), _1));
 
 	ros::spin();
-
 	return 0;
-
 }
 
 

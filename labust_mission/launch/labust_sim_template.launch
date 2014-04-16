@@ -1,7 +1,7 @@
 <!--/*****************************************************************
- * labust_mission_template.launch
+ * labust_sim_template.launch
  *
- *  Created on: Apr 15, 2014
+ *  Created on: Apr 16, 2014
  *      Author: Filip Mandic
  *
  ********************************************************************/
@@ -45,53 +45,49 @@
     <!-- ========================================================= -->
     <!-- == Arguments ============================================ -->
     <!-- ========================================================= -->
-    <arg name="labust_mission_path" />
+
+	<rosparam command="load" file="$(env MODEL)" />
+  	<rosparam command="load" file="$(env ALLOCATION_MODEL)" />
+  		
+   <!-- <arg name="labust_mission_path" />
     <arg name="xml_save_path" />
     <arg name="mission_execution" default="true" />
     <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />
+    <arg name="parseGUI" default="true" />-->
 
 
     <!-- ========================================================= -->
-    <!-- == Mission execution node =============================== -->
+    <!-- == Dynamic simulation node ============================== -->
     <!-- ========================================================= -->
-    <node 
-	if="$(arg mission_execution)" 
-        name="mission_execution_node" 
-        pkg="labust_mission" 
-        type="mission_exec" >
+   <node pkg="labust_sim" type="uvsim" name="uvsim">    	    
+		<param name="Rate" value="10" />
+		<param name="ModelWrap" value="10" />
+		<param name="publish_world" value="false" />
+		<param name="publish_sim_base" value="true" />
+		
+		<param name="maxThrust" value="1" />
+		<param name="minThrust" value="-1" />
+		
+		<remap from="tauIn" to="tauOut" />
+	</node>
 
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
-
-    </node>
-
-
-    <!-- ========================================================= -->
-    <!-- == Neptus parser node =================================== -->
-    <!-- ========================================================= -->
-    <node 
- 	if="$(arg neptus_parser)" 
-        name="neptus_parser_node" 
-        pkg="labust_mission" 
-        type="neptus_parser" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
-
-    </node>
 
     <!-- ========================================================= -->
-    <!-- == Parser GUI node ====================================== -->
+    <!-- == IMU sensor simulation node =========================== -->
     <!-- ========================================================= -->
-    <node 
- 	if="$(arg parseGUI)" 
-        name="parseGUI_node" 
-        pkg="labust_mission" 
-        type="parseGUI.py" 
-        output="screen" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
 
-    </node>
+   <node pkg="labust_sim" type="imu_sim" name="imu_sim">
+  		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
+  	</node>		
+
+    <!-- ========================================================= -->
+    <!-- == GPS sensor simulation node =========================== -->
+    <!-- ========================================================= -->
+    <node pkg="labust_sim" type="gps_sim" name="gps_sim">
+  		<remap from="meas_odom" to="meas_odom_noisy" if="$(optenv USE_NOISE 0)" />
+  		<remap from="fix" to="gps" />
+  		<param name="gps_height" value="0.25" />
+  		<param name="gps_pub" value="10" />
+  	</node>	
 
 </launch>

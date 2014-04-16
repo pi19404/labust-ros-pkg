@@ -1,7 +1,7 @@
 <!--/*****************************************************************
- * labust_mission_template.launch
+ * labust_navigation_template.launch
  *
- *  Created on: Apr 15, 2014
+ *  Created on: Apr 16, 2014
  *      Author: Filip Mandic
  *
  ********************************************************************/
@@ -45,52 +45,57 @@
     <!-- ========================================================= -->
     <!-- == Arguments ============================================ -->
     <!-- ========================================================= -->
-    <arg name="labust_mission_path" />
+
+    <rosparam command="load" file="$(find mzos_launch)/launch/mzos/config/navparams_ex.yaml" />
+
+
+
+    <!--<arg name="labust_mission_path" />
     <arg name="xml_save_path" />
     <arg name="mission_execution" default="true" />
     <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />
+    <arg name="parseGUI" default="true" />-->
 
 
     <!-- ========================================================= -->
-    <!-- == Mission execution node =============================== -->
+    <!-- == Navigation filter node ======================================= -->
     <!-- ========================================================= -->
+
     <node 
-	if="$(arg mission_execution)" 
-        name="mission_execution_node" 
-        pkg="labust_mission" 
-        type="mission_exec" >
+        pkg="mzos_navigation" 
+        type="ldnavex_node_3" 
+        name="ekf_nav">
 
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+	<param name="imu_with_yaw_rate" value="true" />
+	<param name="dvl_model" value="1" />
+	<param name="Ts" value="0.1" />
 
     </node>
 
-
-    <!-- ========================================================= -->
-    <!-- == Neptus parser node =================================== -->
-    <!-- ========================================================= -->
     <node 
- 	if="$(arg neptus_parser)" 
-        name="neptus_parser_node" 
-        pkg="labust_mission" 
-        type="neptus_parser" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
-        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+        pkg="mzos_navigation" 
+        type="ldnavex_node_3" 
+        name="ekf_nav_absolute">
+
+	<param name="imu_with_yaw_rate" value="true" />
+	<param name="dvl_model" value="1" />
+	<param name="Ts" value="0.1" />
+        <param name="absoluteEKF" value="true" />
+	<remap from="depth" to="no_depth" />
+	<remap from="stateHat" to="stateHatAbs" />
 
     </node>
 
     <!-- ========================================================= -->
-    <!-- == Parser GUI node ====================================== -->
+    <!-- == LocalFixSim node ======================================= -->
     <!-- ========================================================= -->
+
     <node 
- 	if="$(arg parseGUI)" 
-        name="parseGUI_node" 
-        pkg="labust_mission" 
-        type="parseGUI.py" 
-        output="screen" >
-        
-        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
+        pkg="labust_navigation" 
+        type="llnode" 
+        name="tf_frame_node">
+
+        <param name="LocalFixSim" value="true" if="$(optenv USE_LOCAL_FIX 1)" />
 
     </node>
 

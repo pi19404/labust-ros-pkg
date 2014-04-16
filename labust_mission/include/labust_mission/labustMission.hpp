@@ -50,6 +50,8 @@
 #include <string>
 
 #include <ros/ros.h>
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 /*********************************************************************
  *** Common global variables

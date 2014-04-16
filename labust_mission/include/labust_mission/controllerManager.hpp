@@ -56,12 +56,16 @@
 #include <string>
 #include <unistd.h>
 
-#include <ros/ros.h>
-
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/Bool6Axis.h>
 #include <navcon_msgs/EnableControl.h>
 #include <navcon_msgs/ConfigureAxes.h>
+
+#include <labust_mission/labustMission.hpp>
+#include <labust_mission/primitiveActionClient.hpp>
+#include <labust_mission/serviceCall.hpp>
+#include <labust_mission/lowLevelConfigure.hpp>
+
 #include <labust_uvapp/ConfigureVelocityController.h>
 
 #include <actionlib/client/simple_action_client.h>
@@ -70,13 +74,6 @@
 #include <navcon_msgs/CourseKeepingAction.h>
 #include <navcon_msgs/DynamicPositioningAction.h>
 #include <navcon_msgs/GoToPointAction.h>
-
-#include <labust_mission/primitiveActionClient.hpp>
-#include <labust_mission/serviceCall.hpp>
-#include <labust_mission/lowLevelConfigure.hpp>
-
-#include <boost/bind.hpp>
-#include <boost/ref.hpp>
 
 /*********************************************************************
  ***  Global variables

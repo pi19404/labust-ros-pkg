@@ -1,4 +1,4 @@
-<!--/*********************************************************************
+<!--/*****************************************************************
  * labust_mission_test.launch
  *
  *  Created on: Apr 15, 2014
@@ -38,17 +38,66 @@
 *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 *  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/-->
+******************************************************************/-->
 
 <launch>
-    <arg name="mission_execution" default="false" />
+    <!-- ========================================================= -->
+    <!-- == Launch settings ====================================== -->
+    <!-- ========================================================= -->
+
+    <!-- Mission execution settings ============================== -->
+    
+    <arg name="labust_mission_path" value ="$(find labust_mission)" /> 
+    <arg name="xml_save_path" value ="$(find labust_mission)/data/mission.xml" /> 
+    <arg name="mission_execution" default="true" />
     <arg name="neptus_parser" default="true" />
     <arg name="parseGUI" default="true" />
+   
+    <!-- Simulation settings ===================================== -->  
 
-    <include file="$(find labust_mission)/launch/labust_mission_template.launch">
-        <!--<arg name="example_name" value="fsm_roomba" />-->   
+    <arg name="isSim" value="$(optenv IS_SIM 0)" />
+
+    <!-- Control settings ======================================== -->
+
+    <arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
+
+    <!-- Vehicle settings ======================================== -->
+
+    <arg name="vehicle" value ="pladypos" /> 
+
+
+    <!-- ========================================================= -->
+    <!-- == Launch includes ====================================== -->
+    <!-- ========================================================= -->
+
+    <include file="$(find labust_mission)/launch/labust_mission_template.launch"> 
+ 
+        <arg name="labust_mission_path" value ="$(arg labust_mission_path)/" /> 
+        <arg name="xml_save_path" value ="$(arg xml_save_path)" /> 
         <arg name="mission_execution" value="$(arg mission_execution)" /> 
         <arg name="neptus_parser" value="$(arg neptus_parser)" />
         <arg name="parseGUI" value="$(arg parseGUI)" />
+
     </include>
+
+    <include file="$(find labust_mission)/launch/labust_primitives_template.launch">
+
+    </include>
+
+    <include file="$(find labust_mission)/launch/labust_control_template.launch">
+
+        <arg name="use_ident" value="$(arg use_ident)" />
+
+    </include>
+
+    <include file="$(find labust_mission)/launch/labust_navigation_template.launch">
+
+    </include>
+
+    <include
+        if="$(arg isSim)" 
+        file="$(find labust_mission)/launch/labust_sim_template.launch">
+
+    </include>
+
 </launch>

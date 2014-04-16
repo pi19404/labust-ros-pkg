@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   snippets
   tf2_ros
   auv_msgs
+  misc_msgs
 )
 
 ## System dependencies are found with CMake's conventions

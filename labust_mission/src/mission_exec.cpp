@@ -44,9 +44,6 @@
 #include <labust_mission/controllerManager.hpp>
 
 
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-
 #include <tinyxml2.h>
 
 #include <decision_making/SynchCout.h>
@@ -76,6 +73,8 @@ MainEventQueue(){ mainEventQueue = new RosEventQueue();	}
 };
 
 volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
+volatile double oldXpos, oldYpos, oldVictoryRadius, oldSpeed, oldCourse, oldHeading;
+
 volatile int ID=0;
 
 
@@ -88,6 +87,7 @@ FSM(MissionSelect)
 {
 	FSM_STATES
 	{
+		Wait_state,
 		Dispatcher_state,
 		go2point_FA_state,
 		go2point_UA_state,
@@ -95,9 +95,18 @@ FSM(MissionSelect)
 		course_keeping_FA_state,
 		course_keeping_UA_state
 	}
-	FSM_START(Dispatcher_state);
+	FSM_START(Wait_state);
 	FSM_BGN
 	{
+		FSM_STATE(Wait_state)
+		{
+			ROS_ERROR("Mission waiting...");
+
+			FSM_TRANSITIONS
+			{
+				FSM_ON_EVENT("/START_DISPATCHER", FSM_NEXT(Dispatcher_state));
+			}
+		}
 		FSM_STATE(Dispatcher_state)
 		{
 			ROS_ERROR("Dispatcher active");
@@ -216,6 +225,12 @@ void onStateHat(const auv_msgs::NavSts::ConstPtr& data){
 
 }
 
+void onEventString(const std_msgs::String::ConstPtr& msg){
+
+	mainEventQueue->riseEvent(msg->data.c_str());
+	ROS_INFO("EventString: %s",msg->data.c_str());
+}
+
 /*********************************************************************
  *** Helper functions
  ********************************************************************/
@@ -293,7 +308,6 @@ int parseDynamic(int id, string xmlFile){
 
 						   XMLElement *elem2 = primitiveParam->ToElement();
 						   string primitiveParamName = elem2->Attribute("name");
-						   //ROS_ERROR("%s", primitiveParamName.c_str());
 
 						   if(primitiveParamName.compare("north") == 0){
 
@@ -409,8 +423,13 @@ int parseDynamic(int id, string xmlFile){
 /* Dispatcher Task */
 decision_making::TaskResult dispatcherTask(string name, const FSMCallContext& context, EventQueue& eventQueue) {
 
+	ros::NodeHandle ph("~");
+	string xmlFile = "mission.xml";
+	ph.param("xml_save_path", xmlFile, xmlFile);
+
+	ROS_ERROR("%s",xmlFile.c_str());
+
 	ID++;
-	string xmlFile = "/home/filip/catkin_ws/src/caddy-ros-pkg/caddy_state_machine/src/test.xml";
 	int status = parseDynamic(ID, xmlFile);
 
 	ROS_ERROR("%s", primitives[status]);
@@ -468,6 +487,7 @@ int main(int argc, char** argv){
 
 	/* Subscribers */
 	ros::Subscriber subStateHatAbs = nh.subscribe<auv_msgs::NavSts>("stateHatAbs",1,onStateHat);
+	ros::Subscriber subEventString = nh.subscribe<std_msgs::String>("eventString",1,onEventString);
 
 	/* Publishers */
 
