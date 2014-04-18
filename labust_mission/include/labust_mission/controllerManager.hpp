@@ -53,8 +53,6 @@
  ********************************************************************/
 
 #include <cmath>
-#include <string>
-#include <unistd.h>
 
 #include <auv_msgs/NavSts.h>
 #include <auv_msgs/Bool6Axis.h>

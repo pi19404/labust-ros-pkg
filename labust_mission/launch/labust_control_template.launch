@@ -46,33 +46,33 @@
     <!-- == Arguments ============================================ -->
     <!-- ========================================================= -->
 
-    <arg name="use_ident" default="0"/>
-
     <rosparam command="load"
 	file="$(find mzos_launch)/launch/pladypos/config/control.yaml" />
 
-
-
-    <!--<arg name="labust_mission_path" />
-    <arg name="xml_save_path" />
-    <arg name="mission_execution" default="true" />
-    <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />-->
-
+    <arg name="use_ident" default="0"/>
 
     <!-- ========================================================= -->
     <!-- == Nu Manual node ======================================= -->
     <!-- ========================================================= -->
 
-    <node pkg="labust_control" type="nu_manual" name="ManualNuRef">
+    <node 
+        pkg="labust_control" 
+        type="nu_manual" 
+        name="ManualNuRef">
+
 	   <remap from="Enable" to="NU_enable" />
+
 	</node>
 
     <!-- ========================================================= -->
-    <!-- == Ref Manual node ======================================= -->
+    <!-- == Ref Manual node ====================================== -->
     <!-- ========================================================= -->
 
-    <node pkg="labust_control" type="ref_manual" name="ManualStateRef" >
+    <node 
+        pkg="labust_control" 
+        type="ref_manual" 
+        name="ManualStateRef" >
+
 	   <remap from="Enable" to="REF_enable" />
 	</node>
 
@@ -80,59 +80,91 @@
     <!-- == Identification node ================================== -->
     <!-- ========================================================= -->
 
-	<node pkg="ident_so" type="ident_so" name="identification" if="$(arg use_ident)">
+	<node 
+        pkg="ident_so" 
+        type="ident_so" 
+        name="identification" 
+        if="$(arg use_ident)">
+
 	   <remap from="tauOut" to="tauIdent" />
+
  	</node>
 
     <!-- ========================================================= -->
-    <!-- == Velocity controller node =============================== -->
+    <!-- == Velocity controller node ============================= -->
     <!-- ========================================================= -->
 
-	<node pkg="labust_uvapp" type="velocity_control" name="velcon">
+	<node 
+        pkg="labust_uvapp" 
+        type="velocity_control" 
+        name="velcon">
+
 		<remap from="nuRef" to="nuRefMerged" />
+
 	</node>
 
     <!-- ========================================================= -->
-    <!-- == FADP controller node =============================== -->
+    <!-- == High Level controllers =============================== -->
     <!-- ========================================================= -->
+    <group>
+        <remap from="out" to="nuRef" />
+        <remap from="ref" to="stateRef" />
+        <remap from="state" to="stateHat" />
+        <remap from="windup" to="tauAch" />
 
-	<!-- High-level controllers -->
-	<group>
-		<remap from="out" to="nuRef" />
-		<remap from="ref" to="stateRef" />
-		<remap from="state" to="stateHat" />
-		<remap from="windup" to="tauAch" />
-		
-		<node pkg="labust_control" type="fadp_controller2" name="station_keeping">
-			<remap from="Enable" to="FADP_enable" />
+        <!-- FADP controller node ================================ -->  
+		<node 
+            pkg="labust_control" 
+            type="fadp_controller2" 
+            name="station_keeping">
+
+		    <remap from="Enable" to="FADP_enable" />
+
 		</node>
 
-		<node pkg="labust_control" type="hdg_controller2" name="hdg_control">
-			<remap from="Enable" to="HDG_enable" />
+        <!-- Heading controller node ============================= -->
+		<node 
+            pkg="labust_control" 
+            type="hdg_controller2" 
+            name="hdg_control">
+
+		    <remap from="Enable" to="HDG_enable" />
+
 		</node>
 
-		<node pkg="labust_control" type="async_merger" name="nu_merger">
-		   	<remap from="in" to="nuRef" />
-			<remap from="out" to="nuRefMerged" />
-			<param name="merge_nu" value="true" />
+        <!-- FALF controller node ================================ -->
+		<node 
+            pkg="labust_control" 
+            type="ualf_controller" 
+            name="ualf_controller">
+
+		 	<remap from="Enable" to="UALF_enable" />
+		    <param name="underactuated" value="false" />
+
 		</node>
-	</group>
 
- <node pkg="labust_control" type="ualf_controller" name="ualf_controller">
-     	<remap from="out" to="nuRef" />
-     	<remap from="ref" to="stateRef" />
-     	<remap from="state" to="stateHat" />
-     	<remap from="Enable" to="UALF_enable" />
-	<param name="underactuated" value="false" />
-     </node>
+        <!-- UALF controller node ================================ -->
+		<node 
+            pkg="labust_control" 
+            type="ualf_controller" 
+            name="ualf_controller_1">
 
+		 	<remap from="Enable" to="UALF_enable_1" />
+		 	<param name="underactuated" value="true" />
 
-<node pkg="labust_control" type="ualf_controller" name="ualf_controller_1">
-     	<remap from="out" to="nuRef" />
-     	<remap from="ref" to="stateRef" />
-     	<remap from="state" to="stateHat" />
-     	<remap from="Enable" to="UALF_enable_1" />
-     	<param name="underactuated" value="true" />
-     </node>
+		</node>
 
+        <!-- Async Merger node =================================== -->
+		<node 
+            pkg="labust_control" 
+            type="async_merger" 
+            name="nu_merger">
+
+	   	    <remap from="in" to="nuRef" />
+		    <remap from="out" to="nuRefMerged" />
+		    <param name="merge_nu" value="true" />
+
+		</node>
+
+    </group>
 </launch>

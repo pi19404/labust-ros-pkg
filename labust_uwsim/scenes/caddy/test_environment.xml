@@ -213,7 +213,7 @@
 
 	<rosInterfaces>
 		<ROSOdomToPAT>
-			<topic> pladypos/uwsim_hook </topic>
+			<topic> /uwsim_hook </topic>
 			<vehicleName> pladypos </vehicleName>
 			<visualize> 1 </visualize>
 		</ROSOdomToPAT>

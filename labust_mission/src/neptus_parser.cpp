@@ -39,9 +39,6 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <iostream>
-#include <cstddef>
-
 #include <labust_mission/labustMission.hpp>
 #include <labust_mission/maneuverGenerator.hpp>
 
@@ -185,41 +182,97 @@ public:
 			startPointSet = true;
 		}
 
-		/* Read rows parameters */
-		XMLElement *param = maneuverType->FirstChildElement("width");
-		double width = atof(param->ToElement()->GetText());
-		ROS_ERROR("Width: %s", param->ToElement()->GetText());
-
-		param = param->NextSiblingElement();
-		double length = atof(param->ToElement()->GetText());
-		ROS_ERROR("length: %s", param->ToElement()->GetText());
-
-		param = param->NextSiblingElement();
-		double hstep = atof(param->ToElement()->GetText());
-		ROS_ERROR("Hstep: %s", param->ToElement()->GetText());
-
-		param = param->NextSiblingElement();
-		double angle = atof(param->ToElement()->GetText());
-		ROS_ERROR("bearing: %s", param->ToElement()->GetText());
-
-		param = param->NextSiblingElement();
-		double speed = atof(param->ToElement()->GetText());
-		ROS_ERROR("speed: %s", param->ToElement()->GetText());
-
-
-
-		double alternationPercent = 0.5;
-		double curvOff = 0;
+		/* Set default values */
+		double width = 100;
+		double length = 200;
+		double hstep = 27;
+		double bearing = 0;
+		double alternationPercent = 100;
+		double curvOff = 15;
+		double crossAngle = 0;
+		double speed = 0.5; /* Speed in m/s */
 		bool squareCurve = true;
-		double bearingRad = angle;
-		double crossAngleRadians = 0;
 		bool invertY = false;
+
+		/* Loop through rows parameters */
+		for (XMLElement* param = maneuverType->FirstChildElement("width"); param != NULL; param = param->NextSiblingElement()){
+
+			/* Check parameter name */
+			if( strcmp(param->ToElement()->Name(),"width") == 0){
+
+				width = atof(param->ToElement()->GetText());
+				ROS_ERROR("Width: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"length") == 0){
+
+				length = atof(param->ToElement()->GetText());
+				ROS_ERROR("length: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"hstep") == 0){
+
+				hstep = atof(param->ToElement()->GetText());
+				ROS_ERROR("Hstep: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"bearing") == 0){
+
+				bearing = atof(param->ToElement()->GetText());
+				ROS_ERROR("bearing: %s", param->ToElement()->GetText());
+
+
+			} else if(strcmp(param->ToElement()->Name(),"crossAngle") == 0){
+
+				crossAngle = atof(param->ToElement()->GetText());
+				ROS_ERROR("crossAngle: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"alternationPrecentage") == 0){
+
+				alternationPercent = atof(param->ToElement()->GetText());
+				ROS_ERROR("alternationPercent: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"squareCurve") == 0){
+
+				if(strcmp(param->ToElement()->GetText(),"false")==0){
+					squareCurve = false;
+				} else {
+					squareCurve = true;
+				}
+				ROS_ERROR("squareCurve: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"firstCurveRight") == 0){
+
+				if(strcmp(param->ToElement()->GetText(),"false")==0){
+					invertY = true;
+				} else {
+					invertY = false;
+				}
+				ROS_ERROR("firstCurveRight: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"curveOffset") == 0){
+
+				curvOff = atof(param->ToElement()->GetText());
+				ROS_ERROR("curveoffset: %s", param->ToElement()->GetText());
+
+			} else if(strcmp(param->ToElement()->Name(),"speed") == 0){
+
+				if(strcmp(param->ToElement()->Attribute("unit"),"RPM") == 0) {
+
+				ROS_ERROR("Speed units RPM. Leaving default speed: %f m/s", speed);
+
+				} else {
+					speed = atof(param->ToElement()->GetText());
+					ROS_ERROR("speed: %s", param->ToElement()->GetText());
+				}
+			}
+		}
+
+ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f, curvOff: %f, crossAngle: %f, speed: %f, squareCurve: %d, invertY: %d", width, length, hstep, bearing, alternationPercent,curvOff, crossAngle,speed, squareCurve, invertY);
+
 
 		/* Generate maneuver points */
 		std::vector<Eigen::Vector4d> tmpPoints;
 		tmpPoints = MG.calcRowsPoints(width, length, hstep,
-					alternationPercent, curvOff, squareCurve, bearingRad,
-					crossAngleRadians, invertY);
+					alternationPercent/100, curvOff, squareCurve, bearing*M_PI/180,
+					crossAngle*M_PI/180, invertY);
 
 		/* For each point subtract offset and add start point */
 		for(std::vector<Eigen::Vector4d>::iterator it = tmpPoints.begin(); it != tmpPoints.end(); ++it){
@@ -264,7 +317,7 @@ public:
 		LatLon.latitude = DLat+MLat/60+SLat/3600;
 	    LatLon.longitude = DLon+MLon/60+SLon/3600;
 
-		posxy =	labust::tools::deg2meter(LatLon.latitude - 44.00, LatLon.longitude - 13.00, 13.00);
+		posxy =	labust::tools::deg2meter(LatLon.latitude - startPoint.latitude, LatLon.longitude - startPoint.longitude, startPoint.longitude);
 
 	    position.north = posxy.first;
 	    position.east = posxy.second;
@@ -277,7 +330,7 @@ public:
 	 *** Class variables
 	 ********************************************************************/
 
-	ManeuverGenerator MG;
+	labust::maneuver::ManeuverGenerator MG;
 	XMLDocument xmlDoc;
 	sensor_msgs::NavSatFix startPoint;
 	auv_msgs::NED offset;
@@ -294,6 +347,8 @@ void startParseCallback(ros::Publisher &pubStartDispatcher, const misc_msgs::Sta
 	ROS_ERROR("%s",NP.xmlSavePath.c_str());
 	NP.offset.north = NP.offset.east = 0;
 	NP.startRelative = msg->relative;
+	NP.startPoint.latitude = msg->lat;
+	NP.startPoint.longitude = msg->lon;
 	int status = NP.parseNeptus(msg->fileName);
 
 	if(status == 1){

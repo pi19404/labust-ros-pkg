@@ -9,7 +9,8 @@ export JOYSTICK=/dev/input/js1
 
 #Simulation variables
 export IS_SIM=1
-export USE_NOISE=1
+export USE_NOISE=0
+export USE_VISUALIZATION=1
 
 #Location for simulation or predefined position
 export LOCATION=labos
@@ -21,7 +22,7 @@ export USE_MULTIMASTER=0
 export USE_MC=1
 
 #Frame description
-export USE_TF_PREFIX=1
+export USE_TF_PREFIX=0
 export TF_PREFIX=pladypos
 
 #USBL variables

@@ -106,7 +106,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLineEdit" name="lineEdit">
+   <widget class="QLineEdit" name="lineEditLat">
     <property name="geometry">
      <rect>
       <x>260</x>
@@ -116,7 +116,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit_2">
+   <widget class="QLineEdit" name="lineEditLon">
     <property name="geometry">
      <rect>
       <x>260</x>

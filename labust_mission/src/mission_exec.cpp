@@ -68,7 +68,7 @@ ros::NodeHandle *nh_ptr;
 ControllerManager* CM = NULL;
 
 struct MainEventQueue{
-MainEventQueue(){ mainEventQueue = new RosEventQueue();	}
+MainEventQueue(){ mainEventQueue = new RosEventQueue(); }
 ~MainEventQueue(){ delete mainEventQueue; }
 };
 

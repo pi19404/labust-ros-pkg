@@ -5,6 +5,7 @@ from PySide import QtCore, QtGui, QtUiTools
 
 from std_msgs.msg import Bool
 from std_msgs.msg import String
+from auv_msgs.msg import NavSts
 from misc_msgs.msg import StartParser 
 
 
@@ -15,6 +16,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self.loadUiWidget("/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/scripts/parsegui.ui")
         self.ui.browseButton.clicked.connect(self.browseFiles)
         self.ui.startButton.clicked.connect(self.startParse)
+        self.firstPass = True
         self.initROS()
 
 
@@ -31,7 +33,7 @@ class ControlMainWindow(QtGui.QMainWindow):
         self.pubStartParse = rospy.Publisher('/startParse', StartParser)
 
         # Subscribers
-        #rospy.Subscriber("/pladypos/stateHat", NavSts, self.callback)
+        rospy.Subscriber("stateHat", NavSts, self.onStateHatCallback)
 
         # Init node
         rospy.init_node('parseGUI')
@@ -59,12 +61,33 @@ class ControlMainWindow(QtGui.QMainWindow):
         
         if self.ui.radioButtonNED.isChecked():
             missionData.relative = True
+            missionData.customStart = False
+        elif self.ui.radioButtonLatLon.isChecked():
+            missionData.relative = False
+            missionData.customStart = False
+            missionData.lat = self.startLat
+            missionData.lon = self.startLon
         else:
             missionData.relative = False
-        
+            missionData.customStart = True           
+            missionData.lat = self.startLat
+            missionData.lon = self.startLon
+    
         self.pubStartParse.publish(missionData)
-
-
+        
+    def onStateHatCallback(self, msg):
+        
+        if self.firstPass:
+            if msg.origin.latitude != 0 and msg.origin.longitude != 0:
+                self.firstPass = False
+            else:
+                print "Waiting for origin"
+            self.startLat = msg.origin.latitude
+            self.startLon = msg.origin.longitude
+            
+            self.ui.lineEditLat.setText(str(self.startLat))
+            self.ui.lineEditLon.setText(str(self.startLon))
+        
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)

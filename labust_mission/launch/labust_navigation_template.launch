@@ -48,17 +48,8 @@
 
     <rosparam command="load" file="$(find mzos_launch)/launch/mzos/config/navparams_ex.yaml" />
 
-
-
-    <!--<arg name="labust_mission_path" />
-    <arg name="xml_save_path" />
-    <arg name="mission_execution" default="true" />
-    <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />-->
-
-
     <!-- ========================================================= -->
-    <!-- == Navigation filter node ======================================= -->
+    <!-- == Navigation filter node =============================== -->
     <!-- ========================================================= -->
 
     <node 
@@ -87,7 +78,7 @@
     </node>
 
     <!-- ========================================================= -->
-    <!-- == LocalFixSim node ======================================= -->
+    <!-- == LocalFixSim node ===================================== -->
     <!-- ========================================================= -->
 
     <node 
