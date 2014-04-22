@@ -48,6 +48,8 @@
     <arg name="labust_mission_path" />
     <arg name="xml_save_path" />
     <arg name="mission_execution" default="true" />
+    <arg name="mission_execution_INTEGRATED" default="false" />
+    <arg name="mission_parser" default="true" />
     <arg name="neptus_parser" default="true" />
     <arg name="parseGUI" default="true" />
 
@@ -56,10 +58,30 @@
     <!-- == Mission execution node =============================== -->
     <!-- ========================================================= -->
     <node 
+	if="$(arg mission_execution_INTEGRATED)" 
+        name="mission_execution_INTEGRATED_node" 
+        pkg="labust_mission" 
+        type="mission_exec_INTEGRATED" >
+
+        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+
+    </node>
+
+    <node 
 	if="$(arg mission_execution)" 
         name="mission_execution_node" 
         pkg="labust_mission" 
         type="mission_exec" >
+
+       <!--<param name="xml_save_path" type="string" value="$(arg xml_save_path)" />-->
+
+    </node>
+
+    <node 
+	if="$(arg mission_parser)" 
+        name="mission_parser_node" 
+        pkg="labust_mission" 
+        type="mission_parser" >
 
         <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
 

@@ -53,6 +53,18 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
+#include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
+
+#include <misc_msgs/SendPrimitive.h>
+#include <misc_msgs/Go2PointFA.h>
+#include <misc_msgs/Go2PointUA.h>
+#include <misc_msgs/DynamicPositioning.h>
+#include <misc_msgs/CourseKeepingFA.h>
+#include <misc_msgs/CourseKeepingUA.h>
+
+#include <auv_msgs/NED.h>
+
 /*********************************************************************
  *** Common global variables
  ********************************************************************/

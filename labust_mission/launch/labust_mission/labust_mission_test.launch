@@ -49,7 +49,9 @@
     
     <arg name="labust_mission_path" value ="$(find labust_mission)" /> 
     <arg name="xml_save_path" value ="$(find labust_mission)/data/mission.xml" /> 
+    <arg name="mission_execution_INTEGRATED" default="false" />
     <arg name="mission_execution" default="true" />
+    <arg name="mission_parser" default="true" />
     <arg name="neptus_parser" default="true" />
     <arg name="parseGUI" default="true" />
    
@@ -100,6 +102,8 @@
         <arg name="labust_mission_path" value ="$(arg labust_mission_path)/" /> 
         <arg name="xml_save_path" value ="$(arg xml_save_path)" /> 
         <arg name="mission_execution" value="$(arg mission_execution)" /> 
+        <arg name="mission_execution_INTEGRATED" value="$(arg mission_execution_INTEGRATED)" /> 
+        <arg name="mission_parser" value="$(arg mission_parser)" />
         <arg name="neptus_parser" value="$(arg neptus_parser)" />
         <arg name="parseGUI" value="$(arg parseGUI)" />
 

@@ -42,6 +42,7 @@
 
 #include <labust_mission/labustMission.hpp>
 #include <labust_mission/controllerManager.hpp>
+#include <labust_mission/missionExecution.hpp>
 
 
 #include <tinyxml2.h>
@@ -52,12 +53,14 @@
 #include <decision_making/ROSTask.h>
 #include <decision_making/DecisionMaking.h>
 
-#include <std_msgs/Bool.h>
-#include <auv_msgs/NED.h>
+//#include <std_msgs/Bool.h>
+//#include <auv_msgs/NED.h>
 
 using namespace std;
 using namespace decision_making;
 using namespace tinyxml2;
+
+namespace ser = ros::serialization;
 
 /*********************************************************************
 *** Global variables
@@ -66,16 +69,18 @@ using namespace tinyxml2;
 EventQueue* mainEventQueue;
 ros::NodeHandle *nh_ptr;
 ControllerManager* CM = NULL;
+MissionExecution* ME = NULL;
+
 
 struct MainEventQueue{
 MainEventQueue(){ mainEventQueue = new RosEventQueue(); }
 ~MainEventQueue(){ delete mainEventQueue; }
 };
 
-volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
-volatile double oldXpos, oldYpos, oldVictoryRadius, oldSpeed, oldCourse, oldHeading;
+//volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
+//volatile double oldXpos, oldYpos, oldVictoryRadius, oldSpeed, oldCourse, oldHeading;
 
-volatile int ID=0;
+//volatile int ID=0;
 
 
 /*********************************************************************
@@ -111,7 +116,8 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("Dispatcher active");
 
-			FSM_CALL_TASK(dispatcherTask)
+			//FSM_CALL_TASK(dispatcherTask)
+			ME->requestPrimitive();
 
 			FSM_TRANSITIONS
 			{
@@ -126,7 +132,8 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("go2point_FA primitive active");
 
-		   	CM->go2point_FA(true,CM->Xpos,CM->Ypos,newXpos,newYpos, newSpeed, newHeading, newVictoryRadius);
+			misc_msgs::Go2PointFA data = ME->deserializePrimitive<misc_msgs::Go2PointFA>(ME->receivedPrimitive.primitiveData);
+		   	CM->go2point_FA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.heading, data.victoryRadius);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -144,7 +151,10 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("go2point_UA primitive active");
 
-			CM->go2point_UA(true,CM->Xpos,CM->Ypos,newXpos,newYpos, newSpeed, newVictoryRadius);
+			misc_msgs::Go2PointUA data = ME->deserializePrimitive<misc_msgs::Go2PointUA>(ME->receivedPrimitive.primitiveData);
+		   	CM->go2point_UA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.victoryRadius);
+
+			//CM->go2point_UA(true,CM->Xpos,CM->Ypos,newXpos,newYpos, newSpeed, newVictoryRadius);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -162,7 +172,10 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("dynamic_positioning primitive active");
 
-			CM->dynamic_positioning(true, newXpos, newYpos, newHeading);
+			misc_msgs::DynamicPositioning data = ME->deserializePrimitive<misc_msgs::DynamicPositioning>(ME->receivedPrimitive.primitiveData);
+		   	CM->dynamic_positioning(true,data.point.north,data.point.east, data.heading);
+
+			//CM->dynamic_positioning(true, newXpos, newYpos, newHeading);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -180,7 +193,10 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("course_keeping_FA primitive active");
 
-			CM->course_keeping_FA(true, newCourse, newSpeed, newHeading);
+			misc_msgs::CourseKeepingFA data = ME->deserializePrimitive<misc_msgs::CourseKeepingFA>(ME->receivedPrimitive.primitiveData);
+		   	CM->course_keeping_FA(true,data.course, data.speed, data.heading);
+
+			//CM->course_keeping_FA(true, newCourse, newSpeed, newHeading);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -198,7 +214,10 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("course_keeping_UA primitive active");
 
-			CM->course_keeping_UA(true, newCourse, newSpeed);
+			misc_msgs::CourseKeepingUA data = ME->deserializePrimitive<misc_msgs::CourseKeepingUA>(ME->receivedPrimitive.primitiveData);
+		   	CM->course_keeping_UA(true,data.course, data.speed);
+
+			//CM->course_keeping_UA(true, newCourse, newSpeed);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -216,262 +235,6 @@ FSM(MissionSelect)
 	FSM_END
 }
 
-/*********************************************************************
- ***  ROS Subscriptions Callback
- ********************************************************************/
-
-///\todo vidjeti da li prebaciti ovo u controllerManager ili definirati posebnu klasu za prikupljanje mjerenja i generiranje eventa
-void onStateHat(const auv_msgs::NavSts::ConstPtr& data){
-
-}
-
-void onEventString(const std_msgs::String::ConstPtr& msg){
-
-	mainEventQueue->riseEvent(msg->data.c_str());
-	ROS_INFO("EventString: %s",msg->data.c_str());
-}
-
-/*********************************************************************
- *** Helper functions
- ********************************************************************/
-
-int parseDynamic(int id, string xmlFile){
-
-   XMLDocument xmlDoc;
-
-   XMLNode *mission;
-   XMLNode *primitive;
-   XMLNode *primitiveParam;
-
-   /* Open XML file */
-   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
-
-	   /* Find mission node */
-	   mission = xmlDoc.FirstChildElement("mission");
-	   if(mission){
-
-		   /* Loop through primitive nodes */
-		   primitive = mission->FirstChildElement("primitive");
-		   do{
-
-			   XMLElement *elem = primitive->ToElement();
-			   string primitiveName = elem->Attribute("name");
-			   ROS_INFO("%s", primitiveName.c_str());
-
-			   primitiveParam = primitive->FirstChildElement("id");
-			   XMLElement *elemID = primitiveParam->ToElement();
-
-			   /* If ID is correct process primitive data */
-			   string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-			   string tmp = elemID->GetText();
-
-			   if (tmp.compare(id_string) == 0){
-
-				   /* Case: go2point_FA *****************************/
-				   if(primitiveName.compare("go2point_FA") == 0){
-
-					   primitiveParam = primitive->FirstChildElement("param");
-					   do{
-
-						   XMLElement *elem2 = primitiveParam->ToElement();
-						   string primitiveParamName = elem2->Attribute("name");
-						   //ROS_ERROR("%s", primitiveParamName.c_str());
-
-						   if(primitiveParamName.compare("north") == 0){
-
-							   newXpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("east") == 0){
-
-							   newYpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("speed") == 0){
-
-							   newSpeed = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("victory_radius") == 0){
-
-							   newVictoryRadius = atof(elem2->GetText());
-						   } else if(primitiveParamName.compare("heading") == 0){
-
-							   newHeading = atof(elem2->GetText());
-						   }
-					   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
-
-					   return go2point_FA;
-
-				    /* Case: go2point_UA ****************************/
-				    } else if (primitiveName.compare("go2point_UA") == 0){
-
-					   primitiveParam = primitive->FirstChildElement("param");
-					   do{
-
-						   XMLElement *elem2 = primitiveParam->ToElement();
-						   string primitiveParamName = elem2->Attribute("name");
-
-						   if(primitiveParamName.compare("north") == 0){
-
-							   newXpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("east") == 0){
-
-							   newYpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("speed") == 0){
-
-							   newSpeed = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("victory_radius") == 0){
-
-							   newVictoryRadius = atof(elem2->GetText());
-						   }
-					   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
-
-					   return go2point_UA;
-
-				    /* Case: dynamic_positioning ********************/
-				    } else if (primitiveName.compare("dynamic_positioning") == 0){
-
-					   primitiveParam = primitive->FirstChildElement("param");
-					   do{
-
-						   XMLElement *elem2 = primitiveParam->ToElement();
-						   string primitiveParamName = elem2->Attribute("name");
-						   //ROS_ERROR("%s", primitiveParamName.c_str());
-
-						   if(primitiveParamName.compare("north") == 0){
-
-							   newXpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("east") == 0){
-
-							   newYpos = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("heading") == 0){
-
-							   newHeading = atof(elem2->GetText());
-						   }
-					   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
-
-			   			return dynamic_positioning;
-
-			   	    /* Case: course_keeping_FA **********************/
-			   	    }else if (primitiveName.compare("course_keeping_FA") == 0){
-
-			   		   primitiveParam = primitive->FirstChildElement("param");
-					   do{
-
-						   XMLElement *elem2 = primitiveParam->ToElement();
-						   string primitiveParamName = elem2->Attribute("name");
-						   //ROS_ERROR("%s", primitiveParamName.c_str());
-
-						   if(primitiveParamName.compare("course") == 0){
-
-							   newCourse = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("speed") == 0){
-
-							   newSpeed = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("heading") == 0){
-
-							   newHeading = atof(elem2->GetText());
-						   }
-					   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
-
-			   		   return course_keeping_FA;
-
-			   		/* Case: course_keeping_UA **********************/
-		   		    }else if (primitiveName.compare("course_keeping_UA") == 0){
-
-		   			   primitiveParam = primitive->FirstChildElement("param");
-					   do{
-
-						   XMLElement *elem2 = primitiveParam->ToElement();
-						   string primitiveParamName = elem2->Attribute("name");
-						   //ROS_ERROR("%s", primitiveParamName.c_str());
-
-						   if(primitiveParamName.compare("course") == 0){
-
-							   newCourse = atof(elem2->GetText());
-
-						   } else if(primitiveParamName.compare("speed") == 0){
-
-							   newSpeed = atof(elem2->GetText());
-						   }
-					   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
-
-			   		   return course_keeping_UA;
-		   		  }
-			   }
-		   } while(primitive = primitive->NextSiblingElement("primitive"));
-
-		   return none;
-
-	   } else {
-		   ROS_ERROR("No mission defined");
-	   }
-   } else {
-	   ROS_ERROR("Cannot open XML file!");
-   }
-}
-
-/*********************************************************************
- ***  Local Tasks
- ********************************************************************/
-
-/* Dispatcher Task */
-decision_making::TaskResult dispatcherTask(string name, const FSMCallContext& context, EventQueue& eventQueue) {
-
-	ros::NodeHandle ph("~");
-	string xmlFile = "mission.xml";
-	ph.param("xml_save_path", xmlFile, xmlFile);
-
-	ROS_ERROR("%s",xmlFile.c_str());
-
-	ID++;
-	int status = parseDynamic(ID, xmlFile);
-
-	ROS_ERROR("%s", primitives[status]);
-
-	switch(status){
-
-		case go2point_FA:
-
-			ROS_ERROR("T1 = %f,%f, T2 = %f,%f, Heading = %f, Speed = %f, Victory radius = %f", CM->Xpos, CM->Ypos, newXpos, newYpos, newHeading, newSpeed, newVictoryRadius);
-			mainEventQueue->riseEvent("/GO2POINT_FA");
-			break;
-
-		case go2point_UA:
-
-			ROS_ERROR("T1 = %f,%f, T2 = %f,%f, Speed = %f, Victory radius = %f", CM->Xpos, CM->Ypos, newXpos, newYpos, newSpeed, newVictoryRadius);
-			mainEventQueue->riseEvent("/GO2POINT_UA");
-			break;
-
-		case dynamic_positioning:
-
-			ROS_ERROR("T2 = %f,%f, Heading = %f", newXpos, newYpos, newHeading);
-			mainEventQueue->riseEvent("/DYNAMIC_POSITIONING");
-			break;
-
-		case course_keeping_FA:
-			ROS_ERROR("Course = %f, Heading = %f, Speed = %f", newCourse, newHeading, newSpeed);
-			mainEventQueue->riseEvent("/COURSE_KEEPING_FA");
-			break;
-
-		case course_keeping_UA:
-
-			ROS_ERROR("Course = %f, Speed = %f", newCourse, newSpeed);
-			mainEventQueue->riseEvent("/COURSE_KEEPING_UA");
-			break;
-
-		case none:
-
-			ROS_ERROR("Mission ended.");
-	}
-
-    return TaskResult::SUCCESS();
-}
 
 
 /*********************************************************************
@@ -485,14 +248,12 @@ int main(int argc, char** argv){
 	ros::NodeHandle nh;
 	nh_ptr = &nh;
 
-	/* Subscribers */
-	ros::Subscriber subStateHatAbs = nh.subscribe<auv_msgs::NavSts>("stateHatAbs",1,onStateHat);
-	ros::Subscriber subEventString = nh.subscribe<std_msgs::String>("eventString",1,onEventString);
-
-	/* Publishers */
+	/* Start Mission Execution */
+	MissionExecution MissExec(nh);
+	ME = &MissExec;
 
 	/* Tasks registration */
-	LocalTasks::registrate("dispatcherTask", dispatcherTask);
+	//LocalTasks::registrate("dispatcherTask", boost::bind(&MissionExecution::dispatcherTask, MissExec, _1, _2, _3));
 
 	/* Global event queue */
 	MainEventQueue meq;

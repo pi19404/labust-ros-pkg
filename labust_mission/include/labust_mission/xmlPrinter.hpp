@@ -54,9 +54,9 @@ using namespace std;
 
 namespace utils {
 
-/*********************************************************************
- *** WriteXML Class definition
- ********************************************************************/
+	/*****************************************************************
+	 *** WriteXML Class definition
+	 ****************************************************************/
 
 	class WriteXML{
 
@@ -126,46 +126,46 @@ namespace utils {
 
 	void WriteXML::addGo2point_UA(double north, double east, double speed, double victoryRadius){
 
-			id++;
+		id++;
 
-			primitive = doc.NewElement("primitive");
-			primitive->ToElement()->SetAttribute("name","go2point_UA");
+		primitive = doc.NewElement("primitive");
+		primitive->ToElement()->SetAttribute("name","go2point_UA");
 
-			idNode = doc.NewElement("id");
+		idNode = doc.NewElement("id");
 
-			string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-			idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-			primitive->InsertEndChild(idNode);
+		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
+		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
+		primitive->InsertEndChild(idNode);
 
-			param = doc.NewElement("param");
-			param->ToElement()->SetAttribute("name","north");
+		param = doc.NewElement("param");
+		param->ToElement()->SetAttribute("name","north");
 
-			textString.assign(static_cast<ostringstream*>( &(ostringstream() << north) )->str());
-			param->InsertEndChild(doc.NewText(textString.c_str()));
-			primitive->InsertEndChild(param);
+		textString.assign(static_cast<ostringstream*>( &(ostringstream() << north) )->str());
+		param->InsertEndChild(doc.NewText(textString.c_str()));
+		primitive->InsertEndChild(param);
 
-			param = doc.NewElement("param");
-			param->ToElement()->SetAttribute("name","east");
+		param = doc.NewElement("param");
+		param->ToElement()->SetAttribute("name","east");
 
-			textString.assign(static_cast<ostringstream*>( &(ostringstream() << east) )->str());
-			param->InsertEndChild(doc.NewText(textString.c_str()));
-			primitive->InsertEndChild(param);
+		textString.assign(static_cast<ostringstream*>( &(ostringstream() << east) )->str());
+		param->InsertEndChild(doc.NewText(textString.c_str()));
+		primitive->InsertEndChild(param);
 
-			param = doc.NewElement("param");
-			param->ToElement()->SetAttribute("name","speed");
+		param = doc.NewElement("param");
+		param->ToElement()->SetAttribute("name","speed");
 
-			textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
-			param->InsertEndChild(doc.NewText(textString.c_str()));
-			primitive->InsertEndChild(param);
+		textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
+		param->InsertEndChild(doc.NewText(textString.c_str()));
+		primitive->InsertEndChild(param);
 
-			param = doc.NewElement("param");
-			param->ToElement()->SetAttribute("name","victory_radius");
+		param = doc.NewElement("param");
+		param->ToElement()->SetAttribute("name","victory_radius");
 
-			textString.assign(static_cast<ostringstream*>( &(ostringstream() << victoryRadius) )->str());
-			param->InsertEndChild(doc.NewText(textString.c_str()));
-			primitive->InsertEndChild(param);
+		textString.assign(static_cast<ostringstream*>( &(ostringstream() << victoryRadius) )->str());
+		param->InsertEndChild(doc.NewText(textString.c_str()));
+		primitive->InsertEndChild(param);
 
-			mission->InsertEndChild(primitive);
+		mission->InsertEndChild(primitive);
 	}
 
 	void WriteXML::addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius){
