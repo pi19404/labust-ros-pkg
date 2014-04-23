@@ -44,7 +44,6 @@
 #include <labust_mission/controllerManager.hpp>
 #include <labust_mission/missionExecution.hpp>
 
-
 #include <tinyxml2.h>
 
 #include <decision_making/SynchCout.h>
@@ -53,12 +52,10 @@
 #include <decision_making/ROSTask.h>
 #include <decision_making/DecisionMaking.h>
 
-//#include <std_msgs/Bool.h>
-//#include <auv_msgs/NED.h>
-
 using namespace std;
 using namespace decision_making;
 using namespace tinyxml2;
+using namespace labust::mission;
 
 namespace ser = ros::serialization;
 
@@ -76,12 +73,6 @@ struct MainEventQueue{
 MainEventQueue(){ mainEventQueue = new RosEventQueue(); }
 ~MainEventQueue(){ delete mainEventQueue; }
 };
-
-//volatile double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
-//volatile double oldXpos, oldYpos, oldVictoryRadius, oldSpeed, oldCourse, oldHeading;
-
-//volatile int ID=0;
-
 
 /*********************************************************************
 *** Finite State Machine
@@ -107,6 +98,13 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("Mission waiting...");
 
+			FSM_ON_STATE_EXIT_BGN{
+
+				ME->oldPosition.north = CM->Xpos;
+				ME->oldPosition.east = CM->Ypos;
+
+			}FSM_ON_STATE_EXIT_END
+
 			FSM_TRANSITIONS
 			{
 				FSM_ON_EVENT("/START_DISPATCHER", FSM_NEXT(Dispatcher_state));
@@ -116,7 +114,6 @@ FSM(MissionSelect)
 		{
 			ROS_ERROR("Dispatcher active");
 
-			//FSM_CALL_TASK(dispatcherTask)
 			ME->requestPrimitive();
 
 			FSM_TRANSITIONS
@@ -134,6 +131,8 @@ FSM(MissionSelect)
 
 			misc_msgs::Go2PointFA data = ME->deserializePrimitive<misc_msgs::Go2PointFA>(ME->receivedPrimitive.primitiveData);
 		   	CM->go2point_FA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.heading, data.victoryRadius);
+
+		   	ME->oldPosition = data.point;
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -154,7 +153,7 @@ FSM(MissionSelect)
 			misc_msgs::Go2PointUA data = ME->deserializePrimitive<misc_msgs::Go2PointUA>(ME->receivedPrimitive.primitiveData);
 		   	CM->go2point_UA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.victoryRadius);
 
-			//CM->go2point_UA(true,CM->Xpos,CM->Ypos,newXpos,newYpos, newSpeed, newVictoryRadius);
+		   	ME->oldPosition = data.point;
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -175,7 +174,7 @@ FSM(MissionSelect)
 			misc_msgs::DynamicPositioning data = ME->deserializePrimitive<misc_msgs::DynamicPositioning>(ME->receivedPrimitive.primitiveData);
 		   	CM->dynamic_positioning(true,data.point.north,data.point.east, data.heading);
 
-			//CM->dynamic_positioning(true, newXpos, newYpos, newHeading);
+		   	ME->oldPosition = data.point;
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -196,11 +195,12 @@ FSM(MissionSelect)
 			misc_msgs::CourseKeepingFA data = ME->deserializePrimitive<misc_msgs::CourseKeepingFA>(ME->receivedPrimitive.primitiveData);
 		   	CM->course_keeping_FA(true,data.course, data.speed, data.heading);
 
-			//CM->course_keeping_FA(true, newCourse, newSpeed, newHeading);
-
 			FSM_ON_STATE_EXIT_BGN{
 
 				CM->course_keeping_FA(false,0,0,0);
+
+				ME->oldPosition.north = CM->Xpos;
+				ME->oldPosition.east = CM->Ypos;
 
 			}FSM_ON_STATE_EXIT_END
 
@@ -217,11 +217,12 @@ FSM(MissionSelect)
 			misc_msgs::CourseKeepingUA data = ME->deserializePrimitive<misc_msgs::CourseKeepingUA>(ME->receivedPrimitive.primitiveData);
 		   	CM->course_keeping_UA(true,data.course, data.speed);
 
-			//CM->course_keeping_UA(true, newCourse, newSpeed);
-
 			FSM_ON_STATE_EXIT_BGN{
 
 				CM->course_keeping_UA(false,0,0);
+
+				ME->oldPosition.north = CM->Xpos;
+				ME->oldPosition.east = CM->Ypos;
 
 			}FSM_ON_STATE_EXIT_END
 
@@ -234,8 +235,6 @@ FSM(MissionSelect)
 	}
 	FSM_END
 }
-
-
 
 /*********************************************************************
  ***  Main function
@@ -251,9 +250,6 @@ int main(int argc, char** argv){
 	/* Start Mission Execution */
 	MissionExecution MissExec(nh);
 	ME = &MissExec;
-
-	/* Tasks registration */
-	//LocalTasks::registrate("dispatcherTask", boost::bind(&MissionExecution::dispatcherTask, MissExec, _1, _2, _3));
 
 	/* Global event queue */
 	MainEventQueue meq;

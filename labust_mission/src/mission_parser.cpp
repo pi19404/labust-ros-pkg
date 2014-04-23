@@ -52,344 +52,387 @@ namespace ser = ros::serialization;
 using namespace std;
 using namespace tinyxml2;
 
+namespace labust {
+	namespace mission {
 
-/*********************************************************************
- ***  MissionParser class definition
- ********************************************************************/
+		/*********************************************************************
+		 ***  MissionParser class definition
+		 ********************************************************************/
 
-class MissionParser{
+		class MissionParser{
 
-public:
+		public:
 
-	/*****************************************************************
-	 ***  Class functions
-	 ****************************************************************/
+			/*****************************************************************
+			 ***  Class functions
+			 ****************************************************************/
 
-	MissionParser(ros::NodeHandle& nh):ID(0){
+			MissionParser(ros::NodeHandle& nh);
 
-		/* Subscribers */
-		//ros::Subscriber subStateHatAbs = nh.subscribe<auv_msgs::NavSts>("stateHatAbs",1,onStateHat);
-		//ros::Subscriber subEventString = nh.subscribe<std_msgs::String>("eventString",1,onEventString);
-		subRequestPrimitive = nh.subscribe<std_msgs::Bool>("requestPrimitive",1,&MissionParser::onRequestPrimitive, this);
+			void sendPrimitve();
+
+			void go2pointFA(double north, double east, double heading, double speed, double victoryRadius);
+
+			void go2pointUA(double north, double east, double speed, double victoryRadius);
+
+			void dynamicPositioning(double north, double east, double heading);
+
+			void courseKeepingFA(double course, double heading, double speed);
+
+			void courseKeepingUA(double course, double speed);
+
+			int parseDynamic(int id, string xmlFile);
+
+			void onRequestPrimitive(const std_msgs::Bool::ConstPtr& req);
+
+			/*****************************************************************
+			 ***  Helper functions
+			 ****************************************************************/
+
+			template <typename primitiveType>
+			void serializePrimitive(int id, primitiveType data);
+
+			/*****************************************************************
+			 ***  Class variables
+			 ****************************************************************/
+
+			int ID;
+			double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
+
+			ros::Publisher pubSendPrimitive;
+			ros::Subscriber subRequestPrimitive;
+		};
 
 
-		/* Publishers */
-		pubSendPrimitive = nh.advertise<misc_msgs::SendPrimitive>("sendPrimitive",1);
+		/*****************************************************************
+		 ***  Class functions
+		 ****************************************************************/
 
-	}
+		MissionParser::MissionParser(ros::NodeHandle& nh):ID(0), newXpos(0), newYpos(0), newVictoryRadius(0), newSpeed(0),
+				newCourse(0), newHeading(0){
 
-	void sendPrimitve(){
+			/* Subscribers */
+			subRequestPrimitive = nh.subscribe<std_msgs::Bool>("requestPrimitive",1,&MissionParser::onRequestPrimitive, this);
 
-		ros::NodeHandle ph("~");
-		string xmlFile = "mission.xml";
-		ph.param("xml_save_path", xmlFile, xmlFile);
-
-		ROS_ERROR("%s",xmlFile.c_str());
-
-		ID++;
-		int status = parseDynamic(ID, xmlFile);
-
-		ROS_ERROR("%s", primitives[status]);
-
-		switch(status){
-
-			case go2point_FA:
-
-				ROS_ERROR("T2 = %f,%f, Heading = %f, Speed = %f, Victory radius = %f", newXpos, newYpos, newHeading, newSpeed, newVictoryRadius);
-				//mainEventQueue->riseEvent("/GO2POINT_FA");
-				go2pointFA(newXpos, newYpos, newHeading, newSpeed, newVictoryRadius);
-				break;
-
-			case go2point_UA:
-
-				ROS_ERROR("T2 = %f,%f, Speed = %f, Victory radius = %f", newXpos, newYpos, newSpeed, newVictoryRadius);
-				//mainEventQueue->riseEvent("/GO2POINT_UA");
-				go2pointUA(newXpos, newYpos, newSpeed, newVictoryRadius);
-
-				break;
-
-			case dynamic_positioning:
-
-				//ROS_ERROR("T2 = %f,%f, Heading = %f", newXpos, newYpos, newHeading);
-				//mainEventQueue->riseEvent("/DYNAMIC_POSITIONING");
-				break;
-
-			case course_keeping_FA:
-				//ROS_ERROR("Course = %f, Heading = %f, Speed = %f", newCourse, newHeading, newSpeed);
-				//mainEventQueue->riseEvent("/COURSE_KEEPING_FA");
-				break;
-
-			case course_keeping_UA:
-
-				//ROS_ERROR("Course = %f, Speed = %f", newCourse, newSpeed);
-				//mainEventQueue->riseEvent("/COURSE_KEEPING_UA");
-				break;
-
-			case none:
-
-				ROS_ERROR("Mission ended.");
+			/* Publishers */
+			pubSendPrimitive = nh.advertise<misc_msgs::SendPrimitive>("sendPrimitive",1);
 		}
 
-	}
+		void MissionParser::sendPrimitve(){
 
-	void go2pointFA(double north, double east, double heading, double speed, double victoryRadius){
+			ros::NodeHandle ph("~");
+			string xmlFile = "mission.xml";
+			ph.param("xml_save_path", xmlFile, xmlFile);
 
-		misc_msgs::Go2PointFA data;
-		data.point.north = north;
-		data.point.east = east;
-		data.point.depth = 0;
-		data.heading = heading;
-		data.speed = speed;
-		data.victoryRadius = victoryRadius;
+			ROS_ERROR("%s",xmlFile.c_str());
 
-		serializePrimitive<misc_msgs::Go2PointFA>(go2point_FA, data);
+			ID++;
+			int status = parseDynamic(ID, xmlFile);
 
-	}
+			ROS_ERROR("%s", primitives[status]);
 
-	void go2pointUA(double north, double east, double speed, double victoryRadius){
+			switch(status){
 
-		misc_msgs::Go2PointUA data;
-		data.point.north = north;
-		data.point.east = east;
-		data.point.depth = 0;
-		data.speed = speed;
-		data.victoryRadius = victoryRadius;
+				case go2point_FA:
 
-		serializePrimitive<misc_msgs::Go2PointUA>(go2point_UA, data);
+					ROS_ERROR("T2 = %f,%f, Heading = %f, Speed = %f, Victory radius = %f", newXpos, newYpos, newHeading, newSpeed, newVictoryRadius);
+					go2pointFA(newXpos, newYpos, newHeading, newSpeed, newVictoryRadius);
+					break;
 
-	}
+				case go2point_UA:
 
-	void dynamicPositioning(){
+					ROS_ERROR("T2 = %f,%f, Speed = %f, Victory radius = %f", newXpos, newYpos, newSpeed, newVictoryRadius);
+					go2pointUA(newXpos, newYpos, newSpeed, newVictoryRadius);
+					break;
 
-	}
+				case dynamic_positioning:
 
-	void courseKeepingFA(){
+					ROS_ERROR("T2 = %f,%f, Heading = %f", newXpos, newYpos, newHeading);
+					dynamicPositioning(newXpos, newYpos, newHeading);
+					break;
 
-	}
+				case course_keeping_FA:
+					ROS_ERROR("Course = %f, Heading = %f, Speed = %f", newCourse, newHeading, newSpeed);
+					courseKeepingFA(newCourse, newHeading, newSpeed);
+					break;
 
-	void courseKeepingUA(){
+				case course_keeping_UA:
 
-	}
+					ROS_ERROR("Course = %f, Speed = %f", newCourse, newSpeed);
+					courseKeepingUA(newCourse, newSpeed);
+					break;
 
+				case none:
 
-	int parseDynamic(int id, string xmlFile){
+					ROS_ERROR("Mission ended.");
+			}
+		}
 
-	   XMLDocument xmlDoc;
+		void MissionParser::go2pointFA(double north, double east, double heading, double speed, double victoryRadius){
 
-	   XMLNode *mission;
-	   XMLNode *primitive;
-	   XMLNode *primitiveParam;
+			misc_msgs::Go2PointFA data;
+			data.point.north = north;
+			data.point.east = east;
+			data.point.depth = 0;
+			data.heading = heading;
+			data.speed = speed;
+			data.victoryRadius = victoryRadius;
 
-	   /* Open XML file */
-	   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
+			serializePrimitive<misc_msgs::Go2PointFA>(go2point_FA, data);
+		}
 
-		   /* Find mission node */
-		   mission = xmlDoc.FirstChildElement("mission");
-		   if(mission){
+		void MissionParser::go2pointUA(double north, double east, double speed, double victoryRadius){
 
-			   /* Loop through primitive nodes */
-			   primitive = mission->FirstChildElement("primitive");
-			   do{
+			misc_msgs::Go2PointUA data;
+			data.point.north = north;
+			data.point.east = east;
+			data.point.depth = 0;
+			data.speed = speed;
+			data.victoryRadius = victoryRadius;
 
-				   XMLElement *elem = primitive->ToElement();
-				   string primitiveName = elem->Attribute("name");
-				   ROS_INFO("%s", primitiveName.c_str());
+			serializePrimitive<misc_msgs::Go2PointUA>(go2point_UA, data);
+		}
 
-				   primitiveParam = primitive->FirstChildElement("id");
-				   XMLElement *elemID = primitiveParam->ToElement();
+		void MissionParser::dynamicPositioning(double north, double east, double heading){
 
-				   /* If ID is correct process primitive data */
-				   string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-				   string tmp = elemID->GetText();
+			misc_msgs::DynamicPositioning data;
+			data.point.north = north;
+			data.point.east = east;
+			data.point.depth = 0;
+			data.heading = heading;
 
-				   if (tmp.compare(id_string) == 0){
+			serializePrimitive<misc_msgs::DynamicPositioning>(dynamic_positioning, data);
 
-					   /* Case: go2point_FA *****************************/
-					   if(primitiveName.compare("go2point_FA") == 0){
+		}
 
-						   primitiveParam = primitive->FirstChildElement("param");
-						   do{
+		void MissionParser::courseKeepingFA(double course, double heading, double speed){
 
-							   XMLElement *elem2 = primitiveParam->ToElement();
-							   string primitiveParamName = elem2->Attribute("name");
-							   //ROS_ERROR("%s", primitiveParamName.c_str());
+			misc_msgs::CourseKeepingFA data;
+			data.course = course;
+			data.heading = heading;
+			data.speed = speed;
 
-							   if(primitiveParamName.compare("north") == 0){
+			serializePrimitive<misc_msgs::CourseKeepingFA>(course_keeping_FA, data);
+		}
 
-								   newXpos = atof(elem2->GetText());
+		void MissionParser::courseKeepingUA(double course, double speed){
 
-							   } else if(primitiveParamName.compare("east") == 0){
+			misc_msgs::CourseKeepingUA data;
+			data.course = course;
+			data.speed = speed;
 
-								   newYpos = atof(elem2->GetText());
+			serializePrimitive<misc_msgs::CourseKeepingUA>(course_keeping_UA, data);
+		}
 
-							   } else if(primitiveParamName.compare("speed") == 0){
 
-								   newSpeed = atof(elem2->GetText());
+		int MissionParser::parseDynamic(int id, string xmlFile){
 
-							   } else if(primitiveParamName.compare("victory_radius") == 0){
+		   XMLDocument xmlDoc;
 
-								   newVictoryRadius = atof(elem2->GetText());
-							   } else if(primitiveParamName.compare("heading") == 0){
+		   XMLNode *mission;
+		   XMLNode *primitive;
+		   XMLNode *primitiveParam;
 
-								   newHeading = atof(elem2->GetText());
-							   }
-						   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+		   /* Open XML file */
+		   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
 
-						   return go2point_FA;
+			   /* Find mission node */
+			   mission = xmlDoc.FirstChildElement("mission");
+			   if(mission){
 
-					    /* Case: go2point_UA ****************************/
-					    } else if (primitiveName.compare("go2point_UA") == 0){
+				   /* Loop through primitive nodes */
+				   primitive = mission->FirstChildElement("primitive");
+				   do{
 
-						   primitiveParam = primitive->FirstChildElement("param");
-						   do{
+					   XMLElement *elem = primitive->ToElement();
+					   string primitiveName = elem->Attribute("name");
+					   ROS_INFO("%s", primitiveName.c_str());
 
-							   XMLElement *elem2 = primitiveParam->ToElement();
-							   string primitiveParamName = elem2->Attribute("name");
+					   primitiveParam = primitive->FirstChildElement("id");
+					   XMLElement *elemID = primitiveParam->ToElement();
 
-							   if(primitiveParamName.compare("north") == 0){
+					   /* If ID is correct process primitive data */
+					   string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
+					   string tmp = elemID->GetText();
 
-								   newXpos = atof(elem2->GetText());
+					   if (tmp.compare(id_string) == 0){
 
-							   } else if(primitiveParamName.compare("east") == 0){
+						   /* Case: go2point_FA *****************************/
+						   if(primitiveName.compare("go2point_FA") == 0){
 
-								   newYpos = atof(elem2->GetText());
+							   primitiveParam = primitive->FirstChildElement("param");
+							   do{
 
-							   } else if(primitiveParamName.compare("speed") == 0){
+								   XMLElement *elem2 = primitiveParam->ToElement();
+								   string primitiveParamName = elem2->Attribute("name");
+								   //ROS_ERROR("%s", primitiveParamName.c_str());
 
-								   newSpeed = atof(elem2->GetText());
+								   if(primitiveParamName.compare("north") == 0){
 
-							   } else if(primitiveParamName.compare("victory_radius") == 0){
+									   newXpos = atof(elem2->GetText());
 
-								   newVictoryRadius = atof(elem2->GetText());
-							   }
-						   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+								   } else if(primitiveParamName.compare("east") == 0){
 
-						   return go2point_UA;
+									   newYpos = atof(elem2->GetText());
 
-					    /* Case: dynamic_positioning ********************/
-					    } else if (primitiveName.compare("dynamic_positioning") == 0){
+								   } else if(primitiveParamName.compare("speed") == 0){
 
-						   primitiveParam = primitive->FirstChildElement("param");
-						   do{
+									   newSpeed = atof(elem2->GetText());
 
-							   XMLElement *elem2 = primitiveParam->ToElement();
-							   string primitiveParamName = elem2->Attribute("name");
-							   //ROS_ERROR("%s", primitiveParamName.c_str());
+								   } else if(primitiveParamName.compare("victory_radius") == 0){
 
-							   if(primitiveParamName.compare("north") == 0){
+									   newVictoryRadius = atof(elem2->GetText());
+								   } else if(primitiveParamName.compare("heading") == 0){
 
-								   newXpos = atof(elem2->GetText());
+									   newHeading = atof(elem2->GetText());
+								   }
+							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 
-							   } else if(primitiveParamName.compare("east") == 0){
+							   return go2point_FA;
 
-								   newYpos = atof(elem2->GetText());
+							/* Case: go2point_UA ****************************/
+							} else if (primitiveName.compare("go2point_UA") == 0){
 
-							   } else if(primitiveParamName.compare("heading") == 0){
+							   primitiveParam = primitive->FirstChildElement("param");
+							   do{
 
-								   newHeading = atof(elem2->GetText());
-							   }
-						   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+								   XMLElement *elem2 = primitiveParam->ToElement();
+								   string primitiveParamName = elem2->Attribute("name");
 
-				   			return dynamic_positioning;
+								   if(primitiveParamName.compare("north") == 0){
 
-				   	    /* Case: course_keeping_FA **********************/
-				   	    }else if (primitiveName.compare("course_keeping_FA") == 0){
+									   newXpos = atof(elem2->GetText());
 
-				   		   primitiveParam = primitive->FirstChildElement("param");
-						   do{
+								   } else if(primitiveParamName.compare("east") == 0){
 
-							   XMLElement *elem2 = primitiveParam->ToElement();
-							   string primitiveParamName = elem2->Attribute("name");
-							   //ROS_ERROR("%s", primitiveParamName.c_str());
+									   newYpos = atof(elem2->GetText());
 
-							   if(primitiveParamName.compare("course") == 0){
+								   } else if(primitiveParamName.compare("speed") == 0){
 
-								   newCourse = atof(elem2->GetText());
+									   newSpeed = atof(elem2->GetText());
 
-							   } else if(primitiveParamName.compare("speed") == 0){
+								   } else if(primitiveParamName.compare("victory_radius") == 0){
 
-								   newSpeed = atof(elem2->GetText());
+									   newVictoryRadius = atof(elem2->GetText());
+								   }
+							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 
-							   } else if(primitiveParamName.compare("heading") == 0){
+							   return go2point_UA;
 
-								   newHeading = atof(elem2->GetText());
-							   }
-						   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+							/* Case: dynamic_positioning ********************/
+							} else if (primitiveName.compare("dynamic_positioning") == 0){
 
-				   		   return course_keeping_FA;
+							   primitiveParam = primitive->FirstChildElement("param");
+							   do{
 
-				   		/* Case: course_keeping_UA **********************/
-			   		    }else if (primitiveName.compare("course_keeping_UA") == 0){
+								   XMLElement *elem2 = primitiveParam->ToElement();
+								   string primitiveParamName = elem2->Attribute("name");
+								   //ROS_ERROR("%s", primitiveParamName.c_str());
 
-			   			   primitiveParam = primitive->FirstChildElement("param");
-						   do{
+								   if(primitiveParamName.compare("north") == 0){
 
-							   XMLElement *elem2 = primitiveParam->ToElement();
-							   string primitiveParamName = elem2->Attribute("name");
-							   //ROS_ERROR("%s", primitiveParamName.c_str());
+									   newXpos = atof(elem2->GetText());
 
-							   if(primitiveParamName.compare("course") == 0){
+								   } else if(primitiveParamName.compare("east") == 0){
 
-								   newCourse = atof(elem2->GetText());
+									   newYpos = atof(elem2->GetText());
 
-							   } else if(primitiveParamName.compare("speed") == 0){
+								   } else if(primitiveParamName.compare("heading") == 0){
 
-								   newSpeed = atof(elem2->GetText());
-							   }
-						   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+									   newHeading = atof(elem2->GetText());
+								   }
+							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 
-				   		   return course_keeping_UA;
-			   		  }
-				   }
-			   } while(primitive = primitive->NextSiblingElement("primitive"));
+								return dynamic_positioning;
 
-			   return none;
+							/* Case: course_keeping_FA **********************/
+							}else if (primitiveName.compare("course_keeping_FA") == 0){
 
+							   primitiveParam = primitive->FirstChildElement("param");
+							   do{
+
+								   XMLElement *elem2 = primitiveParam->ToElement();
+								   string primitiveParamName = elem2->Attribute("name");
+								   //ROS_ERROR("%s", primitiveParamName.c_str());
+
+								   if(primitiveParamName.compare("course") == 0){
+
+									   newCourse = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("speed") == 0){
+
+									   newSpeed = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("heading") == 0){
+
+									   newHeading = atof(elem2->GetText());
+								   }
+							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+
+							   return course_keeping_FA;
+
+							/* Case: course_keeping_UA **********************/
+							}else if (primitiveName.compare("course_keeping_UA") == 0){
+
+							   primitiveParam = primitive->FirstChildElement("param");
+							   do{
+
+								   XMLElement *elem2 = primitiveParam->ToElement();
+								   string primitiveParamName = elem2->Attribute("name");
+								   //ROS_ERROR("%s", primitiveParamName.c_str());
+
+								   if(primitiveParamName.compare("course") == 0){
+
+									   newCourse = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("speed") == 0){
+
+									   newSpeed = atof(elem2->GetText());
+								   }
+							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
+
+							   return course_keeping_UA;
+						  }
+					   }
+				   } while(primitive = primitive->NextSiblingElement("primitive"));
+
+				   return none;
+
+			   } else {
+				   ROS_ERROR("No mission defined");
+			   }
 		   } else {
-			   ROS_ERROR("No mission defined");
+			   ROS_ERROR("Cannot open XML file!");
 		   }
-	   } else {
-		   ROS_ERROR("Cannot open XML file!");
-	   }
-	}
+		}
 
-	void onRequestPrimitive(const std_msgs::Bool::ConstPtr& req){
-		if(req->data){
-			sendPrimitve();
+		void MissionParser::onRequestPrimitive(const std_msgs::Bool::ConstPtr& req){
+			if(req->data){
+				sendPrimitve();
+			}
+		}
+
+		/*****************************************************************
+		 ***  Helper functions
+		 ****************************************************************/
+
+		template <typename primitiveType>
+		void MissionParser::serializePrimitive(int id, primitiveType data){
+
+			uint32_t serial_size = ros::serialization::serializationLength(data);
+			std::vector<uint8_t> buffer(serial_size);
+
+			ser::OStream stream(&buffer.front(), serial_size);
+			ser::serialize(stream, data);
+
+			misc_msgs::SendPrimitive sendContainer;
+			sendContainer.primitiveID = id;
+			sendContainer.primitiveData = buffer;
+
+			pubSendPrimitive.publish(sendContainer);
 		}
 	}
-
-	/*****************************************************************
-	 ***  Helper functions
-	 ****************************************************************/
-
-	template <typename primitiveType>
-	void serializePrimitive(int id, primitiveType data){
-
-		uint32_t serial_size = ros::serialization::serializationLength(data);
-		std::vector<uint8_t> buffer(serial_size);
-
-		ser::OStream stream(&buffer.front(), serial_size);
-		ser::serialize(stream, data);
-
-		misc_msgs::SendPrimitive sendContainer;
-		sendContainer.primitiveID = id;
-		sendContainer.primitiveData = buffer;
-
-		pubSendPrimitive.publish(sendContainer);
-	}
-
-	/*****************************************************************
-	 ***  Class variables
-	 ****************************************************************/
-
-	int ID;
-	double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
-
-	ros::Publisher pubSendPrimitive;
-	ros::Subscriber subRequestPrimitive ;
-
-};
+}
 
 
 /*********************************************************************
@@ -399,8 +442,9 @@ public:
 int main(int argc, char** argv){
 
 	ros::init(argc, argv, "mission_parser");
-
 	ros::NodeHandle nh;
+
+	using namespace labust::mission;
 	MissionParser MP(nh);
 
 	ros::spin();

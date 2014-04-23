@@ -45,8 +45,6 @@
 #include <tf2_ros/transform_listener.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <auv_msgs/NED.h>
-#include <std_msgs/String.h>
 #include <labust/tools/conversions.hpp>
 #include <labust/tools/GeoUtilities.hpp>
 #include <tinyxml2.h>

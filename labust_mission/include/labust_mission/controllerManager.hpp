@@ -140,19 +140,19 @@ namespace labust
 			/* Line following fully actuated controller*/
 			void LF_FAcontroller(bool enable);
 
-			/* Line following underactuated controller*/
+			/* Line following underactuated controller */
 			void LF_UAcontroller(bool enable);
 
-			/* Heading controller*/
+			/* Heading controller */
 			void HDGcontroller(bool enable);
 
-			/* Dynamic positioning controller*/
+			/* Dynamic positioning controller */
 			void DPcontroller(bool enable);
 
-			/* Depth controller*/
+			/* Depth controller */
 			void DEPTHcontroller(bool enable);
 
-			/* Altitude controller*/
+			/* Altitude controller */
 			void ALTcontroller(bool enable);
 
 			/*********************************************************
