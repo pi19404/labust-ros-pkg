@@ -90,12 +90,11 @@ struct DvlSim
 			dvl->header.stamp = ros::Time::now();
 			dvl->header.frame_id = msg->child_frame_id;
 			//Calculate body-fixed speeds
-			Eigen::Quaternion<double> q(
+			Eigen::Quaternion<double> q(msg->pose.pose.orientation.w,
 					msg->pose.pose.orientation.x,
 					msg->pose.pose.orientation.y,
-					msg->pose.pose.orientation.z,
-					msg->pose.pose.orientation.w);
-			Eigen::Vector3d nu = q.matrix() * Eigen::Vector3d(v[0],v[1],v[2]);
+					msg->pose.pose.orientation.z);
+			Eigen::Vector3d nu = q.matrix().transpose() * Eigen::Vector3d(v[0],v[1],v[2]);
 			dvl->twist.linear.x = nu(0);
 			dvl->twist.linear.y = nu(1);
 			dvl->twist.linear.z = nu(2);
