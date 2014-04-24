@@ -29,4 +29,4 @@ current: [0,0,0] # Initial currents (N,E,D)
 # The process and measurement noise specification
 process_noise: [0.05,0.05,0.05,0.02,0.02,0.02] # Vector (6)
 measurement_noise: [1,1,0.02,0.01,0.01,0.01] # Vector (6)
-coupled: true # Use a coupled model
+coupled: false # Use a coupled model

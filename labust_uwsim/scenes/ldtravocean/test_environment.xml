@@ -86,70 +86,36 @@
 			<p>0</p>
 			<y>0</y>
 		</orientation>
-
-		<!--  <imu>
-			<name>imu</name>
+		<virtualCamera>
+			<name>bowtech1</name>
 			<relativeTo>base_link</relativeTo>
+			<resw> 800 </resw>
+			<resh> 600 </resh>
 			<position>
 				<x>0</x>
-				<y>0</y>
+				<y>0.5</y>
 				<z>0</z>
 			</position>
 			<orientation>
 				<r>0</r>
-				<p>0</p>
+				<p>3.14159</p>
 				<y>0</y>
 			</orientation>
-			<std>0.00000001</std>
-		</imu>
+			<!-- draws the FOV of the camera projected on the scene each 2 seconds -->
+			<!-- <showpath>2</showpath> -->
+		</virtualCamera>
 
-		<pressureSensor>
-			<name>PressureSensor</name>
-			<relativeTo>base_link</relativeTo>
-			<position>
-				<x>0</x>
-				<y>0</y>
-				<z>0</z>
-			</position>
-			<orientation>
-				<r>0</r>
-				<p>0</p>
-				<y>0</y>
-			</orientation>
-			<std>0.02</std>
-		</pressureSensor>
-
-		<gpsSensor>
-			<name>GPSSensor</name>
-			<relativeTo>base_link</relativeTo>
-			<position>
-				<x>0</x>
-				<y>0</y>
-				<z>-0.8</z>
-			</position>
-			<orientation>
-				<r>0</r>
-				<p>0</p>
-				<y>0</y>
-			</orientation>
-			<std>0.00005</std>
-		</gpsSensor>
-
-		<dvlSensor>
-			<name>DVLSensor</name>
-			<relativeTo>base_link</relativeTo>
-			<position>
-				<x>-0.75</x>
-				<y>0</y>
-				<z>0</z>
-			</position>
-			<orientation>
-				<r>0</r>
-				<p>0</p>
-				<y>0</y>
-			</orientation>
-			<std>0.000</std>
-		</dvlSensor> -->
+		<!-- <imu> <name>imu</name> <relativeTo>base_link</relativeTo> <position> 
+			<x>0</x> <y>0</y> <z>0</z> </position> <orientation> <r>0</r> <p>0</p> <y>0</y> 
+			</orientation> <std>0.00000001</std> </imu> <pressureSensor> <name>PressureSensor</name> 
+			<relativeTo>base_link</relativeTo> <position> <x>0</x> <y>0</y> <z>0</z> 
+			</position> <orientation> <r>0</r> <p>0</p> <y>0</y> </orientation> <std>0.02</std> 
+			</pressureSensor> <gpsSensor> <name>GPSSensor</name> <relativeTo>base_link</relativeTo> 
+			<position> <x>0</x> <y>0</y> <z>-0.8</z> </position> <orientation> <r>0</r> 
+			<p>0</p> <y>0</y> </orientation> <std>0.00005</std> </gpsSensor> <dvlSensor> 
+			<name>DVLSensor</name> <relativeTo>base_link</relativeTo> <position> <x>-0.75</x> 
+			<y>0</y> <z>0</z> </position> <orientation> <r>0</r> <p>0</p> <y>0</y> </orientation> 
+			<std>0.000</std> </dvlSensor> -->
 	</vehicle>
 
 	<object>
@@ -165,6 +131,10 @@
 			<p>0</p>
 			<y>0</y>
 		</orientation>
+		<physics>
+			<mass>0</mass>
+			<collisionShapeType> trimesh </collisionShapeType>
+		</physics>
 	</object>
 
 	<rosInterfaces>
@@ -173,26 +143,16 @@
 			<vehicleName>ldtravROV</vehicleName>
 			<visualize>1</visualize>
 		</ROSOdomToPAT>
-		<!-- <ImuToROSImu>
-			<name>imu</name>
-			<topic>imu</topic>
-			<rate>10</rate>
-		</ImuToROSImu>
-		<PressureSensorToROS>
-			<name>PressureSensor</name>
-			<topic>pressure</topic>
-			<rate>10</rate>
-		</PressureSensorToROS>
-		<GPSSensorToROS>
-			<name>GPSSensor</name>
-			<topic>gps</topic>
-			<rate>1</rate>
-		</GPSSensorToROS>
-		<DVLSensorToROS>
-			<name>DVLSensor</name>
-			<topic>dvl</topic>
-			<rate>1</rate>
-		</DVLSensorToROS> -->
+		<VirtualCameraToROSImage>
+			<cameraName>bowtech1</cameraName>
+			<imageTopic> /camera/image_raw </imageTopic>
+			<infoTopic> /camera/camera_info </infoTopic>
+		</VirtualCameraToROSImage>
+		<!-- <ImuToROSImu> <name>imu</name> <topic>imu</topic> <rate>10</rate> 
+			</ImuToROSImu> <PressureSensorToROS> <name>PressureSensor</name> <topic>pressure</topic> 
+			<rate>10</rate> </PressureSensorToROS> <GPSSensorToROS> <name>GPSSensor</name> 
+			<topic>gps</topic> <rate>1</rate> </GPSSensorToROS> <DVLSensorToROS> <name>DVLSensor</name> 
+			<topic>dvl</topic> <rate>1</rate> </DVLSensorToROS> -->
 	</rosInterfaces>
 </UWSimScene>
 

@@ -15,7 +15,7 @@ linear_damping: [0, 0, 20, 20, 20, 0] # Matrix (6x6) or diagonal elements (1x6)
 quadratic_damping: [3.27,3.4,0,0,0,0.3] # Matrix (6x6) or diagonal elements (1x6)
 
 # The initial states
-eta0: [0,0,0,0,0,0] # Initial pose
+eta0: [30,0,0,0,0,1.0] # Initial pose
 nu0:  [0,0,0,0,0,0] # Initial speeds
 current: [0,0,0] # Initial currents (N,E,D)
 
