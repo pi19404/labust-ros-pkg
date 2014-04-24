@@ -1,0 +1,170 @@
+<!--/*****************************************************************
+ * labust_control_template.launch
+ *
+ *  Created on: Apr 16, 2014
+ *      Author: Filip Mandic
+ *
+ ********************************************************************/
+
+/*********************************************************************
+* Software License Agreement (BSD License)
+*
+*  Copyright (c) 2014, LABUST, UNIZG-FER
+*  All rights reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of the LABUST nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+******************************************************************/-->
+
+<launch>
+
+    <!-- ========================================================= -->
+    <!-- == Arguments ============================================ -->
+    <!-- ========================================================= -->
+
+    <rosparam command="load"
+	file="$(find mzos_launch)/launch/pladypos/config/control.yaml" />
+
+    <arg name="use_ident" default="0"/>
+
+    <!-- ========================================================= -->
+    <!-- == Nu Manual node ======================================= -->
+    <!-- ========================================================= -->
+
+    <node 
+        pkg="labust_control" 
+        type="nu_manual" 
+        name="ManualNuRef">
+
+	   <remap from="Enable" to="NU_enable" />
+
+	</node>
+
+    <!-- ========================================================= -->
+    <!-- == Ref Manual node ====================================== -->
+    <!-- ========================================================= -->
+
+    <node 
+        pkg="labust_control" 
+        type="ref_manual" 
+        name="ManualStateRef" >
+
+	   <remap from="Enable" to="REF_enable" />
+	</node>
+
+    <!-- ========================================================= -->
+    <!-- == Identification node ================================== -->
+    <!-- ========================================================= -->
+
+	<node 
+        pkg="ident_so" 
+        type="ident_so" 
+        name="identification" 
+        if="$(arg use_ident)">
+
+	   <remap from="tauOut" to="tauIdent" />
+
+ 	</node>
+
+    <!-- ========================================================= -->
+    <!-- == Velocity controller node ============================= -->
+    <!-- ========================================================= -->
+
+	<node 
+        pkg="labust_uvapp" 
+        type="velocity_control" 
+        name="velcon">
+
+		<remap from="nuRef" to="nuRefMerged" />
+
+	</node>
+
+    <!-- ========================================================= -->
+    <!-- == High Level controllers =============================== -->
+    <!-- ========================================================= -->
+    <group>
+        <remap from="out" to="nuRef" />
+        <remap from="ref" to="stateRef" />
+        <remap from="state" to="stateHat" />
+        <remap from="windup" to="tauAch" />
+
+        <!-- FADP controller node ================================ -->  
+		<node 
+            pkg="labust_control" 
+            type="fadp_controller2" 
+            name="station_keeping">
+
+		    <remap from="Enable" to="FADP_enable" />
+
+		</node>
+
+        <!-- Heading controller node ============================= -->
+		<node 
+            pkg="labust_control" 
+            type="hdg_controller2" 
+            name="hdg_control">
+
+		    <remap from="Enable" to="HDG_enable" />
+
+		</node>
+
+        <!-- FALF controller node ================================ -->
+		<node 
+            pkg="labust_control" 
+            type="ualf_controller" 
+            name="ualf_controller">
+
+		 	<remap from="Enable" to="UALF_enable" />
+		    <param name="underactuated" value="false" />
+
+		</node>
+
+        <!-- UALF controller node ================================ -->
+		<node 
+            pkg="labust_control" 
+            type="ualf_controller" 
+            name="ualf_controller_1">
+
+		 	<remap from="Enable" to="UALF_enable_1" />
+		 	<param name="underactuated" value="true" />
+
+		</node>
+
+        <!-- Async Merger node =================================== -->
+		<node 
+            pkg="labust_control" 
+            type="async_merger" 
+            name="nu_merger">
+
+	   	    <remap from="in" to="nuRef" />
+		    <remap from="out" to="nuRefMerged" />
+		    <param name="merge_nu" value="true" />
+
+		</node>
+
+    </group>
+</launch>

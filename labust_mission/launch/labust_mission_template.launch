@@ -1,0 +1,119 @@
+<!--/*****************************************************************
+ * labust_mission_template.launch
+ *
+ *  Created on: Apr 15, 2014
+ *      Author: Filip Mandic
+ *
+ ********************************************************************/
+
+/*********************************************************************
+* Software License Agreement (BSD License)
+*
+*  Copyright (c) 2014, LABUST, UNIZG-FER
+*  All rights reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of the LABUST nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+******************************************************************/-->
+
+<launch>
+
+    <!-- ========================================================= -->
+    <!-- == Arguments ============================================ -->
+    <!-- ========================================================= -->
+    <arg name="labust_mission_path" />
+    <arg name="xml_save_path" />
+    <arg name="mission_execution" default="true" />
+    <arg name="mission_execution_INTEGRATED" default="false" />
+    <arg name="mission_parser" default="true" />
+    <arg name="neptus_parser" default="true" />
+    <arg name="parseGUI" default="true" />
+
+
+    <!-- ========================================================= -->
+    <!-- == Mission execution node =============================== -->
+    <!-- ========================================================= -->
+    <node 
+	if="$(arg mission_execution_INTEGRATED)" 
+        name="mission_execution_INTEGRATED_node" 
+        pkg="labust_mission" 
+        type="mission_exec_INTEGRATED" >
+
+        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+
+    </node>
+
+    <node 
+	if="$(arg mission_execution)" 
+        name="mission_execution_node" 
+        pkg="labust_mission" 
+        type="mission_exec" >
+
+       <!--<param name="xml_save_path" type="string" value="$(arg xml_save_path)" />-->
+
+    </node>
+
+    <node 
+	if="$(arg mission_parser)" 
+        name="mission_parser_node" 
+        pkg="labust_mission" 
+        type="mission_parser" >
+
+        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+
+    </node>
+
+
+    <!-- ========================================================= -->
+    <!-- == Neptus parser node =================================== -->
+    <!-- ========================================================= -->
+    <node 
+ 	if="$(arg neptus_parser)" 
+        name="neptus_parser_node" 
+        pkg="labust_mission" 
+        type="neptus_parser" >
+        
+        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
+        <param name="xml_save_path" type="string" value="$(arg xml_save_path)" />
+
+    </node>
+
+    <!-- ========================================================= -->
+    <!-- == Parser GUI node ====================================== -->
+    <!-- ========================================================= -->
+    <node 
+ 	if="$(arg parseGUI)" 
+        name="parseGUI_node" 
+        pkg="labust_mission" 
+        type="parseGUI.py" 
+        output="screen" >
+        
+        <param name="labust_mission_path" type="string" value="$(arg labust_mission_path)" />
+
+    </node>
+
+</launch>

@@ -1,0 +1,82 @@
+<!--/*****************************************************************
+ * labust_visualization_template.launch
+ *
+ *  Created on: Apr 17, 2014
+ *      Author: Filip Mandic
+ *
+ ********************************************************************/
+
+/*********************************************************************
+* Software License Agreement (BSD License)
+*
+*  Copyright (c) 2014, LABUST, UNIZG-FER
+*  All rights reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of the LABUST nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+******************************************************************/-->
+
+<launch>
+
+    <!-- ========================================================= -->
+    <!-- == Arguments ============================================ -->
+    <!-- ========================================================= -->
+
+  		
+   <!-- <arg name="labust_mission_path" />
+    <arg name="xml_save_path" />
+    <arg name="mission_execution" default="true" />
+    <arg name="neptus_parser" default="true" />
+    <arg name="parseGUI" default="true" />-->	
+
+    <!-- ========================================================= -->
+    <!-- == UWSim visualization node ============================= -->
+    <!-- ========================================================= -->
+
+    <node
+	if="$(optenv USE_VISUALIZATION 0)" 
+        pkg="uwsim" 
+        name="uwsim" 
+        type="uwsim" 
+        args="--disableShaders --configfile $(find labust_uwsim)/scenes/caddy/test_environment.xml 
+  --dataPath  $(find labust_uwsim)/urdf/caddy/"/>
+    
+    <node
+        if="$(optenv USE_VISUALIZATION 0)" 
+        pkg="labust_uwsim" 
+        type="NavSts2Odom.py" 
+        name="ldtravo2uwsim">
+
+        <!-- <remap from="stateHat" to="/mzos/stateHat" />-->
+        <remap from="meas_ideal" to="/meas_ideal" />
+        <remap from="uwsim_hook" to="/uwsim_hook" />
+        <param name="tf_prefix" value="$(env TF_PREFIX)" if="$(env USE_TF_PREFIX)" />
+    </node>
+    
+    <!--<node pkg="rviz" name="rviz" type="rviz"/>-->
+
+</launch>
