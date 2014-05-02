@@ -16,15 +16,14 @@ class MessageTransformer:
         self.pub = rospy.Publisher("uwsim_hook", Odometry);
         self.listener = tf.TransformListener();
         self.broadcaster = tf.TransformBroadcaster();
-        self.tf_prefix = rospy.get_param("~tf_prefix","");
-        #self.tf_prefix = "/"+self.tf_prefix;
+        self.base_frame = rospy.get_param("~base_frame","base_link");
            
     def onNavSts(self,data):   
         q = tf.transformations.quaternion_from_euler(math.pi, 0, math.pi/2)
-        self.broadcaster.sendTransform((0,0,0), q.conjugate(), rospy.Time.now(), self.tf_prefix + "/uwsim_frame", self.tf_prefix + "/local");
+        self.broadcaster.sendTransform((0,0,0), q.conjugate(), rospy.Time.now(), "uwsim_frame", "local");
         
         try:
-            (trans,rot) = self.listener.lookupTransform(self.tf_prefix + "/uwsim_frame", self.tf_prefix + "/base_link", rospy.Time(0))
+            (trans,rot) = self.listener.lookupTransform("uwsim_frame", self.base_frame, rospy.Time(0))
             
             odom = Odometry();  
             odom.twist.twist.linear.x = data.body_velocity.x;
@@ -33,7 +32,7 @@ class MessageTransformer:
             odom.twist.twist.angular.x = data.orientation_rate.roll;
             odom.twist.twist.angular.y = data.orientation_rate.pitch;
             odom.twist.twist.angular.z = data.orientation_rate.yaw;
-            odom.child_frame_id = "base_link"; 
+            odom.child_frame_id = self.base_frame; 
             odom.pose.pose.orientation.x = rot[0];
             odom.pose.pose.orientation.y = rot[1];
             odom.pose.pose.orientation.z = rot[2];
@@ -42,7 +41,7 @@ class MessageTransformer:
             odom.pose.pose.position.y = trans[1];
             odom.pose.pose.position.z = trans[2];
             odom.header.stamp = rospy.Time.now();
-            odom.header.frame_id = "world";
+            odom.header.frame_id = "local";
             
             self.pub.publish(odom);
             
