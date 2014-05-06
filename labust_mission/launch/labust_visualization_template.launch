@@ -62,7 +62,7 @@
         pkg="uwsim" 
         name="uwsim" 
         type="uwsim" 
-        args="--disableShaders --configfile $(find labust_uwsim)/scenes/caddy/test_environment.xml 
+        args="--configfile $(find labust_uwsim)/scenes/caddy/test_environment.xml 
   --dataPath  $(find labust_uwsim)/urdf/caddy/"/>
     
     <node

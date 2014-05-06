@@ -64,6 +64,10 @@
 
     <arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
 
+    <!-- Navigation settings ======================================== -->
+
+    <arg name="ekfAbs" default="false" />
+
     <!-- Vehicle settings ======================================== -->
 
     <arg name="vehicle" value ="pladypos" /> 
@@ -83,7 +87,9 @@
 
     <!-- labust_navigation include =============================== -->
 
-    <include file="$(find labust_mission)/launch/labust_navigation_template.launch"></include>
+    <include file="$(find labust_mission)/launch/labust_navigation_template.launch">
+        <arg name="ekfAbs" value="$(arg ekfAbs)" />
+    </include>
 
     <!-- labust_control include ================================== -->
 

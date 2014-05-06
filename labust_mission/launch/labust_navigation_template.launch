@@ -47,6 +47,7 @@
     <!-- ========================================================= -->
 
     <rosparam command="load" file="$(find mzos_launch)/launch/mzos/config/navparams_ex.yaml" />
+    <arg name="ekfAbs" default="false" />
 
     <!-- ========================================================= -->
     <!-- == Navigation filter node =============================== -->
@@ -64,6 +65,7 @@
     </node>
 
     <node 
+        if="$(arg ekfAbs)"
         pkg="mzos_navigation" 
         type="ldnavex_node_3" 
         name="ekf_nav_absolute">
