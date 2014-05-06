@@ -85,6 +85,8 @@ namespace labust {
 
 			void onRequestPrimitive(const std_msgs::Bool::ConstPtr& req);
 
+			void onEventString(const std_msgs::String::ConstPtr& msg);
+
 			/*****************************************************************
 			 ***  Helper functions
 			 ****************************************************************/
@@ -100,7 +102,7 @@ namespace labust {
 			double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
 
 			ros::Publisher pubSendPrimitive;
-			ros::Subscriber subRequestPrimitive;
+			ros::Subscriber subRequestPrimitive, subEventString;
 		};
 
 
@@ -113,6 +115,8 @@ namespace labust {
 
 			/* Subscribers */
 			subRequestPrimitive = nh.subscribe<std_msgs::Bool>("requestPrimitive",1,&MissionParser::onRequestPrimitive, this);
+			subEventString = nh.subscribe<std_msgs::String>("eventString",1,&MissionParser::onEventString, this);
+
 
 			/* Publishers */
 			pubSendPrimitive = nh.advertise<misc_msgs::SendPrimitive>("sendPrimitive",1);
@@ -410,6 +414,12 @@ namespace labust {
 			if(req->data){
 				sendPrimitve();
 			}
+		}
+
+		void MissionParser::onEventString(const std_msgs::String::ConstPtr& msg){
+
+			if(strcmp(msg->data.c_str(),"/STOP") == 0)
+				ID = 0;
 		}
 
 		/*****************************************************************

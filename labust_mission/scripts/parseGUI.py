@@ -16,6 +16,8 @@ class ControlMainWindow(QtGui.QMainWindow):
         self.loadUiWidget("/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/scripts/parsegui.ui")
         self.ui.browseButton.clicked.connect(self.browseFiles)
         self.ui.startButton.clicked.connect(self.startParse)
+        self.ui.stopButton.clicked.connect(self.stopMission)
+
         self.firstPass = True
         self.initROS()
 
@@ -31,6 +33,8 @@ class ControlMainWindow(QtGui.QMainWindow):
     def initROS(self):
         # Publishers
         self.pubStartParse = rospy.Publisher('/startParse', StartParser)
+        self.pubStopMission = rospy.Publisher('/eventString', String)
+
 
         # Subscribers
         rospy.Subscriber("stateHat", NavSts, self.onStateHatCallback)
@@ -74,6 +78,12 @@ class ControlMainWindow(QtGui.QMainWindow):
             missionData.lon = self.startLon
     
         self.pubStartParse.publish(missionData)
+        
+    def stopMission(self):
+        data = String()
+        data = "/STOP";
+        self.pubStopMission.publish(data)
+        
         
     def onStateHatCallback(self, msg):
         
