@@ -344,6 +344,10 @@ namespace labust {
 								   } else if(primitiveParamName.compare("heading") == 0){
 
 									   newHeading = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("timeout") == 0){
+
+									  double newTimeout = atof(elem2->GetText());
 								   }
 							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 

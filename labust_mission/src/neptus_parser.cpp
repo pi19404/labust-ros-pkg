@@ -1,9 +1,10 @@
-/*
+/*********************************************************************
  * neptus_parser.cpp
  *
  *  Created on: Apr 3, 2014
  *      Author: Filip Mandic
- */
+ *
+ ********************************************************************/
 
 /*********************************************************************
 * Software License Agreement (BSD License)
@@ -137,7 +138,7 @@ public:
 
 		ROS_INFO("Parsing goto maneuver...");
 
-		XMLElement *LatLonPoint = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("BasePoint")->FirstChildElement("point")->
 									   	   	   	   	   	   	   	   	   FirstChildElement("coordinate")->FirstChildElement("latitude");
 		/* Read maneuver parameters */
 		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());
@@ -158,10 +159,23 @@ public:
 			startPointSet = true;
 		}
 
+		/* Set default values */
+		double duration = 0;
+
+		/* Loop through rows parameters */
+		for (XMLElement* param = maneuverType->FirstChildElement("duration"); param != NULL; param = param->NextSiblingElement()){
+
+			/* Check parameter name */
+			if( strcmp(param->ToElement()->Name(),"duration") == 0){
+
+				duration = atof(param->ToElement()->GetText());
+				ROS_ERROR("Duration: %s", param->ToElement()->GetText());
+
+			}
+		}
+
 		/* Write point to XML file */
 		MG.writeXML.addGo2point_UA(position.north-offset.north, position.east-offset.east,0.5,1.0);
-
-
 	}
 
 	void parseRows(XMLElement *maneuverType){
@@ -294,6 +308,38 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 		/* Write maneuver points to XML */
 		MG.writePrimitives(go2point_FA, tmpPoints);
 	}
+
+	void parseStationKeeping(XMLElement *maneuverType){
+
+		ROS_INFO("Parsing StationKeeping maneuver...");
+
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
+																	   FirstChildElement("coordinate")->FirstChildElement("latitude");
+		/* Read maneuver parameters */
+		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());
+		string lat = LatLonPoint->ToElement()->GetText();
+
+		LatLonPoint = LatLonPoint->NextSiblingElement();
+
+		ROS_ERROR("Lon: %s", LatLonPoint->ToElement()->GetText());
+		string lon = LatLonPoint->ToElement()->GetText();
+
+		auv_msgs::NED position;
+		position = str2NED(lat,lon);
+		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
+
+		/* Set offset if in relative mode */
+		if(!startPointSet && startRelative){
+			offset = position;
+			startPointSet = true;
+		}
+
+		/* Write point to XML file */
+		MG.writeXML.addDynamic_positioning(position.north-offset.north, position.east-offset.east,0);
+
+
+	}
+
 
 	void parseLoiter(XMLElement *maneuverType){
 
