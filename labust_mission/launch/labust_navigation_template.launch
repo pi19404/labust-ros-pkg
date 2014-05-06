@@ -74,7 +74,7 @@
 	<param name="dvl_model" value="1" />
 	<param name="Ts" value="0.1" />
         <param name="absoluteEKF" value="true" />
-	<remap from="depth" to="no_depth" />
+	<!--<remap from="depth" to="no_depth" />-->
 	<remap from="stateHat" to="stateHatAbs" />
 
     </node>

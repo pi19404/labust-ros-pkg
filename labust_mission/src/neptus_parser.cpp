@@ -73,6 +73,15 @@ public:
 		xmlSavePath = "";
 	}
 
+	void neptusParserReset(){
+
+		startPointSet = false;
+		startRelative = true;
+		offset.north = offset.east = 0;
+		xmlSavePath = "";
+
+	}
+
 	int parseNeptus(string xmlFile){
 
 	   /* Open XML file */
@@ -353,6 +362,7 @@ void startParseCallback(ros::Publisher &pubStartDispatcher, const misc_msgs::Sta
 		std_msgs::String tmp;
 		tmp.data = "/START_DISPATCHER";
 		pubStartDispatcher.publish(tmp);
+		NP.neptusParserReset();
 	}
 }
 
