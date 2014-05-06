@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<robot name="buddy">
+  <link name="base_link">
+    <visual>
+      <origin rpy="0 0 -1.570796" xyz="0.25 0 0"/>
+      <geometry>
+        <mesh filename="robot/Cart2/cart2.wrl"/>
+      </geometry>
+    </visual>
+  </link>
+</robot>
+
+

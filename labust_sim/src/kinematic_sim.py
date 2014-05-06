@@ -19,41 +19,59 @@ class DiverSim:
         '''Setup publishers'''
         self.out = rospy.Publisher("TrackPoint", NavSts);
         self.point = NavSts();
-        self.u = 1.0;
-        self.theta = 0.5;
+        self.u_max = 0.5;
+        self.angle_max = 0.25;
         self.Ts = 0.1;   
+        
+        '''Temporary addition for lat-lon outputs'''
         self.point.global_position.latitude = 44;
         self.point.global_position.longitude = 15.305;
         self.point.position_variance.north = 167.123;
         self.point.position_variance.east = 155.623;
         
         self.broadcaster = tf.TransformBroadcaster();
-        self.tf_prefix = rospy.get_param("~tf_prefix");
-        self.tf_prefix = "/"+self.tf_prefix;
+        self.base_frame = rospy.get_param("~base_frame","base_link");
+        self.underactuated = rospy.get_param("~underactuated",False);
     
     def onJoy(self,joy):
-        self.point.global_position.latitude += 0.0001*joy.axes[1]*self.Ts*self.u;
-        self.point.global_position.longitude += 0.0001*joy.axes[0]*self.u*self.Ts;
-        #self.point.position.north += joy.axes[1]*self.Ts*self.u*math.cos(self.point.orientation.yaw);
-        self.point.position.north += joy.axes[1]*self.Ts*self.u;
-        #self.point.position.east += joy.axes[1]*self.u*self.Ts*math.sin(self.point.orientation.yaw);
-        self.point.position.east += -joy.axes[0]*self.u*self.Ts;
-        self.point.position.depth += joy.axes[3]*self.u*self.Ts;
-        self.point.orientation.yaw += -joy.axes[2]*self.theta*self.Ts; 
-        self.point.body_velocity.x = joy.axes[1]*self.u;
+        u = joy.axes[1]*self.u_max;
+        v = 0;
+        w = joy.axes[3]*self.u_max;
+        p = 0;
+        q = 0;
+        r = -joy.axes[0]*self.angle_max
+       
+        psi = self.point.orientation.yaw;
+
+        if not self.underactuated: v = -joy.axes[0]*self.u_max;
+        
+        #kinematic step 
+        xdot = u*math.cos(psi) - v*math.sin(psi);
+        ydot = u*math.sin(psi) + v*math.cos(psi);
+        self.point.position.north += self.Ts * xdot;
+        self.point.position.east += self.Ts * ydot;
+        self.point.position.depth += self.Ts * w;
+        self.point.orientation.yaw += self.Ts * r; 
+
+        '''Temporary addition for lat-lon outputs'''
+        self.point.global_position.latitude += 0.0001*xdot*self.Ts;
+        self.point.global_position.longitude += 0.0001*ydot*self.Ts;
+              
+        self.point.body_velocity.x = u;
+        self.point.body_velocity.y = v;
+        self.point.body_velocity.z = w;
+        self.point.orientation_rate.roll = p;
+        self.point.orientation_rate.pitch = q;
+        self.point.orientation_rate.yaw = r;
         self.out.publish(self.point);
         
-        q = tf.transformations.quaternion_from_euler(math.pi, 0, math.pi/2)
-        self.broadcaster.sendTransform((0,0,0), q, rospy.Time.now(), 
-                                       self.tf_prefix + "/local",
-                                       "/world");
         #self.broadcaster.sendTransform((0,0,0), q.conjugate(), rospy.Time.now(), self.tf_prefix + "/uwsim_frame", self.tf_prefix + "/local");
         q = tf.transformations.quaternion_from_euler(0, 0, self.point.orientation.yaw)
         self.broadcaster.sendTransform((self.point.position.north,
                                         self.point.position.east,
                                         self.point.position.depth), q, rospy.Time.now(), 
-                                       self.tf_prefix + "/base_link", 
-                                       self.tf_prefix + "/local");
+                                        self.base_frame, 
+                                       "local");
         
 if __name__ == "__main__":
     rospy.init_node("diver_sim");

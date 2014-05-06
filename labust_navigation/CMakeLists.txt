@@ -91,6 +91,14 @@ add_executable(static_transform_publisher src/static_transform_publisher/static_
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(labust_navigation_node labust_navigation_generate_messages_cpp)
+if (DEFINED catkin_EXPORTED_TARGETS)
+ add_dependencies(eigen_test ${catkin_EXPORTED_TARGETS})
+ add_dependencies(euler_quat ${catkin_EXPORTED_TARGETS})
+ add_dependencies(quat_to_euler ${catkin_EXPORTED_TARGETS})
+ add_dependencies(nav_node2 ${catkin_EXPORTED_TARGETS})
+ add_dependencies(llnode ${catkin_EXPORTED_TARGETS})
+ add_dependencies(static_transform_publisher ${catkin_EXPORTED_TARGETS})
+endif()
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(labust_navigation

@@ -142,7 +142,7 @@ void XYModel::step(const input_type& input)
   ydot = x(u)*sin(x(psi)) + x(v)*cos(x(psi)) + x(yc);
   x(xp) += Ts * xdot;
   x(yp) += Ts * ydot;
-  x(psi) += Ts * (x(r) + x(b1));
+  x(psi) += Ts * (x(r) + 0*x(b1));
 
   xk_1 = x;
 
@@ -169,7 +169,7 @@ void XYModel::derivativeAW()
 	A(yp,yc) = Ts;
 
 	A(psi,r) = Ts;
-	A(psi,b1) = Ts;
+	A(psi,b1) = 0*Ts;
 }
 
 //void XYModel::derivativeHV(int numMeas)
