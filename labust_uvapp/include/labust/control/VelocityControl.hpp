@@ -219,6 +219,10 @@ namespace labust
 		   * Variable access helper mass.
 		   */
 		  const static std::string dofName[r+1];
+		  /**
+		   * Safety test flag.
+		   */
+		  bool doSafetyTest;
 		};
 	}
 }

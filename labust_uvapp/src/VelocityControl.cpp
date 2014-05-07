@@ -65,7 +65,8 @@ VelocityControl::VelocityControl():
 			joy_scale(1),
 			Ts(0.1),
 			externalIdent(false),
-			server(serverMux)
+			server(serverMux),
+			doSafetyTest(true)
 {this->onInit();}
 
 void VelocityControl::onInit()
@@ -97,6 +98,11 @@ void VelocityControl::onInit()
 	nh.param("velocity_controller/joy_scale",joy_scale,joy_scale);
 	nh.param("velocity_controller/timeout",timeout,timeout);
 	nh.param("velocity_controller/external_ident",externalIdent, externalIdent);
+
+	//Added to avoid safety tests in simulation time.
+	bool sim(false);
+	nh.param("use_sim_time",sim,sim);
+	doSafetyTest = !sim;
 
 	if (externalIdent)
 	{
@@ -357,7 +363,7 @@ double VelocityControl::doIdentification(int i)
 void VelocityControl::step()
 {
 	auv_msgs::BodyForceReq tau, tauach;
-	this->safetyTest();
+	if (doSafetyTest) this->safetyTest();
 
 	for (int i=u; i<=r;++i)
 	{
