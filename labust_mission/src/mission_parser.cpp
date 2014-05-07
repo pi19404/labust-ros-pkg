@@ -100,6 +100,7 @@ namespace labust {
 
 			int ID;
 			double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
+			double newTimeout;
 
 			ros::Publisher pubSendPrimitive;
 			ros::Subscriber subRequestPrimitive, subEventString;
@@ -204,6 +205,7 @@ namespace labust {
 			data.point.east = east;
 			data.point.depth = 0;
 			data.heading = heading;
+			data.event.timeout = newTimeout; // Privremeno rjesenje
 
 			serializePrimitive<misc_msgs::DynamicPositioning>(dynamic_positioning, data);
 
@@ -347,7 +349,7 @@ namespace labust {
 
 								   } else if(primitiveParamName.compare("timeout") == 0){
 
-									  double newTimeout = atof(elem2->GetText());
+									  newTimeout = atof(elem2->GetText());
 								   }
 							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 

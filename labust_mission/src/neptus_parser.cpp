@@ -119,6 +119,11 @@ public:
 
 						   ROS_ERROR("lawnmower manevar");
 						   parseRows(maneuverType);
+
+					   } else  if(strcmp(maneuverType->ToElement()->Name(),"StationKeeping") == 0){
+
+						   ROS_ERROR("DP manevar");
+						   parseStationKeeping(maneuverType);
 					   }
 				   }
 			   }
@@ -138,7 +143,7 @@ public:
 
 		ROS_INFO("Parsing goto maneuver...");
 
-		XMLElement *LatLonPoint = maneuverType->FirstChildElement("BasePoint")->FirstChildElement("point")->
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
 									   	   	   	   	   	   	   	   	   FirstChildElement("coordinate")->FirstChildElement("latitude");
 		/* Read maneuver parameters */
 		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());
@@ -313,7 +318,7 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 
 		ROS_INFO("Parsing StationKeeping maneuver...");
 
-		XMLElement *LatLonPoint = maneuverType->FirstChildElement("finalPoint")->FirstChildElement("point")->
+		XMLElement *LatLonPoint = maneuverType->FirstChildElement("basePoint")->FirstChildElement("point")->
 																	   FirstChildElement("coordinate")->FirstChildElement("latitude");
 		/* Read maneuver parameters */
 		ROS_ERROR("Lat: %s", LatLonPoint->ToElement()->GetText());

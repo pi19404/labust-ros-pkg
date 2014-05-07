@@ -1,3 +1,4 @@
+//\todo testirati sto u slucaju da je neki uvjet aktivan odmah po pokretanju primitiva
 /*********************************************************************
  * mission_exec.cpp
  *
@@ -176,6 +177,11 @@ FSM(MissionSelect)
 		   	CM->dynamic_positioning(true,data.point.north,data.point.east, data.heading);
 
 		   	ME->oldPosition = data.point;
+
+		   	ROS_ERROR("debug: %f", data.event.timeout);
+		   	if(data.event.timeout != 0){
+		   		ME->setTimeout(data.event.timeout);
+		   	}
 
 			FSM_ON_STATE_EXIT_BGN{
 

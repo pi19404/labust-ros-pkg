@@ -74,6 +74,8 @@ namespace utils {
 
 		void saveAsString();
 
+		XMLNode*  addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value);
+
 		void addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius);
 
 		void addGo2point_UA(double north, double east, double speed, double victoryRadius);
@@ -115,13 +117,24 @@ namespace utils {
 
 	void WriteXML::saveXML(string fileName){
 
-		//string fileName = "/home/filip/catkin_ws/src/test_izlaz.xml";
 		doc.SaveFile( fileName.c_str() );
 		ROS_ERROR("Mission generated.");
 	}
 
-	void saveAsString(){
+	void  WriteXML::saveAsString(){
 
+	}
+
+	XMLNode*  WriteXML::addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value){
+
+		XMLNode *node;
+		string text;
+		node = doc.NewElement(nodeName.c_str());
+		node->ToElement()->SetAttribute(attrName.c_str(),attrValue.c_str());
+
+		text.assign(static_cast<ostringstream*>( &(ostringstream() << value) )->str());
+		node->InsertEndChild(doc.NewText(text.c_str()));
+		return parentNode->InsertEndChild(node);
 	}
 
 	void WriteXML::addGo2point_UA(double north, double east, double speed, double victoryRadius){
@@ -251,6 +264,13 @@ namespace utils {
 		param->ToElement()->SetAttribute("name","heading");
 
 		textString.assign(static_cast<ostringstream*>( &(ostringstream() << heading) )->str());
+		param->InsertEndChild(doc.NewText(textString.c_str()));
+		primitive->InsertEndChild(param);
+
+		param = doc.NewElement("param");
+		param->ToElement()->SetAttribute("name","timeout");
+
+		textString.assign(static_cast<ostringstream*>( &(ostringstream() << 10) )->str());
 		param->InsertEndChild(doc.NewText(textString.c_str()));
 		primitive->InsertEndChild(param);
 

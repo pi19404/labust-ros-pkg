@@ -184,7 +184,7 @@ namespace labust
 			double compassVariance, gyroVariance;
 
 			/**
-			 * Callbacks relative/absolute mode switching
+			 * Callbacks for relative/absolute mode switching
 			 */
 			void deltaPosCallback(const auv_msgs::NED::ConstPtr& msg);
 

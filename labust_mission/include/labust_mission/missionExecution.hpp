@@ -53,6 +53,8 @@
 #include <decision_making/DecisionMaking.h>
 
 extern decision_making::EventQueue* mainEventQueue;
+extern ros::NodeHandle *nh_ptr;
+
 
 namespace ser = ros::serialization;
 
@@ -93,9 +95,15 @@ namespace labust {
 
 			void requestPrimitive();
 
+			void setTimeout(double timeout);
+
+			void onTimeout(const ros::TimerEvent& timer);
+
 			/*********************************************************************
 			 ***  Class variables
 			 ********************************************************************/
+
+			ros::NodeHandle _nh;
 
 			misc_msgs::SendPrimitive receivedPrimitive;
 			ros::Publisher pubRequestPrimitive;
@@ -105,6 +113,8 @@ namespace labust {
 			ros::Subscriber subReceivePrimitive;
 
 			auv_msgs::NED oldPosition; /* Remember last primitive end point */
+
+			ros::Timer timer;
 
 		};
 
@@ -201,6 +211,18 @@ namespace labust {
 			std_msgs::Bool req;
 			req.data = true;
 			pubRequestPrimitive.publish(req);
+		}
+
+		void MissionExecution::setTimeout(double timeout){
+			ROS_ERROR("Setting timeout: %f", timeout);
+			timer = nh_ptr->createTimer(ros::Duration(timeout), &MissionExecution::onTimeout, this, true);
+		}
+
+		void MissionExecution::onTimeout(const ros::TimerEvent& timer){
+
+			ROS_ERROR("Timeout");
+			mainEventQueue->riseEvent("/PRIMITIVE_FINISHED");
+
 		}
 	}
 }
