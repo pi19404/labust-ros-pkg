@@ -9,10 +9,10 @@ bounding_ellipsoid: [0.1,0.1,0.1]
 # The dynamic parameters
 rg: [0, 0, 0] # The location vector of the COG
 rb: [0, 0, 0] # The location vector of the buoyancy 
-inertia_matrix: [1, 1, 0.4965] # Matrix (3x3) or diagonal elements (1x3)
+inertia_matrix: [1, 1, 0.61] # Matrix (3x3) or diagonal elements (1x3)
 added_mass: [3.2, 3.2, 0.74, 0, 0, 0] # Matrix (6x6) or diagonal elements (1x6)
-linear_damping: [0.0, 0.0, 20, 20, 20, 0] # Matrix (6x6) or diagonal elements (1x6)
-quadratic_damping: [5.0,5.0,0,0,0,0.3] # Matrix (6x6) or diagonal elements (1x6)
+linear_damping: [0.0, 0.0, 20, 20, 20, 0.25] # Matrix (6x6) or diagonal elements (1x6)
+quadratic_damping: [5.0,5.0,0,0,0,0.0] # Matrix (6x6) or diagonal elements (1x6)
 
 # The initial states
 eta0: [0,0,0,0,0,0] # Initial pose
