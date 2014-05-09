@@ -1,6 +1,3 @@
-//\todo Moguce napravit funkciju(template) koja ubacuje novi node (smanjenje velicine koda)
-//\todo dodati funkciju klase saveAsString
-
 /*********************************************************************
  * xmlPrinter.hpp
  *
@@ -52,296 +49,180 @@
 using namespace tinyxml2;
 using namespace std;
 
-namespace utils {
+namespace labust{
+	namespace utils {
 
-	/*****************************************************************
-	 *** WriteXML Class definition
-	 ****************************************************************/
+		/*****************************************************************
+		 *** WriteXML Class definition
+		 ****************************************************************/
 
-	class WriteXML{
+		class WriteXML{
 
-	public:
+		public:
 
-		/************************************************************
-		 *** Class functions
-		 ************************************************************/
+			/************************************************************
+			 *** Class functions
+			 ************************************************************/
 
-		WriteXML();
+			WriteXML();
 
-		void addMission();
+			void addMission();
 
-		void saveXML(string fileName);
+			void addEvent();
 
-		void saveAsString();
+			void saveXML(string fileName);
 
-		XMLNode*  addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value);
+			void addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value);
 
-		void addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius);
+			void addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius);
 
-		void addGo2point_UA(double north, double east, double speed, double victoryRadius);
+			void addGo2point_UA(double north, double east, double speed, double victoryRadius);
 
-		void addDynamic_positioning(double north, double east, double heading);
+			void addDynamic_positioning(double north, double east, double heading);
 
-		void addCourse_keeping_FA(double course, double speed, double heading);
+			void addCourse_keeping_FA(double course, double speed, double heading);
 
-		void addCourse_keeping_UA(double course, double speed);
+			void addCourse_keeping_UA(double course, double speed);
 
 
-		/************************************************************
-		 *** Class variables
-		 ************************************************************/
+			/************************************************************
+			 *** Class variables
+			 ************************************************************/
 
-		XMLDocument doc;
+			XMLDocument doc;
 
-		XMLNode *mission;
-		XMLNode *primitive;
-		XMLNode *param;
-		XMLNode *idNode;
+			XMLNode *mission;
+			XMLNode *primitive;
+			XMLNode *param;
+			XMLNode *idNode;
 
-		string textString;
-		int id;
+			string textString;
+			int id;
 
-	};
+		};
 
+		WriteXML::WriteXML():id(0){
 
-	WriteXML::WriteXML():id(0){
+		}
 
-	}
+		void WriteXML::addMission(){
 
-	void WriteXML::addMission(){
+			mission = doc.NewElement("mission");
+			doc.InsertEndChild(mission);
+			id = 0;
+		}
 
-		mission = doc.NewElement("mission");
-		doc.InsertEndChild(mission);
-		id = 0;
-	}
+		void WriteXML::addEvent(){
 
-	void WriteXML::saveXML(string fileName){
+			mission = doc.NewElement("mission");
+			doc.InsertEndChild(mission);
+			id = 0;
+		}
 
-		doc.SaveFile( fileName.c_str() );
-		ROS_ERROR("Mission generated.");
-	}
+		void WriteXML::saveXML(string fileName){
 
-	void  WriteXML::saveAsString(){
+			doc.SaveFile( fileName.c_str() );
+			ROS_ERROR("Mission generated.");
+		}
 
-	}
 
-	XMLNode*  WriteXML::addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value){
+		void WriteXML::addXMLNode(XMLNode* parentNode, string nodeName, string attrName, string attrValue, double value){
 
-		XMLNode *node;
-		string text;
-		node = doc.NewElement(nodeName.c_str());
-		node->ToElement()->SetAttribute(attrName.c_str(),attrValue.c_str());
+			XMLNode *node;
+			string text;
+			node = doc.NewElement(nodeName.c_str());
+			if(attrName.empty() == 0)
+				node->ToElement()->SetAttribute(attrName.c_str(),attrValue.c_str());
 
-		text.assign(static_cast<ostringstream*>( &(ostringstream() << value) )->str());
-		node->InsertEndChild(doc.NewText(text.c_str()));
-		return parentNode->InsertEndChild(node);
-	}
+			text.assign(static_cast<ostringstream*>( &(ostringstream() << value) )->str());
+			node->InsertEndChild(doc.NewText(text.c_str()));
+			parentNode->InsertEndChild(node);
+		}
 
-	void WriteXML::addGo2point_UA(double north, double east, double speed, double victoryRadius){
+		void WriteXML::addGo2point_UA(double north, double east, double speed, double victoryRadius){
 
-		id++;
+			id++;
 
-		primitive = doc.NewElement("primitive");
-		primitive->ToElement()->SetAttribute("name","go2point_UA");
+			primitive = doc.NewElement("primitive");
+			primitive->ToElement()->SetAttribute("name","go2point_UA");
 
-		idNode = doc.NewElement("id");
+			addXMLNode(primitive,"id","","",id);
 
-		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-		primitive->InsertEndChild(idNode);
+			addXMLNode(primitive,"param","name","north",north);
+			addXMLNode(primitive,"param","name","east",east);
+			addXMLNode(primitive,"param","name","speed",speed);
+			addXMLNode(primitive,"param","name","victory_radius",victoryRadius);
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","north");
+			mission->InsertEndChild(primitive);
+		}
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << north) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+		void WriteXML::addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius){
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","east");
+			id++;
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << east) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+			primitive = doc.NewElement("primitive");
+			primitive->ToElement()->SetAttribute("name","go2point_FA");
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","speed");
+			addXMLNode(primitive,"id","","",id);
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+			addXMLNode(primitive,"param","name","north",north);
+			addXMLNode(primitive,"param","name","east",east);
+			addXMLNode(primitive,"param","name","heading",heading);
+			addXMLNode(primitive,"param","name","speed",speed);
+			addXMLNode(primitive,"param","name","victory_radius",victoryRadius);
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","victory_radius");
+			mission->InsertEndChild(primitive);
+		}
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << victoryRadius) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+		void WriteXML::addDynamic_positioning(double north, double east, double heading){
 
-		mission->InsertEndChild(primitive);
-	}
+			id++;
 
-	void WriteXML::addGo2point_FA(double north, double east, double heading, double speed, double victoryRadius){
+			primitive = doc.NewElement("primitive");
+			primitive->ToElement()->SetAttribute("name","dynamic_positioning");
 
-		id++;
+			addXMLNode(primitive,"id","","",id);
 
-		primitive = doc.NewElement("primitive");
-		primitive->ToElement()->SetAttribute("name","go2point_FA");
+			addXMLNode(primitive,"param","name","north",north);
+			addXMLNode(primitive,"param","name","east",east);
+			addXMLNode(primitive,"param","name","heading",heading);
+			addXMLNode(primitive,"param","name","timeout",10);
 
-		idNode = doc.NewElement("id");
+			mission->InsertEndChild(primitive);
+		}
 
-		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-		primitive->InsertEndChild(idNode);
+		void WriteXML::addCourse_keeping_FA(double course, double speed, double heading){
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","north");
+			id++;
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << north) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+			primitive = doc.NewElement("primitive");
+			primitive->ToElement()->SetAttribute("name","course_keeping_FA");
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","east");
+			addXMLNode(primitive,"id","","",id);
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << east) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+			addXMLNode(primitive,"param","name","course",course);
+			addXMLNode(primitive,"param","name","speed",speed);
+			addXMLNode(primitive,"param","name","heading",heading);
+			addXMLNode(primitive,"param","name","timeout",10);
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","heading");
+			mission->InsertEndChild(primitive);
+		}
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << heading) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+		void WriteXML::addCourse_keeping_UA(double course, double speed){
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","speed");
+			id++;
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
+			primitive = doc.NewElement("primitive");
+			primitive->ToElement()->SetAttribute("name","course_keeping_UA");
 
+			addXMLNode(primitive,"id","","",id);
 
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","victory_radius");
+			addXMLNode(primitive,"param","name","course",course);
+			addXMLNode(primitive,"param","name","speed",speed);
+			addXMLNode(primitive,"param","name","timeout",10);
 
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << victoryRadius) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		mission->InsertEndChild(primitive);
-	}
-
-	void WriteXML::addDynamic_positioning(double north, double east, double heading){
-
-		id++;
-
-		primitive = doc.NewElement("primitive");
-		primitive->ToElement()->SetAttribute("name","dynamic_positioning");
-
-		idNode = doc.NewElement("id");
-
-		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-		primitive->InsertEndChild(idNode);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","north");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << north) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","east");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << east) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","heading");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << heading) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","timeout");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << 10) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		mission->InsertEndChild(primitive);
-	}
-
-	void WriteXML::addCourse_keeping_FA(double course, double speed, double heading){
-
-		id++;
-
-		primitive = doc.NewElement("primitive");
-		primitive->ToElement()->SetAttribute("name","course_keeping_FA");
-
-		idNode = doc.NewElement("id");
-
-		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-		primitive->InsertEndChild(idNode);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","course");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << course) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","speed");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","heading");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << heading) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		mission->InsertEndChild(primitive);
-	}
-
-	void WriteXML::addCourse_keeping_UA(double course, double speed){
-
-		id++;
-
-		primitive = doc.NewElement("primitive");
-		primitive->ToElement()->SetAttribute("name","course_keeping_UA");
-
-		idNode = doc.NewElement("id");
-
-		string id_string = static_cast<ostringstream*>( &(ostringstream() << id) )->str();
-		idNode->InsertEndChild(doc.NewText(id_string.c_str()));
-		primitive->InsertEndChild(idNode);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","course");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << course) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		param = doc.NewElement("param");
-		param->ToElement()->SetAttribute("name","speed");
-
-		textString.assign(static_cast<ostringstream*>( &(ostringstream() << speed) )->str());
-		param->InsertEndChild(doc.NewText(textString.c_str()));
-		primitive->InsertEndChild(param);
-
-		mission->InsertEndChild(primitive);
+			mission->InsertEndChild(primitive);
+		}
 	}
 }
 

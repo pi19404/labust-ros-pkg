@@ -46,11 +46,10 @@
 #define MANEUVERGENERATOR_HPP_
 
 #include <labust_mission/labustMission.hpp>
+#include <labust_mission/xmlPrinter.hpp>
 #include <Eigen/Dense>
 
-#include <labust_mission/xmlPrinter.hpp>
-
-using namespace utils;
+using namespace labust::utils;
 
 /*********************************************************************
  *** ManeuverGenerator class definition

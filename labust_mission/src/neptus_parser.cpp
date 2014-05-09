@@ -53,7 +53,7 @@
 
 using namespace std;
 using namespace tinyxml2;
-using namespace utils;
+using namespace labust::utils;
 
 /*********************************************************************
  *** NeptusParser Class definition
