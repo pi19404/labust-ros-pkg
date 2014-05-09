@@ -1,6 +1,8 @@
 //\todo napravi da parser pamti pokazivac na zadnji poslani node koko se ne bi svaki put trebalo parsati korz cijeli xml
-//\napraviti missionParser (tj klasu koja direktno poziva primitive) klasu tako da extenda razlicite klase za parsanje (u buducnosti pojednostavljeno
+//\todo napraviti missionParser (tj klasu koja direktno poziva primitive) klasu tako da extenda razlicite klase za parsanje (u buducnosti pojednostavljeno
 //prebacivanje na razlicite mission planere)
+//\todo Pogledja treba li poslati sve evente kao jednu poruku na poectku, kako bi se kasnije smanjila kolicina podataka koja se salje skupa s primitivom
+//\TODO Dodati mogucnost odabira vise evenata na koje primitiv može reagirati. (Nema potrebe za svaki slučaj nanovo definirati event)
 
 /*********************************************************************
  * mission_parser.cpp
@@ -81,7 +83,9 @@ namespace labust {
 
 			void courseKeepingUA(double course, double speed);
 
-			int parseDynamic(int id, string xmlFile);
+			int parseMission(int id, string xmlFile);
+
+			int parseEvents(string xmlFile);
 
 			void onRequestPrimitive(const std_msgs::Bool::ConstPtr& req);
 
@@ -102,6 +106,12 @@ namespace labust {
 			double newXpos, newYpos, newVictoryRadius, newSpeed, newCourse, newHeading;
 			double newTimeout;
 
+			bool eventsFlag;
+
+			int eventID;
+
+			std::vector<std::string> eventsContainer;
+
 			ros::Publisher pubSendPrimitive;
 			ros::Subscriber subRequestPrimitive, subEventString;
 		};
@@ -112,15 +122,16 @@ namespace labust {
 		 ****************************************************************/
 
 		MissionParser::MissionParser(ros::NodeHandle& nh):ID(0), newXpos(0), newYpos(0), newVictoryRadius(0), newSpeed(0),
-				newCourse(0), newHeading(0){
+				newCourse(0), newHeading(0), newTimeout(0), eventsFlag(false){
 
 			/* Subscribers */
 			subRequestPrimitive = nh.subscribe<std_msgs::Bool>("requestPrimitive",1,&MissionParser::onRequestPrimitive, this);
 			subEventString = nh.subscribe<std_msgs::String>("eventString",1,&MissionParser::onEventString, this);
 
-
 			/* Publishers */
 			pubSendPrimitive = nh.advertise<misc_msgs::SendPrimitive>("sendPrimitive",1);
+
+			/* Parse events */
 		}
 
 		void MissionParser::sendPrimitve(){
@@ -132,7 +143,7 @@ namespace labust {
 			ROS_ERROR("%s",xmlFile.c_str());
 
 			ID++;
-			int status = parseDynamic(ID, xmlFile);
+			int status = parseMission(ID, xmlFile);
 
 			ROS_ERROR("%s", primitives[status]);
 
@@ -205,7 +216,6 @@ namespace labust {
 			data.point.east = east;
 			data.point.depth = 0;
 			data.heading = heading;
-			data.event.timeout = newTimeout; // Privremeno rjesenje
 
 			serializePrimitive<misc_msgs::DynamicPositioning>(dynamic_positioning, data);
 
@@ -231,7 +241,7 @@ namespace labust {
 		}
 
 
-		int MissionParser::parseDynamic(int id, string xmlFile){
+		int MissionParser::parseMission(int id, string xmlFile){
 
 		   XMLDocument xmlDoc;
 
@@ -288,6 +298,7 @@ namespace labust {
 								   } else if(primitiveParamName.compare("victory_radius") == 0){
 
 									   newVictoryRadius = atof(elem2->GetText());
+
 								   } else if(primitiveParamName.compare("heading") == 0){
 
 									   newHeading = atof(elem2->GetText());
@@ -328,6 +339,9 @@ namespace labust {
 							/* Case: dynamic_positioning ********************/
 							} else if (primitiveName.compare("dynamic_positioning") == 0){
 
+								newTimeout = 0;
+								eventID = 0;
+
 							   primitiveParam = primitive->FirstChildElement("param");
 							   do{
 
@@ -358,6 +372,9 @@ namespace labust {
 							/* Case: course_keeping_FA **********************/
 							}else if (primitiveName.compare("course_keeping_FA") == 0){
 
+								newTimeout = 0;
+								eventID = 0;
+
 							   primitiveParam = primitive->FirstChildElement("param");
 							   do{
 
@@ -376,6 +393,10 @@ namespace labust {
 								   } else if(primitiveParamName.compare("heading") == 0){
 
 									   newHeading = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("timeout") == 0){
+
+									  newTimeout = atof(elem2->GetText());
 								   }
 							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 
@@ -383,6 +404,9 @@ namespace labust {
 
 							/* Case: course_keeping_UA **********************/
 							}else if (primitiveName.compare("course_keeping_UA") == 0){
+
+								newTimeout = 0;
+								eventID = 0;
 
 							   primitiveParam = primitive->FirstChildElement("param");
 							   do{
@@ -398,6 +422,14 @@ namespace labust {
 								   } else if(primitiveParamName.compare("speed") == 0){
 
 									   newSpeed = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("timeout") == 0){
+
+									  newTimeout = atof(elem2->GetText());
+
+								   } else if(primitiveParamName.compare("onEventStop") == 0){
+
+									  eventID = atof(elem2->GetText());
 								   }
 							   } while(primitiveParam = primitiveParam->NextSiblingElement("param"));
 
@@ -414,6 +446,41 @@ namespace labust {
 		   } else {
 			   ROS_ERROR("Cannot open XML file!");
 		   }
+		}
+
+		int MissionParser::parseEvents(string xmlFile){
+
+		   XMLDocument xmlDoc;
+
+		   XMLNode *events;
+		   XMLNode *event;
+		   XMLNode *primitiveParam;
+
+		   /* Open XML file */
+		   if(xmlDoc.LoadFile(xmlFile.c_str()) == XML_SUCCESS) {
+
+			   /* Find events node */
+			   events = xmlDoc.FirstChildElement("events");
+			   if(events){
+				   for (event = events->FirstChildElement("event"); event != NULL; event = event->NextSiblingElement()){
+
+					   eventsContainer.push_back(event->ToElement()->GetText());
+				   }
+				   eventsFlag = true;
+			   } else {
+				   ROS_ERROR("No events defined");
+			   }
+		   } else {
+			   ROS_ERROR("Cannot open XML file!");
+		   }
+
+		   // debug PRINT
+
+		   for(std::vector<std::string>::iterator it = eventsContainer.begin() ; it != eventsContainer.end(); ++it){
+
+				std::string vTmp = *it;
+				ROS_ERROR("Event string: %s", vTmp.c_str());
+			}
 		}
 
 		void MissionParser::onRequestPrimitive(const std_msgs::Bool::ConstPtr& req){
@@ -444,6 +511,11 @@ namespace labust {
 			misc_msgs::SendPrimitive sendContainer;
 			sendContainer.primitiveID = id;
 			sendContainer.primitiveData = buffer;
+
+			sendContainer.event.timeout = newTimeout;
+//			if(eventsFlag)
+//				sendContainer.event.onEventStop = (eventID > 0) ? eventsContainer.at(eventID-1).c_str():"";
+			sendContainer.event.onEventStop = (eventsFlag) ? eventsContainer.at(eventID-1).c_str():"";
 
 			pubSendPrimitive.publish(sendContainer);
 		}

@@ -3,6 +3,7 @@
 ///\todo ubaciti deklaraciju primitive struct-ova u klasu controllerManager
 ///\todo dodati dva prototipa za pozivanje primitiva (direktno zadavanje i preko kompleksnijih struktura podataka pointStamped)
 ///\todo kako bi se dodali razliciti prototipovi potrebno definirati actionClient kao clana klase
+//\todo odluciti da li dodati mjerenja unutar missionExecutiona ili controllerManagera
 /*********************************************************************
  * controllerManager.hpp
  *

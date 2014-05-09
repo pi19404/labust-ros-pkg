@@ -57,6 +57,8 @@ using namespace std;
 using namespace decision_making;
 using namespace tinyxml2;
 using namespace labust::mission;
+//using namespace labust::event;
+
 
 namespace ser = ros::serialization;
 
@@ -178,10 +180,7 @@ FSM(MissionSelect)
 
 		   	ME->oldPosition = data.point;
 
-		   	ROS_ERROR("debug: %f", data.event.timeout);
-		   	if(data.event.timeout != 0){
-		   		ME->setTimeout(data.event.timeout);
-		   	}
+		   	ME->setTimeout(ME->receivedPrimitive.event.timeout);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -201,6 +200,8 @@ FSM(MissionSelect)
 
 			misc_msgs::CourseKeepingFA data = ME->deserializePrimitive<misc_msgs::CourseKeepingFA>(ME->receivedPrimitive.primitiveData);
 		   	CM->course_keeping_FA(true,data.course, data.speed, data.heading);
+
+		   	ME->setTimeout(ME->receivedPrimitive.event.timeout);
 
 			FSM_ON_STATE_EXIT_BGN{
 
@@ -223,6 +224,8 @@ FSM(MissionSelect)
 
 			misc_msgs::CourseKeepingUA data = ME->deserializePrimitive<misc_msgs::CourseKeepingUA>(ME->receivedPrimitive.primitiveData);
 		   	CM->course_keeping_UA(true,data.course, data.speed);
+
+		   	ME->setTimeout(ME->receivedPrimitive.event.timeout);
 
 			FSM_ON_STATE_EXIT_BGN{
 

@@ -95,8 +95,8 @@ namespace labust{
 			XMLNode *primitive;
 			XMLNode *param;
 			XMLNode *idNode;
+			XMLNode *events;
 
-			string textString;
 			int id;
 
 		};
@@ -114,9 +114,8 @@ namespace labust{
 
 		void WriteXML::addEvent(){
 
-			mission = doc.NewElement("mission");
-			doc.InsertEndChild(mission);
-			id = 0;
+			events = doc.NewElement("events");
+			doc.InsertEndChild(events);
 		}
 
 		void WriteXML::saveXML(string fileName){
