@@ -54,8 +54,8 @@
     <!-- ========================================================= -->
 
     <node 
-        pkg="mzos_navigation" 
-        type="ldnavex_node_3" 
+        pkg="labust_navigation" 
+        type="ekf3d_node" 
         name="ekf_nav">
 
 	<param name="imu_with_yaw_rate" value="true" />
@@ -66,8 +66,8 @@
 
     <node 
         if="$(arg ekfAbs)"
-        pkg="mzos_navigation" 
-        type="ldnavex_node_3" 
+        pkg="labust_navigation" 
+        type="ekf3d_node" 
         name="ekf_nav_absolute">
 
 	<param name="imu_with_yaw_rate" value="true" />

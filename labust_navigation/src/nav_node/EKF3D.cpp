@@ -34,7 +34,7 @@
  *  Author : Dula Nad
  *  Created: 26.03.2013.
  *********************************************************************/
-#include <labust/navigation/Estimator3DExtended.hpp>
+#include <labust/navigation/EKF3D.hpp>
 #include <labust/navigation/LDTravModelExtended.hpp>
 #include <labust/tools/GeoUtilities.hpp>
 #include <labust/tools/MatrixLoader.hpp>

@@ -122,7 +122,7 @@ namespace labust {
 		 ****************************************************************/
 
 		MissionParser::MissionParser(ros::NodeHandle& nh):ID(0), newXpos(0), newYpos(0), newVictoryRadius(0), newSpeed(0),
-				newCourse(0), newHeading(0), newTimeout(0), eventsFlag(false){
+				newCourse(0), newHeading(0), newTimeout(0), eventsFlag(false), eventID(0){
 
 			/* Subscribers */
 			subRequestPrimitive = nh.subscribe<std_msgs::Bool>("requestPrimitive",1,&MissionParser::onRequestPrimitive, this);
