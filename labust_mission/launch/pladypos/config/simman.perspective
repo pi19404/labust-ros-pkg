@@ -1,0 +1,58 @@
+{
+  "keys": {}, 
+  "groups": {
+    "pluginmanager": {
+      "keys": {
+        "running-plugins": {
+          "type": "repr", 
+          "repr": "{u'labust_gui/SimManGui': [1]}"
+        }
+      }, 
+      "groups": {
+        "plugin__labust_gui__SimManGui__1": {
+          "keys": {}, 
+          "groups": {
+            "dock_widget__SimManRqt": {
+              "keys": {
+                "dockable": {
+                  "type": "repr", 
+                  "repr": "True"
+                }, 
+                "parent": {
+                  "type": "repr", 
+                  "repr": "None"
+                }
+              }, 
+              "groups": {}
+            }
+          }
+        }
+      }
+    }, 
+    "mainwindow": {
+      "keys": {
+        "geometry": {
+          "type": "repr(QByteArray.hex)", 
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb0001000000000b690000009c00000d5a0000028100000b71000000b800000d5200000279000000000000')", 
+          "pretty-print": "     i   Z   q   R y   "
+        }, 
+        "state": {
+          "type": "repr(QByteArray.hex)", 
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000001e200000193fc0100000001fb00000046006c00610062007500730074005f006700750069005f005f00530069006d004d0061006e004700750069005f005f0031005f005f00530069006d004d0061006e0052007100740100000000000001e2000000c600ffffff000001e20000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
+          "pretty-print": "                 Flabust_gui__SimManGui__1__SimManRqt                            6MinimizedDockWidgetsToolbar        "
+        }
+      }, 
+      "groups": {
+        "toolbar_areas": {
+          "keys": {
+            "MinimizedDockWidgetsToolbar": {
+              "type": "repr", 
+              "repr": "8"
+            }
+          }, 
+          "groups": {}
+        }
+      }
+    }
+  }
+}
