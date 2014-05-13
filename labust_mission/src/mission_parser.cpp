@@ -513,8 +513,6 @@ namespace labust {
 			sendContainer.primitiveData = buffer;
 
 			sendContainer.event.timeout = newTimeout;
-//			if(eventsFlag)
-//				sendContainer.event.onEventStop = (eventID > 0) ? eventsContainer.at(eventID-1).c_str():"";
 			sendContainer.event.onEventStop = (eventsFlag) ? eventsContainer.at(eventID-1).c_str():"";
 
 			pubSendPrimitive.publish(sendContainer);
