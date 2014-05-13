@@ -197,6 +197,7 @@ namespace labust {
 				case none:
 
 					ROS_ERROR("Mission ended.");
+					mainEventQueue->riseEvent("/STOP");
 			}
 		}
 

@@ -112,7 +112,7 @@ namespace labust {
 
 			std::vector<std::string> eventsContainer;
 
-			ros::Publisher pubSendPrimitive;
+			ros::Publisher pubSendPrimitive, pubRiseEvent;
 			ros::Subscriber subRequestPrimitive, subEventString;
 		};
 
@@ -130,6 +130,7 @@ namespace labust {
 
 			/* Publishers */
 			pubSendPrimitive = nh.advertise<misc_msgs::SendPrimitive>("sendPrimitive",1);
+			pubRiseEvent = nh.advertise<std_msgs::String>("eventString",1);
 
 			/* Parse events */
 		}
@@ -181,6 +182,9 @@ namespace labust {
 				case none:
 
 					ROS_ERROR("Mission ended.");
+					std_msgs::String tmp;
+					tmp.data = "/STOP";
+					pubRiseEvent.publish(tmp);
 			}
 		}
 
