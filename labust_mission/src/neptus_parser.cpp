@@ -160,7 +160,8 @@ public:
 
 		/* Set offset if in relative mode */
 		if(!startPointSet && startRelative){
-			offset = position;
+			offset.north += position.north;
+			offset.east += position.east;
 			startPointSet = true;
 		}
 
@@ -180,7 +181,7 @@ public:
 		}
 
 		/* Write point to XML file */
-		MG.writeXML.addGo2point_UA(position.north-offset.north, position.east-offset.east,0.5,1.0);
+		MG.writeXML.addGo2point_FA(position.north-offset.north, position.east-offset.east,0,0.5,1.0);
 	}
 
 	void parseRows(XMLElement *maneuverType){
@@ -204,7 +205,8 @@ public:
 
 		/* Set offset if in relative mode */
 		if(!startPointSet  && startRelative){
-			offset = position;
+			offset.north += position.north;
+			offset.east += position.east;
 			startPointSet = true;
 		}
 
@@ -311,7 +313,7 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 		}
 
 		/* Write maneuver points to XML */
-		MG.writePrimitives(go2point_FA, tmpPoints);
+		MG.writePrimitives(go2point_FA, tmpPoints,speed,1.0); /* speed, victoryRadius */
 	}
 
 	void parseStationKeeping(XMLElement *maneuverType){
@@ -335,7 +337,8 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 
 		/* Set offset if in relative mode */
 		if(!startPointSet && startRelative){
-			offset = position;
+			offset.north += position.north;
+			offset.east += position.east;
 			startPointSet = true;
 		}
 
@@ -344,7 +347,6 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 
 
 	}
-
 
 	void parseLoiter(XMLElement *maneuverType){
 
