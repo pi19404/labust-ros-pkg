@@ -9,17 +9,20 @@ from auv_msgs.msg import NavSts
 from misc_msgs.msg import StartParser 
 
 
-
 class ControlMainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
-        super(ControlMainWindow, self).__init__(parent)
-        self.loadUiWidget("/home/filip/catkin_ws/src/labust-ros-pkg/labust_mission/scripts/parsegui.ui")
+        super(ControlMainWindow, self).__init__(parent) 
+
+        self.loadUiWidget(os.path.join(
+                        os.path.dirname(os.path.realpath(__file__)), "parsegui.ui"))
+        
         self.ui.browseButton.clicked.connect(self.browseFiles)
         self.ui.startButton.clicked.connect(self.startParse)
         self.ui.stopButton.clicked.connect(self.stopMission)
 
-        self.firstPass = True
+        self.firstPass = True 
         self.initROS()
+        
 
 
     def loadUiWidget(self,uifilename, parent=None):
