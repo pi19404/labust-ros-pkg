@@ -125,26 +125,6 @@
 <std>0.00005</std>
 </gpsSensor> -->
 
-<usblSensor>
-<name>USBLSensor</name>
-<relativeTo>base_link</relativeTo>
-<position>
-<x>0</x>
-<y>0</y>
-<z>0</z>
-</position>
-<orientation>
-<r>0</r>
-<p>0</p>
-<y>0</y>
-</orientation>
-<!-- <std>0.5</std> -->
-<std>0</std>
-<transponder>
-<name>diver</name>
-<id>0</id>
-</transponder>
-</usblSensor>
 </vehicle>
 
 <vehicle>
@@ -209,6 +189,10 @@
 <p>0</p>
 <y>0</y>
 </orientation>
+<physics>
+	<mass>0</mass>
+	<collisionShapeType> trimesh </collisionShapeType>
+</physics>
 </object>
 
 <rosInterfaces>
@@ -242,15 +226,5 @@
 <topic>pladypos/gps</topic>
 <rate>1</rate>
 </GPSSensorToROS> -->
-<USBLSensorToROS>
-<name>USBLSensor</name>
-<topic>pladypos/usbl</topic>
-<rate>1</rate>
-</USBLSensorToROS>
-<!-- <OceanInfoToROS>
-<name>diver</name>
-<topic>pladypos/ocean_info</topic>
-<rate>20</rate>
-</OceanInfoToROS> -->
 </rosInterfaces>
 </UWSimScene>

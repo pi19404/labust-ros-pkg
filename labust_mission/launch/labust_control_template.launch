@@ -46,9 +46,6 @@
     <!-- == Arguments ============================================ -->
     <!-- ========================================================= -->
 
-    <rosparam command="load"
-	file="$(find mzos_launch)/launch/pladypos/config/control.yaml" />
-
     <arg name="use_ident" default="0"/>
 
     <!-- ========================================================= -->

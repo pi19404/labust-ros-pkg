@@ -51,9 +51,9 @@
     <arg name="xml_save_path" value ="$(find labust_mission)/data/mission.xml" /> 
     <arg name="mission_execution_INTEGRATED" default="false" />
     <arg name="mission_execution" default="true" />
-    <arg name="mission_parser" default="true" />
-    <arg name="neptus_parser" default="true" />
-    <arg name="parseGUI" default="true" />
+    <arg name="mission_parser" default="false" />
+    <arg name="neptus_parser" default="false" />
+    <arg name="parseGUI" default="false" />
    
     <!-- Simulation settings ===================================== -->  
 
@@ -63,8 +63,6 @@
     <!-- Control settings ======================================== -->
 
     <arg name="use_ident" value="$(optenv USE_IDENTIFICATION 0)" />
-    <rosparam command="load"
-	file="$(find labust_mission)/launch/labust_mission/config/control.yaml" />
 
     <!-- Navigation settings ======================================== -->
 
@@ -74,6 +72,10 @@
 
     <arg name="vehicle" value ="pladypos" /> 
     <rosparam command="load" file="$(env MODEL)" />
+
+    <!-- Visualization settings ======================================== -->
+
+    <arg name="use_visualization" value="$(optenv USE_VISUALIZATION 0)" />
 
 
     <!-- ========================================================= -->
@@ -119,6 +121,9 @@
 
     <!-- labust_visualization include ============================ -->
 
-    <include file="$(find labust_mission)/launch/labust_visualization_template.launch"> </include>
+    <include 
+        if="$(arg use_visualization)"
+        file="$(find labust_mission)/launch/labust_visualization_template.launch"> 
+    </include>
 
 </launch>
