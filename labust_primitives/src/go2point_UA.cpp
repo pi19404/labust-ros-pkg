@@ -69,7 +69,8 @@ namespace labust
 				ExecutorBase("go2point_UA"),
 				underactuated(true),
 				headingEnabled(false),
-				processNewGoal(false){};
+				processNewGoal(false),
+				lastDistance(0.0){};
 
 			void init()
 			{
@@ -228,7 +229,10 @@ namespace labust
 							goal->T2.point.y-estimate->position.east,
 							0;
 
-					double distVictory = deltaVictory.norm();
+					distVictory = deltaVictory.norm();
+					Ddistance = distVictory - lastDistance;
+					lastDistance = distVictory;
+
 					if(distVictory < goalRadius){
 						result.position.point.x = estimate->position.north;
 						result.position.point.y = estimate->position.east;
@@ -260,6 +264,27 @@ namespace labust
 				ref->orientation.yaw = goal->yaw;
 				ref->header.frame_id = "course_frame";
 
+				Eigen::Vector3d T1,T2;
+				T1<<state.position.north,
+						state.position.east,
+						0;
+				T2<<goalPosition.x,
+						goalPosition.y,
+						0;
+				line2.setLine(T1,T2);
+
+				//line3 = line;
+
+				if(fabs(labust::math::wrapRad(line2.gamma() - line.gamma())) > 60*M_PI/180 && Ddistance > 0){
+
+					//ref->orientation.yaw = line2.gamma();
+					line = line2;
+					ROS_ERROR("Changing course");
+
+				}
+
+
+
 				//Check underactuated behaviour
 				if (underactuated)
 				{
@@ -289,7 +314,7 @@ namespace labust
 			}
 
 			geometry_msgs::Point goalPosition;
-			double goalRadius;
+			double goalRadius, distVictory, lastDistance, Ddistance;
 			Result result;
 			//auv_msgs::NavSts lastState;
 			//Goal::ConstPtr goal;
@@ -297,7 +322,7 @@ namespace labust
 
 			geometry_msgs::Point lastPosition;
 			//geometry_msgs::Point goalPosition;
-			labust::math::Line line;
+			labust::math::Line line, line2, line3;
 			tf2_ros::StaticTransformBroadcaster broadcaster;
 			bool underactuated;
 			bool headingEnabled;

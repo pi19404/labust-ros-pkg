@@ -123,6 +123,7 @@ FSM(MissionSelect)
 				FSM_ON_EVENT("/DYNAMIC_POSITIONING", FSM_NEXT(dynamic_positioning_state));
 				FSM_ON_EVENT("/COURSE_KEEPING_FA", FSM_NEXT(go2point_FA_state));
 				FSM_ON_EVENT("/COURSE_KEEPING_UA", FSM_NEXT(go2point_FA_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 			}
 		}
 		FSM_STATE(go2point_FA_state)
@@ -130,7 +131,7 @@ FSM(MissionSelect)
 			ROS_ERROR("go2point_FA primitive active");
 
 			misc_msgs::Go2PointFA data = ME->deserializePrimitive<misc_msgs::Go2PointFA>(ME->receivedPrimitive.primitiveData);
-		   	CM->go2point_FA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.heading, data.victoryRadius);
+		   	CM->go2point_FA(true,ME->oldPosition.north,ME->oldPosition.east,data.point.north,data.point.east, data.speed, data.heading, data.victoryRadius);
 
 		   	ME->oldPosition = data.point;
 
@@ -142,7 +143,7 @@ FSM(MissionSelect)
 
 			FSM_TRANSITIONS
 			{
-				FSM_ON_EVENT("/RESET", FSM_NEXT(Dispatcher_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 				FSM_ON_EVENT("/PRIMITIVE_FINISHED", FSM_NEXT(Dispatcher_state));
 			}
 		}
@@ -151,7 +152,7 @@ FSM(MissionSelect)
 			ROS_ERROR("go2point_UA primitive active");
 
 			misc_msgs::Go2PointUA data = ME->deserializePrimitive<misc_msgs::Go2PointUA>(ME->receivedPrimitive.primitiveData);
-		   	CM->go2point_UA(true,CM->Xpos,CM->Ypos,data.point.north,data.point.east, data.speed, data.victoryRadius);
+		   	CM->go2point_UA(true,ME->oldPosition.north,ME->oldPosition.east,data.point.north,data.point.east, data.speed, data.victoryRadius);
 
 		   	ME->oldPosition = data.point;
 
@@ -163,7 +164,7 @@ FSM(MissionSelect)
 
 			FSM_TRANSITIONS
 			{
-				FSM_ON_EVENT("/RESET", FSM_NEXT(Dispatcher_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 				FSM_ON_EVENT("/PRIMITIVE_FINISHED", FSM_NEXT(Dispatcher_state));
 			}
 		}
@@ -184,7 +185,7 @@ FSM(MissionSelect)
 
 			FSM_TRANSITIONS
 			{
-				FSM_ON_EVENT("/RESET", FSM_NEXT(Dispatcher_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 				FSM_ON_EVENT("/PRIMITIVE_FINISHED", FSM_NEXT(Dispatcher_state));
 			}
 		}
@@ -206,7 +207,7 @@ FSM(MissionSelect)
 
 			FSM_TRANSITIONS
 			{
-				FSM_ON_EVENT("/RESET", FSM_NEXT(Dispatcher_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 				FSM_ON_EVENT("/PRIMITIVE_FINISHED", FSM_NEXT(Dispatcher_state));
 			}
 		}
@@ -228,7 +229,7 @@ FSM(MissionSelect)
 
 			FSM_TRANSITIONS
 			{
-				FSM_ON_EVENT("/RESET", FSM_NEXT(Dispatcher_state));
+				FSM_ON_EVENT("/STOP", FSM_NEXT(Wait_state));
 				FSM_ON_EVENT("/PRIMITIVE_FINISHED", FSM_NEXT(Dispatcher_state));
 			}
 		}

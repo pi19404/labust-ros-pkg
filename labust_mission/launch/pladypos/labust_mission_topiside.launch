@@ -73,6 +73,10 @@
     <arg name="vehicle" value ="pladypos" /> 
     <rosparam command="load" file="$(env MODEL)" />
 
+    <!-- Visualization settings ======================================== -->
+
+    <arg name="use_visualization" value="$(optenv USE_VISUALIZATION 0)" />
+
 
     <!-- ========================================================= -->
     <!-- == Launch includes ====================================== -->
@@ -117,6 +121,9 @@
 
     <!-- labust_visualization include ============================ -->
 
-    <include file="$(find labust_mission)/launch/labust_visualization_template.launch"> </include>
+    <include 
+        if="$(arg use_visualization)"
+        file="$(find labust_mission)/launch/labust_visualization_template.launch"> 
+    </include>
 
 </launch>
