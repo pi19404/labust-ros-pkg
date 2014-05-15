@@ -22,8 +22,6 @@ class ControlMainWindow(QtGui.QMainWindow):
 
         self.firstPass = True 
         self.initROS()
-        
-
 
     def loadUiWidget(self,uifilename, parent=None):
         loader = QtUiTools.QUiLoader()
@@ -38,7 +36,6 @@ class ControlMainWindow(QtGui.QMainWindow):
         self.pubStartParse = rospy.Publisher('/startParse', StartParser)
         self.pubStopMission = rospy.Publisher('/eventString', String)
 
-
         # Subscribers
         rospy.Subscriber("stateHat", NavSts, self.onStateHatCallback)
 
@@ -47,7 +44,6 @@ class ControlMainWindow(QtGui.QMainWindow):
         
         # Get parameters
         self.labustMissionPath = rospy.get_param('~labust_mission_path', '')
-
 
     def browseFiles(self):
         #fileName = QtGui.QFileDialog.getOpenFileName(self,
@@ -66,14 +62,14 @@ class ControlMainWindow(QtGui.QMainWindow):
         missionData = StartParser()
         missionData.fileName = self.labustMissionPath+"data/extracted/mission.nmis"
         
-        if self.ui.radioButtonNED.isChecked():
+        if self.ui.radioButtonRelative.isChecked():
             missionData.relative = True
             missionData.customStart = False
-        elif self.ui.radioButtonLatLon.isChecked():
+            missionData.lat = self.Xpos
+            missionData.lon = self.Ypos
+        elif self.ui.radioButtonAbsolute.isChecked():
             missionData.relative = False
             missionData.customStart = False
-            missionData.lat = self.startLat
-            missionData.lon = self.startLon
         else:
             missionData.relative = False
             missionData.customStart = True           
@@ -87,7 +83,6 @@ class ControlMainWindow(QtGui.QMainWindow):
         data = "/STOP";
         self.pubStopMission.publish(data)
         
-        
     def onStateHatCallback(self, msg):
         
         if self.firstPass:
@@ -100,6 +95,9 @@ class ControlMainWindow(QtGui.QMainWindow):
             
             self.ui.lineEditLat.setText(str(self.startLat))
             self.ui.lineEditLon.setText(str(self.startLon))
+        
+        self.Xpos = msg.position.north
+        self.Ypos = msg.position.east
         
 if __name__ == "__main__":
     import sys

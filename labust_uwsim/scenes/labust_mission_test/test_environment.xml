@@ -59,6 +59,10 @@
 <z>0</z>
 </offsetr>
 <enablePhysics> 1 </enablePhysics>
+<showTrajectory>
+	<target>pladypos</target>
+	<!--<color>white</color>-->
+</showTrajectory>
 </simParams>
 <camera>
 <freeMotion> 1 </freeMotion>
@@ -83,8 +87,8 @@
 <name>pladypos</name>
 <file>data/scenes/pladypos.urdf</file>
 <position>
-<x> 20</x>
-<y> 15 </y>
+<x> 30</x>
+<y> 30 </y>
 <z> 0 </z>
 </position>
 <orientation>
@@ -199,12 +203,10 @@
 <ROSOdomToPAT>
 <topic> /uwsim_hook </topic>
 <vehicleName> pladypos </vehicleName>
-<visualize> 1 </visualize>
 </ROSOdomToPAT>
 <ROSOdomToPAT>
 <topic> diver/uwsim_hook </topic>
 <vehicleName> diver </vehicleName>
-<visualize> 1 </visualize>
 </ROSOdomToPAT>
      <VirtualCameraToROSImage>
 <cameraName>bowtech1</cameraName>

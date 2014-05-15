@@ -159,7 +159,7 @@ public:
 		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
 
 		/* Set offset if in relative mode */
-		if(!startPointSet && startRelative){
+		if(!startPointSet){
 			offset.north += position.north;
 			offset.east += position.east;
 			startPointSet = true;
@@ -204,7 +204,7 @@ public:
 		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
 
 		/* Set offset if in relative mode */
-		if(!startPointSet  && startRelative){
+		if(!startPointSet){
 			offset.north += position.north;
 			offset.east += position.east;
 			startPointSet = true;
@@ -336,7 +336,7 @@ ROS_ERROR("width: %f, length: %f, hstep: %f, bearing: %f, alternationPercent: %f
 		ROS_ERROR("Preracunato: %f,%f", position.north, position.east);
 
 		/* Set offset if in relative mode */
-		if(!startPointSet && startRelative){
+		if(!startPointSet){
 			offset.north += position.north;
 			offset.east += position.east;
 			startPointSet = true;
@@ -405,10 +405,18 @@ void startParseCallback(ros::Publisher &pubStartDispatcher, const misc_msgs::Sta
 	NeptusParser NP;
 	ph.param("xml_save_path", NP.xmlSavePath, NP.xmlSavePath);
 	ROS_ERROR("%s",NP.xmlSavePath.c_str());
-	NP.offset.north = NP.offset.east = 0;
+
 	NP.startRelative = msg->relative;
 	NP.startPoint.latitude = msg->lat;
 	NP.startPoint.longitude = msg->lon;
+
+	if(NP.startRelative){
+		NP.offset.north = -NP.startPoint.latitude;
+		NP.offset.east = -NP.startPoint.longitude;
+	} else {
+		NP.offset.north = NP.offset.east = 0;
+	}
+
 	int status = NP.parseNeptus(msg->fileName);
 
 	if(status == 1){

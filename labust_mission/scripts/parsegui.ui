@@ -75,22 +75,22 @@
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
-      <widget class="QRadioButton" name="radioButtonNED">
+      <widget class="QRadioButton" name="radioButtonRelative">
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
        </property>
        <property name="text">
-        <string>NED</string>
+        <string>Relative</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButtonLatLon">
+      <widget class="QRadioButton" name="radioButtonAbsolute">
        <property name="focusPolicy">
         <enum>Qt::NoFocus</enum>
        </property>
        <property name="text">
-        <string>LatLon</string>
+        <string>Absolute</string>
        </property>
       </widget>
      </item>
